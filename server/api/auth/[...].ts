@@ -212,6 +212,23 @@ export default NuxtAuthHandler({
   providers,
 
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Fix for undefined baseUrl - use our known URL
+      const safeBaseUrl = baseUrl || 'https://neuro-canvas.com'
+      console.log('[Auth] redirect callback - url:', url, 'baseUrl:', baseUrl, 'safeBaseUrl:', safeBaseUrl)
+
+      // If url is relative, prepend baseUrl
+      if (url.startsWith('/')) {
+        return `${safeBaseUrl}${url}`
+      }
+      // If url is on the same origin, allow it
+      if (url.startsWith(safeBaseUrl)) {
+        return url
+      }
+      // Default to baseUrl
+      return safeBaseUrl
+    },
+
     async jwt({ token, user }) {
       console.log('[Auth] JWT callback - user:', user?.email, 'token exists:', !!token)
       // Initial sign in

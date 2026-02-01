@@ -22,10 +22,10 @@ export default defineNuxtConfig({
 
   // Auth configuration
   auth: {
-    // Let NuxtAuth determine origin from AUTH_ORIGIN env var at runtime
-    // Do NOT set baseURL here - it causes issues in production
-    originEnvKey: 'AUTH_ORIGIN',
-    baseURL: '/api/auth', // Relative path - origin comes from env var
+    // Use absolute baseURL for production
+    baseURL: process.env.AUTH_ORIGIN
+      ? `${process.env.AUTH_ORIGIN}/api/auth`
+      : 'https://neuro-canvas.com/api/auth',
     provider: {
       type: 'authjs'
     },
