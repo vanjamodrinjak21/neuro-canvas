@@ -15,16 +15,27 @@ const authChecked = ref(false)
 
 // Check auth on mount (SPA mode)
 onMounted(async () => {
+  console.log('Dashboard mounted, checking session...')
+  console.log('Initial session:', session.value)
+  console.log('Initial status:', status.value)
+
   try {
-    await getSession({ force: true })
+    const freshSession = await getSession({ force: true })
+    console.log('Fresh session:', freshSession)
+    console.log('Session after refresh:', session.value)
+    console.log('Status after refresh:', status.value)
   } catch (e) {
     console.error('Session check failed:', e)
   }
+
   authChecked.value = true
 
   // Redirect if not authenticated after check
   if (!session.value?.user) {
+    console.log('No user found, redirecting to signin')
     navigateTo('/auth/signin')
+  } else {
+    console.log('User authenticated:', session.value.user)
   }
 })
 

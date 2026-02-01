@@ -68,15 +68,28 @@ async function handleSignin() {
   messageType.value = 'success'
 
   try {
-    // Use redirect: true - Auth.js will handle the redirect to /dashboard
-    // If there's an error, it redirects back here with ?error= query param
-    await signIn('credentials', {
+    const result = await signIn('credentials', {
       email: email.value,
       password: password.value,
-      redirect: true,
-      callbackUrl: '/dashboard'
+      redirect: false
     })
+
+    console.log('SignIn result:', result)
+
+    if (result?.error) {
+      message.value = result.error === 'CredentialsSignin'
+        ? 'Invalid email or password'
+        : result.error
+      messageType.value = 'error'
+      isLoading.value = false
+      return
+    }
+
+    // Success - force full page reload to /dashboard
+    message.value = 'Success! Redirecting...'
+    window.location.href = '/dashboard'
   } catch (e: any) {
+    console.error('SignIn error:', e)
     message.value = e.message || 'Sign in failed. Please try again.'
     messageType.value = 'error'
     isLoading.value = false
