@@ -142,6 +142,9 @@ const isProduction = process.env.NODE_ENV === 'production'
 export default NuxtAuthHandler({
   secret: authSecret,
 
+  // Trust the host header - required for proxied deployments like Railway
+  trustHost: true,
+
   adapter: PrismaAdapter(prisma) as any,
 
   session: {
