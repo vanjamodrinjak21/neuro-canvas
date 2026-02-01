@@ -12,8 +12,12 @@ const config = useRuntimeConfig()
 
 // Get auth secret - check multiple sources
 const authSecret = config.authSecret || process.env.AUTH_SECRET || process.env.NUXT_AUTH_SECRET
+console.log('[Auth] Initializing auth handler...')
+console.log('[Auth] NODE_ENV:', process.env.NODE_ENV)
+console.log('[Auth] AUTH_SECRET configured:', !!authSecret)
+console.log('[Auth] AUTH_ORIGIN:', process.env.AUTH_ORIGIN)
 if (!authSecret) {
-  console.error('AUTH_SECRET is not configured!')
+  console.error('[Auth] AUTH_SECRET is not configured!')
 }
 
 const resend = config.resendApiKey || process.env.RESEND_API_KEY
@@ -99,7 +103,9 @@ providers.push(
       password: { label: 'Password', type: 'password' }
     },
     async authorize(credentials: { email?: string; password?: string } | undefined) {
+      console.log('[Auth] authorize called for:', credentials?.email)
       if (!credentials?.email || !credentials?.password) {
+        console.log('[Auth] Missing credentials')
         throw new Error('Email and password are required')
       }
 
@@ -108,15 +114,18 @@ providers.push(
       })
 
       if (!user || !user.password) {
+        console.log('[Auth] User not found or no password:', credentials.email)
         throw new Error('Invalid email or password')
       }
 
       const isValidPassword = await bcrypt.compare(credentials.password, user.password)
 
       if (!isValidPassword) {
+        console.log('[Auth] Invalid password for:', credentials.email)
         throw new Error('Invalid email or password')
       }
 
+      console.log('[Auth] Authorization successful for:', user.email)
       return {
         id: user.id,
         email: user.email,
@@ -126,6 +135,9 @@ providers.push(
     }
   })
 )
+
+// Determine if we're in production
+const isProduction = process.env.NODE_ENV === 'production'
 
 export default NuxtAuthHandler({
   secret: authSecret,
@@ -138,7 +150,38 @@ export default NuxtAuthHandler({
   },
 
   // Use secure cookies in production (HTTPS)
-  useSecureCookies: process.env.NODE_ENV === 'production',
+  useSecureCookies: isProduction,
+
+  // Explicit cookie configuration for production
+  cookies: {
+    sessionToken: {
+      name: isProduction ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction
+      }
+    },
+    callbackUrl: {
+      name: isProduction ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url',
+      options: {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction
+      }
+    },
+    csrfToken: {
+      name: isProduction ? '__Host-next-auth.csrf-token' : 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction
+      }
+    }
+  },
 
   pages: {
     signIn: '/auth/signin',
@@ -152,12 +195,14 @@ export default NuxtAuthHandler({
 
   callbacks: {
     async jwt({ token, user }) {
+      console.log('[Auth] JWT callback - user:', user?.email, 'token exists:', !!token)
       // Initial sign in
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
         token.picture = user.image
+        console.log('[Auth] JWT created for user:', user.email)
       }
 
       // Track last activity for session refresh
@@ -177,14 +222,18 @@ export default NuxtAuthHandler({
     },
 
     async signIn({ user, account }) {
+      console.log('[Auth] signIn callback - provider:', account?.provider, 'user:', user?.email)
       // Allow all OAuth sign-ins
       if (account?.provider === 'google' || account?.provider === 'github') {
+        console.log('[Auth] OAuth sign-in allowed')
         return true
       }
 
       // For credentials, user must exist and have verified email
       if (account?.provider === 'credentials') {
-        return !!user
+        const allowed = !!user
+        console.log('[Auth] Credentials sign-in:', allowed ? 'allowed' : 'denied')
+        return allowed
       }
 
       // For email provider (magic links), always allow
