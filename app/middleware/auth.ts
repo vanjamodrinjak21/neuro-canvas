@@ -3,23 +3,27 @@
  * Redirects to /auth/signin if not authenticated
  */
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { status, getSession } = useAuth()
+  const { data, status, getSession } = useAuth()
 
-  // On client-side, refresh session to get latest state
+  // For client-side SPA, always fetch fresh session
   if (import.meta.client) {
-    await getSession({ force: true })
+    try {
+      await getSession({ force: true })
+    } catch (e) {
+      console.error('Failed to get session:', e)
+    }
   }
 
-  // Wait for auth status to be determined
-  if (status.value === 'loading') {
+  // Check session data directly (more reliable than status for SPA)
+  const session = data.value
+
+  if (session?.user) {
+    // User is authenticated
     return
   }
 
-  if (status.value !== 'authenticated') {
-    // Prevent redirect loop
-    if (to.path.startsWith('/auth/')) {
-      return
-    }
+  // Not authenticated - redirect to sign in
+  if (!to.path.startsWith('/auth/')) {
     return navigateTo('/auth/signin')
   }
 })
