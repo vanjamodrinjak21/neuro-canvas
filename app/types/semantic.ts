@@ -1,0 +1,162 @@
+// Semantic Types for NeuroCanvas Semantic Constellation Engine
+
+import type { Point } from './canvas'
+
+// ═══════════════ NODE SEMANTIC DATA ═══════════════
+
+export interface NodeSemanticData {
+  nodeId: string
+  embedding: number[]
+  embeddingVersion: number
+  updatedAt: number
+}
+
+// Sparse similarity entry (only store pairs above threshold)
+export interface SimilarityEntry {
+  nodeId: string
+  similarity: number
+}
+
+// ═══════════════ FIELD VISUALIZATION ═══════════════
+
+export interface FieldLine {
+  id: string
+  sourceId: string
+  targetId: string
+  sourcePoint: Point
+  targetPoint: Point
+  similarity: number
+  // Control points for curved lines
+  controlPoint1?: Point
+  controlPoint2?: Point
+}
+
+export interface FieldParticle {
+  id: string
+  lineId: string
+  progress: number // 0-1 along the line
+  speed: number
+  size: number
+  opacity: number
+}
+
+export interface ResonancePulse {
+  id: string
+  nodeId: string
+  center: Point
+  radius: number
+  maxRadius: number
+  opacity: number
+  startTime: number
+}
+
+// ═══════════════ INSIGHTS ═══════════════
+
+export type InsightType = 'bridge' | 'gap' | 'outlier' | 'cluster'
+
+export interface Insight {
+  id: string
+  type: InsightType
+  title: string
+  description: string
+  confidence: number // 0-1
+  relatedNodeIds: string[]
+  suggestedPosition?: Point
+  suggestedContent?: string
+  suggestedConnections?: Array<{
+    sourceId: string
+    targetId: string
+  }>
+  createdAt: number
+}
+
+// ═══════════════ AI STATE ═══════════════
+
+export type AIStatus = 'idle' | 'loading-model' | 'computing' | 'ready' | 'error'
+
+export interface AIState {
+  status: AIStatus
+  modelLoaded: boolean
+  modelProgress: number // 0-100 for loading progress
+  hasWebGPU: boolean
+  error?: string
+  lastEmbeddingTime?: number // ms for last embedding computation
+}
+
+// ═══════════════ FIELD SETTINGS ═══════════════
+
+export interface FieldSettings {
+  enabled: boolean
+  intensity: number // 0-1, controls opacity/visibility
+  showParticles: boolean
+  showPulses: boolean
+  similarityThreshold: number // 0-1, minimum similarity to show field line
+  maxFieldLines: number
+  maxParticles: number
+}
+
+// Default field settings
+export const DEFAULT_FIELD_SETTINGS: FieldSettings = {
+  enabled: false,
+  intensity: 0.7,
+  showParticles: true,
+  showPulses: true,
+  similarityThreshold: 0.5,
+  maxFieldLines: 50,
+  maxParticles: 200
+}
+
+// ═══════════════ DATABASE TYPES ═══════════════
+
+export interface DBSemanticData {
+  id: string // composite: `${mapId}-${nodeId}`
+  nodeId: string
+  mapId: string
+  embedding: number[]
+  embeddingVersion: number
+  updatedAt: number
+}
+
+// ═══════════════ WORKER MESSAGE TYPES ═══════════════
+
+export type SemanticWorkerMessageType =
+  | 'init'
+  | 'expand'
+  | 'embed'
+  | 'embed-batch'
+  | 'compute-similarities'
+  | 'search'
+  | 'suggest'
+  | 'dispose'
+  | 'progress'
+
+export interface EmbedBatchPayload {
+  texts: Array<{
+    id: string
+    text: string
+  }>
+}
+
+export interface EmbedBatchResult {
+  embeddings: Array<{
+    id: string
+    embedding: number[]
+  }>
+  dimensions: number
+}
+
+export interface ComputeSimilaritiesPayload {
+  embeddings: Array<{
+    id: string
+    embedding: number[]
+  }>
+  threshold: number
+}
+
+export interface ComputeSimilaritiesResult {
+  similarities: Array<{
+    sourceId: string
+    targetId: string
+    similarity: number
+  }>
+}
