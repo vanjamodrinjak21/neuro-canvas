@@ -145,11 +145,16 @@ async function handleSignin() {
     }
 
     if (result?.ok) {
-      // Success - force full page reload to /dashboard
-      message.value = 'Success! Redirecting...'
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 500)
+      // Success - DON'T redirect yet, show what happened
+      message.value = 'Sign-in returned OK! Check cookies in Application tab.'
+      messageType.value = 'success'
+      isLoading.value = false
+      console.log('SUCCESS! Check Application > Cookies for __Secure-next-auth.session-token')
+      // Temporarily disabled redirect for debugging:
+      // setTimeout(() => {
+      //   window.location.href = '/dashboard'
+      // }, 500)
+      return
     } else {
       message.value = 'Unexpected response: ' + JSON.stringify(result)
       messageType.value = 'error'
