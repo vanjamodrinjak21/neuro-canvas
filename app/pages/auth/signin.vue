@@ -5,11 +5,13 @@ definePageMeta({
 
 const route = useRoute()
 
-// Get signIn function
+// Get auth functions
 let signIn: any = null
+let getSession: any = null
 try {
   const auth = useAuth()
   signIn = auth.signIn
+  getSession = auth.getSession
 } catch (e) {
   console.error('useAuth failed:', e)
 }
@@ -79,14 +81,16 @@ async function handleSignin() {
         : result.error
       messageType.value = 'error'
       isLoading.value = false
-    } else if (result?.ok) {
+    } else {
       message.value = 'Sign in successful! Redirecting...'
       messageType.value = 'success'
-      // Use navigateTo for proper Nuxt navigation
-      await navigateTo('/dashboard', { replace: true })
-    } else {
-      // Fallback - try to navigate anyway
-      await navigateTo('/dashboard', { replace: true })
+      // Refresh session state before navigating
+      if (getSession) {
+        await getSession({ force: true })
+      }
+      // Small delay to ensure session is propagated
+      await new Promise(resolve => setTimeout(resolve, 100))
+      window.location.href = '/dashboard'
     }
   } catch (e: any) {
     message.value = e.message || 'Sign in failed. Please try again.'
