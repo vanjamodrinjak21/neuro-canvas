@@ -9,7 +9,16 @@ import { Resend } from 'resend'
 import { prisma } from '../../utils/prisma'
 
 const config = useRuntimeConfig()
-const resend = config.resendApiKey ? new Resend(config.resendApiKey) : null
+
+// Get auth secret - check multiple sources
+const authSecret = config.authSecret || process.env.AUTH_SECRET || process.env.NUXT_AUTH_SECRET
+if (!authSecret) {
+  console.error('AUTH_SECRET is not configured!')
+}
+
+const resend = config.resendApiKey || process.env.RESEND_API_KEY
+  ? new Resend(config.resendApiKey || process.env.RESEND_API_KEY)
+  : null
 
 // Build providers array conditionally
 const providers: any[] = []
@@ -119,7 +128,7 @@ providers.push(
 )
 
 export default NuxtAuthHandler({
-  secret: config.authSecret,
+  secret: authSecret,
 
   adapter: PrismaAdapter(prisma) as any,
 
