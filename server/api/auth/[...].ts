@@ -128,6 +128,9 @@ export default NuxtAuthHandler({
     maxAge: 4 * 60 * 60 // 4 hours
   },
 
+  // Use secure cookies in production (HTTPS)
+  useSecureCookies: process.env.NODE_ENV === 'production',
+
   pages: {
     signIn: '/auth/signin',
     signOut: '/auth/signin',
