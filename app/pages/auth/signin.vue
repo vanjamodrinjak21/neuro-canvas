@@ -5,13 +5,11 @@ definePageMeta({
 
 const route = useRoute()
 
-// Get auth functions
+// Get signIn function
 let signIn: any = null
-let getSession: any = null
 try {
   const auth = useAuth()
   signIn = auth.signIn
-  getSession = auth.getSession
 } catch (e) {
   console.error('useAuth failed:', e)
 }
@@ -19,6 +17,7 @@ try {
 // Check for error from callback
 const callbackError = computed(() => {
   const err = route.query.error as string | undefined
+  if (err === 'CredentialsSignin') return 'Invalid email or password.'
   if (err === 'OAuthAccountNotLinked') return 'This email is already registered with a different sign-in method.'
   if (err === 'OAuthSignin' || err === 'OAuthCallback') return 'There was a problem signing in. Please try again.'
   if (err) return 'An error occurred. Please try again.'
@@ -65,33 +64,18 @@ async function handleSignin() {
   }
 
   isLoading.value = true
-  message.value = ''
+  message.value = 'Signing in...'
+  messageType.value = 'success'
 
   try {
-    const result = await signIn('credentials', {
+    // Use redirect: true - Auth.js will handle the redirect to /dashboard
+    // If there's an error, it redirects back here with ?error= query param
+    await signIn('credentials', {
       email: email.value,
       password: password.value,
-      redirect: false,
+      redirect: true,
       callbackUrl: '/dashboard'
     })
-
-    if (result?.error) {
-      message.value = result.error === 'CredentialsSignin'
-        ? 'Invalid email or password'
-        : result.error
-      messageType.value = 'error'
-      isLoading.value = false
-    } else {
-      message.value = 'Sign in successful! Redirecting...'
-      messageType.value = 'success'
-      // Refresh session state before navigating
-      if (getSession) {
-        await getSession({ force: true })
-      }
-      // Small delay to ensure session is propagated
-      await new Promise(resolve => setTimeout(resolve, 100))
-      window.location.href = '/dashboard'
-    }
   } catch (e: any) {
     message.value = e.message || 'Sign in failed. Please try again.'
     messageType.value = 'error'
