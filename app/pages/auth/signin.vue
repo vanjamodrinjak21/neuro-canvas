@@ -7,12 +7,23 @@ const route = useRoute()
 
 // Get signIn function
 let signIn: any = null
+let authStatus: any = null
 try {
   const auth = useAuth()
   signIn = auth.signIn
+  authStatus = auth.status
+  console.log('useAuth loaded, status:', auth.status.value)
 } catch (e) {
   console.error('useAuth failed:', e)
 }
+
+// Log on mount
+onMounted(() => {
+  console.log('Signin page mounted')
+  console.log('Auth status:', authStatus?.value)
+  console.log('Callback error:', callbackError.value)
+  console.log('Route query:', route.query)
+})
 
 // Check for error from callback
 const callbackError = computed(() => {
@@ -67,14 +78,27 @@ async function handleSignin() {
   message.value = 'Signing in...'
   messageType.value = 'success'
 
+  // Test if auth API is reachable
   try {
+    const testResponse = await fetch('/api/auth/session')
+    console.log('Auth API test:', testResponse.status, await testResponse.text())
+  } catch (e) {
+    console.error('Auth API unreachable:', e)
+    message.value = 'Auth service unreachable'
+    messageType.value = 'error'
+    isLoading.value = false
+    return
+  }
+
+  try {
+    console.log('Calling signIn...')
     const result = await signIn('credentials', {
       email: email.value,
       password: password.value,
       redirect: false
     })
 
-    console.log('SignIn result:', result)
+    console.log('SignIn result:', JSON.stringify(result))
 
     if (result?.error) {
       message.value = result.error === 'CredentialsSignin'
@@ -85,12 +109,20 @@ async function handleSignin() {
       return
     }
 
-    // Success - force full page reload to /dashboard
-    message.value = 'Success! Redirecting...'
-    window.location.href = '/dashboard'
+    if (result?.ok) {
+      // Success - force full page reload to /dashboard
+      message.value = 'Success! Redirecting...'
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 500)
+    } else {
+      message.value = 'Unexpected response: ' + JSON.stringify(result)
+      messageType.value = 'error'
+      isLoading.value = false
+    }
   } catch (e: any) {
     console.error('SignIn error:', e)
-    message.value = e.message || 'Sign in failed. Please try again.'
+    message.value = 'Error: ' + (e.message || 'Sign in failed')
     messageType.value = 'error'
     isLoading.value = false
   }
