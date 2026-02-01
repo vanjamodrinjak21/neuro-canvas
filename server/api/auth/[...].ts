@@ -13,8 +13,12 @@ const config = useRuntimeConfig()
 // Get auth secret - check multiple sources
 const authSecret = config.authSecret || process.env.AUTH_SECRET || process.env.NUXT_AUTH_SECRET
 
-// Get the auth URL - check multiple sources
-const authUrl = process.env.NEXTAUTH_URL || process.env.AUTH_ORIGIN || process.env.NUXT_PUBLIC_AUTH_ORIGIN || config.public?.authOrigin
+// Get the auth URL - check multiple sources, with fallback to hardcoded value
+const authUrl = process.env.NEXTAUTH_URL
+  || process.env.AUTH_ORIGIN
+  || process.env.NUXT_PUBLIC_AUTH_ORIGIN
+  || config.public?.authOrigin
+  || 'https://neuro-canvas.com' // Fallback for production
 
 console.log('[Auth] Initializing auth handler...')
 console.log('[Auth] NODE_ENV:', process.env.NODE_ENV)
@@ -27,15 +31,9 @@ if (!authSecret) {
   console.error('[Auth] AUTH_SECRET is not configured!')
 }
 
-if (!authUrl) {
-  console.error('[Auth] AUTH URL is not configured! Set NEXTAUTH_URL or AUTH_ORIGIN')
-}
-
-// Set NEXTAUTH_URL if not already set (NextAuth reads this)
-if (!process.env.NEXTAUTH_URL && authUrl) {
-  process.env.NEXTAUTH_URL = authUrl
-  console.log('[Auth] Set NEXTAUTH_URL to:', authUrl)
-}
+// ALWAYS set NEXTAUTH_URL - NextAuth requires this
+process.env.NEXTAUTH_URL = authUrl
+console.log('[Auth] Force set NEXTAUTH_URL to:', authUrl)
 
 const resend = config.resendApiKey || process.env.RESEND_API_KEY
   ? new Resend(config.resendApiKey || process.env.RESEND_API_KEY)
