@@ -5,13 +5,28 @@ import { useAI } from '~/composables/useAI'
 
 // Dashboard / Home page - Elevated Command Center
 definePageMeta({
-  layout: false,
-  middleware: 'auth'
+  layout: false
 })
 
-// Auth
-const { data: session, status } = useAuth()
+// Auth - handle client-side since ssr: false
+const { data: session, status, getSession } = useAuth()
 const user = computed(() => session.value?.user)
+const authChecked = ref(false)
+
+// Check auth on mount (SPA mode)
+onMounted(async () => {
+  try {
+    await getSession({ force: true })
+  } catch (e) {
+    console.error('Session check failed:', e)
+  }
+  authChecked.value = true
+
+  // Redirect if not authenticated after check
+  if (!session.value?.user) {
+    navigateTo('/auth/signin')
+  }
+})
 
 const db = useDatabase()
 const mapStore = useMapStore()
@@ -511,7 +526,12 @@ async function createFromTemplate(template: typeof templates[0]) {
 </script>
 
 <template>
-  <div class="dashboard" @mousemove="handleMouseMove">
+  <!-- Loading state while checking auth -->
+  <div v-if="!authChecked || status === 'loading'" class="auth-loading">
+    <div class="loading-spinner" />
+  </div>
+
+  <div v-else-if="user" class="dashboard" @mousemove="handleMouseMove">
     <!-- Cursor glow -->
     <div ref="cursorGlow" class="cursor-glow" />
 
@@ -873,6 +893,28 @@ async function createFromTemplate(template: typeof templates[0]) {
 /* ═══════════════════════════════════════════════════════════════
    NEUROCANVAS DASHBOARD — ELEVATED COMMAND CENTER
    ═══════════════════════════════════════════════════════════════ */
+
+/* Auth Loading State */
+.auth-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06060A;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 210, 190, 0.2);
+  border-top-color: #00D2BE;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 /* CSS Custom Properties */
 .dashboard {
