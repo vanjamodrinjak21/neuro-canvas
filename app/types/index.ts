@@ -1,5 +1,19 @@
 // Re-export all types
 export * from './canvas'
+export {
+  type RelationshipType,
+  type NodeCategory,
+  type RichNodeSuggestion,
+  type CrossConnection,
+  type BranchStructure,
+  type MapStructure,
+  type GenerationDepth,
+  type GenerationStyle,
+  type GenerationContext,
+  type MapGenerationOptions,
+  type HierarchicalExpandOptions,
+  type TypedConnectionSuggestion
+} from './ai-generation'
 
 // Platform types
 export type Platform = 'web' | 'tauri' | 'capacitor'

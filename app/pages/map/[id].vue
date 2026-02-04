@@ -2,12 +2,13 @@
 import type { Camera, Node, Edge, Point } from '~/types/canvas'
 import type { NodeTemplate } from '~/components/canvas/NodeTemplates.vue'
 import type { ContextMenuItem } from '~/components/ui/NcContextMenu.vue'
-import type { AISuggestion } from '~/types'
+import type { AISuggestion, RichNodeSuggestion, GenerationContext } from '~/types'
 import { useMapStore } from '~/stores/mapStore'
 import { useSemanticStore } from '~/stores/semanticStore'
 import { useDatabase } from '~/composables/useDatabase'
 import { useAutoSave } from '~/composables/useAutoSave'
 import { useAI } from '~/composables/useAI'
+import { useMapRenderer } from '~/composables/useMapRenderer'
 
 // Route
 const route = useRoute()
@@ -20,6 +21,7 @@ const semanticStore = useSemanticStore()
 const db = useDatabase()
 const autoSave = useAutoSave()
 const ai = useAI()
+const mapRenderer = useMapRenderer()
 
 // Loading
 const isLoading = ref(true)
@@ -65,6 +67,10 @@ const contextMenuTargetEdge = ref<Edge | null>(null)
 // AI
 const isAILoading = ref(false)
 const aiSuggestions = ref<AISuggestion[]>([])
+const richSuggestions = ref<RichNodeSuggestion[]>([])
+
+// Map generation dialog
+const showGenerateMapDialog = ref(false)
 
 // Overflow menu
 const showOverflowMenu = ref(false)
@@ -352,22 +358,58 @@ async function handleSmartExpand() {
   contextMenuVisible.value = false
 
   try {
-    const context = Array.from(mapStore.nodes.values())
-      .filter(n => n.id !== node.id)
-      .slice(0, 5)
-      .map(n => n.content)
+    // Build rich generation context
+    const context: GenerationContext = {
+      mapTitle: mapStore.title as string,
+      existingNodes: Array.from(mapStore.nodes.values())
+        .filter(n => n.id !== node.id)
+        .slice(0, 10)
+        .map(n => ({
+          id: n.id,
+          content: n.content,
+          description: n.metadata?.description as { summary: string } | undefined
+        })),
+      existingEdges: Array.from(mapStore.edges.values()).map(e => ({
+        sourceId: e.sourceId,
+        targetId: e.targetId,
+        label: e.label
+      })),
+      depth: 'medium',
+      style: 'detailed'
+    }
 
-    const suggestions = await ai.smartExpand(node.content, context, 3)
-    const baseX = node.position.x + node.size.width + 50
-    let offsetY = 0
+    // Try enhanced expand first
+    try {
+      const suggestions = await ai.enhancedSmartExpand(node.content, context, 5)
+      richSuggestions.value = suggestions
+      aiSuggestions.value = [] // Clear legacy suggestions
 
-    for (const suggestion of suggestions) {
-      mapStore.addNode({
-        position: { x: baseX, y: node.position.y + offsetY },
-        content: suggestion,
-        style: { ...node.style, borderColor: '#00D2BE' }
-      })
-      offsetY += 80
+      // Optionally auto-add the suggestions (or let user choose from sidebar)
+      // For context menu, we auto-add them
+      if (contextMenuTargetNode.value) {
+        mapRenderer.renderRichSuggestions(suggestions, node, { layout: 'vertical', spacing: 80 })
+        richSuggestions.value = []
+      }
+    } catch (enhancedError) {
+      console.warn('Enhanced expand failed, falling back to basic:', enhancedError)
+      // Fall back to basic expand
+      const basicContext = Array.from(mapStore.nodes.values())
+        .filter(n => n.id !== node.id)
+        .slice(0, 5)
+        .map(n => n.content)
+
+      const suggestions = await ai.smartExpand(node.content, basicContext, 3)
+      const baseX = node.position.x + node.size.width + 50
+      let offsetY = 0
+
+      for (const suggestion of suggestions) {
+        mapStore.addNode({
+          position: { x: baseX, y: node.position.y + offsetY },
+          content: suggestion,
+          style: { ...node.style, borderColor: '#00D2BE' }
+        })
+        offsetY += 80
+      }
     }
   } catch (error) {
     console.error('Smart Expand failed:', error)
@@ -500,20 +542,49 @@ async function handleGenerateSuggestions() {
 
   isAILoading.value = true
   aiSuggestions.value = []
+  richSuggestions.value = []
 
   try {
-    const context = Array.from(mapStore.nodes.values())
-      .filter(n => n.id !== node.id)
-      .slice(0, 5)
-      .map(n => n.content)
+    // Build rich generation context
+    const context: GenerationContext = {
+      mapTitle: mapStore.title as string,
+      existingNodes: Array.from(mapStore.nodes.values())
+        .filter(n => n.id !== node.id)
+        .slice(0, 10)
+        .map(n => ({
+          id: n.id,
+          content: n.content,
+          description: n.metadata?.description as { summary: string } | undefined
+        })),
+      existingEdges: Array.from(mapStore.edges.values()).map(e => ({
+        sourceId: e.sourceId,
+        targetId: e.targetId,
+        label: e.label
+      })),
+      depth: 'medium',
+      style: 'detailed'
+    }
 
-    const suggestions = await ai.smartExpand(node.content, context, 3)
-    aiSuggestions.value = suggestions.map((content, index) => ({
-      id: `suggestion-${index}`,
-      type: 'expand' as const,
-      content,
-      confidence: 0.8
-    }))
+    // Try enhanced expand
+    try {
+      const suggestions = await ai.enhancedSmartExpand(node.content, context, 5)
+      richSuggestions.value = suggestions
+    } catch (enhancedError) {
+      console.warn('Enhanced expand failed, falling back to basic:', enhancedError)
+      // Fall back to basic expand
+      const basicContext = Array.from(mapStore.nodes.values())
+        .filter(n => n.id !== node.id)
+        .slice(0, 5)
+        .map(n => n.content)
+
+      const suggestions = await ai.smartExpand(node.content, basicContext, 5)
+      aiSuggestions.value = suggestions.map((content, index) => ({
+        id: `suggestion-${index}`,
+        type: 'expand' as const,
+        content,
+        confidence: 0.8
+      }))
+    }
   } catch (error) {
     console.error('Failed to generate suggestions:', error)
   } finally {
@@ -547,6 +618,161 @@ function handleAddSuggestion(suggestion: AISuggestion) {
     (nodeId) => mapStore.nodes.get(nodeId)?.content,
     semanticStore.fieldSettings.similarityThreshold
   )
+}
+
+function handleAddRichSuggestion(suggestion: RichNodeSuggestion) {
+  const node = selectedNode.value
+  if (!node) return
+
+  // Calculate position based on existing suggestions
+  const index = richSuggestions.value.indexOf(suggestion)
+  const position = mapRenderer.calculateSuggestionPosition(node, index >= 0 ? index : 0)
+
+  // Add the rich suggestion using map renderer
+  const { nodeId } = mapRenderer.addRichSuggestion(suggestion, node, position)
+
+  // Remove suggestion from list
+  richSuggestions.value = richSuggestions.value.filter(s => s !== suggestion)
+
+  // Mark new node as dirty for embedding
+  semanticStore.markDirty(nodeId)
+  ai.processQueue(
+    (nId) => mapStore.nodes.get(nId)?.content,
+    semanticStore.fieldSettings.similarityThreshold
+  )
+}
+
+async function handleDeepExpand() {
+  const node = selectedNode.value
+  if (!node) return
+
+  isAILoading.value = true
+  richSuggestions.value = []
+
+  try {
+    // Build rich generation context
+    const context: GenerationContext = {
+      mapTitle: mapStore.title as string,
+      existingNodes: Array.from(mapStore.nodes.values())
+        .filter(n => n.id !== node.id)
+        .slice(0, 10)
+        .map(n => ({
+          id: n.id,
+          content: n.content,
+          description: n.metadata?.description as { summary: string } | undefined
+        })),
+      existingEdges: Array.from(mapStore.edges.values()).map(e => ({
+        sourceId: e.sourceId,
+        targetId: e.targetId,
+        label: e.label
+      })),
+      depth: 'deep',
+      style: 'detailed'
+    }
+
+    const suggestions = await ai.hierarchicalExpand(node.content, context, {
+      depth: 2,
+      maxPerLevel: 3,
+      style: 'detailed'
+    })
+
+    // Render the hierarchical suggestions
+    const { nodeIds } = mapRenderer.renderRichSuggestions(suggestions, node, {
+      layout: 'radial',
+      spacing: 80,
+      includeChildren: true
+    })
+
+    // Mark all new nodes as dirty for embedding
+    for (const nodeId of nodeIds) {
+      semanticStore.markDirty(nodeId)
+    }
+    ai.processQueue(
+      (nId) => mapStore.nodes.get(nId)?.content,
+      semanticStore.fieldSettings.similarityThreshold
+    )
+  } catch (error) {
+    console.error('Deep expand failed:', error)
+  } finally {
+    isAILoading.value = false
+  }
+}
+
+async function handleGenerateDescription() {
+  const node = selectedNode.value
+  if (!node) return
+
+  isAILoading.value = true
+
+  try {
+    // Get context nodes
+    const contextNodes = Array.from(mapStore.nodes.values())
+      .filter(n => n.id !== node.id)
+      .slice(0, 5)
+      .map(n => ({
+        content: n.content,
+        description: n.metadata?.description as { summary: string } | undefined
+      }))
+
+    const description = await ai.generateNodeDescription(node.content, contextNodes, 'detailed')
+
+    // Update the node with the generated description
+    mapStore.updateNode(node.id, {
+      metadata: {
+        ...node.metadata,
+        description
+      }
+    })
+  } catch (error) {
+    console.error('Failed to generate description:', error)
+  } finally {
+    isAILoading.value = false
+  }
+}
+
+async function handleGenerateMap(topic: string, options: { depth: string; style: string; domain?: string }) {
+  isAILoading.value = true
+  showGenerateMapDialog.value = false
+
+  try {
+    const depthMap: Record<string, number> = {
+      shallow: 3,
+      medium: 5,
+      deep: 7
+    }
+
+    const structure = await ai.generateMapStructure(topic, {
+      branchCount: depthMap[options.depth] || 5,
+      maxDepth: options.depth === 'shallow' ? 1 : options.depth === 'deep' ? 3 : 2,
+      style: options.style as 'concise' | 'detailed' | 'academic',
+      includeCrossConnections: options.depth !== 'shallow',
+      domain: options.domain
+    })
+
+    // Clear existing nodes if desired or render at offset
+    const startPosition = { x: 0, y: 0 }
+    const { nodeIds } = mapRenderer.renderMapStructure(structure, startPosition)
+
+    // Mark all new nodes as dirty for embedding
+    for (const nodeId of nodeIds) {
+      semanticStore.markDirty(nodeId)
+    }
+    ai.processQueue(
+      (nId) => mapStore.nodes.get(nId)?.content,
+      semanticStore.fieldSettings.similarityThreshold
+    )
+
+    // Center camera on the new map
+    camera.value = {
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      zoom: 0.8
+    }
+  } catch (error) {
+    console.error('Failed to generate map:', error)
+  } finally {
+    isAILoading.value = false
+  }
 }
 
 // Watch for node content changes to update embeddings
@@ -626,8 +852,11 @@ useHead({
           :selectedNode="selectedNode"
           :isAILoading="isAILoading"
           :aiSuggestions="aiSuggestions"
+          :richSuggestions="richSuggestions"
           @smart-expand="handleGenerateSuggestions"
+          @deep-expand="handleDeepExpand"
           @add-suggestion="handleAddSuggestion"
+          @add-rich-suggestion="handleAddRichSuggestion"
           @add-node="handleAddNodeFromSidebar"
           @add-categorized-node="handleAddCategorizedNode"
           @duplicate="handleDuplicateFromSidebar"
@@ -636,6 +865,8 @@ useHead({
           @toggle-sidebar="handleToggleSidebar"
           @highlight-nodes="handleHighlightNodes"
           @clear-highlights="handleClearHighlights"
+          @generate-map="showGenerateMapDialog = true"
+          @generate-description="handleGenerateDescription"
         />
       </div>
     </Transition>
@@ -1034,15 +1265,20 @@ useHead({
               :selected-node="selectedNode"
               :is-a-i-loading="isAILoading"
               :ai-suggestions="aiSuggestions"
+              :rich-suggestions="richSuggestions"
               class="!w-full !border-none !min-h-0"
               @smart-expand="handleGenerateSuggestions"
+              @deep-expand="handleDeepExpand"
               @add-suggestion="handleAddSuggestion"
+              @add-rich-suggestion="handleAddRichSuggestion"
               @add-node="handleAddNodeFromSidebar"
               @add-categorized-node="handleAddCategorizedNode"
               @duplicate="handleDuplicateFromSidebar"
               @delete-node="() => selectedNode && mapStore.deleteNode(selectedNode.id)"
               @navigate-to-node="handleNavigateToNode"
               @toggle-sidebar="showSidebarSheet = false"
+              @generate-map="showGenerateMapDialog = true"
+              @generate-description="handleGenerateDescription"
             />
           </div>
         </div>
@@ -1068,6 +1304,13 @@ useHead({
       :visible="mapStore.graphView.isOpen"
       @close="mapStore.closeGraphView()"
       @navigate-to-node="handleNavigateToNode"
+    />
+
+    <CanvasGenerateMapDialog
+      :visible="showGenerateMapDialog"
+      :is-loading="isAILoading"
+      @close="showGenerateMapDialog = false"
+      @generate="handleGenerateMap"
     />
 
     <!-- ═══════════════ CONTEXT MENU ═══════════════ -->

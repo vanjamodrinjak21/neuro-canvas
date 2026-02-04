@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Node } from '~/types'
-import type { AISuggestion } from '~/types'
+import type { AISuggestion, RichNodeSuggestion } from '~/types'
 import { useMapStore } from '~/stores/mapStore'
+import { getRelationshipLabel, getCategoryIcon } from '~/utils/ai-prompts'
 
 // Node category definitions
 const nodeCategories = [
@@ -17,12 +18,15 @@ const props = defineProps<{
   selectedNode: Node | null
   isAILoading?: boolean
   aiSuggestions?: AISuggestion[]
+  richSuggestions?: RichNodeSuggestion[]
   isCollapsed?: boolean
 }>()
 
 const emit = defineEmits<{
   'smart-expand': []
+  'deep-expand': []
   'add-suggestion': [suggestion: AISuggestion]
+  'add-rich-suggestion': [suggestion: RichNodeSuggestion]
   'add-node': []
   'add-categorized-node': [category: { id: string; label: string; color: string }]
   'duplicate': []
@@ -34,6 +38,8 @@ const emit = defineEmits<{
   'add-insight-node': [insight: unknown]
   'highlight-nodes': [nodeIds: string[]]
   'clear-highlights': []
+  'generate-map': []
+  'generate-description': []
 }>()
 
 const mapStore = useMapStore()
@@ -225,6 +231,35 @@ function handleDeleteNode() {
   if (props.selectedNode) {
     mapStore.deleteNode(props.selectedNode.id)
   }
+}
+
+// Category colors for rich suggestions
+const categoryColorMap: Record<string, string> = {
+  concept: '#60A5FA',
+  fact: '#4ADE80',
+  question: '#FACC15',
+  example: '#FB923C',
+  definition: '#A78BFA',
+  process: '#F472B6'
+}
+
+function getCategoryColor(category: string): string {
+  return categoryColorMap[category] || '#00D2BE'
+}
+
+function getRelationshipBgColor(relationship: string): string {
+  const colors: Record<string, string> = {
+    'is-a': 'rgba(96, 165, 250, 0.2)',
+    'has-a': 'rgba(167, 139, 250, 0.2)',
+    'related-to': 'rgba(136, 136, 144, 0.2)',
+    'causes': 'rgba(244, 114, 182, 0.2)',
+    'enables': 'rgba(74, 222, 128, 0.2)',
+    'opposes': 'rgba(239, 68, 68, 0.2)',
+    'example-of': 'rgba(251, 146, 60, 0.2)',
+    'part-of': 'rgba(0, 210, 190, 0.2)',
+    'leads-to': 'rgba(250, 204, 21, 0.2)'
+  }
+  return colors[relationship] || 'rgba(136, 136, 144, 0.2)'
 }
 </script>
 
@@ -448,13 +483,75 @@ function handleDeleteNode() {
         <!-- Loading state -->
         <template v-if="isAILoading">
           <div class="space-y-2">
-            <NcSkeleton class="h-10 rounded-lg" />
-            <NcSkeleton class="h-10 rounded-lg" />
-            <NcSkeleton class="h-10 rounded-lg" />
+            <NcSkeleton class="h-20 rounded-lg" />
+            <NcSkeleton class="h-20 rounded-lg" />
+            <NcSkeleton class="h-20 rounded-lg" />
           </div>
         </template>
 
-        <!-- Suggestions list -->
+        <!-- Rich suggestions list (enhanced) -->
+        <template v-else-if="richSuggestions && richSuggestions.length > 0">
+          <div class="space-y-3">
+            <button
+              v-for="(suggestion, index) in richSuggestions"
+              :key="`rich-${index}`"
+              class="nc-rich-suggestion-item"
+              @click="emit('add-rich-suggestion', suggestion)"
+            >
+              <!-- Title row with category icon and relationship badge -->
+              <div class="nc-rich-suggestion-header">
+                <span :class="[getCategoryIcon(suggestion.category), 'text-sm']" :style="{ color: getCategoryColor(suggestion.category) }" />
+                <span class="nc-rich-suggestion-title">{{ suggestion.title }}</span>
+                <span v-if="suggestion.relationshipToParent" class="nc-relationship-badge" :style="{ backgroundColor: getRelationshipBgColor(suggestion.relationshipToParent) }">
+                  {{ getRelationshipLabel(suggestion.relationshipToParent) }}
+                </span>
+              </div>
+
+              <!-- Description summary -->
+              <p v-if="suggestion.description?.summary" class="nc-rich-suggestion-summary">
+                {{ suggestion.description.summary }}
+              </p>
+
+              <!-- Keywords -->
+              <div v-if="suggestion.description?.keywords?.length" class="nc-rich-suggestion-keywords">
+                <span
+                  v-for="keyword in suggestion.description.keywords.slice(0, 4)"
+                  :key="keyword"
+                  class="nc-keyword-tag"
+                >
+                  {{ keyword }}
+                </span>
+              </div>
+
+              <!-- Add button indicator -->
+              <span class="nc-rich-suggestion-add">
+                <span class="i-lucide-plus text-sm" />
+              </span>
+            </button>
+          </div>
+
+          <div class="nc-suggestion-actions">
+            <button
+              class="nc-sidebar-action-btn"
+              :disabled="!selectedNode"
+              @click="emit('smart-expand')"
+            >
+              <span class="i-lucide-refresh-cw text-sm" />
+              <span>Generate more</span>
+            </button>
+            <button
+              class="nc-sidebar-action-btn nc-deep-expand-btn"
+              :disabled="!selectedNode"
+              @click="emit('deep-expand')"
+              title="Generate multi-level expansion"
+            >
+              <span class="i-lucide-git-branch text-sm" />
+              <span>Deep expand</span>
+            </button>
+          </div>
+        </template>
+
+        <!-- Legacy suggestions list (fallback) -->
         <template v-else-if="aiSuggestions && aiSuggestions.length > 0">
           <div class="space-y-2">
             <button
@@ -484,16 +581,62 @@ function handleDeleteNode() {
             <p class="nc-empty-text mb-3">
               {{ selectedNode ? 'No suggestions yet' : 'Select a node first' }}
             </p>
+            <div v-if="selectedNode" class="space-y-2">
+              <button
+                class="nc-sidebar-action-btn"
+                @click="emit('smart-expand')"
+              >
+                <span class="i-lucide-sparkles text-sm" />
+                <span>Generate ideas</span>
+              </button>
+              <button
+                class="nc-sidebar-action-btn nc-deep-expand-btn"
+                @click="emit('deep-expand')"
+              >
+                <span class="i-lucide-git-branch text-sm" />
+                <span>Deep expand</span>
+              </button>
+            </div>
             <button
-              v-if="selectedNode"
-              class="nc-sidebar-action-btn"
-              @click="emit('smart-expand')"
+              v-if="!selectedNode"
+              class="nc-sidebar-action-btn mt-2"
+              @click="emit('generate-map')"
             >
-              <span class="i-lucide-sparkles text-sm" />
-              <span>Generate ideas</span>
+              <span class="i-lucide-map text-sm" />
+              <span>Generate map from topic</span>
             </button>
           </div>
         </template>
+
+        <!-- Node description section (when node selected) -->
+        <div v-if="selectedNode" class="nc-description-section">
+          <div class="nc-section-divider" />
+          <div class="nc-field-label">AI Description</div>
+          <template v-if="selectedNode.metadata?.description">
+            <p class="nc-node-description">
+              {{ (selectedNode.metadata.description as { summary: string }).summary }}
+            </p>
+            <div v-if="(selectedNode.metadata.description as { keywords?: string[] }).keywords?.length" class="nc-rich-suggestion-keywords mt-2">
+              <span
+                v-for="keyword in (selectedNode.metadata.description as { keywords?: string[] }).keywords?.slice(0, 5)"
+                :key="keyword"
+                class="nc-keyword-tag"
+              >
+                {{ keyword }}
+              </span>
+            </div>
+          </template>
+          <template v-else>
+            <p class="nc-empty-text text-xs mb-2">No description generated</p>
+            <button
+              class="nc-sidebar-action-btn nc-small-btn"
+              @click="emit('generate-description')"
+            >
+              <span class="i-lucide-wand-2 text-xs" />
+              <span>Generate description</span>
+            </button>
+          </template>
+        </div>
       </div>
     </div>
 
@@ -992,5 +1135,141 @@ function handleDeleteNode() {
 
 .nc-explorer-item:active {
   opacity: 0.8;
+}
+
+/* ═══════════════ RICH SUGGESTION STYLES ═══════════════ */
+.nc-rich-suggestion-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  min-height: fit-content;
+  background: #141418;
+  border: 1px dashed #2A2A30;
+  border-radius: 8px;
+  color: #FAFAFA;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: left;
+}
+
+.nc-rich-suggestion-item:hover {
+  background: rgba(0, 210, 190, 0.05);
+  border-color: #00D2BE;
+  border-style: solid;
+}
+
+.nc-rich-suggestion-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nc-rich-suggestion-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #FAFAFA;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.nc-relationship-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #AAAAAE;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nc-rich-suggestion-summary {
+  font-size: 11px;
+  color: #888890;
+  line-height: 1.5;
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.nc-rich-suggestion-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.nc-keyword-tag {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: #1A1A1E;
+  border-radius: 3px;
+  color: #666670;
+}
+
+.nc-rich-suggestion-add {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #00D2BE;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.nc-rich-suggestion-item:hover .nc-rich-suggestion-add {
+  opacity: 1;
+}
+
+.nc-suggestion-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.nc-suggestion-actions .nc-sidebar-action-btn {
+  flex: 1;
+}
+
+.nc-deep-expand-btn {
+  border-color: #A78BFA !important;
+  color: #A78BFA !important;
+}
+
+.nc-deep-expand-btn:hover:not(:disabled) {
+  border-color: #A78BFA !important;
+  background: rgba(167, 139, 250, 0.1) !important;
+}
+
+.nc-description-section {
+  margin-top: 12px;
+}
+
+.nc-section-divider {
+  height: 1px;
+  background: #1A1A1E;
+  margin-bottom: 12px;
+}
+
+.nc-node-description {
+  font-size: 11px;
+  color: #888890;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+.nc-small-btn {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+}
+
+.nc-small-btn span {
+  font-size: 11px !important;
 }
 </style>

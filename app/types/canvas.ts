@@ -41,6 +41,18 @@ export interface NodeStyle {
   glowEnabled: boolean
 }
 
+// AI-generated description for nodes
+export interface NodeDescription {
+  /** 1-2 sentence explanation */
+  summary: string
+  /** Extended description with more context */
+  details?: string
+  /** Keywords for search and tagging */
+  keywords?: string[]
+  /** Timestamp when description was generated */
+  generatedAt?: number
+}
+
 export interface Node {
   id: string
   type: NodeType
@@ -52,7 +64,11 @@ export interface Node {
   collapsed?: boolean
   locked?: boolean
   isRoot?: boolean  // Main topic node marker
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown> & {
+    description?: NodeDescription
+    category?: string
+    relationshipToParent?: string
+  }
   // Semantic embedding data (populated by AI system)
   semantic?: {
     embedding?: number[]
