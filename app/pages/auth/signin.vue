@@ -12,9 +12,6 @@ try {
   const auth = useAuth()
   signIn = auth.signIn
   authStatus = auth.status
-  console.log('useAuth loaded, status:', auth.status.value)
-  console.log('signIn function exists:', typeof signIn === 'function')
-  console.log('auth object keys:', Object.keys(auth))
 } catch (e) {
   console.error('useAuth failed:', e)
 }
@@ -45,13 +42,6 @@ async function handleGithubSignin() {
   }
 }
 
-// Log on mount
-onMounted(() => {
-  console.log('Signin page mounted')
-  console.log('Auth status:', authStatus?.value)
-  console.log('Callback error:', callbackError.value)
-  console.log('Route query:', route.query)
-})
 
 // Check for error from callback
 const callbackError = computed(() => {
@@ -82,28 +72,21 @@ const canSubmit = computed(() =>
 )
 
 async function handleSignin() {
-  console.log('handleSignin called')
-  console.log('email:', email.value, 'password length:', password.value?.length)
-  console.log('signIn available:', !!signIn, 'type:', typeof signIn)
-
   message.value = ''
 
   if (!email.value || !password.value) {
-    console.log('Missing email or password')
     message.value = 'Please enter email and password'
     messageType.value = 'error'
     return
   }
 
   if (!isEmailValid.value) {
-    console.log('Invalid email')
     message.value = 'Please enter a valid email address'
     messageType.value = 'error'
     return
   }
 
   if (!signIn) {
-    console.log('signIn function not available!')
     message.value = 'Authentication service unavailable'
     messageType.value = 'error'
     return
@@ -113,27 +96,12 @@ async function handleSignin() {
   message.value = 'Signing in...'
   messageType.value = 'success'
 
-  // Test if auth API is reachable
   try {
-    const testResponse = await fetch('/api/auth/session')
-    console.log('Auth API test:', testResponse.status, await testResponse.text())
-  } catch (e) {
-    console.error('Auth API unreachable:', e)
-    message.value = 'Auth service unreachable'
-    messageType.value = 'error'
-    isLoading.value = false
-    return
-  }
-
-  try {
-    console.log('Calling signIn...')
     const result = await signIn('credentials', {
       email: email.value,
       password: password.value,
       redirect: false
     })
-
-    console.log('SignIn result:', JSON.stringify(result))
 
     if (result?.error) {
       message.value = result.error === 'CredentialsSignin'
@@ -145,18 +113,13 @@ async function handleSignin() {
     }
 
     if (result?.ok) {
-      // Success - DON'T redirect yet, show what happened
-      message.value = 'Sign-in returned OK! Check cookies in Application tab.'
-      messageType.value = 'success'
-      isLoading.value = false
-      console.log('SUCCESS! Check Application > Cookies for __Secure-next-auth.session-token')
-      // Temporarily disabled redirect for debugging:
-      // setTimeout(() => {
-      //   window.location.href = '/dashboard'
-      // }, 500)
-      return
+      // Success - redirect to dashboard
+      message.value = 'Success! Redirecting...'
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 500)
     } else {
-      message.value = 'Unexpected response: ' + JSON.stringify(result)
+      message.value = 'Sign in failed. Please try again.'
       messageType.value = 'error'
       isLoading.value = false
     }

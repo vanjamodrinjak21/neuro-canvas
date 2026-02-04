@@ -53,12 +53,12 @@ const internalValue = computed({
     >
       <SliderTrack
         :class="[
-          'relative grow rounded-full bg-nc-pencil',
-          orientation === 'horizontal' ? 'h-1.5' : 'w-1.5'
+          'relative grow rounded-full bg-nc-graphite/80 border border-nc-border',
+          orientation === 'horizontal' ? 'h-2' : 'w-2'
         ]"
       >
         <SliderRange
-          class="absolute rounded-full bg-nc-teal"
+          class="absolute rounded-full bg-nc-teal shadow-[0_0_8px_rgba(0,210,190,0.4)]"
           :class="orientation === 'horizontal' ? 'h-full' : 'w-full'"
         />
       </SliderTrack>
@@ -67,12 +67,12 @@ const internalValue = computed({
         v-for="(_, index) in modelValue"
         :key="index"
         :class="[
-          'block w-4 h-4 rounded-full bg-nc-teal shadow-nc-md',
-          'border-2 border-nc-charcoal',
-          'focus:outline-none focus:ring-2 focus:ring-nc-teal/30 focus:ring-offset-2 focus:ring-offset-nc-charcoal',
+          'block w-5 h-5 rounded-full bg-nc-teal shadow-[0_0_12px_rgba(0,210,190,0.5)]',
+          'border-2 border-nc-surface',
+          'focus:outline-none focus:ring-2 focus:ring-nc-teal/40 focus:ring-offset-2 focus:ring-offset-nc-charcoal',
           'transition-all duration-200',
-          'hover:bg-nc-teal-dark hover:shadow-nc-glow',
-          disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
+          'hover:scale-110 hover:shadow-[0_0_16px_rgba(0,210,190,0.6)]',
+          disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing active:scale-95'
         ]"
       />
     </SliderRoot>

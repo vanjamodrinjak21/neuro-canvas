@@ -124,6 +124,18 @@ export default defineConfig({
       'nc-glow-accent': '0 0 32px rgba(0, 210, 190, 0.25)'
     },
 
+    zIndex: {
+      'canvas': 0,
+      'nodes': 10,
+      'edges': 5,
+      'minimap': 90,
+      'toolbar': 100,
+      'dropdown': 200,
+      'modal': 300,
+      'toast': 400,
+      'cursor': 9999
+    },
+
     animation: {
       keyframes: {
         'nc-pulse-glow': '{0%, 100% { box-shadow: 0 0 0 0 rgba(0, 210, 190, 0.12) } 50% { box-shadow: 0 0 0 8px transparent }}',
@@ -249,6 +261,22 @@ export default defineConfig({
     'i-lucide-user',
     'i-lucide-external-link',
     'i-lucide-more-horizontal',
-    'i-lucide-git-branch'
+    'i-lucide-git-branch',
+    'i-lucide-cpu',
+    'i-lucide-bot',
+    'i-lucide-key',
+    'i-lucide-tag',
+    'i-lucide-eye',
+    'i-lucide-eye-off',
+    'i-lucide-log-out',
+    'i-lucide-mail',
+    'i-lucide-shield-check',
+    'i-lucide-lock',
+    'i-lucide-database',
+    'i-lucide-info',
+    'i-lucide-sliders-horizontal',
+    'i-lucide-wifi',
+    'i-lucide-wifi-off',
+    'i-lucide-refresh-cw'
   ]
 })

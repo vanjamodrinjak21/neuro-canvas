@@ -109,5 +109,21 @@ export const cache = {
 export const cacheKeys = {
   user: (id: string) => `user:${id}`,
   userProfile: (id: string) => `user:${id}:profile`,
-  session: (token: string) => `session:${token}`
+  session: (token: string) => `session:${token}`,
+  embedding: (textHash: string) => `emb:${textHash}`,
+  embeddingByNode: (mapId: string, nodeId: string) => `emb:map:${mapId}:node:${nodeId}`,
+  embeddingsByMap: (mapId: string) => `emb:map:${mapId}:*`
+}
+
+/**
+ * Generate a simple hash for text content
+ * Used to create cache keys for embeddings
+ */
+export function hashText(text: string): string {
+  let hash = 0
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i)
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return hash.toString(36)
 }

@@ -10,6 +10,12 @@ import { prisma } from '../../utils/prisma'
 
 const config = useRuntimeConfig()
 
+// Get OAuth credentials - check runtime config AND direct env vars (for Railway)
+const googleClientId = config.googleClientId || process.env.GOOGLE_CLIENT_ID
+const googleClientSecret = config.googleClientSecret || process.env.GOOGLE_CLIENT_SECRET
+const githubClientId = config.githubClientId || process.env.GITHUB_CLIENT_ID
+const githubClientSecret = config.githubClientSecret || process.env.GITHUB_CLIENT_SECRET
+
 // Get auth secret - check multiple sources
 const authSecret = config.authSecret || process.env.AUTH_SECRET || process.env.NUXT_AUTH_SECRET
 
@@ -42,25 +48,126 @@ const resend = config.resendApiKey || process.env.RESEND_API_KEY
 // Build providers array conditionally
 const providers: any[] = []
 
+// Debug: Log OAuth configuration
+console.log('[Auth] Google Client ID configured:', !!googleClientId, googleClientId ? googleClientId.slice(0, 20) + '...' : 'MISSING')
+console.log('[Auth] Google Client Secret configured:', !!googleClientSecret)
+console.log('[Auth] GitHub Client ID configured:', !!githubClientId, githubClientId ? githubClientId.slice(0, 10) + '...' : 'MISSING')
+console.log('[Auth] GitHub Client Secret configured:', !!githubClientSecret)
+
 // Add OAuth providers only if configured
-if (config.googleClientId && config.googleClientSecret) {
+if (googleClientId && googleClientSecret) {
+  console.log('[Auth] Adding Google provider')
   providers.push(
     GoogleProvider.default({
-      clientId: config.googleClientId,
-      clientSecret: config.googleClientSecret,
-      allowDangerousEmailAccountLinking: true
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code'
+        }
+      }
     })
   )
+} else {
+  console.log('[Auth] Google provider NOT added - missing credentials')
 }
 
-if (config.githubClientId && config.githubClientSecret) {
+if (githubClientId && githubClientSecret) {
+  console.log('[Auth] Adding GitHub provider')
   providers.push(
     GitHubProvider.default({
-      clientId: config.githubClientId,
-      clientSecret: config.githubClientSecret,
-      allowDangerousEmailAccountLinking: true
+      clientId: githubClientId,
+      clientSecret: githubClientSecret,
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        url: 'https://github.com/login/oauth/authorize',
+        params: {
+          scope: 'read:user user:email'
+        }
+      },
+      token: {
+        url: 'https://github.com/login/oauth/access_token',
+        async request(context: any) {
+          // Manual token exchange to avoid openid-client issues
+          const { code } = context.params
+          const response = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json'
+            },
+            body: JSON.stringify({
+              client_id: githubClientId,
+              client_secret: githubClientSecret,
+              code,
+              redirect_uri: context.provider.callbackUrl
+            })
+          })
+          const tokens = await response.json()
+          console.log('[Auth] GitHub token response keys:', Object.keys(tokens))
+          if (tokens.error) {
+            console.error('[Auth] GitHub token error:', tokens.error, tokens.error_description)
+            throw new Error(tokens.error_description || tokens.error)
+          }
+          // Remove fields not in our Prisma schema
+          const { refresh_token_expires_in, ...cleanTokens } = tokens
+          return { tokens: cleanTokens }
+        }
+      },
+      userinfo: {
+        url: 'https://api.github.com/user',
+        async request({ tokens }: { tokens: { access_token: string } }) {
+          console.log('[Auth] GitHub userinfo request, token exists:', !!tokens?.access_token)
+          const response = await fetch('https://api.github.com/user', {
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`,
+              'User-Agent': 'NeuroCanvas',
+              Accept: 'application/json'
+            }
+          })
+          if (!response.ok) {
+            const text = await response.text()
+            console.error('[Auth] GitHub userinfo error:', response.status, text)
+            throw new Error('Failed to fetch GitHub user')
+          }
+          const profile = await response.json()
+
+          // If no email in profile, fetch from emails endpoint
+          if (!profile.email) {
+            const emailsResponse = await fetch('https://api.github.com/user/emails', {
+              headers: {
+                Authorization: `Bearer ${tokens.access_token}`,
+                'User-Agent': 'NeuroCanvas',
+                Accept: 'application/json'
+              }
+            })
+            if (emailsResponse.ok) {
+              const emails = await emailsResponse.json()
+              const primaryEmail = emails.find((e: any) => e.primary) || emails[0]
+              if (primaryEmail) {
+                profile.email = primaryEmail.email
+              }
+            }
+          }
+
+          return profile
+        }
+      },
+      profile(profile: any) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url
+        }
+      }
     })
   )
+} else {
+  console.log('[Auth] GitHub provider NOT added - missing credentials')
 }
 
 // Add Email provider only if Resend is configured
@@ -151,6 +258,9 @@ providers.push(
   })
 )
 
+// Log which providers are registered
+console.log('[Auth] Registered providers:', providers.map((p: any) => p.id || p.name))
+
 // Determine if we're in production
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -178,25 +288,61 @@ export default NuxtAuthHandler({
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: isProduction
+        secure: isProduction,
+        domain: undefined
       }
     },
     callbackUrl: {
       name: isProduction ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url',
       options: {
         httpOnly: false,
-        sameSite: 'lax',
+        sameSite: isProduction ? 'none' : 'lax',
         path: '/',
-        secure: isProduction
+        secure: isProduction,
+        domain: undefined
       }
     },
     csrfToken: {
-      name: isProduction ? '__Host-next-auth.csrf-token' : 'next-auth.csrf-token',
+      name: isProduction ? '__Secure-next-auth.csrf-token' : 'next-auth.csrf-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: isProduction
+        secure: isProduction,
+        domain: undefined
+      }
+    },
+    pkceCodeVerifier: {
+      name: 'next-auth.pkce.code_verifier',
+      options: {
+        httpOnly: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/',
+        secure: isProduction,
+        maxAge: 900,
+        domain: undefined
+      }
+    },
+    state: {
+      name: 'next-auth.state',
+      options: {
+        httpOnly: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/',
+        secure: isProduction,
+        maxAge: 900,
+        domain: undefined
+      }
+    },
+    nonce: {
+      name: 'next-auth.nonce',
+      options: {
+        httpOnly: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/',
+        secure: isProduction,
+        maxAge: 900,
+        domain: undefined
       }
     }
   },

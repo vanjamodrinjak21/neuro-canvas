@@ -54,7 +54,7 @@ const sizeClasses: Record<string, string> = {
     <DialogPortal>
       <!-- Overlay - Dark -->
       <DialogOverlay
-        class="fixed inset-0 z-modal bg-black/60 backdrop-blur-sm
+        class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm
                data-[state=open]:animate-in data-[state=closed]:animate-out
                data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
       />
@@ -62,7 +62,7 @@ const sizeClasses: Record<string, string> = {
       <!-- Content -->
       <DialogContent
         :class="[
-          'fixed left-1/2 top-1/2 z-modal w-full -translate-x-1/2 -translate-y-1/2',
+          'fixed left-1/2 top-1/2 z-[301] w-full -translate-x-1/2 -translate-y-1/2',
           'nc-glass-elevated rounded-nc-2xl p-6 shadow-nc-xl',
           'focus:outline-none',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',

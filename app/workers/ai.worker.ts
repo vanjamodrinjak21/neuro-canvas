@@ -13,6 +13,17 @@ import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/tran
 env.cacheDir = 'indexeddb://neurocanvas-models'
 env.allowLocalModels = false
 
+// Suppress expected ONNX runtime warning about execution providers
+// This is informational - ONNX assigns shape ops to CPU for performance
+const originalWarn = console.warn
+console.warn = (...args: unknown[]) => {
+  const msg = args[0]
+  if (typeof msg === 'string' && msg.includes('Some nodes were not assigned')) {
+    return // Suppress expected ONNX warning
+  }
+  originalWarn.apply(console, args)
+}
+
 // Message types
 type MessageType =
   | 'init'

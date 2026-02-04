@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useMapStore } from '~/stores/mapStore'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 
 definePageMeta({
   layout: false
@@ -9,6 +10,7 @@ definePageMeta({
 const db = useDatabase()
 const mapStore = useMapStore()
 const router = useRouter()
+const { confirm, ConfirmDialog } = useConfirmDialog()
 
 // State
 const allMaps = ref<DBMapDocument[]>([])
@@ -61,7 +63,17 @@ function openMap(mapId: string) {
 // Delete map
 async function deleteMap(mapId: string, event: Event) {
   event.stopPropagation()
-  if (!confirm('Are you sure you want to delete this map?')) return
+
+  const confirmed = await confirm({
+    title: 'Delete Map',
+    description: 'This action cannot be undone. Are you sure you want to delete this map?',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    variant: 'danger',
+    icon: 'i-lucide-trash-2'
+  })
+
+  if (!confirmed) return
 
   try {
     await db.deleteMap(mapId)
@@ -206,6 +218,9 @@ function formatDate(timestamp: number): string {
         </div>
       </div>
     </main>
+
+    <!-- Confirm Dialog -->
+    <component :is="ConfirmDialog" />
   </div>
 </template>
 

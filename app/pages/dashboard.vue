@@ -2,6 +2,8 @@
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useMapStore } from '~/stores/mapStore'
 import { useAI } from '~/composables/useAI'
+import { useAISettings } from '~/composables/useAISettings'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 
 // Dashboard / Home page - Elevated Command Center
 definePageMeta({
@@ -15,27 +17,21 @@ const authChecked = ref(false)
 
 // Check auth on mount (SPA mode)
 onMounted(async () => {
-  console.log('Dashboard mounted, checking session...')
-  console.log('Initial session:', session.value)
-  console.log('Initial status:', status.value)
-
   try {
-    const freshSession = await getSession({ force: true })
-    console.log('Fresh session:', freshSession)
-    console.log('Session after refresh:', session.value)
-    console.log('Status after refresh:', status.value)
+    await getSession({ force: true })
   } catch (e) {
-    console.error('Session check failed:', e)
+    // Session check failed silently
   }
 
   authChecked.value = true
 
   // Redirect if not authenticated after check
   if (!session.value?.user) {
-    console.log('No user found, redirecting to signin')
     navigateTo('/auth/signin')
   } else {
-    console.log('User authenticated:', session.value.user)
+    // Initialize AI settings when user is authenticated
+    // This loads stored API keys from IndexedDB
+    await aiSettings.initialize()
   }
 })
 
@@ -43,6 +39,9 @@ const db = useDatabase()
 const mapStore = useMapStore()
 const router = useRouter()
 const ai = useAI()
+const aiSettings = useAISettings()
+const { handleSignOut, isLoading: signOutLoading } = useAuthStore()
+const { confirm, ConfirmDialog } = useConfirmDialog()
 
 // State
 const recentMaps = ref<DBMapDocument[]>([])
@@ -56,6 +55,26 @@ const aiLoading = ref(false)
 
 // Templates state
 const showTemplatesModal = ref(false)
+
+// Import modal state
+const showImportModal = ref(false)
+
+// Settings modal state
+const showSettingsModal = ref(false)
+
+// Open settings modal
+function openSettings() {
+  showSettingsModal.value = true
+}
+
+// Settings tabs
+const activeSettingsTab = ref('account')
+const settingsTabs = [
+  { value: 'account', label: 'Account', icon: 'i-lucide-user' },
+  { value: 'providers', label: 'AI Providers', icon: 'i-lucide-cpu' },
+  { value: 'personas', label: 'Personas', icon: 'i-lucide-bot' },
+  { value: 'preferences', label: 'Preferences', icon: 'i-lucide-settings' }
+]
 
 // File input ref
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -209,6 +228,8 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     showAIModal.value = false
     showTemplatesModal.value = false
+    showImportModal.value = false
+    showSettingsModal.value = false
   }
 }
 
@@ -238,24 +259,15 @@ onUnmounted(() => {
 
 // Create new map
 async function createNewMap() {
-  console.log('createNewMap called')
-  if (isCreatingMap.value) {
-    console.log('Already creating, returning')
-    return
-  }
+  if (isCreatingMap.value) return
 
   isCreatingMap.value = true
   try {
-    console.log('Creating new document...')
     mapStore.newDocument()
     const doc = mapStore.toSerializable()
-    console.log('Saving map with id:', doc.id)
     await db.saveMap(doc)
-    console.log('Navigating to:', `/map/${doc.id}`)
     await navigateTo(`/map/${doc.id}`)
-    console.log('Navigation complete')
   } catch (error) {
-    console.error('Failed to create map:', error)
     alert(`Failed to create map: ${error instanceof Error ? error.message : String(error)}`)
   } finally {
     isCreatingMap.value = false
@@ -270,7 +282,17 @@ function openMap(mapId: string) {
 // Delete map
 async function deleteMap(mapId: string, event: Event) {
   event.stopPropagation()
-  if (!confirm('Are you sure you want to delete this map?')) return
+
+  const confirmed = await confirm({
+    title: 'Delete Map',
+    description: 'This action cannot be undone. Are you sure you want to delete this map?',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    variant: 'danger',
+    icon: 'i-lucide-trash-2'
+  })
+
+  if (!confirmed) return
 
   try {
     await db.deleteMap(mapId)
@@ -340,13 +362,29 @@ async function handleAIQuickStart() {
 
 // Import handlers
 function triggerImport() {
-  fileInput.value?.click()
+  showImportModal.value = true
 }
 
 async function handleFileImport(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
 
+  await processImportedFile(file)
+
+  // Reset file input
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+// Handle file from FilePond
+async function handleFilePondFile(file: File) {
+  await processImportedFile(file)
+  showImportModal.value = false
+}
+
+// Common file processing logic
+async function processImportedFile(file: File) {
   const text = await file.text()
   const ext = file.name.split('.').pop()?.toLowerCase()
 
@@ -369,11 +407,6 @@ async function handleFileImport(event: Event) {
   // Create map from parsed structure
   const title = file.name.replace(/\.[^/.]+$/, '')
   await createMapFromNodes(nodes, title)
-
-  // Reset file input
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
 }
 
 function parseMarkdown(text: string): { content: string; level: number }[] {
@@ -571,7 +604,7 @@ async function createFromTemplate(template: typeof templates[0]) {
           <span class="status-dot" />
           <span class="status-text">All synced</span>
         </div>
-        <UserMenu />
+        <AuthProfileAvatar @click="openSettings" />
       </div>
     </header>
 
@@ -897,6 +930,91 @@ async function createFromTemplate(template: typeof templates[0]) {
         </div>
       </div>
     </Teleport>
+
+    <!-- Import Modal -->
+    <Teleport to="body">
+      <div v-if="showImportModal" class="modal-overlay" @click.self="showImportModal = false">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-icon modal-icon-import">
+              <span class="i-lucide-upload" />
+            </div>
+            <h2 class="modal-title">Import File</h2>
+            <p class="modal-subtitle">Import Markdown or OPML outline files</p>
+          </div>
+
+          <div class="modal-body">
+            <FileUploader @file-added="handleFilePondFile" />
+            <p class="import-hint">Accepts: .md, .opml</p>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-ghost" @click="showImportModal = false">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Settings Modal -->
+    <Teleport to="body">
+      <div v-if="showSettingsModal" class="modal-overlay" @click.self="showSettingsModal = false">
+        <div class="settings-modal">
+          <!-- Header -->
+          <div class="settings-modal-header">
+            <div class="settings-header-content">
+              <div class="settings-icon-box">
+                <span class="i-lucide-settings" />
+              </div>
+              <div>
+                <h2 class="settings-modal-title">Settings</h2>
+                <p class="settings-modal-subtitle">Manage your account and AI providers</p>
+              </div>
+            </div>
+            <button class="settings-close-btn" @click="showSettingsModal = false">
+              <span class="i-lucide-x" />
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="settings-modal-content">
+            <!-- Tabs -->
+            <div class="settings-tabs-nav">
+              <button
+                v-for="tab in settingsTabs"
+                :key="tab.value"
+                :class="['settings-tab', { active: activeSettingsTab === tab.value }]"
+                @click="activeSettingsTab = tab.value"
+              >
+                <span :class="[tab.icon]" />
+                <span>{{ tab.label }}</span>
+              </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="settings-tab-content">
+              <SettingsSectionsAccountSection
+                v-if="activeSettingsTab === 'account'"
+                @close="showSettingsModal = false"
+              />
+              <SettingsSectionsAIProvidersSection
+                v-else-if="activeSettingsTab === 'providers'"
+              />
+              <SettingsSectionsPersonasSection
+                v-else-if="activeSettingsTab === 'personas'"
+              />
+              <SettingsSectionsPreferencesSection
+                v-else-if="activeSettingsTab === 'preferences'"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Confirm Dialog -->
+    <component :is="ConfirmDialog" />
   </div>
 </template>
 
@@ -1204,6 +1322,33 @@ async function createFromTemplate(template: typeof templates[0]) {
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-secondary);
+}
+
+/* Sign Out Button */
+.sign-out-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sign-out-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #EF4444;
+}
+
+.sign-out-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Avatar */
@@ -2258,6 +2403,19 @@ async function createFromTemplate(template: typeof templates[0]) {
   color: var(--text-secondary);
 }
 
+.modal-icon-import {
+  background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.import-hint {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
@@ -2397,5 +2555,184 @@ async function createFromTemplate(template: typeof templates[0]) {
 
 .template-card:hover .template-preview-node {
   opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS MODAL
+   ═══════════════════════════════════════════════════════════════ */
+
+.settings-modal {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  max-height: 85vh;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 60px var(--accent-glow);
+  animation: slideUp 0.3s var(--ease);
+}
+
+.settings-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.settings-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.settings-icon-box {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--bg);
+  box-shadow: 0 4px 20px var(--accent-glow-strong);
+}
+
+.settings-modal-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+
+.settings-modal-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+}
+
+.settings-close-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.125rem;
+}
+
+.settings-close-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.settings-modal-content {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  min-height: 400px;
+  max-height: calc(85vh - 100px);
+  overflow: hidden;
+}
+
+.settings-tabs-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 180px;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  background: var(--surface-2);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.settings-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.settings-tab:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.settings-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+  box-shadow: 0 2px 12px var(--accent-glow-strong);
+}
+
+.settings-tab-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.settings-tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-tab-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-tab-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.settings-tab-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .settings-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .settings-modal-content {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .settings-tabs-nav {
+    flex-direction: row;
+    width: 100%;
+    overflow-x: auto;
+    padding: 0.25rem;
+  }
+
+  .settings-tab {
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    min-width: fit-content;
+  }
 }
 </style>

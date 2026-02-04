@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Camera, MapSettings, Node, Edge, Anchor } from '~/types'
+import type { AISettings } from '~/types/ai-settings'
+import { DEFAULT_AI_SETTINGS } from '~/types/ai-settings'
 
 // Serializable versions of Node and Edge (without Map types)
 export interface DBNode {
@@ -51,10 +53,25 @@ export interface DBPreferences {
   updatedAt: number
 }
 
+export interface DBEncryptedSecret {
+  id: string // Format: providerId
+  encryptedValue: string // AES-GCM encrypted API key
+  createdAt: number
+  updatedAt: number
+}
+
+export interface DBAISettings {
+  id: string // 'default' for main settings
+  settings: AISettings
+  updatedAt: number
+}
+
 // Dexie database class
 class NeuroCanvasDB extends Dexie {
   maps!: EntityTable<DBMapDocument, 'id'>
   preferences!: EntityTable<DBPreferences, 'id'>
+  secrets!: EntityTable<DBEncryptedSecret, 'id'>
+  aiSettings!: EntityTable<DBAISettings, 'id'>
 
   constructor() {
     super('neurocanvas')
@@ -62,6 +79,14 @@ class NeuroCanvasDB extends Dexie {
     this.version(1).stores({
       maps: 'id, title, updatedAt, createdAt, *tags',
       preferences: 'id'
+    })
+
+    // Version 2: Add AI settings tables
+    this.version(2).stores({
+      maps: 'id, title, updatedAt, createdAt, *tags',
+      preferences: 'id',
+      secrets: 'id, updatedAt',
+      aiSettings: 'id'
     })
   }
 }
@@ -158,6 +183,59 @@ export function useDatabase() {
     })
   }
 
+  // AI Settings operations
+  async function getAISettings(): Promise<AISettings> {
+    const database = await ensureDBReady()
+    const record = await database.aiSettings.get('default')
+    if (record) {
+      return record.settings
+    }
+    // Return default settings
+    return {
+      ...DEFAULT_AI_SETTINGS,
+      updatedAt: Date.now()
+    }
+  }
+
+  async function saveAISettings(settings: AISettings): Promise<void> {
+    const database = await ensureDBReady()
+    await database.aiSettings.put({
+      id: 'default',
+      settings: {
+        ...settings,
+        updatedAt: Date.now()
+      },
+      updatedAt: Date.now()
+    })
+  }
+
+  // Encrypted secrets operations
+  async function getSecret(id: string): Promise<string | undefined> {
+    const database = await ensureDBReady()
+    const record = await database.secrets.get(id)
+    return record?.encryptedValue
+  }
+
+  async function saveSecret(id: string, encryptedValue: string): Promise<void> {
+    const database = await ensureDBReady()
+    await database.secrets.put({
+      id,
+      encryptedValue,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    })
+  }
+
+  async function deleteSecret(id: string): Promise<void> {
+    const database = await ensureDBReady()
+    await database.secrets.delete(id)
+  }
+
+  async function clearAllSecrets(): Promise<void> {
+    const database = await ensureDBReady()
+    await database.secrets.clear()
+  }
+
   // Initialize on first use if in browser
   if (typeof window !== 'undefined') {
     init()
@@ -174,6 +252,14 @@ export function useDatabase() {
     getRecentMaps,
     searchMaps,
     getPreferences,
-    savePreferences
+    savePreferences,
+    // AI Settings
+    getAISettings,
+    saveAISettings,
+    // Secrets
+    getSecret,
+    saveSecret,
+    deleteSecret,
+    clearAllSecrets
   }
 }
