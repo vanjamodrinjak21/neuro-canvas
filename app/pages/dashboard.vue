@@ -4,35 +4,44 @@ import { useMapStore } from '~/stores/mapStore'
 import { useAI } from '~/composables/useAI'
 import { useAISettings } from '~/composables/useAISettings'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
+import { useMapRenderer } from '~/composables/useMapRenderer'
 
 // Dashboard / Home page - Elevated Command Center
 definePageMeta({
   layout: false
 })
 
-// Auth - handle client-side since ssr: false
-const { data: session, status, getSession } = useAuth()
+// Tauri detection
+const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+
+// Auth - In Tauri mode, skip auth entirely (fully local, no login)
+const _tauriSession = { user: { id: 'desktop-user', email: 'desktop@neurocanvas.local', name: 'Desktop User' } }
+const { data: session, status, getSession } = _isTauri
+  ? { data: ref(_tauriSession), status: ref('authenticated'), getSession: async () => _tauriSession }
+  : useAuth()
 const user = computed(() => session.value?.user)
-const authChecked = ref(false)
+const authChecked = ref(_isTauri)
 
 // Check auth on mount (SPA mode)
 onMounted(async () => {
-  try {
-    await getSession({ force: true })
-  } catch (e) {
-    // Session check failed silently
+  if (!_isTauri) {
+    try {
+      await getSession({ force: true })
+    } catch (e) {
+      // Session check failed silently
+    }
+
+    authChecked.value = true
+
+    // Redirect if not authenticated after check
+    if (!session.value?.user) {
+      navigateTo('/auth/signin')
+      return
+    }
   }
 
-  authChecked.value = true
-
-  // Redirect if not authenticated after check
-  if (!session.value?.user) {
-    navigateTo('/auth/signin')
-  } else {
-    // Initialize AI settings when user is authenticated
-    // This loads stored API keys from IndexedDB
-    await aiSettings.initialize()
-  }
+  // Initialize AI settings when ready
+  await aiSettings.initialize()
 })
 
 const db = useDatabase()
@@ -40,6 +49,7 @@ const mapStore = useMapStore()
 const router = useRouter()
 const ai = useAI()
 const aiSettings = useAISettings()
+const mapRenderer = useMapRenderer()
 const { handleSignOut, isLoading: signOutLoading } = useAuthStore()
 const { confirm, ConfirmDialog } = useConfirmDialog()
 
@@ -321,30 +331,20 @@ async function handleAIQuickStart() {
   aiLoading.value = true
 
   try {
-    const suggestions = await ai.smartExpand(aiTopic.value, [], 5)
+    // Use generateMapStructure for real AI-powered map generation
+    const structure = await ai.generateMapStructure(aiTopic.value, {
+      branchCount: 5,
+      maxDepth: 2,
+      style: 'detailed',
+      includeCrossConnections: true
+    })
 
-    // Create new map with root + children
+    // Create new map document
     mapStore.newDocument()
     mapStore.setTitle(aiTopic.value)
 
-    // Add root node
-    const rootNode = mapStore.addNode({
-      content: aiTopic.value,
-      position: { x: 400, y: 300 }
-    })
-
-    // Add child nodes in radial pattern
-    suggestions.forEach((text, i) => {
-      const angle = (i / suggestions.length) * 2 * Math.PI - Math.PI / 2
-      const childNode = mapStore.addNode({
-        content: text,
-        position: {
-          x: 400 + Math.cos(angle) * 200,
-          y: 300 + Math.sin(angle) * 200
-        }
-      })
-      mapStore.addEdge(rootNode.id, childNode.id)
-    })
+    // Render the AI-generated structure into nodes and edges
+    mapRenderer.renderMapStructure(structure, { x: 0, y: 0 })
 
     // Save and navigate
     const doc = mapStore.toSerializable()
@@ -352,9 +352,14 @@ async function handleAIQuickStart() {
     showAIModal.value = false
     aiTopic.value = ''
     await navigateTo(`/map/${doc.id}`)
-  } catch (error) {
+  } catch (error: any) {
     console.error('AI generation failed:', error)
-    alert('Failed to generate map. Please try again.')
+    const message = error?.message?.includes('No AI provider configured')
+      ? 'Please configure an AI provider with an API key in Settings first.'
+      : error?.message?.includes('No API key')
+        ? 'Please add an API key for your AI provider in Settings.'
+        : 'Failed to generate map. Please check your AI settings and try again.'
+    alert(message)
   } finally {
     aiLoading.value = false
   }
@@ -489,8 +494,11 @@ async function createMapFromNodes(nodes: { content: string; level: number }[], t
 
     nodeStack.push({ id: newNode.id, level })
     levelIndices[level]++
-    currentY += ySpacing
+    currentY += newNode.size.height + 30
   }
+
+  // Resolve any overlapping nodes after batch creation
+  mapStore.resolveOverlaps()
 
   // Save and navigate
   const doc = mapStore.toSerializable()
@@ -559,6 +567,8 @@ async function createFromTemplate(template: typeof templates[0]) {
     mapStore.addEdge(nodeIds[2], nodeIds[6])
     mapStore.addEdge(nodeIds[2], nodeIds[7])
   }
+
+  mapStore.resolveOverlaps()
 
   // Save and navigate
   const doc = mapStore.toSerializable()

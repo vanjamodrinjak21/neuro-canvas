@@ -1,6 +1,7 @@
 import type { Node, Edge, Point } from '~/types/canvas'
-import type { Insight, InsightType, SimilarityEntry } from '~/types/semantic'
+import type { Insight, InsightType, EnrichedInsight, SimilarityEntry } from '~/types/semantic'
 import { useSemanticStore } from '~/stores/semanticStore'
+import { generateInsights } from '~/ai/engine/InsightEngineV2'
 
 /**
  * Insight Engine composable
@@ -266,6 +267,56 @@ export function useInsightEngine() {
   }
 
   /**
+   * Analyze map with LLM-powered insights (v2).
+   * Runs heuristic analysis first, then enriches with LLM if provider available.
+   * Merges and deduplicates results.
+   */
+  async function analyzeMapWithAI(
+    nodes: Map<string, Node>,
+    edges: Map<string, Edge>,
+    mapTitle?: string,
+    maxInsights: number = 10
+  ): Promise<(Insight | EnrichedInsight)[]> {
+    isAnalyzing.value = true
+
+    try {
+      // Step 1: Run existing heuristic analysis
+      const heuristicInsights = await analyzeMap(nodes, edges, maxInsights)
+
+      // Step 2: Try LLM-powered analysis
+      let llmInsights: EnrichedInsight[] = []
+      try {
+        llmInsights = await generateInsights(nodes, edges, mapTitle)
+      } catch {
+        // LLM not available — heuristic results are sufficient
+      }
+
+      if (llmInsights.length === 0) {
+        return heuristicInsights
+      }
+
+      // Step 3: Merge and deduplicate
+      const merged: (Insight | EnrichedInsight)[] = [...heuristicInsights]
+      const existingTitles = new Set(heuristicInsights.map(i => i.title.toLowerCase()))
+
+      for (const llmInsight of llmInsights) {
+        // Skip if similar title already exists
+        if (!existingTitles.has(llmInsight.title.toLowerCase())) {
+          merged.push(llmInsight)
+          semanticStore.addInsight(llmInsight)
+        }
+      }
+
+      // Sort by confidence and limit
+      return merged
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, maxInsights)
+    } finally {
+      isAnalyzing.value = false
+    }
+  }
+
+  /**
    * Get insights for a specific node
    */
   function getInsightsForNode(nodeId: string): Insight[] {
@@ -288,6 +339,7 @@ export function useInsightEngine() {
 
     // Methods
     analyzeMap,
+    analyzeMapWithAI,
     findBridges,
     findGaps,
     findOutliers,

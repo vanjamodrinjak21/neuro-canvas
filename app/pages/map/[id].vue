@@ -3,12 +3,22 @@ import type { Camera, Node, Edge, Point } from '~/types/canvas'
 import type { NodeTemplate } from '~/components/canvas/NodeTemplates.vue'
 import type { ContextMenuItem } from '~/components/ui/NcContextMenu.vue'
 import type { AISuggestion, RichNodeSuggestion, GenerationContext } from '~/types'
+import type { SidebarAction } from '~/types/sidebar'
 import { useMapStore } from '~/stores/mapStore'
 import { useSemanticStore } from '~/stores/semanticStore'
 import { useDatabase } from '~/composables/useDatabase'
 import { useAutoSave } from '~/composables/useAutoSave'
 import { useAI } from '~/composables/useAI'
 import { useMapRenderer } from '~/composables/useMapRenderer'
+import { useSpringCamera } from '~/composables/useSpringCamera'
+import { useSmoothZoom } from '~/composables/useSmoothZoom'
+import { useNodeAnimations } from '~/composables/useNodeAnimations'
+import { useCameraIntelligence } from '~/composables/useCameraIntelligence'
+import { useMapRegions } from '~/composables/useMapRegions'
+import { useViewportCulling } from '~/composables/useViewportCulling'
+import { useReducedMotion } from '~/composables/useReducedMotion'
+import { useEdgeAnimations } from '~/composables/useEdgeAnimations'
+import { useSpatialHUD } from '~/composables/useSpatialHUD'
 
 // Route
 const route = useRoute()
@@ -27,16 +37,56 @@ const mapRenderer = useMapRenderer()
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
 
-// Camera
-const camera = ref<Camera>({ x: 0, y: 0, zoom: 1 })
+// Reduced motion detection
+const { isReduced: reducedMotion } = useReducedMotion()
+
+// Spring camera system
+const springCamera = useSpringCamera({ x: 0, y: 0, zoom: 1 })
+const camera = springCamera.camera
+const smoothZoom = useSmoothZoom(springCamera)
+
+// Node animation system
+const nodeAnim = useNodeAnimations()
+provide('nodeAnimations', nodeAnim)
+
+// Edge animations
+const edgeAnim = useEdgeAnimations()
+provide('edgeAnimations', edgeAnim)
+
+// Spatial HUD
+const spatialHUD = useSpatialHUD()
+provide('spatialHUD', spatialHUD)
+
+// Wire reduced motion to all animation composables
+watch(reducedMotion, (val) => {
+  springCamera.setReducedMotion(val)
+  smoothZoom.setReducedMotion(val)
+  nodeAnim.setReducedMotion(val)
+  edgeAnim.setReducedMotion(val)
+}, { immediate: true })
+
+// Map regions for minimap
+const mapRegions = useMapRegions()
+provide('mapRegions', mapRegions.regions)
+
+// Viewport culling (spatial index)
+const viewportCulling = useViewportCulling()
+
+// Camera intelligence
+const cameraIntel = useCameraIntelligence(
+  springCamera,
+  () => mapStore.nodes,
+  () => mapStore.selection.nodeIds,
+  nodeAnim
+)
 
 // Tools - now includes 'connect' for connection tool
 const activeTool = ref<'select' | 'pan' | 'node' | 'connect'>('select')
 
 // Title editing
 const isEditingTitle = ref(false)
-const titleInput = ref<HTMLElement | null>(null)
 const editedTitle = ref('')
+const topBarRef = ref<{ focusTitleInput: () => void } | null>(null)
 
 // Panels
 const showTemplates = ref(false)
@@ -72,19 +122,16 @@ const richSuggestions = ref<RichNodeSuggestion[]>([])
 // Map generation dialog
 const showGenerateMapDialog = ref(false)
 
-// Overflow menu
-const showOverflowMenu = ref(false)
+// Overflow menu (managed by OverflowMenu component internally)
 
 // Sidebar visibility (desktop always visible, mobile as sheet)
 const isMobile = ref(false)
 const showSidebarSheet = ref(false)
 const sidebarCollapsed = ref(false)
 
-// Zoom presets popover
-const showZoomPresets = ref(false)
+// Zoom presets (managed by ZoomControls component internally)
 
-// Minimap visibility (toggle with M key)
-const showMinimap = ref(false)
+// Minimap: always visible on desktop (no toggle)
 
 // Semantic field visibility (toggle with S key)
 const semanticFieldEnabled = computed({
@@ -92,8 +139,12 @@ const semanticFieldEnabled = computed({
   set: (val) => semanticStore.toggleField(val)
 })
 
-// Canvas ref for highlighting
-const canvasRef = ref<{ highlightedNodeIds: Set<string>; dimmedNodeIds: Set<string> } | null>(null)
+// Canvas ref for highlighting and wheel listener
+const canvasRef = ref<{ containerRef: HTMLDivElement | null; isDragOver: boolean; highlightedNodeIds: Set<string>; dimmedNodeIds: Set<string> } | null>(null)
+
+// Canvas container dimensions for minimap viewport calculation
+const canvasContainerWidth = ref(0)
+const canvasContainerHeight = ref(0)
 
 // Load map
 onMounted(async () => {
@@ -114,7 +165,7 @@ onMounted(async () => {
     const map = await db.getMap(mapId.value)
     if (map) {
       mapStore.fromSerializable(map)
-      camera.value = map.camera
+      springCamera.setCurrent(map.camera)
     } else {
       mapStore.newDocument()
     }
@@ -126,6 +177,14 @@ onMounted(async () => {
 
     // Initialize AI in background
     ai.initialize()
+
+    // Trigger edge entrance animations on map load
+    if (mapStore.edges.size > 0) {
+      edgeAnim.triggerEntranceAll(mapStore.edges, 30)
+    }
+
+    // Compute initial regions
+    mapRegions.scheduleRecompute(mapStore.nodes)
 
     // Mark all existing nodes as dirty for initial embedding
     const nodeIds = Array.from(mapStore.nodes.keys())
@@ -145,8 +204,43 @@ onMounted(async () => {
   }
 })
 
+// Attach non-passive wheel listener for smooth zoom (must be non-passive to preventDefault)
+let wheelCleanup: (() => void) | null = null
+
+watch(canvasRef, (ref) => {
+  // Clean up old listener
+  if (wheelCleanup) {
+    wheelCleanup()
+    wheelCleanup = null
+  }
+  if (ref?.containerRef) {
+    const el = ref.containerRef
+    const rect = el.getBoundingClientRect()
+    smoothZoom.setContainerRect(rect)
+    canvasContainerWidth.value = rect.width
+    canvasContainerHeight.value = rect.height
+    el.addEventListener('wheel', smoothZoom.handleWheel, { passive: false })
+    wheelCleanup = () => el.removeEventListener('wheel', smoothZoom.handleWheel)
+
+    // Update rect on resize + track container dims for minimap
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect()
+      smoothZoom.setContainerRect(r)
+      canvasContainerWidth.value = r.width
+      canvasContainerHeight.value = r.height
+    })
+    ro.observe(el)
+    const oldCleanup = wheelCleanup
+    wheelCleanup = () => {
+      oldCleanup()
+      ro.disconnect()
+    }
+  }
+}, { immediate: true })
+
 onUnmounted(() => {
   autoSave.stop()
+  if (wheelCleanup) wheelCleanup()
   document.body.classList.remove('canvas-page')
 })
 
@@ -164,18 +258,7 @@ async function handleSave() {
 function startEditingTitle() {
   editedTitle.value = mapStore.title as unknown as string
   isEditingTitle.value = true
-  nextTick(() => {
-    const el = titleInput.value as HTMLElement | null
-    if (el) {
-      el.focus()
-      // Select all text in contenteditable
-      const range = document.createRange()
-      range.selectNodeContents(el)
-      const sel = window.getSelection()
-      sel?.removeAllRanges()
-      sel?.addRange(range)
-    }
-  })
+  topBarRef.value?.focusTitleInput()
 }
 
 function saveTitle() {
@@ -208,7 +291,6 @@ onKeyStroke('Escape', () => {
   showTemplates.value = false
   contextMenuVisible.value = false
   showShortcutsModal.value = false
-  showOverflowMenu.value = false
   if (isEditingTitle.value) cancelEditTitle()
 })
 onKeyStroke('s', (e) => {
@@ -230,7 +312,79 @@ onKeyStroke('b', (e) => {
     showBacklinksPanel.value = !showBacklinksPanel.value
   }
 })
-onKeyStroke('m', () => showMinimap.value = !showMinimap.value)
+// M key: minimap is now always visible, no toggle needed
+
+// Keyboard camera navigation
+onKeyStroke('ArrowLeft', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    springCamera.setTarget({ x: camera.value.x + 200 }, 'snappy')
+  }
+})
+onKeyStroke('ArrowRight', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    springCamera.setTarget({ x: camera.value.x - 200 }, 'snappy')
+  }
+})
+onKeyStroke('ArrowUp', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    springCamera.setTarget({ y: camera.value.y + 200 }, 'snappy')
+  }
+})
+onKeyStroke('ArrowDown', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    springCamera.setTarget({ y: camera.value.y - 200 }, 'snappy')
+  }
+})
+onKeyStroke('=', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    zoomIn()
+  }
+})
+onKeyStroke('-', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    zoomOut()
+  }
+})
+onKeyStroke('0', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    fitToContent()
+  }
+})
+onKeyStroke('1', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    resetZoom()
+  }
+})
+onKeyStroke('Tab', (e) => {
+  e.preventDefault()
+  const nodeId = cameraIntel.cycleNode(e.shiftKey ? 'prev' : 'next')
+  if (nodeId) mapStore.select([nodeId])
+})
+onKeyStroke('Home', (e) => {
+  e.preventDefault()
+  const nodeId = cameraIntel.flyToRoot()
+  if (nodeId) mapStore.select([nodeId])
+})
+onKeyStroke('f', (e) => {
+  if (!e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    cameraIntel.flyToSelection()
+  }
+})
+onKeyStroke('Backspace', (e) => {
+  // Only navigate back if no editing is active and no selection to delete
+  if (!e.ctrlKey && !e.metaKey && mapStore.selection.nodeIds.size === 0 && mapStore.selection.edgeIds.size === 0) {
+    cameraIntel.goBack()
+  }
+})
 onKeyStroke('s', (e) => {
   // S without modifier toggles semantic field
   if (!e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -308,7 +462,17 @@ function changeNodeColor(color: string) {
 }
 
 function handleDeleteNode() {
-  if (contextMenuTargetNode.value) mapStore.deleteNode(contextMenuTargetNode.value.id)
+  if (contextMenuTargetNode.value) {
+    const node = contextMenuTargetNode.value
+    // Snapshot for exit animation before deleting
+    nodeAnim.exitNode(node.id, {
+      position: { ...node.position },
+      size: { ...node.size },
+      content: node.content,
+      style: { ...node.style }
+    })
+    mapStore.deleteNode(node.id)
+  }
   contextMenuVisible.value = false
 }
 
@@ -333,16 +497,8 @@ function handleOpenLocalGraph() {
 }
 
 function handleNavigateToNode(nodeId: string) {
-  const node = mapStore.nodes.get(nodeId)
-  if (node) {
-    // Center camera on the node
-    camera.value = {
-      x: -node.position.x + window.innerWidth / 2 - node.size.width / 2,
-      y: -node.position.y + window.innerHeight / 2 - node.size.height / 2,
-      zoom: camera.value.zoom
-    }
-    mapStore.select([nodeId])
-  }
+  cameraIntel.flyToNode(nodeId, { preset: 'snappy', pulse: true })
+  mapStore.select([nodeId])
 }
 
 function handleAddNode() {
@@ -387,7 +543,11 @@ async function handleSmartExpand() {
       // Optionally auto-add the suggestions (or let user choose from sidebar)
       // For context menu, we auto-add them
       if (contextMenuTargetNode.value) {
-        mapRenderer.renderRichSuggestions(suggestions, node, { layout: 'vertical', spacing: 80 })
+        const result = mapRenderer.renderRichSuggestions(suggestions, node, { layout: 'vertical', spacing: 80 })
+        // Trigger batch enter animation for AI-generated nodes
+        if (result?.nodeIds) {
+          nodeAnim.enterNodesBatch(result.nodeIds, 60, 'ai')
+        }
         richSuggestions.value = []
       }
     } catch (enhancedError) {
@@ -401,15 +561,18 @@ async function handleSmartExpand() {
       const suggestions = await ai.smartExpand(node.content, basicContext, 3)
       const baseX = node.position.x + node.size.width + 50
       let offsetY = 0
+      const newIds: string[] = []
 
       for (const suggestion of suggestions) {
-        mapStore.addNode({
+        const newNode = mapStore.addNode({
           position: { x: baseX, y: node.position.y + offsetY },
           content: suggestion,
           style: { ...node.style, borderColor: '#00D2BE' }
         })
-        offsetY += 80
+        newIds.push(newNode.id)
+        offsetY += newNode.size.height + 20
       }
+      mapStore.resolveOverlaps(newIds)
     }
   } catch (error) {
     console.error('Smart Expand failed:', error)
@@ -438,33 +601,31 @@ function handleTemplateSelect(template: NodeTemplate) {
   showTemplates.value = false
 }
 
-// Zoom
+// Zoom — spring-based
 function zoomIn() {
-  camera.value.zoom = Math.min(camera.value.zoom * 1.2, 2)
+  springCamera.setTarget({ zoom: Math.min(camera.value.zoom * 1.2, 4) }, 'snappy')
 }
 
 function zoomOut() {
-  camera.value.zoom = Math.max(camera.value.zoom / 1.2, 0.25)
+  springCamera.setTarget({ zoom: Math.max(camera.value.zoom / 1.2, 0.15) }, 'snappy')
 }
 
 function fitToContent() {
-  mapStore.fitToContent()
-  camera.value = { ...mapStore.camera as unknown as Camera }
+  cameraIntel.fitToContent(80)
 }
 
 function setZoom(value: number) {
-  camera.value.zoom = Math.max(0.25, Math.min(2, value))
-  showZoomPresets.value = false
+  springCamera.setTarget({ zoom: Math.max(0.15, Math.min(4, value)) }, 'snappy')
 }
 
 function resetZoom() {
-  camera.value.zoom = 1
+  springCamera.setTarget({ zoom: 1 }, 'snappy')
 }
 
-// Handle zoom slider
+// Handle zoom slider — instant for direct manipulation
 function handleZoomSlider(event: Event) {
   const target = event.target as HTMLInputElement
-  camera.value.zoom = parseFloat(target.value)
+  springCamera.setCurrent({ ...camera.value, zoom: parseFloat(target.value) })
 }
 
 // Sidebar actions
@@ -482,11 +643,10 @@ function handleAddNodeFromSidebar() {
   mapStore.select([node.id])
 
   // Navigate camera to show the new node
-  camera.value = {
+  springCamera.setTarget({
     x: -node.position.x + 400,
-    y: -node.position.y + 300,
-    zoom: camera.value.zoom
-  }
+    y: -node.position.y + 300
+  }, 'snappy')
 }
 
 function handleAddCategorizedNode(category: { id: string; label: string; color: string }) {
@@ -505,15 +665,74 @@ function handleAddCategorizedNode(category: { id: string; label: string; color: 
   mapStore.select([node.id])
 
   // Navigate camera to show the new node
-  camera.value = {
+  springCamera.setTarget({
     x: -node.position.x + 400,
-    y: -node.position.y + 300,
-    zoom: camera.value.zoom
-  }
+    y: -node.position.y + 300
+  }, 'snappy')
 }
 
 function handleToggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
+function handleSidebarAction(action: SidebarAction) {
+  switch (action.type) {
+    case 'nav:navigate-to-node':
+      handleNavigateToNode(action.nodeId)
+      break
+    case 'nav:toggle-sidebar':
+      handleToggleSidebar()
+      showSidebarSheet.value = false
+      break
+    case 'node:add':
+      handleAddNodeFromSidebar()
+      break
+    case 'node:add-categorized':
+      handleAddCategorizedNode(action.category)
+      break
+    case 'node:duplicate':
+      handleDuplicateFromSidebar()
+      break
+    case 'node:delete':
+      if (selectedNode.value) mapStore.deleteNode(selectedNode.value.id)
+      break
+    case 'ai:smart-expand':
+      handleGenerateSuggestions()
+      break
+    case 'ai:deep-expand':
+      handleDeepExpand()
+      break
+    case 'ai:add-suggestion':
+      handleAddSuggestion(action.suggestion)
+      break
+    case 'ai:add-rich-suggestion':
+      handleAddRichSuggestion(action.suggestion)
+      break
+    case 'ai:generate-map':
+      showGenerateMapDialog.value = true
+      break
+    case 'ai:generate-description':
+      handleGenerateDescription()
+      break
+    case 'insight:add-node':
+      // insight node handled by InsightPanel internally
+      break
+    case 'insight:highlight-nodes':
+      handleHighlightNodes(action.nodeIds)
+      break
+    case 'insight:clear-highlights':
+      handleClearHighlights()
+      break
+    case 'agent:apply-action':
+      // Agent actions handled when agent panel is implemented
+      break
+    case 'drag:start-category':
+      // Drag state managed by browser drag events
+      break
+    case 'drag:start-node':
+      // Drag state managed by browser drag events
+      break
+  }
 }
 
 function handleDuplicateFromSidebar() {
@@ -600,11 +819,12 @@ function handleAddSuggestion(suggestion: AISuggestion) {
   const newNode = mapStore.addNode({
     position: {
       x: node.position.x + node.size.width + 50,
-      y: node.position.y + (aiSuggestions.value.indexOf(suggestion) * 80)
+      y: node.position.y + (aiSuggestions.value.indexOf(suggestion) * (node.size.height + 20))
     },
     content: suggestion.content,
     style: { ...node.style, borderColor: '#00D2BE' }
   })
+  mapStore.resolveOverlaps([newNode.id])
 
   // Create edge from selected node to new node
   mapStore.addEdge(node.id, newNode.id)
@@ -682,6 +902,9 @@ async function handleDeepExpand() {
       spacing: 80,
       includeChildren: true
     })
+
+    // Trigger batch enter animation for AI-generated nodes
+    nodeAnim.enterNodesBatch(nodeIds, 60, 'ai')
 
     // Mark all new nodes as dirty for embedding
     for (const nodeId of nodeIds) {
@@ -763,17 +986,51 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
     )
 
     // Center camera on the new map
-    camera.value = {
+    springCamera.setTarget({
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
       zoom: 0.8
-    }
+    }, 'navigation')
   } catch (error) {
     console.error('Failed to generate map:', error)
   } finally {
     isAILoading.value = false
   }
 }
+
+// Recompute regions and spatial index when nodes change
+watch(() => mapStore.nodes.size, () => {
+  mapRegions.scheduleRecompute(mapStore.nodes)
+  viewportCulling.rebuild(mapStore.nodes)
+})
+
+// Track node set for enter/exit animations
+let knownNodeIds = new Set<string>()
+watch(
+  () => mapStore.nodes.size,
+  () => {
+    const currentIds = new Set(mapStore.nodes.keys())
+
+    // Detect newly added nodes
+    for (const id of currentIds) {
+      if (!knownNodeIds.has(id)) {
+        nodeAnim.enterNode(id, 'user')
+      }
+    }
+
+    // Detect deleted nodes — snapshot them for exit animation
+    for (const id of knownNodeIds) {
+      if (!currentIds.has(id)) {
+        // Node was deleted — we can't snapshot it anymore since it's gone
+        // Exit animations need to be triggered BEFORE deletion
+        // This watcher handles the case where deletion happens without pre-snapshot
+      }
+    }
+
+    knownNodeIds = currentIds
+  },
+  { flush: 'post' }
+)
 
 // Watch for node content changes to update embeddings
 watch(
@@ -835,12 +1092,8 @@ useHead({
 </script>
 
 <template>
-  <div
-    class="h-screen w-screen overflow-hidden relative flex"
-    :style="{ backgroundColor: '#0A0A0C' }"
-    @click="showOverflowMenu = false; showZoomPresets = false"
-  >
-    <!-- ═══════════════ LEFT SIDEBAR (Desktop) ═══════════════ -->
+  <div class="h-screen w-screen overflow-hidden relative flex bg-nc-bg">
+    <!-- ═══════════════ LEFT SIDEBAR (Desktop — UNTOUCHED) ═══════════════ -->
     <Transition
       enter-active-class="transition-all duration-300 ease-out"
       leave-active-class="transition-all duration-200 ease-in"
@@ -848,30 +1101,16 @@ useHead({
       leave-to-class="-translate-x-full opacity-0"
     >
       <div v-if="!sidebarCollapsed" class="nc-sidebar-wrapper">
-        <CanvasSidebar
-          :selectedNode="selectedNode"
-          :isAILoading="isAILoading"
-          :aiSuggestions="aiSuggestions"
-          :richSuggestions="richSuggestions"
-          @smart-expand="handleGenerateSuggestions"
-          @deep-expand="handleDeepExpand"
-          @add-suggestion="handleAddSuggestion"
-          @add-rich-suggestion="handleAddRichSuggestion"
-          @add-node="handleAddNodeFromSidebar"
-          @add-categorized-node="handleAddCategorizedNode"
-          @duplicate="handleDuplicateFromSidebar"
-          @delete-node="() => selectedNode && mapStore.deleteNode(selectedNode.id)"
-          @navigate-to-node="handleNavigateToNode"
-          @toggle-sidebar="handleToggleSidebar"
-          @highlight-nodes="handleHighlightNodes"
-          @clear-highlights="handleClearHighlights"
-          @generate-map="showGenerateMapDialog = true"
-          @generate-description="handleGenerateDescription"
+        <CanvasSidebarShell
+          :selected-node="selectedNode"
+          :is-a-i-loading="isAILoading"
+          :ai-suggestions="aiSuggestions"
+          :rich-suggestions="richSuggestions"
+          @action="handleSidebarAction"
         />
       </div>
     </Transition>
 
-    <!-- Sidebar show button (when collapsed) -->
     <button
       v-if="sidebarCollapsed"
       class="nc-sidebar-show-btn"
@@ -882,342 +1121,77 @@ useHead({
 
     <!-- ═══════════════ MAIN CANVAS AREA ═══════════════ -->
     <div class="flex-1 relative">
-      <!-- ═══════════════ CANVAS BACKGROUND ═══════════════ -->
+      <!-- Canvas Background -->
       <div class="absolute inset-0 pointer-events-none z-0">
         <div class="nc-canvas-grid absolute inset-0" />
       </div>
 
-      <!-- ═══════════════ LOADING ═══════════════ -->
-      <div v-if="isLoading" class="absolute inset-0 z-50 nc-center" style="background: #0A0A0C">
-        <div class="text-center">
-          <div class="w-12 h-12 rounded-full border-2 border-nc-accent border-t-transparent animate-spin mx-auto mb-4" />
-          <p class="text-nc-ink-muted font-display">Loading map...</p>
-        </div>
-      </div>
+      <!-- Overlays (loading, error, drop zone) -->
+      <CanvasCanvasOverlay
+        :loading="isLoading"
+        :error="loadError"
+        :is-drag-over="canvasRef?.isDragOver ?? false"
+      />
 
-      <!-- ═══════════════ ERROR ═══════════════ -->
-      <div v-else-if="loadError" class="absolute inset-0 z-50 nc-center" style="background: #0A0A0C">
-        <div class="text-center">
-          <div class="w-16 h-16 rounded-full bg-nc-error/10 nc-center mx-auto mb-4">
-            <span class="i-lucide-alert-circle text-nc-error text-2xl" />
-          </div>
-          <h2 class="text-xl font-display font-semibold text-nc-ink mb-2">Failed to load map</h2>
-          <p class="text-nc-ink-muted mb-6">{{ loadError }}</p>
-          <NcButton variant="primary" @click="router.push('/dashboard')">Go to Dashboard</NcButton>
-        </div>
-      </div>
-
-      <!-- ═══════════════ CANVAS ═══════════════ -->
+      <!-- Canvas -->
       <CanvasInfiniteCanvas
-        v-else
+        v-if="!isLoading && !loadError"
         ref="canvasRef"
         :camera="camera"
         :tool="activeTool"
         class="absolute inset-0"
-        @update:camera="camera = $event"
+        @update:camera="springCamera.setCurrent($event)"
+        @pan-end="(v: { vx: number; vy: number }) => springCamera.addVelocity(v.vx, v.vy)"
         @contextmenu="handleCanvasContextMenu"
         @drop-category="handleDropCategory"
         @drop-node="handleDropNode"
       />
 
-    <!-- ═══════════════ TOP BAR ═══════════════ -->
-    <header class="absolute top-4 left-4 right-4 z-200 pointer-events-none">
-      <div class="nc-between">
-        <!-- Left: Back + Title (no container) -->
-        <div class="pointer-events-auto flex items-center gap-4">
-          <NuxtLink
-            to="/dashboard"
-            class="w-8 h-8 rounded-md flex items-center justify-center text-[#888890] hover:text-[#FAFAFA] transition-colors"
-            aria-label="Back to dashboard"
-          >
-            <span class="i-lucide-arrow-left text-lg" />
-          </NuxtLink>
-
-          <span
-            v-if="isEditingTitle"
-            ref="titleInput"
-            contenteditable="true"
-            :style="{
-              display: 'inline-block',
-              minWidth: '60px',
-              maxWidth: '200px',
-              background: '#1A1A1E',
-              color: '#FAFAFA',
-              fontWeight: '500',
-              fontSize: '14px',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              border: '1px solid #00D2BE',
-              outline: 'none',
-              caretColor: '#00D2BE',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden'
-            }"
-            @keydown.enter.prevent="saveTitle"
-            @keydown.escape="cancelEditTitle"
-            @blur="saveTitle"
-            @input="editedTitle = ($event.target as HTMLElement).textContent || ''"
-          >{{ editedTitle }}</span>
-          <button
-            v-else
-            class="text-[#FAFAFA] font-medium text-sm hover:text-[#00D2BE] transition-colors"
-            @click="startEditingTitle"
-          >
-            {{ mapStore.title }}
-          </button>
-
-          <!-- Inline save status -->
-          <span class="flex items-center gap-1.5 text-[11px] text-[#555558]">
-            <template v-if="autoSave.isSaving.value">
-              <span class="i-lucide-loader-2 animate-spin text-[#888890]" />
-            </template>
-            <template v-else-if="!mapStore.isDirty">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#00D2BE]" />
-              <span>Saved</span>
-            </template>
-            <template v-else>
-              <span class="text-[#888890]">Unsaved</span>
-            </template>
-          </span>
-        </div>
-
-        <!-- Right: AI Status + AI Expand + Overflow Menu -->
-        <div class="pointer-events-auto flex items-center gap-3">
-          <!-- AI Status Indicator -->
-          <CanvasAIStatusIndicator />
-
-          <button
-            class="nc-ai-btn"
-            :disabled="!selectedNode || isAILoading"
-            @click="handleSmartExpand"
-          >
-            <span class="i-lucide-sparkles" :class="isAILoading ? 'animate-spin' : ''" />
-            AI Expand
-          </button>
-
-          <!-- Overflow menu trigger -->
-          <div class="relative">
-            <button
-              class="w-8 h-8 rounded-md flex items-center justify-center text-[#888890] hover:text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors"
-              @click="showOverflowMenu = !showOverflowMenu"
-            >
-              <span class="i-lucide-more-horizontal text-lg" />
-            </button>
-
-            <!-- Overflow Menu Dropdown -->
-            <Transition
-              enter-active-class="transition-all duration-150 ease-out"
-              leave-active-class="transition-all duration-100 ease-in"
-              enter-from-class="opacity-0 scale-95"
-              leave-to-class="opacity-0 scale-95"
-            >
-              <div
-                v-if="showOverflowMenu"
-                class="absolute right-0 top-full mt-2 w-48 bg-[#111114] border border-[#1E1E22] rounded-xl p-1.5 shadow-lg"
-                @click.stop
-              >
-                <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors disabled:opacity-40"
-                  :disabled="!mapStore.canUndo()"
-                  @click="mapStore.undo(); showOverflowMenu = false"
-                >
-                  <span class="i-lucide-undo text-base" />
-                  <span class="flex-1 text-left">Undo</span>
-                  <span class="text-[11px] text-[#555558]">⌘Z</span>
-                </button>
-                <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors disabled:opacity-40"
-                  :disabled="!mapStore.canRedo()"
-                  @click="mapStore.redo(); showOverflowMenu = false"
-                >
-                  <span class="i-lucide-redo text-base" />
-                  <span class="flex-1 text-left">Redo</span>
-                  <span class="text-[11px] text-[#555558]">⌘⇧Z</span>
-                </button>
-
-                <div class="h-px bg-[#1E1E22] my-1.5" />
-
-                <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors disabled:opacity-40"
-                  :disabled="!mapStore.isDirty"
-                  @click="handleSave(); showOverflowMenu = false"
-                >
-                  <span class="i-lucide-save text-base" />
-                  <span class="flex-1 text-left">Save</span>
-                  <span class="text-[11px] text-[#555558]">⌘S</span>
-                </button>
-                <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors"
-                  @click="showOverflowMenu = false"
-                >
-                  <span class="i-lucide-share text-base" />
-                  <span class="flex-1 text-left">Share</span>
-                </button>
-                <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors"
-                  @click="showOverflowMenu = false"
-                >
-                  <span class="i-lucide-download text-base" />
-                  <span class="flex-1 text-left">Export</span>
-                </button>
-
-                <div class="h-px bg-[#1E1E22] my-1.5" />
-
-                <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors"
-                  @click="showShortcutsModal = true; showOverflowMenu = false"
-                >
-                  <span class="i-lucide-help-circle text-base" />
-                  <span class="flex-1 text-left">Help</span>
-                  <span class="text-[11px] text-[#555558]">?</span>
-                </button>
-                <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FAFAFA] hover:bg-[#1A1A1E] transition-colors"
-                  @click="showOverflowMenu = false"
-                >
-                  <span class="i-lucide-settings text-base" />
-                  <span class="flex-1 text-left">Settings</span>
-                </button>
-              </div>
-            </Transition>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    </div><!-- End of main canvas area -->
-
-    <!-- ═══════════════ BOTTOM TOOLBAR ═══════════════ -->
-    <div class="nc-bottom-toolbar">
-      <!-- Left: Tool buttons -->
-      <div class="nc-tool-group">
-        <button
-          :class="['nc-bottom-tool-btn', activeTool === 'select' && 'active']"
-          title="Select (V)"
-          @click="activeTool = 'select'"
-        >
-          <span class="i-lucide-mouse-pointer text-base" />
-          <span v-if="activeTool === 'select'" class="nc-tool-indicator" />
-        </button>
-        <button
-          :class="['nc-bottom-tool-btn', activeTool === 'pan' && 'active']"
-          title="Pan (H)"
-          @click="activeTool = 'pan'"
-        >
-          <span class="i-lucide-hand text-base" />
-          <span v-if="activeTool === 'pan'" class="nc-tool-indicator" />
-        </button>
-        <button
-          :class="['nc-bottom-tool-btn', activeTool === 'node' && 'active']"
-          title="Add Node (N)"
-          @click="activeTool = 'node'"
-        >
-          <span class="i-lucide-plus text-base" />
-          <span v-if="activeTool === 'node'" class="nc-tool-indicator" />
-        </button>
-        <button
-          :class="['nc-bottom-tool-btn', activeTool === 'connect' && 'active']"
-          title="Connect (C)"
-          @click="activeTool = 'connect'"
-        >
-          <span class="i-lucide-move-diagonal text-base" />
-          <span v-if="activeTool === 'connect'" class="nc-tool-indicator" />
-        </button>
-
-        <!-- Divider -->
-        <div class="w-px h-5 bg-[#2A2A30] mx-1" />
-
-        <!-- Semantic Field Toggle -->
-        <button
-          :class="['nc-bottom-tool-btn', semanticFieldEnabled && 'active']"
-          title="Toggle Semantic Field (S)"
-          @click="semanticStore.toggleField()"
-        >
-          <span class="i-lucide-network text-base" />
-          <span v-if="semanticFieldEnabled" class="nc-tool-indicator" />
-        </button>
-      </div>
-
-      <!-- Center: Zoom slider -->
-      <div class="nc-zoom-control">
-        <button
-          class="nc-zoom-btn"
-          title="Zoom out"
-          @click="zoomOut"
-        >
-          <span class="i-lucide-minus text-sm" />
-        </button>
-
-        <div class="nc-zoom-slider-wrapper">
-          <input
-            type="range"
-            min="0.25"
-            max="2"
-            step="0.05"
-            :value="camera.zoom"
-            class="nc-zoom-slider"
-            @input="handleZoomSlider"
-            @dblclick="resetZoom"
-          >
-        </div>
-
-        <button
-          class="nc-zoom-btn"
-          title="Zoom in"
-          @click="zoomIn"
-        >
-          <span class="i-lucide-plus text-sm" />
-        </button>
-
-        <!-- Zoom percentage button with presets -->
-        <div class="relative">
-          <button
-            class="nc-zoom-percentage"
-            @click.stop="showZoomPresets = !showZoomPresets"
-          >
-            {{ Math.round(camera.zoom * 100) }}%
-          </button>
-
-          <!-- Zoom presets popover -->
-          <Transition
-            enter-active-class="transition-all duration-150 ease-out"
-            leave-active-class="transition-all duration-100 ease-in"
-            enter-from-class="opacity-0 translate-y-2"
-            leave-to-class="opacity-0 translate-y-2"
-          >
-            <div
-              v-if="showZoomPresets"
-              class="nc-zoom-presets"
-              @click.stop
-            >
-              <button @click="setZoom(0.25)">25%</button>
-              <button @click="setZoom(0.5)">50%</button>
-              <button @click="setZoom(0.75)">75%</button>
-              <button @click="setZoom(1)">100%</button>
-              <button @click="setZoom(1.5)">150%</button>
-              <button @click="setZoom(2)">200%</button>
-              <div class="nc-zoom-presets-divider" />
-              <button @click="fitToContent">Fit to content</button>
-            </div>
-          </Transition>
-        </div>
-      </div>
-
-      <!-- Right: Shortcuts hint -->
-      <div class="nc-toolbar-right">
-        <button
-          class="nc-shortcuts-btn"
-          @click="showShortcutsModal = true"
-        >
-          <span class="i-lucide-keyboard text-sm" />
-          <span class="hidden sm:inline">Shortcuts</span>
-        </button>
-      </div>
+      <!-- Top Bar -->
+      <CanvasTopBar
+        ref="topBarRef"
+        :is-editing-title="isEditingTitle"
+        :edited-title="editedTitle"
+        :is-a-i-loading="isAILoading"
+        :has-selection="!!selectedNode"
+        @start-editing="startEditingTitle"
+        @save-title="saveTitle"
+        @cancel-edit="cancelEditTitle"
+        @title-input="editedTitle = $event"
+        @smart-expand="handleSmartExpand"
+        @save="handleSave"
+        @open-shortcuts="showShortcutsModal = true"
+        @undo="mapStore.undo()"
+        @redo="mapStore.redo()"
+      />
     </div>
 
-    <!-- Minimap (toggleable with M key) -->
-    <div v-if="showMinimap" class="absolute bottom-20 right-4 z-toolbar pointer-events-auto hidden md:block">
-      <Minimap :camera="camera" @update:camera="camera = $event" />
+    <!-- ═══════════════ BOTTOM TOOLBAR ═══════════════ -->
+    <CanvasBottomToolbar
+      :active-tool="activeTool"
+      :zoom="camera.zoom"
+      :semantic-field-enabled="semanticFieldEnabled"
+      @update:active-tool="activeTool = $event"
+      @toggle-semantic="semanticStore.toggleField()"
+      @open-shortcuts="showShortcutsModal = true"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @zoom-change="(v: number) => springCamera.setCurrent({ ...camera, zoom: v })"
+      @zoom-set="setZoom"
+      @reset-zoom="resetZoom"
+      @fit-to-content="fitToContent"
+    />
+
+    <!-- Minimap (always visible on desktop) -->
+    <div class="absolute bottom-20 right-4 z-toolbar pointer-events-auto hidden md:block">
+      <Minimap
+        :camera="camera"
+        :container-width="canvasContainerWidth"
+        :container-height="canvasContainerHeight"
+        :regions="mapRegions.regions.value"
+        :breadcrumbs="cameraIntel.breadcrumbs.value"
+        @update:camera="springCamera.setTarget($event, 'snappy')"
+      />
     </div>
 
     <!-- ═══════════════ MOBILE BOTTOM BAR ═══════════════ -->
@@ -1248,44 +1222,16 @@ useHead({
     </nav>
 
     <!-- Mobile Sidebar Sheet -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-all duration-300"
-        leave-active-class="transition-all duration-200"
-        enter-from-class="translate-y-full"
-        leave-to-class="translate-y-full"
-      >
-        <div
-          v-if="isMobile && showSidebarSheet"
-          class="fixed inset-x-0 bottom-0 z-modal bg-[#0D0D10] rounded-t-2xl border-t border-[#1A1A1E] max-h-[70vh] overflow-y-auto"
-        >
-          <div class="p-4">
-            <div class="w-10 h-1 bg-[#2A2A30] rounded-full mx-auto mb-4" />
-            <CanvasSidebar
-              :selected-node="selectedNode"
-              :is-a-i-loading="isAILoading"
-              :ai-suggestions="aiSuggestions"
-              :rich-suggestions="richSuggestions"
-              class="!w-full !border-none !min-h-0"
-              @smart-expand="handleGenerateSuggestions"
-              @deep-expand="handleDeepExpand"
-              @add-suggestion="handleAddSuggestion"
-              @add-rich-suggestion="handleAddRichSuggestion"
-              @add-node="handleAddNodeFromSidebar"
-              @add-categorized-node="handleAddCategorizedNode"
-              @duplicate="handleDuplicateFromSidebar"
-              @delete-node="() => selectedNode && mapStore.deleteNode(selectedNode.id)"
-              @navigate-to-node="handleNavigateToNode"
-              @toggle-sidebar="showSidebarSheet = false"
-              @generate-map="showGenerateMapDialog = true"
-              @generate-description="handleGenerateDescription"
-            />
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <CanvasMobileSidebarSheet
+      :visible="isMobile && showSidebarSheet"
+      :selected-node="selectedNode"
+      :is-a-i-loading="isAILoading"
+      :ai-suggestions="aiSuggestions"
+      :rich-suggestions="richSuggestions"
+      @action="handleSidebarAction"
+    />
 
-    <!-- Panels -->
+    <!-- Panels (UNTOUCHED) -->
     <NodeTemplates
       :visible="showTemplates"
       :position="templatePosition"
@@ -1313,201 +1259,19 @@ useHead({
       @generate="handleGenerateMap"
     />
 
-    <!-- ═══════════════ CONTEXT MENU ═══════════════ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-100"
-        leave-active-class="transition-opacity duration-75"
-        enter-from-class="opacity-0"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="contextMenuVisible"
-          class="fixed inset-0 z-dropdown"
-          @click="contextMenuVisible = false"
-          @contextmenu.prevent="contextMenuVisible = false"
-        >
-          <div
-            class="nc-context-menu"
-            :style="{ left: `${contextMenuPosition.x}px`, top: `${contextMenuPosition.y}px` }"
-            @click.stop
-          >
-            <template v-for="(item, index) in contextMenuItems" :key="index">
-              <div v-if="item.type === 'separator'" class="nc-context-divider" />
-              <div v-else-if="item.children" class="relative group">
-                <button class="nc-context-item">
-                  <span v-if="item.icon" :class="[item.icon, 'text-base']" />
-                  <span class="flex-1 text-left">{{ item.label }}</span>
-                  <span class="i-lucide-chevron-right text-base opacity-50" />
-                </button>
-                <div class="nc-context-submenu">
-                  <button
-                    v-for="(child, childIndex) in item.children"
-                    :key="childIndex"
-                    class="nc-context-item"
-                    @click="child.action?.()"
-                  >
-                    <span
-                      v-if="child.icon"
-                      :class="[child.icon, 'text-base']"
-                      :style="{
-                        color: child.label === 'Teal' ? '#00D2BE' :
-                               child.label === 'Purple' ? '#A78BFA' :
-                               child.label === 'Pink' ? '#F472B6' :
-                               child.label === 'Blue' ? '#60A5FA' :
-                               child.label === 'Green' ? '#4ADE80' : undefined
-                      }"
-                    />
-                    <span>{{ child.label }}</span>
-                  </button>
-                </div>
-              </div>
-              <button
-                v-else
-                :disabled="item.disabled"
-                :class="[
-                  'nc-context-item',
-                  item.disabled && 'nc-context-item-disabled',
-                  item.danger && 'nc-context-item-danger'
-                ]"
-                @click="item.action?.()"
-              >
-                <span v-if="item.icon" :class="[item.icon, 'text-lg']" />
-                <span class="flex-1 text-left">{{ item.label }}</span>
-                <span v-if="item.shortcut" class="text-xs text-nc-ink-muted">{{ item.shortcut }}</span>
-              </button>
-            </template>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- Context Menu -->
+    <CanvasCanvasContextMenu
+      :visible="contextMenuVisible"
+      :position="contextMenuPosition"
+      :items="contextMenuItems"
+      @close="contextMenuVisible = false"
+    />
 
-    <!-- ═══════════════ SHORTCUTS MODAL ═══════════════ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-all duration-300"
-        leave-active-class="transition-all duration-200"
-        enter-from-class="opacity-0"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showShortcutsModal"
-          class="fixed inset-0 z-modal bg-nc-bg/90 backdrop-blur-xl nc-center"
-          @click="showShortcutsModal = false"
-        >
-          <div
-            class="nc-glass-elevated rounded-nc-2xl w-[560px] max-h-[80vh] overflow-hidden"
-            @click.stop
-          >
-            <div class="px-6 py-5 border-b border-nc-border nc-between">
-              <h2 class="font-display font-bold text-lg text-nc-ink">Keyboard Shortcuts</h2>
-              <button
-                class="w-8 h-8 rounded-nc-md nc-center text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-2 transition-colors"
-                @click="showShortcutsModal = false"
-              >
-                <span class="i-lucide-x text-lg" />
-              </button>
-            </div>
-            <div class="p-6 max-h-[60vh] overflow-y-auto">
-              <!-- Navigation -->
-              <div class="mb-6">
-                <div class="text-xs font-semibold uppercase tracking-wide text-nc-accent mb-3">Navigation</div>
-                <div class="flex flex-col gap-2">
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Pan canvas</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">Space</span><span class="nc-shortcut-key">+ Drag</span></div>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Zoom in</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">+</span></div>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Zoom out</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">−</span></div>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Fit to screen</span>
-                    <span class="nc-shortcut-key">F</span>
-                  </div>
-                </div>
-              </div>
-              <!-- Tools -->
-              <div class="mb-6">
-                <div class="text-xs font-semibold uppercase tracking-wide text-nc-accent mb-3">Tools</div>
-                <div class="flex flex-col gap-2">
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Select tool</span>
-                    <span class="nc-shortcut-key">V</span>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Pan tool</span>
-                    <span class="nc-shortcut-key">H</span>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Add node tool</span>
-                    <span class="nc-shortcut-key">N</span>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Connect tool</span>
-                    <span class="nc-shortcut-key">C</span>
-                  </div>
-                </div>
-              </div>
-              <!-- Editing -->
-              <div class="mb-6">
-                <div class="text-xs font-semibold uppercase tracking-wide text-nc-accent mb-3">Editing</div>
-                <div class="flex flex-col gap-2">
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Delete selected</span>
-                    <span class="nc-shortcut-key">⌫</span>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Edit node text</span>
-                    <span class="nc-shortcut-key">Double-click</span>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Duplicate</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">D</span></div>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Select all</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">A</span></div>
-                  </div>
-                </div>
-              </div>
-              <!-- Graph & Links -->
-              <div class="mb-6">
-                <div class="text-xs font-semibold uppercase tracking-wide text-nc-accent mb-3">Graph & Links</div>
-                <div class="flex flex-col gap-2">
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Open Graph View</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">G</span></div>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Toggle Backlinks Panel</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">B</span></div>
-                  </div>
-                </div>
-              </div>
-              <!-- AI Features -->
-              <div>
-                <div class="text-xs font-semibold uppercase tracking-wide text-nc-accent mb-3">AI Features</div>
-                <div class="flex flex-col gap-2">
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">AI Expand</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">E</span></div>
-                  </div>
-                  <div class="nc-between py-1">
-                    <span class="text-sm text-nc-ink-soft">Accept suggestion</span>
-                    <div class="nc-row gap-1"><span class="nc-shortcut-key">⌘</span><span class="nc-shortcut-key">↵</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- Shortcuts Modal -->
+    <CanvasShortcutsModal
+      :visible="showShortcutsModal"
+      @close="showShortcutsModal = false"
+    />
   </div>
 </template>
 

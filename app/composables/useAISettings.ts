@@ -15,6 +15,11 @@ import {
 } from '~/types/ai-settings'
 import { encrypt, decrypt, generateSessionPassphrase } from '~/utils/crypto'
 import { useDatabase } from '~/composables/useDatabase'
+import { aiTestConnection } from '~/utils/aiClient'
+
+function _isTauri(): boolean {
+  return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+}
 
 // Shared state across all instances
 const state = reactive<{
@@ -33,7 +38,14 @@ const state = reactive<{
 
 export function useAISettings() {
   const db = useDatabase()
-  const { data: session } = useAuth()
+
+  // In Tauri mode, provide a stable mock session (no auth server available)
+  const _tauriSession = {
+    user: { id: 'desktop-user', email: 'desktop@neurocanvas.local', name: 'Desktop User' }
+  }
+  const { data: session } = _isTauri()
+    ? { data: ref(_tauriSession) }
+    : useAuth()
 
   // Computed helpers
   const providers = computed(() => state.settings.providers)
@@ -417,8 +429,9 @@ export function useAISettings() {
       apiKey = testApiKey || null
     }
 
-    // Special handling for Ollama - check if localhost is accessible from production
-    if (provider.type === 'ollama') {
+    // Special handling for Ollama - check if localhost is accessible from production web
+    // Skip this check in Tauri (desktop app can always reach localhost)
+    if (provider.type === 'ollama' && !_isTauri()) {
       const isLocalhost = provider.baseUrl?.includes('localhost') || provider.baseUrl?.includes('127.0.0.1')
       const isProduction = typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
 
@@ -431,18 +444,10 @@ export function useAISettings() {
     }
 
     try {
-      // Use server-side proxy to avoid CORS issues
-      const result = await $fetch<{
-        success: boolean
-        message: string
-        models?: AIModel[]
-      }>('/api/ai/test-connection', {
-        method: 'POST',
-        body: {
-          provider: provider.type,
-          apiKey,
-          baseUrl: provider.baseUrl
-        }
+      const result = await aiTestConnection({
+        provider: provider.type,
+        apiKey,
+        baseUrl: provider.baseUrl
       })
 
       return result

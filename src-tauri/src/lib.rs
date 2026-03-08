@@ -5,16 +5,14 @@
 
 pub mod commands;
 
-use tauri::Manager;
-
-/// Initialize logging for development
+/// Initialize logging for development (non-panicking)
 fn init_logging() {
-    tracing_subscriber::fmt()
+    let _ = tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
                 .add_directive("neurocanvas=debug".parse().unwrap()),
         )
-        .init();
+        .try_init();
 }
 
 /// Main entry point for the Tauri application
@@ -28,11 +26,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
-        .setup(|app| {
+        .plugin(tauri_plugin_http::init())
+        .setup(|_app| {
             #[cfg(debug_assertions)]
             {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
+                use tauri::Manager;
+                if let Some(window) = _app.get_webview_window("main") {
+                    window.open_devtools();
+                }
             }
             Ok(())
         })
@@ -41,5 +42,9 @@ pub fn run() {
             commands::get_system_info,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .unwrap_or_else(|e| {
+            eprintln!("FATAL: Tauri failed to start: {e}");
+            eprintln!("FATAL: Debug info: {e:?}");
+            std::process::exit(1);
+        });
 }

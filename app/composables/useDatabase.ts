@@ -66,12 +66,32 @@ export interface DBAISettings {
   updatedAt: number
 }
 
+export interface DBAICacheEntry {
+  key: string
+  systemPrompt: string
+  userPrompt: string
+  response: string
+  usage?: unknown
+  createdAt: number
+  ttl: number
+  accessCount: number
+  lastAccessed: number
+}
+
+export interface DBUserMemory {
+  id: string // 'default' for main memory
+  data: Record<string, unknown>
+  updatedAt: number
+}
+
 // Dexie database class
 class NeuroCanvasDB extends Dexie {
   maps!: EntityTable<DBMapDocument, 'id'>
   preferences!: EntityTable<DBPreferences, 'id'>
   secrets!: EntityTable<DBEncryptedSecret, 'id'>
   aiSettings!: EntityTable<DBAISettings, 'id'>
+  aiCache!: EntityTable<DBAICacheEntry, 'key'>
+  userMemory!: EntityTable<DBUserMemory, 'id'>
 
   constructor() {
     super('neurocanvas')
@@ -87,6 +107,16 @@ class NeuroCanvasDB extends Dexie {
       preferences: 'id',
       secrets: 'id, updatedAt',
       aiSettings: 'id'
+    })
+
+    // Version 3: Add AI cache and user memory tables
+    this.version(3).stores({
+      maps: 'id, title, updatedAt, createdAt, *tags',
+      preferences: 'id',
+      secrets: 'id, updatedAt',
+      aiSettings: 'id',
+      aiCache: 'key, createdAt, lastAccessed',
+      userMemory: 'id'
     })
   }
 }

@@ -390,7 +390,12 @@ Return ONLY the JSON array:`
 export function parseRelationshipType(value: string): RelationshipType {
   const valid: RelationshipType[] = [
     'is-a', 'has-a', 'related-to', 'causes', 'enables',
-    'opposes', 'example-of', 'part-of', 'leads-to'
+    'opposes', 'example-of', 'part-of', 'leads-to',
+    // v2 extended types
+    'extends', 'implements', 'prerequisite-for', 'alternative-to',
+    'evidence-for', 'evidence-against', 'depends-on', 'influences',
+    'precedes', 'follows', 'co-occurs', 'trade-off',
+    'stronger-than', 'complements'
   ]
   return valid.includes(value as RelationshipType)
     ? (value as RelationshipType)
@@ -413,7 +418,7 @@ export function parseNodeCategory(value: string): NodeCategory {
  * Get display label for relationship type
  */
 export function getRelationshipLabel(type: RelationshipType): string {
-  const labels: Record<RelationshipType, string> = {
+  const labels: Record<string, string> = {
     'is-a': 'Is A',
     'has-a': 'Has',
     'related-to': 'Related To',
@@ -422,7 +427,22 @@ export function getRelationshipLabel(type: RelationshipType): string {
     'opposes': 'Opposes',
     'example-of': 'Example Of',
     'part-of': 'Part Of',
-    'leads-to': 'Leads To'
+    'leads-to': 'Leads To',
+    // v2 extended types
+    'extends': 'Extends',
+    'implements': 'Implements',
+    'prerequisite-for': 'Prerequisite For',
+    'alternative-to': 'Alternative To',
+    'evidence-for': 'Evidence For',
+    'evidence-against': 'Evidence Against',
+    'depends-on': 'Depends On',
+    'influences': 'Influences',
+    'precedes': 'Precedes',
+    'follows': 'Follows',
+    'co-occurs': 'Co-occurs',
+    'trade-off': 'Trade-off',
+    'stronger-than': 'Stronger Than',
+    'complements': 'Complements'
   }
   return labels[type] || type
 }
@@ -461,7 +481,7 @@ export function getCategoryIcon(category: NodeCategory): string {
  * Get color for relationship type
  */
 export function getRelationshipColor(type: RelationshipType): string {
-  const colors: Record<RelationshipType, string> = {
+  const colors: Record<string, string> = {
     'is-a': '#60A5FA',       // Blue
     'has-a': '#A78BFA',      // Purple
     'related-to': '#888890', // Gray
@@ -470,7 +490,22 @@ export function getRelationshipColor(type: RelationshipType): string {
     'opposes': '#EF4444',    // Red
     'example-of': '#FB923C', // Orange
     'part-of': '#00D2BE',    // Teal
-    'leads-to': '#FACC15'    // Yellow
+    'leads-to': '#FACC15',   // Yellow
+    // v2 extended types
+    'extends': '#818CF8',         // Indigo
+    'implements': '#34D399',      // Emerald
+    'prerequisite-for': '#F59E0B', // Amber
+    'alternative-to': '#EC4899',  // Pink
+    'evidence-for': '#10B981',    // Green
+    'evidence-against': '#F43F5E', // Rose
+    'depends-on': '#8B5CF6',      // Violet
+    'influences': '#06B6D4',      // Cyan
+    'precedes': '#D97706',        // Amber dark
+    'follows': '#F97316',         // Orange
+    'co-occurs': '#14B8A6',       // Teal
+    'trade-off': '#E11D48',       // Rose
+    'stronger-than': '#7C3AED',   // Purple
+    'complements': '#059669'      // Emerald dark
   }
   return colors[type] || '#888890'
 }

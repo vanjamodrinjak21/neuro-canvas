@@ -4,7 +4,7 @@
   "identifier": "com.neurocanvas.app",
   "version": "1.0.0",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "bash scripts/tauri-dev.sh",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "npm run generate",
     "frontendDist": "../.output/public"
@@ -48,7 +48,7 @@
     "copyright": "2026 Vanja Modrinjak",
     "publisher": "NeuroCanvas",
     "macOS": {
-      "entitlements": null,
+      "entitlements": "Entitlements.plist",
       "exceptionDomain": "",
       "frameworks": [],
       "minimumSystemVersion": "11.0"
@@ -67,18 +67,5 @@
       }
     }
   },
-  "plugins": {
-    "fs": {
-      "scope": {
-        "allow": ["$APPDATA/**", "$DOCUMENT/**", "$DOWNLOAD/**"],
-        "deny": []
-      }
-    },
-    "dialog": {
-      "all": true
-    },
-    "shell": {
-      "open": true
-    }
-  }
+  "plugins": {}
 }

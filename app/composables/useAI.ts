@@ -15,10 +15,25 @@ import {
   buildNodeDescriptionPrompt,
   buildMapStructurePrompt,
   buildHierarchicalExpandPrompt,
-  buildConnectionSuggestionPrompt,
-  parseRelationshipType,
-  parseNodeCategory
+  buildConnectionSuggestionPrompt
 } from '~/utils/ai-prompts'
+import { aiComplete } from '~/utils/aiClient'
+import { streamCompletion } from '~/ai/pipeline/StreamingPipeline'
+import { resolveProvider } from '~/ai/utils/resolveProvider'
+import {
+  parseJsonResponse as parseJson,
+  validateRichNodeSuggestions,
+  validateMapStructure,
+  validateTypedConnections,
+  validateNodeDescription
+} from '~/ai/utils/parseResponse'
+import { executeWithRetry } from '~/ai/pipeline/RetryStrategy'
+import { getSemanticCache } from '~/ai/pipeline/SemanticCache'
+import { getBatchOptimizer, BatchOptimizer } from '~/ai/pipeline/BatchOptimizer'
+
+function _isTauri(): boolean {
+  return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+}
 
 /**
  * Deep clone data to make it serializable for postMessage
@@ -278,19 +293,15 @@ export function useAI() {
       : `Topic: "${nodeContent}"\n\nGenerate ${maxSuggestions} related concepts for this mind map node.`
 
     try {
-      // Use server proxy to avoid CORS issues
-      const response = await $fetch<{ content: string }>('/api/ai/completions', {
-        method: 'POST',
-        body: {
-          provider: provider.type,
-          apiKey,
-          baseUrl: provider.baseUrl,
-          model: provider.selectedModelId,
-          systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }],
-          maxTokens: 500,
-          temperature: 0.7
-        }
+      const response = await aiComplete({
+        provider: provider.type,
+        apiKey,
+        baseUrl: provider.baseUrl,
+        model: provider.selectedModelId,
+        systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+        maxTokens: 500,
+        temperature: 0.7
       })
 
       const suggestions = parseJsonArray(response.content)
@@ -305,24 +316,15 @@ export function useAI() {
 
   /**
    * Enhanced Smart Expand - Generate rich suggestions with descriptions
-   * Returns RichNodeSuggestion[] instead of simple string[]
+   * Supports streaming, caching via Redis, and retry with backoff.
    */
   async function enhancedSmartExpand(
     nodeContent: string,
     context: GenerationContext,
-    maxSuggestions = 5
+    maxSuggestions = 5,
+    options?: { stream?: boolean; onPartialResult?: (partial: string) => void }
   ): Promise<RichNodeSuggestion[]> {
-    const aiSettings = useAISettings()
-    const defaultProvider = aiSettings.defaultProvider.value
-
-    if (!defaultProvider?.isEnabled) {
-      throw new Error('No AI provider configured. Please configure an AI provider in settings.')
-    }
-
-    const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-    if (!apiKey) {
-      throw new Error('No API key configured for the selected provider.')
-    }
+    const provider = await resolveProvider()
 
     isLoading.value = true
     error.value = null
@@ -330,45 +332,65 @@ export function useAI() {
     try {
       const { system, user } = buildEnhancedExpandPrompt(nodeContent, context, maxSuggestions)
 
-      const response = await $fetch<{ content: string }>('/api/ai/completions', {
-        method: 'POST',
-        body: {
-          provider: defaultProvider.type,
-          apiKey,
-          baseUrl: defaultProvider.baseUrl,
-          model: defaultProvider.selectedModelId,
-          systemPrompt: system,
-          messages: [{ role: 'user', content: user }],
-          maxTokens: 2000,
-          temperature: 0.7
+      // Check Redis-backed cache first
+      const cache = getSemanticCache()
+      const cached = await cache.get(system, user)
+      if (cached) {
+        const parsed = parseJson<unknown[]>(cached.response)
+        if (Array.isArray(parsed)) {
+          return validateRichNodeSuggestions(parsed, maxSuggestions)
         }
-      })
+      }
 
-      const parsed = parseJsonResponse<RichNodeSuggestion[]>(response.content)
+      // Deduplicate identical in-flight requests
+      const dedupeKey = BatchOptimizer.makeKey({ type: 'expand', nodeContent, maxSuggestions })
+      const optimizer = getBatchOptimizer()
+
+      const content = await optimizer.dedupe(dedupeKey, () =>
+        executeWithRetry(async () => {
+          if (options?.stream) {
+            return streamCompletion(
+              {
+                provider: provider.type,
+                apiKey: provider.apiKey,
+                baseUrl: provider.baseUrl,
+                model: provider.selectedModelId,
+                systemPrompt: system,
+                messages: [{ role: 'user', content: user }],
+                maxTokens: 2000,
+                temperature: 0.7
+              },
+              { onDelta: (_chunk, accumulated) => options.onPartialResult?.(accumulated) }
+            )
+          }
+
+          const response = await aiComplete({
+            provider: provider.type,
+            apiKey: provider.apiKey,
+            baseUrl: provider.baseUrl,
+            model: provider.selectedModelId,
+            systemPrompt: system,
+            messages: [{ role: 'user', content: user }],
+            maxTokens: 2000,
+            temperature: 0.7
+          })
+          return response.content
+        }, {
+          onRetry: (attempt, err) => {
+            console.warn(`[enhancedSmartExpand] Retry ${attempt}:`, err.message)
+          }
+        })
+      )
+
+      // Cache the response in Redis
+      await cache.set(system, user, content, null, 'expand')
+
+      const parsed = parseJson<unknown[]>(content)
       if (!Array.isArray(parsed)) {
         throw new Error('Invalid response format: expected array')
       }
 
-      // Validate and normalize each suggestion
-      return parsed.slice(0, maxSuggestions).map(suggestion => ({
-        title: String(suggestion.title || '').slice(0, 100),
-        description: {
-          summary: String(suggestion.description?.summary || ''),
-          details: suggestion.description?.details,
-          keywords: Array.isArray(suggestion.description?.keywords)
-            ? suggestion.description.keywords.map(String)
-            : [],
-          generatedAt: Date.now()
-        },
-        category: parseNodeCategory(suggestion.category || 'concept'),
-        relationshipToParent: suggestion.relationshipToParent
-          ? parseRelationshipType(suggestion.relationshipToParent)
-          : undefined,
-        suggestedChildren: suggestion.suggestedChildren,
-        confidence: typeof suggestion.confidence === 'number'
-          ? Math.max(0, Math.min(1, suggestion.confidence))
-          : 0.8
-      }))
+      return validateRichNodeSuggestions(parsed, maxSuggestions)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Enhanced expand failed'
       throw e
@@ -379,23 +401,14 @@ export function useAI() {
 
   /**
    * Generate description for an existing node
+   * Uses Redis cache with 24h TTL for descriptions.
    */
   async function generateNodeDescription(
     nodeContent: string,
     contextNodes: Array<{ content: string; description?: { summary: string } }> = [],
     style: 'concise' | 'detailed' | 'academic' = 'detailed'
   ): Promise<NodeDescription> {
-    const aiSettings = useAISettings()
-    const defaultProvider = aiSettings.defaultProvider.value
-
-    if (!defaultProvider?.isEnabled) {
-      throw new Error('No AI provider configured. Please configure an AI provider in settings.')
-    }
-
-    const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-    if (!apiKey) {
-      throw new Error('No API key configured for the selected provider.')
-    }
+    const provider = await resolveProvider()
 
     isLoading.value = true
     error.value = null
@@ -403,28 +416,32 @@ export function useAI() {
     try {
       const { system, user } = buildNodeDescriptionPrompt(nodeContent, contextNodes, style)
 
-      const response = await $fetch<{ content: string }>('/api/ai/completions', {
-        method: 'POST',
-        body: {
-          provider: defaultProvider.type,
-          apiKey,
-          baseUrl: defaultProvider.baseUrl,
-          model: defaultProvider.selectedModelId,
+      // Check Redis cache (descriptions are stable, long TTL)
+      const cache = getSemanticCache()
+      const cached = await cache.get(system, user)
+      if (cached) {
+        const parsed = parseJson<Record<string, unknown>>(cached.response)
+        return validateNodeDescription(parsed)
+      }
+
+      const content = await executeWithRetry(async () => {
+        const response = await aiComplete({
+          provider: provider.type,
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl,
+          model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
           maxTokens: 500,
           temperature: 0.6
-        }
+        })
+        return response.content
       })
 
-      const parsed = parseJsonResponse<NodeDescription>(response.content)
+      await cache.set(system, user, content, null, 'describe')
 
-      return {
-        summary: String(parsed.summary || ''),
-        details: parsed.details ? String(parsed.details) : undefined,
-        keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : [],
-        generatedAt: Date.now()
-      }
+      const parsed = parseJson<Record<string, unknown>>(content)
+      return validateNodeDescription(parsed)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Description generation failed'
       throw e
@@ -435,22 +452,14 @@ export function useAI() {
 
   /**
    * Generate complete map structure from a topic
+   * Supports streaming with progressive JSON parsing and Redis cache.
    */
   async function generateMapStructure(
     topic: string,
-    options: MapGenerationOptions = {}
+    options: MapGenerationOptions = {},
+    streamOptions?: { stream?: boolean; onPartialResult?: (partial: string) => void }
   ): Promise<MapStructure> {
-    const aiSettings = useAISettings()
-    const defaultProvider = aiSettings.defaultProvider.value
-
-    if (!defaultProvider?.isEnabled) {
-      throw new Error('No AI provider configured. Please configure an AI provider in settings.')
-    }
-
-    const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-    if (!apiKey) {
-      throw new Error('No API key configured for the selected provider.')
-    }
+    const provider = await resolveProvider()
 
     isLoading.value = true
     error.value = null
@@ -458,39 +467,48 @@ export function useAI() {
     try {
       const { system, user } = buildMapStructurePrompt(topic, options)
 
-      const response = await $fetch<{ content: string }>('/api/ai/completions', {
-        method: 'POST',
-        body: {
-          provider: defaultProvider.type,
-          apiKey,
-          baseUrl: defaultProvider.baseUrl,
-          model: defaultProvider.selectedModelId,
+      // Check Redis cache
+      const cache = getSemanticCache()
+      const cached = await cache.get(system, user)
+      if (cached) {
+        const parsed = parseJson<Record<string, unknown>>(cached.response)
+        return validateMapStructure(parsed)
+      }
+
+      const content = await executeWithRetry(async () => {
+        if (streamOptions?.stream) {
+          return streamCompletion(
+            {
+              provider: provider.type,
+              apiKey: provider.apiKey,
+              baseUrl: provider.baseUrl,
+              model: provider.selectedModelId,
+              systemPrompt: system,
+              messages: [{ role: 'user', content: user }],
+              maxTokens: 4000,
+              temperature: 0.7
+            },
+            { onDelta: (_chunk, accumulated) => streamOptions.onPartialResult?.(accumulated) }
+          )
+        }
+
+        const response = await aiComplete({
+          provider: provider.type,
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl,
+          model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
           maxTokens: 4000,
           temperature: 0.7
-        }
+        })
+        return response.content
       })
 
-      const parsed = parseJsonResponse<MapStructure>(response.content)
+      await cache.set(system, user, content, null, 'generate')
 
-      // Validate structure
-      if (!parsed.rootTopic || !Array.isArray(parsed.branches)) {
-        throw new Error('Invalid map structure response')
-      }
-
-      return {
-        rootTopic: String(parsed.rootTopic),
-        rootDescription: {
-          summary: String(parsed.rootDescription?.summary || ''),
-          keywords: Array.isArray(parsed.rootDescription?.keywords)
-            ? parsed.rootDescription.keywords.map(String)
-            : [],
-          generatedAt: Date.now()
-        },
-        branches: normalizeBranches(parsed.branches),
-        crossConnections: parsed.crossConnections
-      }
+      const parsed = parseJson<Record<string, unknown>>(content)
+      return validateMapStructure(parsed)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Map structure generation failed'
       throw e
@@ -500,48 +518,15 @@ export function useAI() {
   }
 
   /**
-   * Normalize and validate branch structures recursively
-   */
-  function normalizeBranches(branches: unknown[]): MapStructure['branches'] {
-    if (!Array.isArray(branches)) return []
-
-    return branches.map((branch: unknown) => {
-      const b = branch as Record<string, unknown>
-      return {
-        title: String(b.title || ''),
-        description: {
-          summary: String((b.description as Record<string, unknown>)?.summary || ''),
-          keywords: Array.isArray((b.description as Record<string, unknown>)?.keywords)
-            ? ((b.description as Record<string, unknown>).keywords as unknown[]).map(String)
-            : [],
-          generatedAt: Date.now()
-        },
-        category: parseNodeCategory(String(b.category || 'concept')),
-        children: normalizeBranches((b.children as unknown[]) || []),
-        depth: typeof b.depth === 'number' ? b.depth : 0
-      }
-    })
-  }
-
-  /**
    * Hierarchical expand - Multi-level expansion with children
+   * Uses retry strategy and Redis cache.
    */
   async function hierarchicalExpand(
     nodeContent: string,
     context: GenerationContext,
     options: HierarchicalExpandOptions = {}
   ): Promise<RichNodeSuggestion[]> {
-    const aiSettings = useAISettings()
-    const defaultProvider = aiSettings.defaultProvider.value
-
-    if (!defaultProvider?.isEnabled) {
-      throw new Error('No AI provider configured. Please configure an AI provider in settings.')
-    }
-
-    const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-    if (!apiKey) {
-      throw new Error('No API key configured for the selected provider.')
-    }
+    const provider = await resolveProvider()
 
     isLoading.value = true
     error.value = null
@@ -549,26 +534,35 @@ export function useAI() {
     try {
       const { system, user } = buildHierarchicalExpandPrompt(nodeContent, context, options)
 
-      const response = await $fetch<{ content: string }>('/api/ai/completions', {
-        method: 'POST',
-        body: {
-          provider: defaultProvider.type,
-          apiKey,
-          baseUrl: defaultProvider.baseUrl,
-          model: defaultProvider.selectedModelId,
+      const cache = getSemanticCache()
+      const cached = await cache.get(system, user)
+      if (cached) {
+        const parsed = parseJson<unknown[]>(cached.response)
+        if (Array.isArray(parsed)) return validateRichNodeSuggestions(parsed)
+      }
+
+      const content = await executeWithRetry(async () => {
+        const response = await aiComplete({
+          provider: provider.type,
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl,
+          model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
           maxTokens: 3000,
           temperature: 0.7
-        }
+        })
+        return response.content
       })
 
-      const parsed = parseJsonResponse<RichNodeSuggestion[]>(response.content)
+      await cache.set(system, user, content, null, 'expand')
+
+      const parsed = parseJson<unknown[]>(content)
       if (!Array.isArray(parsed)) {
         throw new Error('Invalid response format: expected array')
       }
 
-      return normalizeRichSuggestions(parsed)
+      return validateRichNodeSuggestions(parsed)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Hierarchical expand failed'
       throw e
@@ -578,62 +572,19 @@ export function useAI() {
   }
 
   /**
-   * Normalize rich suggestions recursively
-   */
-  function normalizeRichSuggestions(suggestions: unknown[]): RichNodeSuggestion[] {
-    if (!Array.isArray(suggestions)) return []
-
-    return suggestions.map((s: unknown) => {
-      const suggestion = s as Record<string, unknown>
-      return {
-        title: String(suggestion.title || '').slice(0, 100),
-        description: {
-          summary: String((suggestion.description as Record<string, unknown>)?.summary || ''),
-          details: (suggestion.description as Record<string, unknown>)?.details
-            ? String((suggestion.description as Record<string, unknown>).details)
-            : undefined,
-          keywords: Array.isArray((suggestion.description as Record<string, unknown>)?.keywords)
-            ? ((suggestion.description as Record<string, unknown>).keywords as unknown[]).map(String)
-            : [],
-          generatedAt: Date.now()
-        },
-        category: parseNodeCategory(String(suggestion.category || 'concept')),
-        relationshipToParent: suggestion.relationshipToParent
-          ? parseRelationshipType(String(suggestion.relationshipToParent))
-          : undefined,
-        suggestedChildren: suggestion.suggestedChildren
-          ? normalizeRichSuggestions(suggestion.suggestedChildren as unknown[])
-          : undefined,
-        confidence: typeof suggestion.confidence === 'number'
-          ? Math.max(0, Math.min(1, suggestion.confidence))
-          : 0.8
-      }
-    })
-  }
-
-  /**
    * Suggest typed connections between nodes
+   * Uses retry strategy and Redis cache.
    */
   async function suggestTypedConnections(
     nodes: Array<{ id: string; content: string; description?: { summary: string } }>,
     existingEdges: Array<{ sourceId: string; targetId: string }>,
     maxSuggestions = 5
   ): Promise<TypedConnectionSuggestion[]> {
-    const aiSettings = useAISettings()
-    const defaultProvider = aiSettings.defaultProvider.value
-
-    if (!defaultProvider?.isEnabled) {
-      throw new Error('No AI provider configured. Please configure an AI provider in settings.')
-    }
-
-    const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-    if (!apiKey) {
-      throw new Error('No API key configured for the selected provider.')
-    }
-
     if (nodes.length < 2) {
       return []
     }
+
+    const provider = await resolveProvider()
 
     isLoading.value = true
     error.value = null
@@ -641,82 +592,47 @@ export function useAI() {
     try {
       const { system, user } = buildConnectionSuggestionPrompt(nodes, existingEdges, maxSuggestions)
 
-      const response = await $fetch<{ content: string }>('/api/ai/completions', {
-        method: 'POST',
-        body: {
-          provider: defaultProvider.type,
-          apiKey,
-          baseUrl: defaultProvider.baseUrl,
-          model: defaultProvider.selectedModelId,
+      const cache = getSemanticCache()
+      const cached = await cache.get(system, user)
+      if (cached) {
+        const parsed = parseJson<unknown[]>(cached.response)
+        if (Array.isArray(parsed)) {
+          const nodeIds = new Set(nodes.map(n => n.id))
+          const existingSet = new Set(existingEdges.map(e => `${e.sourceId}-${e.targetId}`))
+          return validateTypedConnections(parsed, nodeIds, existingSet, maxSuggestions)
+        }
+      }
+
+      const content = await executeWithRetry(async () => {
+        const response = await aiComplete({
+          provider: provider.type,
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl,
+          model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
           maxTokens: 1500,
           temperature: 0.6
-        }
+        })
+        return response.content
       })
 
-      const parsed = parseJsonResponse<TypedConnectionSuggestion[]>(response.content)
+      await cache.set(system, user, content, null, 'connect')
+
+      const parsed = parseJson<unknown[]>(content)
       if (!Array.isArray(parsed)) {
         throw new Error('Invalid response format: expected array')
       }
 
-      // Validate and filter suggestions
       const nodeIds = new Set(nodes.map(n => n.id))
       const existingSet = new Set(existingEdges.map(e => `${e.sourceId}-${e.targetId}`))
 
-      return parsed
-        .filter(s => {
-          // Check nodes exist
-          if (!nodeIds.has(s.sourceId) || !nodeIds.has(s.targetId)) return false
-          // Check not already connected
-          if (existingSet.has(`${s.sourceId}-${s.targetId}`)) return false
-          if (existingSet.has(`${s.targetId}-${s.sourceId}`)) return false
-          return true
-        })
-        .slice(0, maxSuggestions)
-        .map(s => ({
-          sourceId: String(s.sourceId),
-          targetId: String(s.targetId),
-          relationshipType: parseRelationshipType(String(s.relationshipType || 'related-to')),
-          reason: String(s.reason || ''),
-          confidence: typeof s.confidence === 'number'
-            ? Math.max(0, Math.min(1, s.confidence))
-            : 0.8
-        }))
+      return validateTypedConnections(parsed, nodeIds, existingSet, maxSuggestions)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Connection suggestion failed'
       throw e
     } finally {
       isLoading.value = false
-    }
-  }
-
-  /**
-   * Parse JSON from LLM response (handles markdown code blocks and various formats)
-   */
-  function parseJsonResponse<T>(content: string): T {
-    // Try to extract JSON from markdown code block
-    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-    let jsonStr: string = jsonMatch ? (jsonMatch[1] || content) : content
-
-    // Also try to find raw JSON object or array
-    if (!jsonMatch) {
-      const objectMatch = content.match(/\{[\s\S]*\}/)
-      const arrayMatch = content.match(/\[[\s\S]*\]/)
-      jsonStr = objectMatch ? objectMatch[0] : (arrayMatch ? arrayMatch[0] : content)
-    }
-
-    try {
-      return JSON.parse(jsonStr.trim())
-    } catch {
-      // Try to clean up common issues
-      const cleaned = jsonStr
-        .replace(/,\s*}/g, '}') // Remove trailing commas in objects
-        .replace(/,\s*]/g, ']') // Remove trailing commas in arrays
-        .replace(/'/g, '"')     // Replace single quotes with double
-        .trim()
-
-      return JSON.parse(cleaned)
     }
   }
 
@@ -983,7 +899,7 @@ export function useAI() {
   ): Promise<Map<string, number[]>> {
     const cachedEmbeddings = new Map<string, number[]>()
 
-    if (nodeIds.length === 0) return cachedEmbeddings
+    if (nodeIds.length === 0 || _isTauri()) return cachedEmbeddings
 
     try {
       const response = await $fetch<{
@@ -1016,7 +932,7 @@ export function useAI() {
     mapId: string,
     embeddings: Array<{ nodeId: string; text: string; embedding: number[] }>
   ): Promise<void> {
-    if (embeddings.length === 0) return
+    if (embeddings.length === 0 || _isTauri()) return
 
     try {
       await $fetch('/api/embeddings', {
@@ -1162,6 +1078,7 @@ export function useAI() {
    * Clear cached embeddings for a map
    */
   async function clearEmbeddingCache(mapId: string): Promise<void> {
+    if (_isTauri()) return
     try {
       await $fetch(`/api/embeddings/${mapId}`, {
         method: 'DELETE'

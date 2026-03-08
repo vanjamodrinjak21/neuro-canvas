@@ -13,6 +13,16 @@ import {
   getPulseProgress,
   getAnchorScale
 } from '~/composables/useConnectionAnimation'
+import { useVelocityTracker } from '~/composables/useVelocityTracker'
+import type { NodeAnimationsAPI } from '~/composables/useNodeAnimations'
+import { useViewportCompass } from '~/composables/useViewportCompass'
+import { useViewportCulling } from '~/composables/useViewportCulling'
+import type { useEdgeAnimations } from '~/composables/useEdgeAnimations'
+import type { useSpatialHUD } from '~/composables/useSpatialHUD'
+import { useSmartGuides } from '~/composables/useSmartGuides'
+import { lerpColor } from '~/utils/color'
+import { drawDotGrid } from '~/components/canvas/renderers/drawGrid'
+import { drawSmartGuides } from '~/components/canvas/renderers/drawOverlays'
 
 export interface InfiniteCanvasProps {
   camera: Camera
@@ -26,6 +36,7 @@ const props = defineProps<InfiniteCanvasProps>()
 
 const emit = defineEmits<{
   'update:camera': [camera: Camera]
+  'pan-end': [velocity: { vx: number; vy: number }]
   'contextmenu': [event: { node: Node | null; edge: Edge | null; position: Point; screenPosition: Point }]
   'node-edit': [node: Node]
   'drop-category': [event: { category: { id: string; label: string; color: string }; position: Point }]
@@ -45,6 +56,16 @@ const isDragging = ref(false)
 const isPanning = ref(false)
 const dragStart = ref<Point | null>(null)
 const lastMousePos = ref<Point>({ x: 0, y: 0 })
+
+// Drag threshold — prevents accidental drags on click
+const DRAG_THRESHOLD = 3 // pixels in screen space
+const pendingDrag = ref(false)
+const dragStartScreen = ref<Point | null>(null)
+let dragOriginalPositions: Map<string, { x: number; y: number }> | null = null
+let dragNodeOffsets: Map<string, Point> | null = null
+
+// Smart alignment guides
+const smartGuides = useSmartGuides()
 
 // Box selection state
 const isBoxSelecting = ref(false)
@@ -67,6 +88,34 @@ const visibleAnchors = ref<Map<string, Anchor[]>>(new Map())
 
 // Animation composable
 const connectionAnim = useConnectionAnimation()
+
+// Velocity tracker for pan momentum
+const panVelocity = useVelocityTracker()
+
+// Node animations (provided by page via Vue provide/inject)
+const nodeAnimations = inject<NodeAnimationsAPI | null>('nodeAnimations', null)
+
+// Frame timing for animation updates
+let lastFrameTime = 0
+
+// Viewport compass
+const viewportCompass = useViewportCompass()
+
+// Viewport culling
+const culling = useViewportCulling()
+let cullingDirty = true
+
+// Track node changes to rebuild spatial index
+watch(() => mapStore.nodes.size, () => { cullingDirty = true })
+
+// Region labels (injected from page)
+const mapRegions = inject<Ref<Array<{ label: string; centerX: number; centerY: number }>> | null>('mapRegions', null)
+
+// Edge animations (injected from page)
+const edgeAnimations = inject<ReturnType<typeof useEdgeAnimations> | null>('edgeAnimations', null)
+
+// Spatial HUD (injected from page)
+const spatialHUD = inject<ReturnType<typeof useSpatialHUD> | null>('spatialHUD', null)
 
 // Editing state
 const editingNode = ref<Node | null>(null)
@@ -169,21 +218,11 @@ watch(() => props.tool, (newTool, oldTool) => {
   }
 })
 
-// Initialize renderer
+// Initialize renderer (Canvas2D only — WebGPU/WebGL2 stubs removed)
 onMounted(async () => {
   if (!canvasRef.value || !containerRef.value) return
 
-  // Detect best renderer
-  if (await gpu.hasWebGPU()) {
-    rendererType.value = 'webgpu'
-    await initWebGPU()
-  } else if (gpu.hasWebGL2()) {
-    rendererType.value = 'webgl2'
-    await initWebGL2()
-  } else {
-    rendererType.value = 'canvas2d'
-    await initCanvas2D()
-  }
+  rendererType.value = 'canvas2d'
 
   // Initial canvas sizing
   const rect = containerRef.value.getBoundingClientRect()
@@ -219,23 +258,6 @@ function handleResize() {
   requestAnimationFrame(render)
 }
 
-// WebGPU initialization
-async function initWebGPU() {
-  // TODO: Full WebGPU implementation
-  console.log('WebGPU renderer initialized')
-}
-
-// WebGL2 initialization
-async function initWebGL2() {
-  // TODO: Full WebGL2 implementation
-  console.log('WebGL2 renderer initialized')
-}
-
-// Canvas2D initialization (fallback)
-async function initCanvas2D() {
-  console.log('Canvas2D renderer initialized')
-}
-
 // Main render loop
 function render() {
   if (!canvasRef.value || !isRendererReady.value) return
@@ -245,6 +267,20 @@ function render() {
 
   const { width, height } = canvasRef.value
   const currentTime = performance.now()
+
+  // Compute delta time for animations
+  const dt = lastFrameTime === 0 ? 0.016 : Math.min((currentTime - lastFrameTime) / 1000, 0.064)
+  lastFrameTime = currentTime
+
+  // Update node animations
+  if (nodeAnimations) {
+    nodeAnimations.update(dt, hoveredNodeId.value, mapStore.selection.nodeIds)
+  }
+
+  // Update edge animations
+  if (edgeAnimations) {
+    edgeAnimations.update(dt)
+  }
 
   // Clear canvas with warm off-white
   ctx.fillStyle = colors.canvasBg
@@ -257,22 +293,149 @@ function render() {
   ctx.scale(props.camera.zoom, props.camera.zoom)
 
   // Draw dot grid (editorial style)
-  drawDotGrid(ctx)
+  drawDotGrid(ctx, props.camera, width, height, dpr.value, mapStore.settings.gridSize, mapStore.settings.gridEnabled, colors)
 
-  // Draw edges (with animation support)
+  // Rebuild spatial index if dirty
+  if (cullingDirty) {
+    culling.rebuild(mapStore.nodes)
+    cullingDirty = false
+  }
+
+  // Viewport culling — determine visible nodes
+  const viewW = (canvasRef.value?.width || 0) / dpr.value
+  const viewH = (canvasRef.value?.height || 0) / dpr.value
+  const visibleNodeIds = culling.getVisibleNodeIds(props.camera, viewW, viewH, 200)
+  const visibleEdgeIds = culling.getVisibleEdgeIds(mapStore.edges, visibleNodeIds)
+  const lod = culling.getNodeLOD(props.camera.zoom)
+
+  // Draw region labels behind everything at low zoom
+  if (props.camera.zoom < 0.3 && mapRegions?.value) {
+    ctx.save()
+    ctx.globalAlpha = 0.15
+    ctx.fillStyle = colors.nodeText
+    ctx.font = `600 ${Math.max(24, 60 / props.camera.zoom * 0.05)}px "Inter", system-ui, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    for (const region of mapRegions.value) {
+      ctx.fillText(region.label, region.centerX, region.centerY)
+    }
+    ctx.restore()
+  }
+
+  // Draw edges (with animation support) — only visible
   for (const edge of mapStore.edges.values()) {
+    if (!visibleEdgeIds.has(edge.id)) continue
+
+    // Check edge entrance animation
+    const entranceProgress = edgeAnimations?.getEntranceProgress(edge.id) ?? -1
+
     const animation = connectionAnim.getEdgeAnimation(edge.id)
     if (animation) {
       drawAnimatedEdge(ctx, edge, animation, currentTime)
-    } else {
+    } else if (entranceProgress >= 0 && entranceProgress < 1) {
+      // Partial entrance draw — save/restore with clip
+      ctx.save()
+      ctx.globalAlpha = entranceProgress
       drawEdge(ctx, edge)
+      ctx.restore()
+    } else {
+      // Apply edge hover highlight if active
+      const hoverProps = edgeAnimations?.getHoverProps(edge.id)
+      if (hoverProps && hoverProps.progress > 0) {
+        ctx.save()
+        // Glow effect
+        ctx.shadowColor = colors.nodeSelected
+        ctx.shadowBlur = hoverProps.glowOpacity * 12
+      }
+      drawEdge(ctx, edge)
+      if (hoverProps && hoverProps.progress > 0) {
+        ctx.restore()
+      }
     }
   }
 
-  // Draw nodes (skip the one being edited)
+  // Draw nodes (skip the one being edited) — with culling, LOD, and animation transforms
   for (const node of mapStore.nodes.values()) {
-    if (editingNode.value?.id !== node.id) {
-      drawNode(ctx, node)
+    if (editingNode.value?.id !== node.id && visibleNodeIds.has(node.id)) {
+      if (lod === 'dot') {
+        // Extreme zoom out: just a colored circle
+        const cx = node.position.x + node.size.width / 2
+        const cy = node.position.y + node.size.height / 2
+        ctx.fillStyle = node.style.borderColor || colors.nodeSelected
+        ctx.beginPath()
+        ctx.arc(cx, cy, Math.max(4, Math.min(node.size.width, node.size.height) / 4), 0, Math.PI * 2)
+        ctx.fill()
+      } else if (lod === 'simplified') {
+        // Mid zoom: shape fill only, no text
+        drawNodeSimplified(ctx, node)
+      } else if (nodeAnimations) {
+        const anim = nodeAnimations.getAnimatedProps(node.id)
+        ctx.save()
+        ctx.globalAlpha = anim.opacity
+        const cx = node.position.x + node.size.width / 2 + anim.offsetX
+        const cy = node.position.y + node.size.height / 2 + anim.offsetY
+        ctx.translate(cx, cy)
+        ctx.scale(anim.scaleX, anim.scaleY)
+        ctx.translate(-cx + anim.offsetX, -cy + anim.offsetY)
+        drawNode(ctx, node)
+        ctx.restore()
+      } else {
+        drawNode(ctx, node)
+      }
+    }
+  }
+
+  // Draw exiting node ghosts (after deletion)
+  if (nodeAnimations) {
+    for (const ghost of nodeAnimations.getExitingNodes()) {
+      ctx.save()
+      ctx.globalAlpha = ghost.opacity
+      const snap = ghost.snapshot
+      const cx = snap.position.x + snap.size.width / 2
+      const cy = snap.position.y + snap.size.height / 2
+      ctx.translate(cx, cy + ghost.offsetY)
+      ctx.scale(ghost.scale, ghost.scale)
+      ctx.translate(-cx, -cy)
+      // Draw ghost node shape
+      ctx.fillStyle = snap.style.fillColor || colors.nodeBg
+      ctx.strokeStyle = snap.style.borderColor || colors.nodeBorder
+      ctx.lineWidth = snap.style.borderWidth || 2
+      const radius = snap.style.shape === 'circle' ? Math.min(snap.size.width, snap.size.height) / 2 : 8
+      if (snap.style.shape === 'circle') {
+        ctx.beginPath()
+        ctx.arc(snap.position.x + snap.size.width / 2, snap.position.y + snap.size.height / 2, radius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.stroke()
+      } else {
+        ctx.beginPath()
+        ctx.roundRect(snap.position.x, snap.position.y, snap.size.width, snap.size.height, radius)
+        ctx.fill()
+        ctx.stroke()
+      }
+      // Ghost text
+      ctx.fillStyle = snap.style.textColor || colors.nodeText
+      ctx.font = `${snap.style.fontWeight || 500} ${snap.style.fontSize || 14}px "Inter", system-ui, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(snap.content, snap.position.x + snap.size.width / 2, snap.position.y + snap.size.height / 2)
+      ctx.restore()
+    }
+
+    // Draw pulse effects
+    for (const pulse of nodeAnimations.getActivePulses()) {
+      const node = mapStore.nodes.get(pulse.nodeId)
+      if (!node) continue
+      const cx = node.position.x + node.size.width / 2
+      const cy = node.position.y + node.size.height / 2
+      for (const ring of pulse.rings) {
+        ctx.beginPath()
+        ctx.arc(cx, cy, Math.max(node.size.width, node.size.height) / 2 + ring.radius, 0, Math.PI * 2)
+        ctx.strokeStyle = colors.nodeSelected
+        ctx.lineWidth = 2
+        ctx.globalAlpha = ring.opacity * 0.4
+        ctx.stroke()
+      }
+      ctx.globalAlpha = 1
     }
   }
 
@@ -298,9 +461,43 @@ function render() {
     drawConnectionPreview(ctx)
   }
 
+  // Draw smart alignment guides during drag
+  if (isDragging.value && smartGuides.guides.value.length > 0) {
+    drawSmartGuides(ctx, smartGuides.guides.value, props.camera, width, height, dpr.value, colors.nodeSelected)
+  }
+
   // Draw box selection rectangle
   if (isBoxSelecting.value && boxSelectionStart.value && boxSelectionEnd.value) {
     drawBoxSelection(ctx)
+  }
+
+  ctx.restore()
+
+  // Draw viewport compass in screen space (after world-space restore)
+  const screenWidth = width / dpr.value
+  const screenHeight = height / dpr.value
+  ctx.save()
+  ctx.scale(dpr.value, dpr.value)
+  const compassIndicators = viewportCompass.computeIndicators(
+    props.camera,
+    mapStore.nodes,
+    screenWidth,
+    screenHeight
+  )
+  if (compassIndicators.length > 0) {
+    viewportCompass.draw(ctx, compassIndicators, screenWidth, screenHeight, colors.nodeSelected)
+  }
+
+  // Draw spatial HUD in screen space
+  if (spatialHUD && mapRegions?.value) {
+    const hudData = spatialHUD.computeHUD(
+      props.camera,
+      mapStore.nodes,
+      visibleNodeIds,
+      mapRegions.value as any,
+      mapStore.rootNodeId
+    )
+    spatialHUD.draw(ctx, hudData, 12, screenHeight - 70)
   }
 
   ctx.restore()
@@ -309,35 +506,7 @@ function render() {
   requestAnimationFrame(render)
 }
 
-// Draw dot grid (editorial style - dots instead of lines)
-function drawDotGrid(ctx: CanvasRenderingContext2D) {
-  if (!mapStore.settings.gridEnabled) return
-
-  const gridSize = mapStore.settings.gridSize
-  const viewWidth = (canvasRef.value?.width || 0) / dpr.value / props.camera.zoom
-  const viewHeight = (canvasRef.value?.height || 0) / dpr.value / props.camera.zoom
-
-  const startX = Math.floor(-props.camera.x / props.camera.zoom / gridSize) * gridSize
-  const startY = Math.floor(-props.camera.y / props.camera.zoom / gridSize) * gridSize
-  const endX = startX + viewWidth + gridSize * 2
-  const endY = startY + viewHeight + gridSize * 2
-
-  // Sepia dots with subtle opacity
-  ctx.fillStyle = colors.gridDot
-  ctx.globalAlpha = 0.15
-
-  const dotRadius = 1 / props.camera.zoom
-
-  for (let x = startX; x <= endX; x += gridSize) {
-    for (let y = startY; y <= endY; y += gridSize) {
-      ctx.beginPath()
-      ctx.arc(x, y, dotRadius, 0, Math.PI * 2)
-      ctx.fill()
-    }
-  }
-
-  ctx.globalAlpha = 1
-}
+// (drawDotGrid and lerpColor extracted to renderers/drawGrid.ts and utils/color.ts)
 
 // Draw a single node with minimal styling
 function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
@@ -356,15 +525,20 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
   const drawWidth = width
   const drawHeight = height
 
-  // Minimal shadows - only for dragging
+  // Get interpolated animation state
+  const animProps = nodeAnimations?.getAnimatedProps(node.id)
+  const hoverProg = animProps?.hoverProgress ?? 0
+  const selProg = animProps?.selectionProgress ?? 0
+
+  // Enhanced drag feedback — shadow grows, scale slightly up
   if (nodeState === 'dragging') {
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'
     ctx.shadowBlur = 12
-    ctx.shadowOffsetY = 4
+    ctx.shadowOffsetY = 6
     ctx.shadowOffsetX = 0
   }
 
-  // Determine border color and width based on state - no glows
+  // Determine border color and width based on state - with interpolated hover
   let borderColor = style.borderColor || colors.nodeBorder
   let borderWidth = style.borderWidth || 2
   let fillColor = style.fillColor || colors.nodeBg
@@ -376,24 +550,33 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
   if (borderWidth < 2) borderWidth = 2
   if (isRoot) borderWidth = Math.max(borderWidth, 2)
 
+  // Interpolated hover: blend border color and fill based on hoverProgress
+  if (hoverProg > 0 && nodeState !== 'selected' && nodeState !== 'dragging') {
+    borderColor = lerpColor(style.borderColor || colors.nodeBorder, colors.nodeHoverBorder, hoverProg)
+    fillColor = lerpColor(style.fillColor || colors.nodeBg, '#1E1E24', hoverProg)
+  }
+
   switch (nodeState) {
     case 'selected':
       borderColor = colors.nodeSelected
-      // Add subtle selection ring effect by drawing twice
       break
     case 'hover':
-      borderColor = colors.nodeHoverBorder
-      fillColor = '#1A1A1E' // Slightly lighter on hover
+      // Already handled by interpolated hover above
       break
     case 'ai-suggestion':
       borderColor = colors.nodeSelected
       borderWidth = 1
       fillColor = 'transparent'
-      ctx.setLineDash([6, 4]) // Dashed border for AI suggestions
+      ctx.setLineDash([6, 4])
       break
     case 'highlighted':
       borderColor = colors.nodeSelected
       break
+  }
+
+  // Dim non-dragged nodes while dragging
+  if (isDragging.value && nodeState !== 'dragging' && mapStore.selection.nodeIds.size > 0) {
+    ctx.globalAlpha *= 0.7
   }
 
   // Draw shape
@@ -425,13 +608,16 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
     ctx.stroke()
   }
 
-  // Draw selection ring for selected state (subtle outer ring)
-  if (nodeState === 'selected') {
+  // Animated selection ring — grows from center based on selectionProgress
+  if (selProg > 0) {
+    const ringExpand = selProg * 3
     ctx.strokeStyle = colors.nodeSelected
     ctx.lineWidth = 1
+    ctx.globalAlpha = selProg * 0.8
     ctx.beginPath()
-    ctx.roundRect(drawX - 1, drawY - 1, drawWidth + 2, drawHeight + 2, radius + 1)
+    ctx.roundRect(drawX - ringExpand, drawY - ringExpand, drawWidth + ringExpand * 2, drawHeight + ringExpand * 2, radius + ringExpand)
     ctx.stroke()
+    ctx.globalAlpha = 1
   }
 
   // Reset line dash if it was set
@@ -449,8 +635,8 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  // Text wrapping
-  const maxWidth = drawWidth - 16
+  // Text wrapping (must match NODE_PADDING_X in mapStore for consistent sizing)
+  const maxWidth = drawWidth - 24
   const words = node.content.split(' ')
   const lines: string[] = []
   let currentLine = ''
@@ -476,6 +662,31 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
 
   // Reset alpha
   ctx.globalAlpha = 1
+}
+
+// Draw a simplified node (LOD: shape fill only, no text, minimal detail)
+function drawNodeSimplified(ctx: CanvasRenderingContext2D, node: Node) {
+  const { x, y } = node.position
+  const { width, height } = node.size
+  const style = node.style
+  const isSelected = mapStore.selection.nodeIds.has(node.id)
+
+  ctx.fillStyle = style.fillColor || colors.nodeBg
+  ctx.strokeStyle = isSelected ? colors.nodeSelected : (style.borderColor || colors.nodeBorder)
+  ctx.lineWidth = isSelected ? 2 : 1
+
+  const radius = style.shape === 'circle' ? Math.min(width, height) / 2 : 6
+  if (style.shape === 'circle') {
+    ctx.beginPath()
+    ctx.arc(x + width / 2, y + height / 2, radius, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  } else {
+    ctx.beginPath()
+    ctx.roundRect(x, y, width, height, radius)
+    ctx.fill()
+    ctx.stroke()
+  }
 }
 
 // Draw a single edge with minimal styling
@@ -969,17 +1180,62 @@ function drawBoxSelection(ctx: CanvasRenderingContext2D) {
   const y = Math.min(boxSelectionStart.value.y, boxSelectionEnd.value.y)
   const width = Math.abs(boxSelectionEnd.value.x - boxSelectionStart.value.x)
   const height = Math.abs(boxSelectionEnd.value.y - boxSelectionStart.value.y)
+  const radius = 4 / props.camera.zoom
 
-  // Fill with semi-transparent teal
+  // Fill with semi-transparent teal (rounded corners)
   ctx.fillStyle = 'rgba(0, 210, 190, 0.08)'
-  ctx.fillRect(x, y, width, height)
+  ctx.beginPath()
+  ctx.roundRect(x, y, width, height, radius)
+  ctx.fill()
 
-  // Border with teal
+  // Animated dashed border with teal
   ctx.strokeStyle = colors.nodeSelected
   ctx.lineWidth = 1 / props.camera.zoom
-  ctx.setLineDash([4 / props.camera.zoom, 4 / props.camera.zoom])
-  ctx.strokeRect(x, y, width, height)
+  const dashSize = 4 / props.camera.zoom
+  ctx.setLineDash([dashSize, dashSize])
+  ctx.lineDashOffset = -(performance.now() / 50) % (dashSize * 2)
+  ctx.beginPath()
+  ctx.roundRect(x, y, width, height, radius)
+  ctx.stroke()
   ctx.setLineDash([])
+  ctx.lineDashOffset = 0
+
+  // Selected count badge (if nodes are being selected)
+  const selectedInBox = countNodesInBox(x, y, width, height)
+  if (selectedInBox > 0) {
+    const badgeX = x + width
+    const badgeY = y - 12 / props.camera.zoom
+    const fontSize = 10 / props.camera.zoom
+    ctx.font = `600 ${fontSize}px "Inter", system-ui, sans-serif`
+    const text = selectedInBox.toString()
+    const metrics = ctx.measureText(text)
+    const badgeW = Math.max(metrics.width + 8 / props.camera.zoom, 16 / props.camera.zoom)
+    const badgeH = 14 / props.camera.zoom
+
+    ctx.fillStyle = colors.nodeSelected
+    ctx.beginPath()
+    ctx.roundRect(badgeX - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, badgeH / 2)
+    ctx.fill()
+
+    ctx.fillStyle = '#0A0A0C'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, badgeX, badgeY)
+  }
+}
+
+function countNodesInBox(x: number, y: number, width: number, height: number): number {
+  let count = 0
+  const maxX = x + width
+  const maxY = y + height
+  for (const node of mapStore.nodes.values()) {
+    const nodeRight = node.position.x + node.size.width
+    const nodeBottom = node.position.y + node.size.height
+    if (node.position.x < maxX && nodeRight > x && node.position.y < maxY && nodeBottom > y) {
+      count++
+    }
+  }
+  return count
 }
 
 // Draw connection preview line
@@ -1267,7 +1523,10 @@ function handlePointerDown(event: PointerEvent) {
         // Select only this node
         mapStore.select([node.id])
       }
-      isDragging.value = true
+      // Don't start drag immediately — wait for threshold
+      pendingDrag.value = true
+      dragStartScreen.value = screenPos
+      isDragging.value = false
     } else {
       // Check if clicked on an edge
       const edge = findEdgeAtPosition(worldPos)
@@ -1315,10 +1574,18 @@ function handlePointerMove(event: PointerEvent) {
   const dy = screenPos.y - lastMousePos.value.y
 
   // Update hover state
-  if (!isDragging.value && !isPanning.value && !isConnecting.value && !isBoxSelecting.value) {
+  if (!isDragging.value && !pendingDrag.value && !isPanning.value && !isConnecting.value && !isBoxSelecting.value) {
     const nodeUnderMouse = findNodeAtPosition(worldPos)
     const previousHovered = hoveredNodeId.value
     hoveredNodeId.value = nodeUnderMouse?.id ?? null
+
+    // Edge hover detection for edge animations
+    if (!nodeUnderMouse && edgeAnimations) {
+      const edge = findEdgeAtPosition(worldPos, 12)
+      edgeAnimations.setHoveredEdge(edge?.id ?? null)
+    } else if (edgeAnimations) {
+      edgeAnimations.setHoveredEdge(null)
+    }
 
     // Update anchor visibility when hover changes in connect mode
     if (props.tool === 'connect' && previousHovered !== hoveredNodeId.value) {
@@ -1335,6 +1602,9 @@ function handlePointerMove(event: PointerEvent) {
   }
 
   if (isPanning.value) {
+    // Track velocity for momentum on release
+    panVelocity.addSample(screenPos.x, screenPos.y)
+
     emit('update:camera', {
       ...props.camera,
       x: props.camera.x + dx,
@@ -1373,17 +1643,58 @@ function handlePointerMove(event: PointerEvent) {
         hoveredNodeId.value = null
       }
     }
-  } else if (isDragging.value) {
-    // Move selected nodes
-    const worldDx = dx / props.camera.zoom
-    const worldDy = dy / props.camera.zoom
+  } else if (pendingDrag.value && !isDragging.value) {
+    // Check if drag threshold exceeded
+    if (dragStartScreen.value) {
+      const tdx = screenPos.x - dragStartScreen.value.x
+      const tdy = screenPos.y - dragStartScreen.value.y
+      if (Math.sqrt(tdx * tdx + tdy * tdy) >= DRAG_THRESHOLD) {
+        isDragging.value = true
 
-    for (const nodeId of mapStore.selection.nodeIds) {
-      const node = mapStore.nodes.get(nodeId)
-      if (node && !node.locked) {
-        mapStore.moveNode(nodeId, node.position.x + worldDx, node.position.y + worldDy)
+        // Capture pre-drag positions for undo
+        const nodeIds = [...mapStore.selection.nodeIds]
+        dragOriginalPositions = mapStore.beginMoveNodes(nodeIds)
+
+        // Store absolute offset: click point relative to each node
+        const worldClickPos = screenToWorld(dragStartScreen.value.x, dragStartScreen.value.y)
+        dragNodeOffsets = new Map()
+        for (const nodeId of nodeIds) {
+          const node = mapStore.nodes.get(nodeId)
+          if (node && !node.locked) {
+            dragNodeOffsets.set(nodeId, {
+              x: node.position.x - worldClickPos.x,
+              y: node.position.y - worldClickPos.y
+            })
+          }
+        }
       }
     }
+  } else if (isDragging.value && dragNodeOffsets) {
+    // Move selected nodes using absolute offset tracking (prevents drift)
+    const worldMousePos = screenToWorld(screenPos.x, screenPos.y)
+
+    // Compute target positions
+    const draggedNodes = new Map<string, Node>()
+    for (const [nodeId, offset] of dragNodeOffsets) {
+      const targetX = worldMousePos.x + offset.x
+      const targetY = worldMousePos.y + offset.y
+      mapStore.moveNode(nodeId, targetX, targetY, false) // no snap during drag
+      const node = mapStore.nodes.get(nodeId)
+      if (node) draggedNodes.set(nodeId, node)
+    }
+
+    // Compute smart alignment guides and apply micro-snap
+    const guideResult = smartGuides.compute(draggedNodes, mapStore.nodes, mapStore.selection.nodeIds)
+    if (guideResult.snapDx !== 0 || guideResult.snapDy !== 0) {
+      for (const [nodeId] of dragNodeOffsets) {
+        const node = mapStore.nodes.get(nodeId)
+        if (node && !node.locked) {
+          mapStore.moveNode(nodeId, node.position.x + guideResult.snapDx, node.position.y + guideResult.snapDy, false)
+        }
+      }
+    }
+
+    cullingDirty = true
   } else if (isBoxSelecting.value) {
     // Update box selection end point
     boxSelectionEnd.value = worldPos
@@ -1529,42 +1840,47 @@ function handlePointerUp(event: PointerEvent) {
     boxSelectionEnd.value = null
   }
 
+  // Finalize drag: snap-on-drop + commit undo
+  if (isDragging.value && dragNodeOffsets && dragOriginalPositions) {
+    // Clear smart guides
+    smartGuides.clear()
+
+    // Snap to grid on drop if enabled
+    for (const [nodeId] of dragNodeOffsets) {
+      const node = mapStore.nodes.get(nodeId)
+      if (node && !node.locked) {
+        mapStore.moveNode(nodeId, node.position.x, node.position.y, true) // snap on drop
+      }
+    }
+
+    // Record single undo entry for entire drag
+    const nodeIds = [...dragNodeOffsets.keys()]
+    mapStore.commitMoveNodes(nodeIds, dragOriginalPositions)
+
+    dragOriginalPositions = null
+    dragNodeOffsets = null
+    cullingDirty = true
+  }
+
+  // Emit pan-end with velocity for momentum
+  if (isPanning.value) {
+    const velocity = panVelocity.getVelocity()
+    if (Math.abs(velocity.vx) > 50 || Math.abs(velocity.vy) > 50) {
+      emit('pan-end', velocity)
+    }
+    panVelocity.reset()
+  }
+
   isPanning.value = false
   isDragging.value = false
+  pendingDrag.value = false
+  dragStartScreen.value = null
   dragStart.value = null
 
   if (containerRef.value) {
     containerRef.value.style.cursor = ''
     containerRef.value.releasePointerCapture(event.pointerId)
   }
-}
-
-// Wheel handler for zoom
-function handleWheel(event: WheelEvent) {
-  event.preventDefault()
-
-  if (!containerRef.value) return
-
-  const rect = containerRef.value.getBoundingClientRect()
-  const mouseX = event.clientX - rect.left
-  const mouseY = event.clientY - rect.top
-
-  // Zoom factor
-  const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1
-
-  // Calculate new zoom level
-  const newZoom = Math.max(0.1, Math.min(5, props.camera.zoom * zoomFactor))
-
-  // Zoom towards mouse position
-  const zoomRatio = newZoom / props.camera.zoom
-  const newX = mouseX - (mouseX - props.camera.x) * zoomRatio
-  const newY = mouseY - (mouseY - props.camera.y) * zoomRatio
-
-  emit('update:camera', {
-    x: newX,
-    y: newY,
-    zoom: newZoom
-  })
 }
 
 // Double-click to edit node or create new one
@@ -1719,15 +2035,24 @@ function handleContextMenu(event: MouseEvent) {
   })
 }
 
+// Drop zone feedback
+const isDragOver = ref(false)
+
 // Drag and drop handlers
 function handleDragOver(event: DragEvent) {
   event.preventDefault()
+  isDragOver.value = true
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = 'copy'
   }
 }
 
+function handleDragLeave() {
+  isDragOver.value = false
+}
+
 function handleDrop(event: DragEvent) {
+  isDragOver.value = false
   event.preventDefault()
 
   if (!containerRef.value || !event.dataTransfer) return
@@ -1757,7 +2082,9 @@ function handleDrop(event: DragEvent) {
 
 // Expose methods and state for parent components
 defineExpose({
+  containerRef,
   hoveredNodeId,
+  isDragOver,
   aiSuggestionNodeIds,
   highlightedNodeIds,
   dimmedNodeIds,
@@ -1789,13 +2116,13 @@ const cursorStyle = computed(() => {
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
     @pointercancel="handlePointerUp"
-    @wheel.passive="handleWheel"
     @dblclick="handleDoubleClick"
     @touchstart="handleTouchStart"
     @touchmove="handleTouchMove"
     @touchend="handleTouchEnd"
     @contextmenu="handleContextMenu"
     @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
     <!-- Main canvas -->

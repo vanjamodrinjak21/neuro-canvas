@@ -26,8 +26,12 @@ const state = reactive<AuthState>({
 })
 
 export function useAuthStore() {
-  // Get auth methods inside the composable (Vue setup context)
-  const { signIn, signOut } = useAuth()
+  const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+
+  // In Tauri mode, provide no-op stubs (no auth server available)
+  const { signIn, signOut } = _isTauri
+    ? { signIn: async () => ({} as any), signOut: async () => {} }
+    : useAuth()
 
   const actions = {
     async register(email: string, password: string, name?: string): Promise<boolean> {

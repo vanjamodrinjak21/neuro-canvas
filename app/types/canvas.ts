@@ -68,6 +68,18 @@ export interface Node {
     description?: NodeDescription
     category?: string
     relationshipToParent?: string
+    /** AI v2 metadata for enhanced intelligence */
+    ai?: {
+      inferredDomain?: string
+      inferredCategory?: string
+      generatedBy?: 'expand' | 'generate' | 'agent' | 'user'
+      confidence?: number
+      wasAccepted?: boolean
+      userModified?: boolean
+      prerequisites?: string[]
+      dependents?: string[]
+      complexity?: 'simple' | 'moderate' | 'complex'
+    }
   }
   // Semantic embedding data (populated by AI system)
   semantic?: {
@@ -101,6 +113,15 @@ export interface Edge {
   controlPoints?: Point[]
   sourceAnchor?: Anchor
   targetAnchor?: Anchor
+  /** AI v2 metadata for enhanced edge intelligence */
+  ai?: {
+    relationshipType?: string
+    confidence?: number
+    reasoning?: string
+    generatedBy?: 'expand' | 'connect' | 'agent' | 'insight' | 'user'
+    bidirectional?: boolean
+    strength?: number
+  }
   createdAt: number
   updatedAt: number
 }
@@ -239,3 +260,38 @@ export interface LinkIndex {
   // Link counts (for weighted edges in graph view)
   linkCounts: Map<string, Map<string, number>>
 }
+
+// Camera Intelligence Types
+export interface FlyToOptions {
+  padding?: number
+  zoom?: number
+  preset?: 'navigation' | 'snappy' | 'elastic'
+  pulse?: boolean
+}
+
+export interface NavigationBreadcrumb {
+  x: number
+  y: number
+  zoom: number
+  timestamp: number
+}
+
+export interface ViewportCompassIndicator {
+  direction: 'top' | 'right' | 'bottom' | 'left'
+  count: number
+  opacity: number
+  nearestDistance: number
+}
+
+// Minimap Region
+export interface MapRegion {
+  id: string
+  label: string
+  centerX: number
+  centerY: number
+  nodeIds: string[]
+  color?: string
+}
+
+// Viewport LOD
+export type NodeLOD = 'full' | 'simplified' | 'dot'

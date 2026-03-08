@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { produce, enablePatches, applyPatches, type Patch } from 'immer'
+import { produce, enablePatches, applyPatches, setAutoFreeze, type Patch } from 'immer'
 import type {
   Node,
   Edge,
@@ -18,6 +18,74 @@ import type { DBMapDocument, DBNode, DBEdge } from '~/composables/useDatabase'
 
 // Enable Immer patches for undo/redo
 enablePatches()
+
+// Disable Immer's auto-freeze: frozen objects break Vue 3's reactive Proxy
+// (Proxy invariant requires non-configurable properties to return their exact value,
+// but Vue wraps nested objects in a different Proxy, causing TypeError)
+setAutoFreeze(false)
+
+// ─── Text measurement for auto-sizing nodes ───────────────────────
+let _measureCtx: CanvasRenderingContext2D | null = null
+
+function getMeasureCtx(): CanvasRenderingContext2D | null {
+  if (typeof document === 'undefined') return null
+  if (!_measureCtx) {
+    const c = document.createElement('canvas')
+    _measureCtx = c.getContext('2d')
+  }
+  return _measureCtx
+}
+
+const NODE_PADDING_X = 24    // horizontal padding (12 each side)
+const NODE_PADDING_Y = 20    // vertical padding (10 top + 10 bottom)
+const NODE_MIN_WIDTH = 80
+const NODE_MAX_WIDTH = 260
+const NODE_MIN_HEIGHT = 40
+
+/**
+ * Compute the width and height a node needs to fit its text content.
+ * Uses an offscreen canvas for measureText.
+ */
+function measureNodeSize(
+  content: string,
+  fontSize: number = 14,
+  fontWeight: number = 500
+): { width: number; height: number } {
+  const ctx = getMeasureCtx()
+  if (!ctx || !content) {
+    return { width: NODE_MIN_WIDTH, height: NODE_MIN_HEIGHT }
+  }
+
+  ctx.font = `${fontWeight} ${fontSize}px "Inter", system-ui, sans-serif`
+  const lineHeight = fontSize * 1.4
+
+  // First, measure the full text width to decide natural width
+  const fullWidth = ctx.measureText(content).width + NODE_PADDING_X
+  // Clamp width between min and max
+  const targetWidth = Math.max(NODE_MIN_WIDTH, Math.min(NODE_MAX_WIDTH, fullWidth))
+  const maxTextWidth = targetWidth - NODE_PADDING_X
+
+  // Word-wrap to compute line count
+  const words = content.split(' ')
+  const lines: string[] = []
+  let currentLine = ''
+
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word
+    if (ctx.measureText(testLine).width > maxTextWidth && currentLine) {
+      lines.push(currentLine)
+      currentLine = word
+    } else {
+      currentLine = testLine
+    }
+  }
+  if (currentLine) lines.push(currentLine)
+
+  const textHeight = lines.length * lineHeight
+  const height = Math.max(NODE_MIN_HEIGHT, textHeight + NODE_PADDING_Y)
+
+  return { width: Math.ceil(targetWidth), height: Math.ceil(height) }
+}
 
 // Default styles - Midnight Paper + Petronas Teal Theme
 const DEFAULT_NODE_STYLE: NodeStyle = {
@@ -97,6 +165,9 @@ export interface MapState {
   lastSavedAt: number | null
   createdAt: number | null
 
+  // Version counter for minimap reactivity during drag
+  nodesVersion: number
+
   // Graph view state
   graphView: {
     isOpen: boolean
@@ -119,8 +190,11 @@ export interface MapActions {
   addNode(node: Partial<Node>): Node
   updateNode(id: string, updates: Partial<Node>): void
   deleteNode(id: string): void
-  moveNode(id: string, x: number, y: number): void
+  moveNode(id: string, x: number, y: number, snap?: boolean): void
+  beginMoveNodes(nodeIds: string[]): Map<string, { x: number; y: number }>
+  commitMoveNodes(nodeIds: string[], originalPositions: Map<string, { x: number; y: number }>): void
   resizeNode(id: string, width: number, height: number): void
+  resolveOverlaps(nodeIds?: string[]): void
 
   // Edges
   addEdge(sourceId: string, targetId: string, style?: Partial<EdgeStyle>, sourceAnchor?: Anchor, targetAnchor?: Anchor): Edge
@@ -193,6 +267,7 @@ function createInitialState(): MapState {
     isDirty: false,
     lastSavedAt: null,
     createdAt: null,
+    nodesVersion: 0,
     graphView: {
       isOpen: false,
       options: { ...DEFAULT_GRAPH_VIEW_OPTIONS }
@@ -390,6 +465,16 @@ const actions: MapActions = {
     state.nodes = new Map(doc.nodes.map(node => [node.id, node as Node]))
     state.edges = new Map(doc.edges.map(edge => [edge.id, edge as Edge]))
 
+    // Migration: auto-resize nodes that still have the old default 150x50
+    for (const [, node] of state.nodes) {
+      if (node.size.width === 150 && node.size.height === 50 && node.content) {
+        const measured = measureNodeSize(node.content, node.style.fontSize, node.style.fontWeight)
+        if (measured.height > 50 || measured.width > 150) {
+          node.size = measured
+        }
+      }
+    }
+
     state.camera = doc.camera
     state.settings = { ...DEFAULT_MAP_SETTINGS, ...doc.settings }
     // Migration: use stored rootNodeId or find oldest node
@@ -408,13 +493,19 @@ const actions: MapActions = {
   addNode(partial: Partial<Node>): Node {
     const now = Date.now()
     const isFirstNode = state.nodes.size === 0
+
+    // Auto-size from content when no explicit size is given
+    const content = partial.content ?? ''
+    const mergedStyle = { ...DEFAULT_NODE_STYLE, ...partial.style }
+    const size = partial.size ?? measureNodeSize(content, mergedStyle.fontSize, mergedStyle.fontWeight)
+
     const node: Node = {
       id: partial.id ?? nanoid(),
       type: partial.type ?? 'text',
       position: partial.position ?? { x: 0, y: 0 },
-      size: partial.size ?? { width: 150, height: 50 },
-      content: partial.content ?? '',
-      style: { ...DEFAULT_NODE_STYLE, ...partial.style },
+      size,
+      content,
+      style: mergedStyle,
       parentId: partial.parentId,
       collapsed: partial.collapsed ?? false,
       locked: partial.locked ?? false,
@@ -439,6 +530,15 @@ const actions: MapActions = {
   updateNode(id: string, updates: Partial<Node>) {
     const node = state.nodes.get(id)
     if (!node) return
+
+    // Auto-resize when content changes and no explicit size update
+    if (updates.content !== undefined && !updates.size) {
+      const style = { ...node.style, ...updates.style }
+      updates = {
+        ...updates,
+        size: measureNodeSize(updates.content, style.fontSize, style.fontWeight)
+      }
+    }
 
     recordHistory('Update node', draft => {
       if (draft.nodes[id]) {
@@ -475,14 +575,14 @@ const actions: MapActions = {
     state.selection.nodeIds.delete(id)
   },
 
-  moveNode(id: string, x: number, y: number) {
+  moveNode(id: string, x: number, y: number, snap: boolean = false) {
     const node = state.nodes.get(id)
     if (!node || node.locked) return
 
-    // Snap to grid if enabled
+    // Only snap when explicitly requested (snap-on-drop)
     let newX = x
     let newY = y
-    if (state.settings.snapToGrid) {
+    if (snap && state.settings.snapToGrid) {
       const gridSize = state.settings.gridSize
       newX = Math.round(x / gridSize) * gridSize
       newY = Math.round(y / gridSize) * gridSize
@@ -496,6 +596,64 @@ const actions: MapActions = {
     }
     state.nodes.set(id, updated)
     state.isDirty = true
+    state.nodesVersion++
+  },
+
+  /** Capture pre-drag positions for undo support */
+  beginMoveNodes(nodeIds: string[]): Map<string, { x: number; y: number }> {
+    const snapshot = new Map<string, { x: number; y: number }>()
+    for (const id of nodeIds) {
+      const node = state.nodes.get(id)
+      if (node) {
+        snapshot.set(id, { x: node.position.x, y: node.position.y })
+      }
+    }
+    return snapshot
+  },
+
+  /** Record a single undo entry for a completed drag */
+  commitMoveNodes(nodeIds: string[], originalPositions: Map<string, { x: number; y: number }>) {
+    // Check if any node actually moved
+    let hasMoved = false
+    for (const id of nodeIds) {
+      const node = state.nodes.get(id)
+      const orig = originalPositions.get(id)
+      if (node && orig && (node.position.x !== orig.x || node.position.y !== orig.y)) {
+        hasMoved = true
+        break
+      }
+    }
+    if (!hasMoved) return
+
+    // Capture current positions before recording history
+    const finalPositions = new Map<string, { x: number; y: number }>()
+    for (const id of nodeIds) {
+      const node = state.nodes.get(id)
+      if (node) {
+        finalPositions.set(id, { x: node.position.x, y: node.position.y })
+      }
+    }
+
+    // First restore original positions so Immer can produce correct patches
+    for (const [id, pos] of originalPositions) {
+      const node = state.nodes.get(id)
+      if (node) {
+        state.nodes.set(id, { ...node, position: { x: pos.x, y: pos.y } })
+      }
+    }
+
+    // Now record the move as a history entry
+    recordHistory('Move nodes', draft => {
+      for (const [id, pos] of finalPositions) {
+        if (draft.nodes[id]) {
+          draft.nodes[id] = {
+            ...draft.nodes[id],
+            position: { x: pos.x, y: pos.y },
+            updatedAt: Date.now()
+          }
+        }
+      }
+    })
   },
 
   resizeNode(id: string, width: number, height: number) {
@@ -511,6 +669,79 @@ const actions: MapActions = {
         height: Math.max(height, minHeight)
       }
     })
+  },
+
+  /**
+   * Push overlapping nodes apart. If nodeIds is provided, only those nodes
+   * are moved; otherwise all nodes are checked.
+   * Uses iterative separation — runs up to 10 passes to settle.
+   */
+  resolveOverlaps(nodeIds?: string[]) {
+    const GAP = 20 // minimum gap between nodes
+    const MAX_PASSES = 10
+
+    const candidates = nodeIds
+      ? nodeIds.map(id => state.nodes.get(id)).filter(Boolean) as Node[]
+      : Array.from(state.nodes.values())
+
+    if (candidates.length < 2) return
+
+    const allNodes = Array.from(state.nodes.values())
+
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+      let moved = false
+
+      for (const nodeA of candidates) {
+        if (nodeA.locked) continue
+
+        for (const nodeB of allNodes) {
+          if (nodeA.id === nodeB.id) continue
+
+          // Check AABB overlap with gap
+          const aLeft = nodeA.position.x - GAP
+          const aRight = nodeA.position.x + nodeA.size.width + GAP
+          const aTop = nodeA.position.y - GAP
+          const aBottom = nodeA.position.y + nodeA.size.height + GAP
+          const bLeft = nodeB.position.x
+          const bRight = nodeB.position.x + nodeB.size.width
+          const bTop = nodeB.position.y
+          const bBottom = nodeB.position.y + nodeB.size.height
+
+          if (aLeft < bRight && aRight > bLeft && aTop < bBottom && aBottom > bTop) {
+            // Overlap detected — compute push vector
+            const overlapX = Math.min(aRight - bLeft, bRight - aLeft)
+            const overlapY = Math.min(aBottom - bTop, bBottom - aTop)
+
+            const aCenterX = nodeA.position.x + nodeA.size.width / 2
+            const aCenterY = nodeA.position.y + nodeA.size.height / 2
+            const bCenterX = nodeB.position.x + nodeB.size.width / 2
+            const bCenterY = nodeB.position.y + nodeB.size.height / 2
+
+            // Push along the smaller overlap axis
+            if (overlapX < overlapY) {
+              const dir = aCenterX < bCenterX ? -1 : 1
+              nodeA.position = {
+                x: nodeA.position.x + dir * overlapX * 0.5,
+                y: nodeA.position.y
+              }
+            } else {
+              const dir = aCenterY < bCenterY ? -1 : 1
+              nodeA.position = {
+                x: nodeA.position.x,
+                y: nodeA.position.y + dir * overlapY * 0.5
+              }
+            }
+            moved = true
+          }
+        }
+      }
+
+      if (!moved) break
+    }
+
+    // Commit the moved positions to state
+    state.isDirty = true
+    state.nodesVersion++
   },
 
   addEdge(sourceId: string, targetId: string, style?: Partial<EdgeStyle>, sourceAnchor?: Anchor, targetAnchor?: Anchor): Edge {
@@ -831,6 +1062,7 @@ export function useMapStore(): MapStore {
     get isDirty() { return state.isDirty },
     get lastSavedAt() { return state.lastSavedAt },
     get createdAt() { return state.createdAt },
+    get nodesVersion() { return state.nodesVersion },
     get graphView() { return state.graphView },
     // Actions
     ...actions

@@ -6,9 +6,9 @@ import type { NodeDescription } from './canvas'
 export type { NodeDescription } from './canvas'
 
 /**
- * Relationship types between nodes in a mind map
+ * Relationship types between nodes in a mind map (v1 original 9)
  */
-export type RelationshipType =
+export type RelationshipTypeV1 =
   | 'is-a'        // Classification/type relationship
   | 'has-a'       // Composition/containment
   | 'related-to'  // General association
@@ -18,6 +18,30 @@ export type RelationshipType =
   | 'example-of'  // Instance/example
   | 'part-of'     // Component/part
   | 'leads-to'    // Sequence/consequence
+
+/**
+ * Extended relationship types (v2 adds 14 new types)
+ */
+export type RelationshipTypeV2 =
+  | 'extends'           // Builds upon
+  | 'implements'        // Concrete realization
+  | 'prerequisite-for'  // Must come before
+  | 'alternative-to'    // Different approach
+  | 'evidence-for'      // Supports claim
+  | 'evidence-against'  // Contradicts claim
+  | 'depends-on'        // Functional dependency
+  | 'influences'        // Indirect effect
+  | 'precedes'          // Temporal ordering
+  | 'follows'           // Comes after
+  | 'co-occurs'         // Happens together
+  | 'trade-off'         // Opposing benefit
+  | 'stronger-than'     // Comparative strength
+  | 'complements'       // Works well together
+
+/**
+ * Combined relationship types (v1 + v2)
+ */
+export type RelationshipType = RelationshipTypeV1 | RelationshipTypeV2
 
 /**
  * Node categories for classification
@@ -126,6 +150,8 @@ export interface GenerationContext {
   style: GenerationStyle
   /** Optional domain/subject area for specialized vocabulary */
   domain?: string
+  /** Optional rich context snapshot from v2 Context Engine */
+  contextSnapshot?: import('~/ai/types/context').RichContext
 }
 
 /**

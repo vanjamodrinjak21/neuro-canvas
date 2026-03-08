@@ -4,9 +4,12 @@ definePageMeta({
   layout: false
 })
 
-// Auth state
-const { status } = useAuth()
-const isAuthenticated = computed(() => status.value === 'authenticated')
+// Tauri detection
+const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+
+// Auth state — in Tauri mode, skip auth entirely (no server available)
+const { status } = _isTauri ? { status: ref('authenticated') } : useAuth()
+const isAuthenticated = computed(() => _isTauri || status.value === 'authenticated')
 
 // Cursor glow position
 const cursorPosition = ref({ x: 0, y: 0 })

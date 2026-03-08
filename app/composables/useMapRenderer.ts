@@ -183,6 +183,7 @@ export function useMapRenderer() {
       }
     }
 
+    mapStore.resolveOverlaps(nodeIds)
     return { rootNodeId: rootNode.id, nodeIds, edgeIds }
   }
 
@@ -363,6 +364,7 @@ export function useMapRenderer() {
       }
     })
 
+    mapStore.resolveOverlaps(nodeIds)
     return { nodeIds, edgeIds }
   }
 

@@ -1,8 +1,14 @@
 /**
  * Auth middleware - Protects routes that require authentication
  * Redirects to /auth/signin if not authenticated
+ * Bypassed entirely in Tauri (desktop) mode — app is fully local, no login needed
  */
 export default defineNuxtRouteMiddleware(async (to) => {
+  // Skip auth entirely in Tauri desktop mode
+  if (typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)) {
+    return
+  }
+
   const { data, status, getSession } = useAuth()
 
   // For client-side SPA, always fetch fresh session

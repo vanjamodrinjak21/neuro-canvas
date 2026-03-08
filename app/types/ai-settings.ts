@@ -38,6 +38,8 @@ export interface PersonaConfig {
   isDefault: boolean
   providerId?: string // Optional: specific provider for this persona
   modelId?: string // Optional: specific model for this persona
+  /** Optional domain override for persona-specific subject handling */
+  domainOverride?: import('~/ai/types/subject').DomainType
   createdAt: number
   updatedAt: number
 }
@@ -51,6 +53,14 @@ export interface AISettings {
     autoSuggestConnections: boolean
     semanticFieldEnabled: boolean
     similarityThreshold: number
+    /** Enable v2 rich context engine */
+    useV2Context?: boolean
+    /** Enable v2 prompt orchestration with personas */
+    useV2Prompts?: boolean
+    /** Enable SSE streaming for AI operations */
+    useStreaming?: boolean
+    /** Enable LLM-powered insights (requires provider) */
+    useLLMInsights?: boolean
   }
   updatedAt: number
 }

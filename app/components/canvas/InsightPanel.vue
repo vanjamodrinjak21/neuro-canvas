@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Node, Edge } from '~/types/canvas'
-import type { Insight, InsightType } from '~/types/semantic'
+import type { Insight, InsightType, EnrichedInsight } from '~/types/semantic'
 import { useSemanticStore } from '~/stores/semanticStore'
 import { useInsightEngine } from '~/composables/useInsightEngine'
 import { useMapStore } from '~/stores/mapStore'
@@ -19,28 +19,94 @@ const insightEngine = useInsightEngine()
 // Section collapse state
 const isCollapsed = ref(false)
 
-// Insight type icons
-const insightIcons: Record<InsightType, string> = {
+// Insight type icons (v1 + v2 types)
+const insightIcons: Record<string, string> = {
   bridge: 'i-lucide-git-merge',
   gap: 'i-lucide-circle-plus',
   outlier: 'i-lucide-circle-alert',
-  cluster: 'i-lucide-network'
+  cluster: 'i-lucide-network',
+  'conceptual-gap': 'i-lucide-puzzle',
+  'structural-suggestion': 'i-lucide-layout-grid',
+  'balance-issue': 'i-lucide-scale',
+  'deepening-opportunity': 'i-lucide-arrow-down-circle',
+  'accuracy-concern': 'i-lucide-alert-triangle'
 }
 
-// Insight type colors
-const insightColors: Record<InsightType, string> = {
-  bridge: '#60A5FA',  // Blue
-  gap: '#4ADE80',     // Green
-  outlier: '#FB923C', // Orange
-  cluster: '#A78BFA'  // Purple
+// Insight type colors (v1 + v2 types)
+const insightColors: Record<string, string> = {
+  bridge: '#60A5FA',              // Blue
+  gap: '#4ADE80',                 // Green
+  outlier: '#FB923C',             // Orange
+  cluster: '#A78BFA',             // Purple
+  'conceptual-gap': '#38BDF8',    // Sky blue
+  'structural-suggestion': '#818CF8', // Indigo
+  'balance-issue': '#FBBF24',     // Amber
+  'deepening-opportunity': '#34D399', // Emerald
+  'accuracy-concern': '#F87171'   // Red
 }
+
+// Expanded reasoning visibility
+const expandedInsights = ref(new Set<string>())
 
 // Get insights from store
 const insights = computed(() => semanticStore.insights)
 
-// Analyze map
+// Analyze map (heuristic only)
 async function handleAnalyze() {
   await insightEngine.analyzeMap(mapStore.nodes, mapStore.edges)
+}
+
+// Analyze map with AI (heuristic + LLM)
+async function handleAIAnalyze() {
+  await insightEngine.analyzeMapWithAI(mapStore.nodes, mapStore.edges, mapStore.title)
+}
+
+// Check if insight is enriched (has LLM data)
+function isEnriched(insight: Insight): insight is EnrichedInsight {
+  return 'isLLMGenerated' in insight && (insight as EnrichedInsight).isLLMGenerated === true
+}
+
+// Toggle reasoning visibility
+function toggleReasoning(insightId: string) {
+  if (expandedInsights.value.has(insightId)) {
+    expandedInsights.value.delete(insightId)
+  } else {
+    expandedInsights.value.add(insightId)
+  }
+}
+
+// Apply an enriched insight's suggested action
+function handleApplyAction(insight: EnrichedInsight) {
+  if (!insight.suggestedAction || !insight.actionPayload) {
+    handleAddNode(insight)
+    return
+  }
+
+  switch (insight.suggestedAction) {
+    case 'add-node': {
+      const payload = insight.actionPayload as { title?: string; parentNodeId?: string }
+      const position = insight.suggestedPosition || { x: 400, y: 400 }
+      const newNode = mapStore.addNode({
+        position,
+        content: payload.title || insight.suggestedContent || 'New Concept'
+      })
+      if (payload.parentNodeId) {
+        mapStore.addEdge(payload.parentNodeId, newNode.id)
+      }
+      break
+    }
+    case 'add-connection': {
+      const payload = insight.actionPayload as { sourceId?: string; targetId?: string }
+      if (payload.sourceId && payload.targetId) {
+        mapStore.addEdge(payload.sourceId, payload.targetId)
+      }
+      break
+    }
+    default:
+      handleAddNode(insight)
+  }
+
+  semanticStore.removeInsight(insight.id)
 }
 
 // Add node from insight
@@ -106,15 +172,25 @@ function handleDismiss(insightId: string) {
 
 // Get action button text based on insight type
 function getActionText(insight: Insight): string {
+  if (isEnriched(insight) && insight.suggestedAction) {
+    switch (insight.suggestedAction) {
+      case 'add-node': return 'Add Node'
+      case 'add-connection': return 'Connect'
+      case 'restructure': return 'Restructure'
+      case 'merge': return 'Merge'
+      case 'expand': return 'Expand'
+      case 'delete': return 'Remove'
+    }
+  }
   switch (insight.type) {
-    case 'bridge':
-      return 'Connect'
-    case 'gap':
-      return 'Add Node'
-    case 'outlier':
-      return 'View'
-    default:
-      return 'Add'
+    case 'bridge': return 'Connect'
+    case 'gap': case 'conceptual-gap': return 'Add Node'
+    case 'outlier': return 'View'
+    case 'structural-suggestion': return 'Apply'
+    case 'deepening-opportunity': return 'Expand'
+    case 'balance-issue': return 'Fix'
+    case 'accuracy-concern': return 'Review'
+    default: return 'Add'
   }
 }
 </script>
@@ -138,20 +214,35 @@ function getActionText(insight: Insight): string {
     <div
       :class="['nc-insight-content', isCollapsed && 'collapsed']"
     >
-      <!-- Analyze button -->
-      <button
-        class="nc-insight-analyze-btn"
-        :disabled="insightEngine.isAnalyzing.value || semanticStore.nodesWithEmbeddings.length < 3"
-        @click="handleAnalyze"
-      >
-        <span
-          :class="[
-            'text-sm',
-            insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-scan'
-          ]"
-        />
-        <span>{{ insightEngine.isAnalyzing.value ? 'Analyzing...' : 'Analyze Map' }}</span>
-      </button>
+      <!-- Analyze buttons -->
+      <div class="nc-insight-analyze-row">
+        <button
+          class="nc-insight-analyze-btn"
+          :disabled="insightEngine.isAnalyzing.value || semanticStore.nodesWithEmbeddings.length < 3"
+          @click="handleAnalyze"
+        >
+          <span
+            :class="[
+              'text-sm',
+              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-scan'
+            ]"
+          />
+          <span>{{ insightEngine.isAnalyzing.value ? 'Analyzing...' : 'Analyze' }}</span>
+        </button>
+        <button
+          class="nc-insight-analyze-btn nc-insight-ai-btn"
+          :disabled="insightEngine.isAnalyzing.value"
+          @click="handleAIAnalyze"
+        >
+          <span
+            :class="[
+              'text-sm',
+              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-sparkles'
+            ]"
+          />
+          <span>AI Analyze</span>
+        </button>
+      </div>
 
       <!-- Empty state -->
       <div v-if="insights.length === 0 && !insightEngine.isAnalyzing.value" class="nc-insight-empty">
@@ -176,10 +267,11 @@ function getActionText(insight: Insight): string {
           <!-- Header -->
           <div class="nc-insight-card-header">
             <span
-              :class="[insightIcons[insight.type as InsightType], 'text-base']"
-              :style="{ color: insightColors[insight.type as InsightType] }"
+              :class="[insightIcons[insight.type] || 'i-lucide-lightbulb', 'text-base']"
+              :style="{ color: insightColors[insight.type] || '#888890' }"
             />
             <span class="nc-insight-title">{{ insight.title }}</span>
+            <span v-if="isEnriched(insight)" class="nc-insight-ai-badge">AI</span>
             <button
               class="nc-insight-dismiss"
               title="Dismiss"
@@ -194,6 +286,20 @@ function getActionText(insight: Insight): string {
             {{ insight.description }}
           </p>
 
+          <!-- Reasoning (expandable, LLM insights only) -->
+          <div v-if="isEnriched(insight) && (insight as EnrichedInsight).reasoning" class="nc-insight-reasoning-toggle">
+            <button
+              class="nc-insight-reasoning-btn"
+              @click.stop="toggleReasoning(insight.id)"
+            >
+              <span :class="expandedInsights.has(insight.id) ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="text-xs" />
+              {{ expandedInsights.has(insight.id) ? 'Hide reasoning' : 'Show reasoning' }}
+            </button>
+            <p v-if="expandedInsights.has(insight.id)" class="nc-insight-reasoning-text">
+              {{ (insight as EnrichedInsight).reasoning }}
+            </p>
+          </div>
+
           <!-- Confidence -->
           <div class="nc-insight-confidence">
             <span class="nc-insight-confidence-bar">
@@ -201,7 +307,7 @@ function getActionText(insight: Insight): string {
                 class="nc-insight-confidence-fill"
                 :style="{
                   width: `${insight.confidence * 100}%`,
-                  backgroundColor: insightColors[insight.type as InsightType]
+                  backgroundColor: insightColors[insight.type] || '#888890'
                 }"
               />
             </span>
@@ -214,7 +320,7 @@ function getActionText(insight: Insight): string {
           <div class="nc-insight-actions">
             <button
               class="nc-insight-action-btn nc-insight-action-primary"
-              @click="handleAddNode(insight)"
+              @click="isEnriched(insight) ? handleApplyAction(insight as EnrichedInsight) : handleAddNode(insight)"
             >
               <span :class="insight.type === 'bridge' ? 'i-lucide-link' : 'i-lucide-plus'" class="text-xs" />
               {{ getActionText(insight) }}
@@ -450,5 +556,67 @@ function getActionText(insight: Insight): string {
   background: rgba(0, 210, 190, 0.2);
   border-color: #00D2BE;
   color: #00D2BE;
+}
+
+.nc-insight-analyze-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.nc-insight-analyze-row .nc-insight-analyze-btn {
+  margin-bottom: 0;
+}
+
+.nc-insight-ai-btn {
+  background: rgba(167, 139, 250, 0.1) !important;
+  border-color: rgba(167, 139, 250, 0.3) !important;
+  color: #A78BFA !important;
+}
+
+.nc-insight-ai-btn:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.15) !important;
+  border-color: #A78BFA !important;
+}
+
+.nc-insight-ai-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: #A78BFA;
+  background: rgba(167, 139, 250, 0.15);
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.nc-insight-reasoning-toggle {
+  margin-bottom: 8px;
+}
+
+.nc-insight-reasoning-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #666670;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.nc-insight-reasoning-btn:hover {
+  color: #FAFAFA;
+}
+
+.nc-insight-reasoning-text {
+  font-size: 11px;
+  color: #777780;
+  line-height: 1.5;
+  margin-top: 6px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  border-left: 2px solid #A78BFA;
 }
 </style>

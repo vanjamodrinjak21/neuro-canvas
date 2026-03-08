@@ -112,7 +112,10 @@ export const cacheKeys = {
   session: (token: string) => `session:${token}`,
   embedding: (textHash: string) => `emb:${textHash}`,
   embeddingByNode: (mapId: string, nodeId: string) => `emb:map:${mapId}:node:${nodeId}`,
-  embeddingsByMap: (mapId: string) => `emb:map:${mapId}:*`
+  embeddingsByMap: (mapId: string) => `emb:map:${mapId}:*`,
+  // AI response cache keys
+  aiResponse: (hash: string) => `ai:resp:${hash}`,
+  aiResponsePattern: () => `ai:resp:*`
 }
 
 /**
