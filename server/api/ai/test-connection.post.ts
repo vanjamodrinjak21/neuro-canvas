@@ -1,7 +1,8 @@
-/**
- * AI Connection Test Proxy API
- * Tests connections to AI providers server-side to avoid CORS issues
- */
+import { requireAuthSession } from '../../utils/syncHelpers'
+import { serverFullDecrypt } from '../../utils/encryption'
+import { prisma } from '../../utils/prisma'
+import { validateBody, aiTestConnectionSchema } from '../../utils/validation'
+import { validateOutboundUrl } from '../../utils/ssrf'
 
 interface AIModel {
   id: string
@@ -10,27 +11,42 @@ interface AIModel {
 }
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
+  const { userId } = await requireAuthSession(event)
+  const body = validateBody(aiTestConnectionSchema, await readBody(event))
 
-  const { provider, apiKey, baseUrl } = body
+  let apiKey: string | null = null
 
-  if (!provider) {
-    throw createError({
-      statusCode: 400,
-      message: 'Missing provider'
+  if (body.credentialId) {
+    const credential = await prisma.credential.findFirst({
+      where: { id: body.credentialId, userId },
+      select: { encryptedValue: true }
     })
+    if (!credential) {
+      return { success: false, message: 'Credential not found' }
+    }
+    try {
+      apiKey = serverFullDecrypt(userId, credential.encryptedValue)
+    } catch {
+      return { success: false, message: 'Failed to decrypt stored credential' }
+    }
+  } else if (body.apiKey) {
+    apiKey = body.apiKey
   }
 
+  const urlCheck = validateOutboundUrl(body.baseUrl, body.provider)
+  if (!urlCheck.safe) {
+    return { success: false, message: urlCheck.error || 'Invalid URL' }
+  }
+  const baseUrl = urlCheck.resolvedUrl
+
   try {
-    switch (provider) {
+    switch (body.provider) {
       case 'ollama': {
-        // Test Ollama connection and fetch models
-        const ollamaUrl = baseUrl || 'http://localhost:11434'
-        const response = await fetch(`${ollamaUrl}/api/tags`)
+        const response = await fetch(`${baseUrl}/api/tags`)
         if (!response.ok) {
           return { success: false, message: 'Failed to connect to Ollama server' }
         }
-        const data = await response.json()
+        const data = await response.json() as any
         const models: AIModel[] = (data.models || []).map((m: { name: string }) => ({
           id: m.name,
           name: m.name
@@ -39,32 +55,20 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'openai': {
-        if (!apiKey) {
-          return { success: false, message: 'API key not set' }
-        }
-        const openaiUrl = baseUrl || 'https://api.openai.com/v1'
-        const response = await fetch(`${openaiUrl}/models`, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
+        if (!apiKey) return { success: false, message: 'API key not set' }
+        const response = await fetch(`${baseUrl}/models`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` }
         })
         if (!response.ok) {
-          const error = await response.json().catch(() => ({}))
-          return {
-            success: false,
-            message: error.error?.message || 'Invalid API key'
-          }
+          const error = await response.json().catch(() => ({})) as any
+          return { success: false, message: error.error?.message || 'Invalid API key' }
         }
         return { success: true, message: 'API key verified' }
       }
 
       case 'anthropic': {
-        if (!apiKey) {
-          return { success: false, message: 'API key not set' }
-        }
-        const anthropicUrl = baseUrl || 'https://api.anthropic.com/v1'
-        // Anthropic doesn't have a models endpoint, so we do a simple test
-        const response = await fetch(`${anthropicUrl}/messages`, {
+        if (!apiKey) return { success: false, message: 'API key not set' }
+        const response = await fetch(`${baseUrl}/messages`, {
           method: 'POST',
           headers: {
             'x-api-key': apiKey,
@@ -77,31 +81,20 @@ export default defineEventHandler(async (event) => {
             messages: [{ role: 'user', content: 'Hi' }]
           })
         })
-        // 200 or 429 (rate limit) both mean the key is valid
         if (response.ok || response.status === 429) {
           return { success: true, message: 'API key verified' }
         }
-        const error = await response.json().catch(() => ({}))
-        return {
-          success: false,
-          message: error.error?.message || 'Invalid API key'
-        }
+        const error = await response.json().catch(() => ({})) as any
+        return { success: false, message: error.error?.message || 'Invalid API key' }
       }
 
       case 'openrouter': {
-        if (!apiKey) {
-          return { success: false, message: 'API key not set' }
-        }
-        const openrouterUrl = baseUrl || 'https://openrouter.ai/api/v1'
-        const response = await fetch(`${openrouterUrl}/models`, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
+        if (!apiKey) return { success: false, message: 'API key not set' }
+        const response = await fetch(`${baseUrl}/models`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` }
         })
-        if (!response.ok) {
-          return { success: false, message: 'Invalid API key' }
-        }
-        const data = await response.json()
+        if (!response.ok) return { success: false, message: 'Invalid API key' }
+        const data = await response.json() as any
         const models: AIModel[] = (data.data || []).slice(0, 50).map((m: { id: string; name?: string; context_length?: number }) => ({
           id: m.id,
           name: m.name || m.id,
@@ -111,26 +104,15 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'custom': {
-        if (!baseUrl) {
-          return { success: false, message: 'Custom provider requires baseUrl' }
-        }
-        // For custom providers, just check if the URL is reachable
-        const response = await fetch(baseUrl, {
-          method: 'HEAD'
-        }).catch(() => null)
-        if (response?.ok) {
-          return { success: true, message: 'Endpoint reachable' }
-        }
+        const response = await fetch(baseUrl, { method: 'HEAD' }).catch(() => null)
+        if (response?.ok) return { success: true, message: 'Endpoint reachable' }
         return { success: false, message: 'Could not reach endpoint' }
       }
 
       default:
-        return { success: false, message: `Unknown provider type: ${provider}` }
+        return { success: false, message: `Unknown provider: ${body.provider}` }
     }
   } catch (e) {
-    return {
-      success: false,
-      message: e instanceof Error ? e.message : 'Connection failed'
-    }
+    return { success: false, message: e instanceof Error ? e.message : 'Connection failed' }
   }
 })
