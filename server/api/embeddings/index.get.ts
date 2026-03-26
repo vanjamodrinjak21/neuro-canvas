@@ -1,5 +1,5 @@
-import { getServerSession } from '#auth'
 import { cache, cacheKeys } from '../../utils/redis'
+import { requireAuthSession } from '../../utils/syncHelpers'
 
 interface CachedEmbedding {
   embedding: number[]
@@ -7,34 +7,22 @@ interface CachedEmbedding {
 }
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
-
-  if (!session?.user?.email) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized'
-    })
-  }
+  await requireAuthSession(event)
 
   const query = getQuery(event)
   const mapId = query.mapId as string
   const nodeIds = query.nodeIds as string
 
   if (!mapId || !nodeIds) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing mapId or nodeIds query parameter'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Missing mapId or nodeIds query parameter' })
   }
 
-  // Parse nodeIds (comma-separated)
-  const nodeIdList = nodeIds.split(',').filter(Boolean)
+  const nodeIdList = nodeIds.split(',').filter(Boolean).slice(0, 500)
 
   if (nodeIdList.length === 0) {
     return { embeddings: [] }
   }
 
-  // Fetch embeddings for each node
   const embeddings: Array<{ nodeId: string; embedding: number[] }> = []
 
   for (const nodeId of nodeIdList) {
@@ -43,10 +31,7 @@ export default defineEventHandler(async (event) => {
     )
 
     if (cached?.embedding) {
-      embeddings.push({
-        nodeId,
-        embedding: cached.embedding
-      })
+      embeddings.push({ nodeId, embedding: cached.embedding })
     }
   }
 
