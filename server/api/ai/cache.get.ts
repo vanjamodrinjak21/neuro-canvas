@@ -1,8 +1,5 @@
-/**
- * AI Response Cache — GET
- * Retrieves cached AI response by prompt hash
- */
 import { cache, cacheKeys } from '../../utils/redis'
+import { requireAuthSession } from '../../utils/syncHelpers'
 
 interface CachedResponse {
   response: string
@@ -11,14 +8,13 @@ interface CachedResponse {
 }
 
 export default defineEventHandler(async (event) => {
+  await requireAuthSession(event)
+
   const query = getQuery(event)
   const hash = query.hash as string
 
-  if (!hash) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing hash parameter'
-    })
+  if (!hash || hash.length > 256) {
+    throw createError({ statusCode: 400, statusMessage: 'Missing or invalid hash parameter' })
   }
 
   const cached = await cache.get<CachedResponse>(cacheKeys.aiResponse(hash))

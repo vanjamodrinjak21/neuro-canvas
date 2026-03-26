@@ -1,29 +1,13 @@
-/**
- * AI Response Cache — POST
- * Stores an AI response in Redis with TTL
- */
 import { cache, cacheKeys } from '../../utils/redis'
+import { requireAuthSession } from '../../utils/syncHelpers'
+import { validateBody, aiCachePostSchema } from '../../utils/validation'
 
-interface CacheRequestBody {
-  hash: string
-  response: string
-  usage?: unknown
-  ttlSeconds?: number
-}
-
-// Default TTL: 1 hour
 const DEFAULT_TTL = 3600
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<CacheRequestBody>(event)
+  await requireAuthSession(event)
 
-  if (!body.hash || !body.response) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing hash or response'
-    })
-  }
-
+  const body = validateBody(aiCachePostSchema, await readBody(event))
   const ttl = body.ttlSeconds || DEFAULT_TTL
 
   await cache.set(
