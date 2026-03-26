@@ -5,12 +5,15 @@ import { useAISettings } from '~/composables/useAISettings'
 export interface ResolvedProvider {
   type: string
   apiKey: string
+  credentialId?: string // Server vault credential ID (web only, for server-side decrypt)
   baseUrl?: string
   selectedModelId?: string
 }
 
 /**
  * Resolve the default AI provider and its API key.
+ * On web: returns credentialId so server can decrypt from vault (key never leaves server).
+ * On Tauri: returns decrypted apiKey for direct provider calls.
  * Throws descriptive errors if not configured.
  */
 export async function resolveProvider(): Promise<ResolvedProvider> {
@@ -26,9 +29,13 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     throw new Error('No API key configured for the selected provider.')
   }
 
+  // On web, prefer credentialId for server-side decryption
+  const credentialId = aiSettings.getProviderCredentialId(defaultProvider.id)
+
   return {
     type: defaultProvider.type,
     apiKey,
+    credentialId: credentialId || undefined,
     baseUrl: defaultProvider.baseUrl,
     selectedModelId: defaultProvider.selectedModelId
   }

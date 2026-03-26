@@ -11,6 +11,7 @@
 interface AICompletionRequest {
   provider: string
   apiKey: string
+  credentialId?: string // Server vault credential ID (web only)
   baseUrl?: string
   model?: string
   systemPrompt?: string
@@ -27,6 +28,7 @@ interface AICompletionResponse {
 interface AITestConnectionRequest {
   provider: string
   apiKey?: string | null
+  credentialId?: string // Server vault credential ID (web only)
   baseUrl?: string
 }
 
@@ -304,9 +306,13 @@ export async function aiComplete(req: AICompletionRequest): Promise<AICompletion
     return directComplete(req)
   }
 
+  // Web: prefer credentialId for server-side decrypt (key never leaves server)
+  const { apiKey, credentialId, ...rest } = req
   return $fetch<AICompletionResponse>('/api/ai/completions', {
     method: 'POST',
-    body: req
+    body: credentialId
+      ? { ...rest, credentialId }
+      : { ...rest, apiKey }
   })
 }
 
@@ -329,8 +335,12 @@ export async function aiTestConnection(req: AITestConnectionRequest): Promise<AI
     return directTestConnection(req)
   }
 
+  // Web: prefer credentialId for server-side decrypt
+  const { apiKey, credentialId, ...rest } = req
   return $fetch<AITestConnectionResponse>('/api/ai/test-connection', {
     method: 'POST',
-    body: req
+    body: credentialId
+      ? { ...rest, credentialId }
+      : { ...rest, apiKey }
   })
 }

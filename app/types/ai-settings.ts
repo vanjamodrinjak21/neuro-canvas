@@ -17,6 +17,7 @@ export interface AIProviderConfig {
   type: AIProviderType
   name: string
   apiKey?: string // Encrypted when stored
+  credentialId?: string // Server vault credential ID (web only)
   baseUrl?: string // For custom/Ollama providers
   models: AIModel[]
   selectedModelId?: string
@@ -61,6 +62,8 @@ export interface AISettings {
     useStreaming?: boolean
     /** Enable LLM-powered insights (requires provider) */
     useLLMInsights?: boolean
+    /** Which embedding model variant to use (Tauri only) */
+    embeddingModel?: 'quantized' | 'full'
   }
   updatedAt: number
 }
@@ -141,6 +144,7 @@ export const DEFAULT_AI_SETTINGS: Omit<AISettings, 'updatedAt'> = {
   preferences: {
     autoSuggestConnections: true,
     semanticFieldEnabled: true,
-    similarityThreshold: 0.3
+    similarityThreshold: 0.3,
+    embeddingModel: 'quantized'
   }
 }

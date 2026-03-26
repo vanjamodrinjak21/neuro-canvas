@@ -30,6 +30,7 @@ import {
 import { executeWithRetry } from '~/ai/pipeline/RetryStrategy'
 import { getSemanticCache } from '~/ai/pipeline/SemanticCache'
 import { getBatchOptimizer, BatchOptimizer } from '~/ai/pipeline/BatchOptimizer'
+import { useTauriML } from '~/composables/useTauriML'
 
 function _isTauri(): boolean {
   return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
@@ -61,6 +62,10 @@ export function useAI() {
   const modelStatus = ref<Record<string, AIModelStatus>>({})
   const loadProgress = ref<Record<string, number>>({})
   const error = ref<string | null>(null)
+  const backendType = ref<'native' | 'web' | null>(null)
+
+  // Tauri ML bridge (lazy, only created when running inside Tauri)
+  let tauriML: ReturnType<typeof useTauriML> | null = null
 
   // Semantic store for state management
   const semanticStore = useSemanticStore()
@@ -158,20 +163,37 @@ export function useAI() {
 
   /**
    * Initialize the AI system
+   * Uses native ONNX Runtime when running inside Tauri, web worker otherwise.
    */
   async function initialize(): Promise<boolean> {
     if (isInitialized.value) return true
-    if (typeof Worker === 'undefined') {
-      error.value = 'Web Workers not supported'
-      semanticStore.setAIError('Web Workers not supported')
-      return false
-    }
 
     isLoading.value = true
     error.value = null
     semanticStore.setAIStatus('loading-model')
 
     try {
+      // ── Native (Tauri) path ──
+      if (_isTauri()) {
+        tauriML = useTauriML()
+        const aiSettings = useAISettings()
+        const modelVariant = aiSettings.settings.value.preferences.embeddingModel || 'quantized'
+        const result = await tauriML.initialize((progress) => {
+          semanticStore.setModelProgress(progress * 100)
+        }, modelVariant)
+        isInitialized.value = result.initialized
+        backendType.value = 'native'
+        semanticStore.setModelLoaded(result.modelLoaded)
+        return result.initialized
+      }
+
+      // ── Web worker path ──
+      if (typeof Worker === 'undefined') {
+        error.value = 'Web Workers not supported'
+        semanticStore.setAIError('Web Workers not supported')
+        return false
+      }
+
       // Create worker
       worker = new Worker(
         new URL('../workers/ai.worker.ts', import.meta.url),
@@ -201,6 +223,7 @@ export function useAI() {
 
       isInitialized.value = result.initialized
       hasWebGPU.value = result.webgpu
+      backendType.value = 'web'
       semanticStore.setHasWebGPU(result.webgpu)
       semanticStore.setModelLoaded(result.modelLoaded)
 
@@ -353,6 +376,7 @@ export function useAI() {
               {
                 provider: provider.type,
                 apiKey: provider.apiKey,
+                credentialId: provider.credentialId,
                 baseUrl: provider.baseUrl,
                 model: provider.selectedModelId,
                 systemPrompt: system,
@@ -367,6 +391,7 @@ export function useAI() {
           const response = await aiComplete({
             provider: provider.type,
             apiKey: provider.apiKey,
+            credentialId: provider.credentialId,
             baseUrl: provider.baseUrl,
             model: provider.selectedModelId,
             systemPrompt: system,
@@ -428,6 +453,7 @@ export function useAI() {
         const response = await aiComplete({
           provider: provider.type,
           apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
           systemPrompt: system,
@@ -481,6 +507,7 @@ export function useAI() {
             {
               provider: provider.type,
               apiKey: provider.apiKey,
+            credentialId: provider.credentialId,
               baseUrl: provider.baseUrl,
               model: provider.selectedModelId,
               systemPrompt: system,
@@ -495,6 +522,7 @@ export function useAI() {
         const response = await aiComplete({
           provider: provider.type,
           apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
           systemPrompt: system,
@@ -545,6 +573,7 @@ export function useAI() {
         const response = await aiComplete({
           provider: provider.type,
           apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
           systemPrompt: system,
@@ -607,6 +636,7 @@ export function useAI() {
         const response = await aiComplete({
           provider: provider.type,
           apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
           systemPrompt: system,
@@ -673,6 +703,16 @@ export function useAI() {
     semanticStore.setAIStatus('computing')
 
     try {
+      // ── Native path ──
+      if (tauriML) {
+        const embeddings: number[][] = []
+        for (const text of texts) {
+          embeddings.push(await tauriML.embed(text))
+        }
+        return embeddings
+      }
+
+      // ── Web worker path ──
       const result = await sendMessage<{
         embeddings: number[][]
         dimensions: number
@@ -706,6 +746,18 @@ export function useAI() {
     semanticStore.setAIStatus('computing')
 
     try {
+      // ── Native path ──
+      if (tauriML) {
+        const result = await tauriML.embedBatch(
+          nodes.map(n => ({ id: n.id, text: n.content }))
+        )
+        for (const { id, embedding } of result.embeddings) {
+          semanticStore.setNodeEmbedding(id, embedding)
+        }
+        return
+      }
+
+      // ── Web worker path ──
       const result = await sendMessage<{
         embeddings: Array<{ id: string; embedding: number[] }>
         dimensions: number
@@ -749,15 +801,25 @@ export function useAI() {
     semanticStore.setAIStatus('computing')
 
     try {
+      const embeddingData = nodesWithEmbeddings.map((n: { nodeId: string; embedding: number[] }) => ({
+        id: n.nodeId,
+        embedding: n.embedding
+      }))
+
+      // ── Native path ──
+      if (tauriML) {
+        const result = await tauriML.computeSimilarities(embeddingData, threshold)
+        semanticStore.updateSimilarities(result.similarities)
+        return
+      }
+
+      // ── Web worker path ──
       const result = await sendMessage<{
         similarities: Array<{ sourceId: string; targetId: string; similarity: number }>
         pairsComputed: number
         pairsAboveThreshold: number
       }>('compute-similarities', {
-        embeddings: nodesWithEmbeddings.map((n: { nodeId: string; embedding: number[] }) => ({
-          id: n.nodeId,
-          embedding: n.embedding
-        })),
+        embeddings: embeddingData,
         threshold
       })
 
@@ -827,6 +889,24 @@ export function useAI() {
     error.value = null
 
     try {
+      // ── Native path ──
+      if (tauriML) {
+        const queryEmbedding = await tauriML.embed(query)
+        // Compute similarities in JS (dot product for L2-normalised vectors)
+        const results = nodeEmbeddings
+          .map(node => {
+            let dot = 0
+            for (let i = 0; i < queryEmbedding.length; i++) {
+              dot += (queryEmbedding[i] ?? 0) * (node.embedding[i] ?? 0)
+            }
+            return { nodeId: node.id, similarity: dot }
+          })
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, topK)
+        return results
+      }
+
+      // ── Web worker path ──
       const result = await sendMessage<{
         results: Array<{ nodeId: string; similarity: number }>
         query: string
@@ -1107,6 +1187,8 @@ export function useAI() {
       worker = null
     }
 
+    tauriML = null
+    backendType.value = null
     isInitialized.value = false
     pendingRequests.clear()
     semanticStore.$reset()
@@ -1122,6 +1204,7 @@ export function useAI() {
     isInitialized: readonly(isInitialized),
     isLoading: readonly(isLoading),
     hasWebGPU: readonly(hasWebGPU),
+    backendType: readonly(backendType),
     modelStatus: readonly(modelStatus),
     loadProgress: readonly(loadProgress),
     error: readonly(error),
@@ -1147,6 +1230,8 @@ export function useAI() {
     generateNodeDescription,
     generateMapStructure,
     hierarchicalExpand,
-    suggestTypedConnections
+    suggestTypedConnections,
+    // Worker communication (for SemanticProcessor)
+    sendMessage
   }
 }

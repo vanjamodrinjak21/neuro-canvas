@@ -29,6 +29,7 @@ export async function streamCompletion(
   params: {
     provider: string
     apiKey: string
+    credentialId?: string // Server vault credential ID (web only)
     baseUrl?: string
     model?: string
     systemPrompt?: string
@@ -45,12 +46,18 @@ export async function streamCompletion(
     return streamViaTauri(params, options)
   }
 
+  // Web: prefer credentialId for server-side decrypt (key never sent)
+  const { apiKey, credentialId, ...rest } = params
+  const streamBody = credentialId
+    ? { ...rest, credentialId }
+    : { ...rest, apiKey }
+
   // In web, use the SSE endpoint
   try {
     const response = await fetch('/api/ai/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify(streamBody),
       signal
     })
 
@@ -114,6 +121,7 @@ async function streamViaTauri(
   params: {
     provider: string
     apiKey: string
+    credentialId?: string
     baseUrl?: string
     model?: string
     systemPrompt?: string

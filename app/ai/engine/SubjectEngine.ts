@@ -318,6 +318,7 @@ async function llmPass(
   const response = await aiComplete({
     provider: provider.type,
     apiKey: provider.apiKey,
+    credentialId: provider.credentialId,
     baseUrl: provider.baseUrl,
     model: provider.selectedModelId,
     systemPrompt: 'You classify knowledge maps by domain. Reply with ONLY a JSON object: {"domain":"<domain>","confidence":<0-1>}. Valid domains: computer-science, mathematics, physics, engineering, biology, chemistry, medicine, psychology, education, business, marketing, finance, economics, law, philosophy, literature, art, music, history, writing, general',

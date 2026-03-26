@@ -15,6 +15,7 @@ import {
 } from '~/types/ai-settings'
 import { encrypt, decrypt, generateSessionPassphrase } from '~/utils/crypto'
 import { useDatabase } from '~/composables/useDatabase'
+import { useCredentialVault } from '~/composables/useCredentialVault'
 import { aiTestConnection } from '~/utils/aiClient'
 
 function _isTauri(): boolean {
@@ -38,6 +39,7 @@ const state = reactive<{
 
 export function useAISettings() {
   const db = useDatabase()
+  const vault = useCredentialVault()
 
   // In Tauri mode, provide a stable mock session (no auth server available)
   const _tauriSession = {
@@ -63,10 +65,17 @@ export function useAISettings() {
     state.settings.providers.filter(p => p.isEnabled)
   )
 
+  // Cache for KEK-derived passphrase
+  let _kekPassphrase: string | null = null
+  let _kekFetched = false
+
   /**
-   * Get the passphrase for encryption based on user session
+   * Get the passphrase for encryption — tries KEK first, falls back to old pattern
    */
   function getPassphrase(): string | null {
+    // If we've already fetched KEK, use it
+    if (_kekPassphrase) return _kekPassphrase
+
     const user = session.value?.user
     if (!user?.email) {
       console.warn('getPassphrase: No user email available', { session: session.value, user })
@@ -74,6 +83,44 @@ export function useAISettings() {
     }
     const id = (user as { id?: string }).id || user.email
     return generateSessionPassphrase(id, user.email)
+  }
+
+  /**
+   * Fetch KEK from server and re-encrypt existing secrets (one-time migration)
+   */
+  async function migrateToKEK(): Promise<void> {
+    if (_kekFetched || !vault.isVaultAvailable.value) return
+    _kekFetched = true
+
+    try {
+      const kek = await vault.fetchKEK()
+      if (!kek) return
+
+      const oldPassphrase = getPassphrase()
+      if (!oldPassphrase || oldPassphrase === kek) return
+
+      // Re-encrypt all existing secrets with the new KEK
+      for (const provider of state.settings.providers) {
+        const encryptedKey = await db.getSecret(provider.id)
+        if (!encryptedKey) continue
+
+        try {
+          // Decrypt with old passphrase
+          const plainKey = await decrypt(encryptedKey, oldPassphrase)
+          // Re-encrypt with KEK
+          const reEncrypted = await encrypt(plainKey, kek)
+          await db.saveSecret(provider.id, reEncrypted)
+          // Also sync to vault
+          await vault.syncToVault(provider.type, reEncrypted, plainKey.slice(0, 8))
+        } catch {
+          // Key might already be KEK-encrypted, or decrypt failed — skip
+        }
+      }
+
+      _kekPassphrase = kek
+    } catch {
+      // KEK fetch failed — continue with old passphrase
+    }
   }
 
   /**
@@ -103,6 +150,9 @@ export function useAISettings() {
       }
 
       state.isInitialized = true
+
+      // Attempt KEK migration in background (no-op if vault unavailable)
+      migrateToKEK().catch(() => {})
     } catch (e) {
       state.error = e instanceof Error ? e.message : 'Failed to load AI settings'
       console.error('Failed to initialize AI settings:', e)
@@ -168,6 +218,26 @@ export function useAISettings() {
       const encryptedKey = await encrypt(apiKey, passphrase)
       await db.saveSecret(id, encryptedKey)
       state.decryptedKeys.set(id, apiKey)
+
+      // Web only: sync encrypted key to server vault for server-side decrypt
+      if (vault.isVaultAvailable.value) {
+        try {
+          const result: { ok: boolean; credential?: { id: string } } = await ($fetch as any)('/api/vault/credentials', {
+            method: 'POST',
+            body: {
+              provider: type,
+              encryptedValue: encryptedKey,
+              keyPrefix: apiKey.slice(0, 8),
+              label: id
+            }
+          })
+          if (result.ok && result.credential) {
+            provider.credentialId = result.credential.id
+          }
+        } catch (err) {
+          console.error('Failed to sync key to vault:', err)
+        }
+      }
     }
 
     state.settings.providers.push(provider)
@@ -208,20 +278,43 @@ export function useAISettings() {
 
   /**
    * Update provider API key
+   * Uses KEK if available, otherwise falls back to legacy passphrase
    */
   async function updateProviderApiKey(id: string, apiKey: string): Promise<void> {
-    const passphrase = getPassphrase()
+    const passphrase = _kekPassphrase || getPassphrase()
     if (!passphrase) throw new Error('No user session')
 
     const encryptedKey = await encrypt(apiKey, passphrase)
     await db.saveSecret(id, encryptedKey)
     state.decryptedKeys.set(id, apiKey)
 
+    // Web only: sync updated key to server vault
+    const provider = state.settings.providers.find(p => p.id === id)
+    if (vault.isVaultAvailable.value && provider) {
+      try {
+        const result: { ok: boolean; credential?: { id: string } } = await ($fetch as any)('/api/vault/credentials', {
+          method: 'POST',
+          body: {
+            provider: provider.type,
+            encryptedValue: encryptedKey,
+            keyPrefix: apiKey.slice(0, 8),
+            label: id
+          }
+        })
+        if (result.ok && result.credential) {
+          provider.credentialId = result.credential.id
+        }
+      } catch (err) {
+        console.error('Failed to sync key to vault:', err)
+      }
+    }
+
     await updateProvider(id, { updatedAt: Date.now() })
   }
 
   /**
    * Get decrypted API key for a provider
+   * Tries KEK first, then falls back to legacy passphrase
    */
   async function getProviderApiKey(id: string): Promise<string | null> {
     // Check in-memory cache first
@@ -229,20 +322,50 @@ export function useAISettings() {
       return state.decryptedKeys.get(id) || null
     }
 
-    const passphrase = getPassphrase()
-    if (!passphrase) return null
-
     try {
       const encryptedKey = await db.getSecret(id)
       if (!encryptedKey) return null
 
-      const decrypted = await decrypt(encryptedKey, passphrase)
-      state.decryptedKeys.set(id, decrypted)
-      return decrypted
+      // Try KEK passphrase first (if available)
+      if (_kekPassphrase) {
+        try {
+          const decrypted = await decrypt(encryptedKey, _kekPassphrase)
+          state.decryptedKeys.set(id, decrypted)
+          return decrypted
+        } catch {
+          // KEK didn't work — fall through to legacy passphrase
+        }
+      }
+
+      // Fall back to legacy session passphrase
+      const user = session.value?.user
+      if (user?.email) {
+        const uid = (user as { id?: string }).id || user.email
+        const legacyPassphrase = generateSessionPassphrase(uid, user.email)
+        try {
+          const decrypted = await decrypt(encryptedKey, legacyPassphrase)
+          state.decryptedKeys.set(id, decrypted)
+          return decrypted
+        } catch {
+          // Legacy passphrase also failed
+        }
+      }
+
+      console.error('Failed to decrypt API key: no valid passphrase')
+      return null
     } catch (e) {
       console.error('Failed to decrypt API key:', e)
       return null
     }
+  }
+
+  /**
+   * Get the vault credential ID for a provider (web only).
+   * Returns null for Tauri or if no credential is stored in vault.
+   */
+  function getProviderCredentialId(id: string): string | null {
+    const provider = state.settings.providers.find(p => p.id === id)
+    return provider?.credentialId || null
   }
 
   /**
@@ -510,6 +633,7 @@ export function useAISettings() {
     updateProvider,
     updateProviderApiKey,
     getProviderApiKey,
+    getProviderCredentialId,
     hasProviderApiKey,
     deleteProvider,
     setDefaultProvider,

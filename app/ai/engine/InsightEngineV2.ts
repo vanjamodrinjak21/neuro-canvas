@@ -89,6 +89,7 @@ export async function generateInsights(
     const response = await aiComplete({
       provider: provider.type,
       apiKey: provider.apiKey,
+      credentialId: provider.credentialId,
       baseUrl: provider.baseUrl,
       model: provider.selectedModelId,
       systemPrompt: system,
