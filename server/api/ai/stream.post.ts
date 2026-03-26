@@ -1,17 +1,53 @@
-/**
- * AI Streaming Proxy API
- * SSE streaming endpoint for AI providers
- */
+import { requireAuthSession } from '../../utils/syncHelpers'
+import { checkRateLimit } from '../../utils/redis'
+import { serverFullDecrypt } from '../../utils/encryption'
+import { prisma } from '../../utils/prisma'
+import { validateBody, aiCompletionSchema } from '../../utils/validation'
+import { validateOutboundUrl } from '../../utils/ssrf'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  const { provider, apiKey, model, messages, systemPrompt, maxTokens = 500, temperature = 0.7 } = body
+  const { userId } = await requireAuthSession(event)
 
-  if (!provider || !apiKey) {
-    throw createError({ statusCode: 400, message: 'Missing provider or apiKey' })
+  const { allowed } = await checkRateLimit(`ai:${userId}`, 30, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'AI rate limit exceeded' })
   }
 
-  // Set SSE headers
+  const body = validateBody(aiCompletionSchema, await readBody(event))
+
+  let apiKey: string | null = null
+
+  if (body.credentialId) {
+    const credential = await prisma.credential.findFirst({
+      where: { id: body.credentialId, userId },
+      select: { encryptedValue: true }
+    })
+    if (!credential) {
+      throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
+    }
+    try {
+      apiKey = serverFullDecrypt(userId, credential.encryptedValue)
+    } catch {
+      throw createError({ statusCode: 500, statusMessage: 'Failed to decrypt credential' })
+    }
+    prisma.credential.update({
+      where: { id: body.credentialId },
+      data: { lastUsed: new Date() }
+    }).catch(() => {})
+  } else if (body.apiKey) {
+    apiKey = body.apiKey
+  }
+
+  if (!apiKey && body.provider !== 'ollama') {
+    throw createError({ statusCode: 400, statusMessage: 'API key required' })
+  }
+
+  const urlCheck = validateOutboundUrl(body.baseUrl, body.provider)
+  if (!urlCheck.safe) {
+    throw createError({ statusCode: 400, statusMessage: urlCheck.error || 'Invalid base URL' })
+  }
+  const baseUrl = urlCheck.resolvedUrl
+
   setResponseHeaders(event, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -27,38 +63,34 @@ export default defineEventHandler(async (event) => {
       }
 
       try {
-        switch (provider) {
+        switch (body.provider) {
           case 'openai':
           case 'openrouter':
           case 'custom': {
-            const baseUrl = body.baseUrl || (provider === 'openrouter'
-              ? 'https://openrouter.ai/api/v1'
-              : provider === 'custom' ? body.baseUrl : 'https://api.openai.com/v1')
-
             const response = await fetch(`${baseUrl}/chat/completions`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
-                ...(provider === 'openrouter' && {
+                ...(body.provider === 'openrouter' && {
                   'HTTP-Referer': 'https://neuro-canvas.com',
                   'X-Title': 'NeuroCanvas'
                 })
               },
               body: JSON.stringify({
-                model: model || (provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
-                messages: systemPrompt
-                  ? [{ role: 'system', content: systemPrompt }, ...messages]
-                  : messages,
-                temperature,
-                max_tokens: maxTokens,
+                model: body.model || (body.provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
+                messages: body.systemPrompt
+                  ? [{ role: 'system', content: body.systemPrompt }, ...body.messages]
+                  : body.messages,
+                temperature: body.temperature,
+                max_tokens: body.maxTokens,
                 stream: true
               })
             })
 
             if (!response.ok) {
               const err = await response.json().catch(() => ({}))
-              sendEvent({ type: 'error', message: err.error?.message || `API error: ${response.status}` })
+              sendEvent({ type: 'error', message: (err as any).error?.message || `API error: ${response.status}` })
               controller.close()
               return
             }
@@ -91,15 +123,9 @@ export default defineEventHandler(async (event) => {
                   try {
                     const parsed = JSON.parse(data)
                     const content = parsed.choices?.[0]?.delta?.content
-                    if (content) {
-                      sendEvent({ type: 'delta', content })
-                    }
-                    if (parsed.usage) {
-                      sendEvent({ type: 'done', usage: parsed.usage })
-                    }
-                  } catch {
-                    // Skip malformed SSE data
-                  }
+                    if (content) sendEvent({ type: 'delta', content })
+                    if (parsed.usage) sendEvent({ type: 'done', usage: parsed.usage })
+                  } catch { /* skip malformed */ }
                 }
               }
             }
@@ -109,27 +135,25 @@ export default defineEventHandler(async (event) => {
           }
 
           case 'anthropic': {
-            const baseUrl = body.baseUrl || 'https://api.anthropic.com/v1'
-
             const response = await fetch(`${baseUrl}/messages`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'x-api-key': apiKey,
+                'x-api-key': apiKey!,
                 'anthropic-version': '2023-06-01'
               },
               body: JSON.stringify({
-                model: model || 'claude-sonnet-4-20250514',
-                max_tokens: maxTokens,
-                system: systemPrompt,
-                messages,
+                model: body.model || 'claude-sonnet-4-20250514',
+                max_tokens: body.maxTokens,
+                system: body.systemPrompt,
+                messages: body.messages,
                 stream: true
               })
             })
 
             if (!response.ok) {
               const err = await response.json().catch(() => ({}))
-              sendEvent({ type: 'error', message: err.error?.message || `API error: ${response.status}` })
+              sendEvent({ type: 'error', message: (err as any).error?.message || `API error: ${response.status}` })
               controller.close()
               return
             }
@@ -165,9 +189,7 @@ export default defineEventHandler(async (event) => {
                     if (parsed.type === 'message_stop') {
                       sendEvent({ type: 'done', usage: null })
                     }
-                  } catch {
-                    // Skip malformed lines
-                  }
+                  } catch { /* skip malformed */ }
                 }
               }
             }
@@ -177,16 +199,14 @@ export default defineEventHandler(async (event) => {
           }
 
           case 'ollama': {
-            const baseUrl = body.baseUrl || 'http://localhost:11434'
-
             const response = await fetch(`${baseUrl}/api/chat`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                model: model || 'llama3.2',
-                messages: systemPrompt
-                  ? [{ role: 'system', content: systemPrompt }, ...messages]
-                  : messages,
+                model: body.model || 'llama3.2',
+                messages: body.systemPrompt
+                  ? [{ role: 'system', content: body.systemPrompt }, ...body.messages]
+                  : body.messages,
                 stream: true
               })
             })
@@ -219,15 +239,9 @@ export default defineEventHandler(async (event) => {
                 if (!line.trim()) continue
                 try {
                   const parsed = JSON.parse(line)
-                  if (parsed.message?.content) {
-                    sendEvent({ type: 'delta', content: parsed.message.content })
-                  }
-                  if (parsed.done) {
-                    sendEvent({ type: 'done', usage: null })
-                  }
-                } catch {
-                  // Skip malformed JSON
-                }
+                  if (parsed.message?.content) sendEvent({ type: 'delta', content: parsed.message.content })
+                  if (parsed.done) sendEvent({ type: 'done', usage: null })
+                } catch { /* skip malformed */ }
               }
             }
 
@@ -236,7 +250,7 @@ export default defineEventHandler(async (event) => {
           }
 
           default:
-            sendEvent({ type: 'error', message: `Unsupported provider: ${provider}` })
+            sendEvent({ type: 'error', message: `Unsupported provider: ${body.provider}` })
         }
       } catch (e) {
         sendEvent({ type: 'error', message: e instanceof Error ? e.message : 'Stream failed' })
