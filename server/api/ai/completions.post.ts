@@ -1,46 +1,75 @@
-/**
- * AI Completions Proxy API
- * Proxies requests to AI providers (OpenAI, Anthropic, etc.) to avoid CORS issues
- * API keys are sent from the client (encrypted in IndexedDB) and used server-side
- */
+import { requireAuthSession } from '../../utils/syncHelpers'
+import { checkRateLimit } from '../../utils/redis'
+import { serverFullDecrypt } from '../../utils/encryption'
+import { prisma } from '../../utils/prisma'
+import { validateBody, aiCompletionSchema } from '../../utils/validation'
+import { validateOutboundUrl } from '../../utils/ssrf'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
+  const { userId } = await requireAuthSession(event)
 
-  const { provider, apiKey, model, messages, systemPrompt, maxTokens = 500, temperature = 0.7 } = body
+  const { allowed, remaining } = await checkRateLimit(`ai:${userId}`, 30, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'AI rate limit exceeded. Try again later.' })
+  }
+  setResponseHeader(event, 'X-RateLimit-Remaining', String(remaining))
 
-  if (!provider || !apiKey) {
-    throw createError({
-      statusCode: 400,
-      message: 'Missing provider or apiKey'
+  const body = validateBody(aiCompletionSchema, await readBody(event))
+
+  let apiKey: string | null = null
+
+  if (body.credentialId) {
+    const credential = await prisma.credential.findFirst({
+      where: { id: body.credentialId, userId },
+      select: { encryptedValue: true }
     })
+    if (!credential) {
+      throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
+    }
+    try {
+      apiKey = serverFullDecrypt(userId, credential.encryptedValue)
+    } catch {
+      throw createError({ statusCode: 500, statusMessage: 'Failed to decrypt credential' })
+    }
+    prisma.credential.update({
+      where: { id: body.credentialId },
+      data: { lastUsed: new Date() }
+    }).catch(() => {})
+  } else if (body.apiKey) {
+    apiKey = body.apiKey
   }
 
+  if (!apiKey && body.provider !== 'ollama') {
+    throw createError({ statusCode: 400, statusMessage: 'API key required (provide credentialId or apiKey)' })
+  }
+
+  const urlCheck = validateOutboundUrl(body.baseUrl, body.provider)
+  if (!urlCheck.safe) {
+    throw createError({ statusCode: 400, statusMessage: urlCheck.error || 'Invalid base URL' })
+  }
+  const baseUrl = urlCheck.resolvedUrl
+
   try {
-    switch (provider) {
+    switch (body.provider) {
       case 'openai':
       case 'openrouter': {
-        const baseUrl = body.baseUrl || (provider === 'openrouter'
-          ? 'https://openrouter.ai/api/v1'
-          : 'https://api.openai.com/v1')
-
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`,
-            ...(provider === 'openrouter' && {
+            ...(body.provider === 'openrouter' && {
               'HTTP-Referer': 'https://neuro-canvas.com',
               'X-Title': 'NeuroCanvas'
             })
           },
           body: JSON.stringify({
-            model: model || (provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
-            messages: systemPrompt
-              ? [{ role: 'system', content: systemPrompt }, ...messages]
-              : messages,
-            temperature,
-            max_tokens: maxTokens
+            model: body.model || (body.provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
+            messages: body.systemPrompt
+              ? [{ role: 'system', content: body.systemPrompt }, ...body.messages]
+              : body.messages,
+            temperature: body.temperature,
+            max_tokens: body.maxTokens
           })
         })
 
@@ -48,11 +77,11 @@ export default defineEventHandler(async (event) => {
           const err = await response.json().catch(() => ({}))
           throw createError({
             statusCode: response.status,
-            message: err.error?.message || `API error: ${response.status}`
+            message: (err as any).error?.message || `API error: ${response.status}`
           })
         }
 
-        const data = await response.json()
+        const data = await response.json() as any
         return {
           content: data.choices?.[0]?.message?.content || '',
           usage: data.usage
@@ -60,20 +89,18 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'anthropic': {
-        const baseUrl = body.baseUrl || 'https://api.anthropic.com/v1'
-
         const response = await fetch(`${baseUrl}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': apiKey,
+            'x-api-key': apiKey!,
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: model || 'claude-sonnet-4-20250514',
-            max_tokens: maxTokens,
-            system: systemPrompt,
-            messages: messages
+            model: body.model || 'claude-sonnet-4-20250514',
+            max_tokens: body.maxTokens,
+            system: body.systemPrompt,
+            messages: body.messages
           })
         })
 
@@ -81,11 +108,11 @@ export default defineEventHandler(async (event) => {
           const err = await response.json().catch(() => ({}))
           throw createError({
             statusCode: response.status,
-            message: err.error?.message || `API error: ${response.status}`
+            message: (err as any).error?.message || `API error: ${response.status}`
           })
         }
 
-        const data = await response.json()
+        const data = await response.json() as any
         return {
           content: data.content?.[0]?.text || '',
           usage: data.usage
@@ -93,18 +120,14 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'ollama': {
-        const baseUrl = body.baseUrl || 'http://localhost:11434'
-
         const response = await fetch(`${baseUrl}/api/chat`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: model || 'llama3.2',
-            messages: systemPrompt
-              ? [{ role: 'system', content: systemPrompt }, ...messages]
-              : messages,
+            model: body.model || 'llama3.2',
+            messages: body.systemPrompt
+              ? [{ role: 'system', content: body.systemPrompt }, ...body.messages]
+              : body.messages,
             stream: false
           })
         })
@@ -116,7 +139,7 @@ export default defineEventHandler(async (event) => {
           })
         }
 
-        const data = await response.json()
+        const data = await response.json() as any
         return {
           content: data.message?.content || '',
           usage: null
@@ -124,27 +147,19 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'custom': {
-        if (!body.baseUrl) {
-          throw createError({
-            statusCode: 400,
-            message: 'Custom provider requires baseUrl'
-          })
-        }
-
-        // Assume OpenAI-compatible API for custom providers
-        const response = await fetch(`${body.baseUrl}/chat/completions`, {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            model: model || 'default',
-            messages: systemPrompt
-              ? [{ role: 'system', content: systemPrompt }, ...messages]
-              : messages,
-            temperature,
-            max_tokens: maxTokens
+            model: body.model || 'default',
+            messages: body.systemPrompt
+              ? [{ role: 'system', content: body.systemPrompt }, ...body.messages]
+              : body.messages,
+            temperature: body.temperature,
+            max_tokens: body.maxTokens
           })
         })
 
@@ -152,11 +167,11 @@ export default defineEventHandler(async (event) => {
           const err = await response.json().catch(() => ({}))
           throw createError({
             statusCode: response.status,
-            message: err.error?.message || `API error: ${response.status}`
+            message: (err as any).error?.message || `API error: ${response.status}`
           })
         }
 
-        const data = await response.json()
+        const data = await response.json() as any
         return {
           content: data.choices?.[0]?.message?.content || '',
           usage: data.usage
@@ -164,17 +179,12 @@ export default defineEventHandler(async (event) => {
       }
 
       default:
-        throw createError({
-          statusCode: 400,
-          message: `Unsupported provider: ${provider}`
-        })
+        throw createError({ statusCode: 400, message: `Unsupported provider: ${body.provider}` })
     }
   } catch (e) {
-    if ((e as { statusCode?: number }).statusCode) {
-      throw e
-    }
+    if ((e as { statusCode?: number }).statusCode) throw e
     throw createError({
-      statusCode: 500,
+      statusCode: 502,
       message: e instanceof Error ? e.message : 'AI request failed'
     })
   }
