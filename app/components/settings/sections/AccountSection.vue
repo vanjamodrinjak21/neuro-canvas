@@ -5,7 +5,8 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { data: session } = useAuth()
+const { data: _sessionData } = useAuth()
+const session = _sessionData ?? ref(null)
 const { handleSignOut, isLoading: signOutLoading } = useAuthStore()
 const aiSettings = useAISettings()
 
@@ -197,6 +198,7 @@ async function onSignOut() {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
+  min-height: 44px;
   background: var(--nc-surface, #0C0C10);
   border: 1px solid var(--nc-border, #252529);
   border-radius: 10px;
@@ -264,7 +266,7 @@ async function onSignOut() {
 
 .signout-note {
   font-size: 0.75rem;
-  color: var(--nc-ink-faint, #71717A);
+  color: var(--nc-ink-muted, #A1A1AA);
   margin: 0;
 }
 </style>

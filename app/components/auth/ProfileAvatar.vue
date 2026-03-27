@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { data: session } = useAuth()
+const { data: _sessionData } = useAuth()
+const session = _sessionData ?? ref(null)
 
 const emit = defineEmits<{
   click: []

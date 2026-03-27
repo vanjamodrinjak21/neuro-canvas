@@ -39,6 +39,7 @@ const emit = defineEmits<{
   'pan-end': [velocity: { vx: number; vy: number }]
   'contextmenu': [event: { node: Node | null; edge: Edge | null; position: Point; screenPosition: Point }]
   'node-edit': [node: Node]
+  'node-hover': [event: { nodeId: string | null; screenPosition: Point }]
   'drop-category': [event: { category: { id: string; label: string; color: string }; position: Point }]
   'drop-node': [event: { nodeId: string; position: Point }]
 }>()
@@ -144,25 +145,66 @@ const { gpu, isMobile } = usePlatform()
 const rendererType = ref<'webgpu' | 'webgl2' | 'canvas2d'>('canvas2d')
 const isRendererReady = ref(false)
 
-// Device pixel ratio
-const dpr = computed(() => typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)
+// Device pixel ratio — cap at 2 on mobile to prevent 3x rendering killing perf
+const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768
+const dpr = computed(() => {
+  if (typeof window === 'undefined') return 1
+  const raw = window.devicePixelRatio || 1
+  return isMobileViewport ? Math.min(raw, 2) : raw
+})
 
-// Minimal Canvas — Clean, visible interface
-const colors = {
-  canvasBg: '#0A0A0C',                      // Canvas base
-  gridDot: '#1A1A1E',                       // Subtle dot grid
-  gridLine: 'rgba(255, 255, 255, 0.02)',    // Major grid lines
-  nodeSelected: '#00D2BE',                  // Petronas Teal
-  nodeGlow: 'rgba(0, 210, 190, 0.08)',      // Subtle accent glow
-  nodeHoverBorder: '#00D2BE',               // Teal border on hover
-  nodeAiGlow: 'rgba(0, 210, 190, 0.15)',    // AI suggestion glow
-  nodeHighlightGlow: 'rgba(0, 210, 190, 0.1)', // Highlighted glow
-  edgeSelected: '#00D2BE',                  // Petronas Teal
-  edgeDefault: '#3A3A42',                   // Edge color (visible)
-  nodeBg: '#1A1A20',                        // Node background (lighter)
-  nodeBorder: '#3A3A42',                    // Node border (more visible)
-  nodeText: '#FAFAFA'                       // Text
+// Theme-aware color palettes
+const darkColors = {
+  canvasBg: '#0A0A0C',
+  gridDot: '#1A1A1E',
+  gridLine: 'rgba(255, 255, 255, 0.02)',
+  nodeSelected: '#00D2BE',
+  nodeGlow: 'rgba(0, 210, 190, 0.08)',
+  nodeHoverBorder: '#00D2BE',
+  nodeAiGlow: 'rgba(0, 210, 190, 0.15)',
+  nodeHighlightGlow: 'rgba(0, 210, 190, 0.1)',
+  edgeSelected: '#00D2BE',
+  edgeDefault: '#3A3A42',
+  nodeBg: '#111113',
+  nodeBorder: '#27272A',
+  nodeTier2Bg: '#0D0D0F',
+  nodeText: '#FAFAFA'
 }
+
+const lightColors = {
+  canvasBg: '#FAFAF9',
+  gridDot: '#D4D4D8',
+  gridLine: 'rgba(0, 0, 0, 0.03)',
+  nodeSelected: '#00D2BE',
+  nodeGlow: 'rgba(0, 210, 190, 0.06)',
+  nodeHoverBorder: '#00D2BE',
+  nodeAiGlow: 'rgba(0, 210, 190, 0.10)',
+  nodeHighlightGlow: 'rgba(0, 210, 190, 0.08)',
+  edgeSelected: '#00D2BE',
+  edgeDefault: '#D4D4D8',
+  nodeBg: '#FFFFFF',
+  nodeBorder: '#E8E8E6',
+  nodeTier2Bg: '#F5F5F3',
+  nodeText: '#111111'
+}
+
+// Reactive theme detection
+const isLightTheme = ref(false)
+
+function checkTheme() {
+  if (typeof document !== 'undefined') {
+    isLightTheme.value = document.documentElement.classList.contains('light')
+  }
+}
+
+onMounted(() => {
+  checkTheme()
+  const observer = new MutationObserver(checkTheme)
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+  onBeforeUnmount(() => observer.disconnect())
+})
+
+const colors = computed(() => isLightTheme.value ? lightColors : darkColors)
 
 // Update which anchors should be visible
 function updateAnchorVisibility() {
@@ -210,6 +252,19 @@ function getNodeState(node: Node): NodeState {
   return 'normal'
 }
 
+// Emit node-hover when hoveredNodeId changes
+watch(hoveredNodeId, (nodeId) => {
+  if (nodeId) {
+    const node = mapStore.nodes.get(nodeId)
+    if (node) {
+      const sp = worldToScreen(node.position.x + node.size.width / 2, node.position.y)
+      emit('node-hover', { nodeId, screenPosition: sp })
+    }
+  } else {
+    emit('node-hover', { nodeId: null, screenPosition: { x: 0, y: 0 } })
+  }
+})
+
 // Watch for tool changes to clear anchor visibility
 watch(() => props.tool, (newTool, oldTool) => {
   if (oldTool === 'connect' && newTool !== 'connect') {
@@ -254,19 +309,45 @@ function handleResize() {
   canvasRef.value.height = rect.height * dpr.value
   canvasRef.value.style.width = `${rect.width}px`
   canvasRef.value.style.height = `${rect.height}px`
-
-  requestAnimationFrame(render)
 }
 
 // Main render loop
 function render() {
-  if (!canvasRef.value || !isRendererReady.value) return
+  if (!canvasRef.value || !isRendererReady.value) {
+    requestAnimationFrame(render)
+    return
+  }
 
   const ctx = canvasRef.value.getContext('2d')
-  if (!ctx) return
+  if (!ctx) {
+    requestAnimationFrame(render)
+    return
+  }
+
+  try {
+    renderFrame(ctx)
+  } catch (e) {
+    // Don't let render errors kill the animation loop
+    if (import.meta.dev) console.warn('[Canvas] render error:', e)
+  }
+
+  requestAnimationFrame(render)
+}
+
+function renderFrame(ctx: CanvasRenderingContext2D) {
+  if (!canvasRef.value) return
 
   const { width, height } = canvasRef.value
   const currentTime = performance.now()
+
+  // On mobile, skip frames to maintain 30fps instead of 60fps when idle
+  if (isMobileViewport && !isDragging.value && !isPanning.value && !isConnecting.value) {
+    const elapsed = currentTime - lastFrameTime
+    if (elapsed < 30) { // ~30fps cap when idle on mobile
+      requestAnimationFrame(render)
+      return
+    }
+  }
 
   // Compute delta time for animations
   const dt = lastFrameTime === 0 ? 0.016 : Math.min((currentTime - lastFrameTime) / 1000, 0.064)
@@ -283,7 +364,7 @@ function render() {
   }
 
   // Clear canvas with warm off-white
-  ctx.fillStyle = colors.canvasBg
+  ctx.fillStyle = colors.value.canvasBg
   ctx.fillRect(0, 0, width, height)
 
   // Apply camera transform
@@ -293,7 +374,7 @@ function render() {
   ctx.scale(props.camera.zoom, props.camera.zoom)
 
   // Draw dot grid (editorial style)
-  drawDotGrid(ctx, props.camera, width, height, dpr.value, mapStore.settings.gridSize, mapStore.settings.gridEnabled, colors)
+  drawDotGrid(ctx, props.camera, width, height, dpr.value, mapStore.settings.gridSize, mapStore.settings.gridEnabled, colors.value)
 
   // Rebuild spatial index if dirty
   if (cullingDirty) {
@@ -312,7 +393,7 @@ function render() {
   if (props.camera.zoom < 0.3 && mapRegions?.value) {
     ctx.save()
     ctx.globalAlpha = 0.15
-    ctx.fillStyle = colors.nodeText
+    ctx.fillStyle = colors.value.nodeText
     ctx.font = `600 ${Math.max(24, 60 / props.camera.zoom * 0.05)}px "Inter", system-ui, sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -344,7 +425,7 @@ function render() {
       if (hoverProps && hoverProps.progress > 0) {
         ctx.save()
         // Glow effect
-        ctx.shadowColor = colors.nodeSelected
+        ctx.shadowColor = colors.value.nodeSelected
         ctx.shadowBlur = hoverProps.glowOpacity * 12
       }
       drawEdge(ctx, edge)
@@ -361,7 +442,7 @@ function render() {
         // Extreme zoom out: just a colored circle
         const cx = node.position.x + node.size.width / 2
         const cy = node.position.y + node.size.height / 2
-        ctx.fillStyle = node.style.borderColor || colors.nodeSelected
+        ctx.fillStyle = node.style.borderColor || colors.value.nodeSelected
         ctx.beginPath()
         ctx.arc(cx, cy, Math.max(4, Math.min(node.size.width, node.size.height) / 4), 0, Math.PI * 2)
         ctx.fill()
@@ -397,8 +478,8 @@ function render() {
       ctx.scale(ghost.scale, ghost.scale)
       ctx.translate(-cx, -cy)
       // Draw ghost node shape
-      ctx.fillStyle = snap.style.fillColor || colors.nodeBg
-      ctx.strokeStyle = snap.style.borderColor || colors.nodeBorder
+      ctx.fillStyle = snap.style.fillColor || colors.value.nodeBg
+      ctx.strokeStyle = snap.style.borderColor || colors.value.nodeBorder
       ctx.lineWidth = snap.style.borderWidth || 2
       const radius = snap.style.shape === 'circle' ? Math.min(snap.size.width, snap.size.height) / 2 : 8
       if (snap.style.shape === 'circle') {
@@ -413,7 +494,7 @@ function render() {
         ctx.stroke()
       }
       // Ghost text
-      ctx.fillStyle = snap.style.textColor || colors.nodeText
+      ctx.fillStyle = snap.style.textColor || colors.value.nodeText
       ctx.font = `${snap.style.fontWeight || 500} ${snap.style.fontSize || 14}px "Inter", system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -430,7 +511,7 @@ function render() {
       for (const ring of pulse.rings) {
         ctx.beginPath()
         ctx.arc(cx, cy, Math.max(node.size.width, node.size.height) / 2 + ring.radius, 0, Math.PI * 2)
-        ctx.strokeStyle = colors.nodeSelected
+        ctx.strokeStyle = colors.value.nodeSelected
         ctx.lineWidth = 2
         ctx.globalAlpha = ring.opacity * 0.4
         ctx.stroke()
@@ -463,7 +544,7 @@ function render() {
 
   // Draw smart alignment guides during drag
   if (isDragging.value && smartGuides.guides.value.length > 0) {
-    drawSmartGuides(ctx, smartGuides.guides.value, props.camera, width, height, dpr.value, colors.nodeSelected)
+    drawSmartGuides(ctx, smartGuides.guides.value, props.camera, width, height, dpr.value, colors.value.nodeSelected)
   }
 
   // Draw box selection rectangle
@@ -485,25 +566,12 @@ function render() {
     screenHeight
   )
   if (compassIndicators.length > 0) {
-    viewportCompass.draw(ctx, compassIndicators, screenWidth, screenHeight, colors.nodeSelected)
+    viewportCompass.draw(ctx, compassIndicators, screenWidth, screenHeight, colors.value.nodeSelected)
   }
 
-  // Draw spatial HUD in screen space
-  if (spatialHUD && mapRegions?.value) {
-    const hudData = spatialHUD.computeHUD(
-      props.camera,
-      mapStore.nodes,
-      visibleNodeIds,
-      mapRegions.value as any,
-      mapStore.rootNodeId
-    )
-    spatialHUD.draw(ctx, hudData, 12, screenHeight - 70)
-  }
+  // Spatial HUD is now rendered as a Vue overlay (SpatialHUDOverlay.vue)
 
   ctx.restore()
-
-  // Continue animation loop
-  requestAnimationFrame(render)
 }
 
 // (drawDotGrid and lerpColor extracted to renderers/drawGrid.ts and utils/color.ts)
@@ -539,38 +607,53 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
   }
 
   // Determine border color and width based on state - with interpolated hover
-  let borderColor = style.borderColor || colors.nodeBorder
+  let borderColor = style.borderColor || colors.value.nodeBorder
   let borderWidth = style.borderWidth || 2
-  let fillColor = style.fillColor || colors.nodeBg
+  let fillColor = style.fillColor || colors.value.nodeBg
 
   // Check if this is a root node
   const isRoot = node.isRoot || node.id === mapStore.rootNodeId
 
-  // Ensure minimum visibility - root nodes always have 2px border
-  if (borderWidth < 2) borderWidth = 2
-  if (isRoot) borderWidth = Math.max(borderWidth, 2)
+  // Root nodes: solid teal fill, no border per Paper spec
+  if (isRoot) {
+    fillColor = '#00D2BE'
+    borderWidth = 0
+  } else {
+    // Tier differentiation per Paper spec:
+    // Tier-1 (direct child of root): bg #111113, 1.5px border
+    // Tier-2+ (deeper): bg #0D0D0F, 1px border #27272A
+    const parentNode = node.parentId ? mapStore.nodes.get(node.parentId) : null
+    const parentIsRoot = parentNode?.isRoot || parentNode?.id === mapStore.rootNodeId
+    if (node.parentId && !parentIsRoot) {
+      // Tier-2+ node
+      fillColor = style.fillColor === '#111113' || !style.fillColor
+        ? colors.value.nodeTier2Bg
+        : fillColor
+      borderWidth = 1
+    }
+  }
 
   // Interpolated hover: blend border color and fill based on hoverProgress
   if (hoverProg > 0 && nodeState !== 'selected' && nodeState !== 'dragging') {
-    borderColor = lerpColor(style.borderColor || colors.nodeBorder, colors.nodeHoverBorder, hoverProg)
-    fillColor = lerpColor(style.fillColor || colors.nodeBg, '#1E1E24', hoverProg)
+    borderColor = lerpColor(style.borderColor || colors.value.nodeBorder, colors.value.nodeHoverBorder, hoverProg)
+    fillColor = lerpColor(style.fillColor || colors.value.nodeBg, isLightTheme.value ? '#E8E8E6' : '#1E1E24', hoverProg)
   }
 
   switch (nodeState) {
     case 'selected':
-      borderColor = colors.nodeSelected
+      borderColor = colors.value.nodeSelected
       break
     case 'hover':
       // Already handled by interpolated hover above
       break
     case 'ai-suggestion':
-      borderColor = colors.nodeSelected
+      borderColor = colors.value.nodeSelected
       borderWidth = 1
       fillColor = 'transparent'
       ctx.setLineDash([6, 4])
       break
     case 'highlighted':
-      borderColor = colors.nodeSelected
+      borderColor = colors.value.nodeSelected
       break
   }
 
@@ -584,7 +667,7 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
   ctx.strokeStyle = borderColor
   ctx.lineWidth = borderWidth
 
-  const radius = style.shape === 'circle' ? Math.min(drawWidth, drawHeight) / 2 : 8
+  const radius = style.shape === 'circle' ? Math.min(drawWidth, drawHeight) / 2 : 6
 
   if (style.shape === 'circle') {
     ctx.beginPath()
@@ -611,7 +694,7 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
   // Animated selection ring — grows from center based on selectionProgress
   if (selProg > 0) {
     const ringExpand = selProg * 3
-    ctx.strokeStyle = colors.nodeSelected
+    ctx.strokeStyle = colors.value.nodeSelected
     ctx.lineWidth = 1
     ctx.globalAlpha = selProg * 0.8
     ctx.beginPath()
@@ -629,8 +712,8 @@ function drawNode(ctx: CanvasRenderingContext2D, node: Node) {
   ctx.shadowOffsetX = 0
   ctx.shadowOffsetY = 0
 
-  // Draw text
-  ctx.fillStyle = style.textColor || colors.nodeText
+  // Draw text — root node always uses white text for contrast on teal bg
+  ctx.fillStyle = isRoot ? '#FAFAFA' : (style.textColor || colors.value.nodeText)
   ctx.font = `${style.fontWeight || 500} ${style.fontSize || 14}px "Inter", system-ui, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -671,8 +754,8 @@ function drawNodeSimplified(ctx: CanvasRenderingContext2D, node: Node) {
   const style = node.style
   const isSelected = mapStore.selection.nodeIds.has(node.id)
 
-  ctx.fillStyle = style.fillColor || colors.nodeBg
-  ctx.strokeStyle = isSelected ? colors.nodeSelected : (style.borderColor || colors.nodeBorder)
+  ctx.fillStyle = style.fillColor || colors.value.nodeBg
+  ctx.strokeStyle = isSelected ? colors.value.nodeSelected : (style.borderColor || colors.value.nodeBorder)
   ctx.lineWidth = isSelected ? 2 : 1
 
   const radius = style.shape === 'circle' ? Math.min(width, height) / 2 : 6
@@ -729,7 +812,7 @@ function drawEdge(ctx: CanvasRenderingContext2D, edge: Edge) {
 
   // Edge styling - highlight if selected or connected to selected node
   const isHighlighted = isSelected || isConnectedToSelection
-  ctx.strokeStyle = isHighlighted ? colors.edgeSelected : colors.edgeDefault
+  ctx.strokeStyle = isHighlighted ? colors.value.edgeSelected : colors.value.edgeDefault
   ctx.lineWidth = isHighlighted ? 2 : 1.5
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -742,7 +825,7 @@ function drawEdge(ctx: CanvasRenderingContext2D, edge: Edge) {
 
   // Add subtle glow for highlighted edges
   if (isHighlighted) {
-    ctx.shadowColor = colors.nodeSelected
+    ctx.shadowColor = colors.value.nodeSelected
     ctx.shadowBlur = 4
   }
 
@@ -825,7 +908,7 @@ function drawEdge(ctx: CanvasRenderingContext2D, edge: Edge) {
 
   // Draw arrow at end - using correct tangent point for direction
   if (style.arrowEnd !== 'none') {
-    drawArrow(ctx, targetPoint, arrowTangentPoint, style.arrowEnd, isHighlighted ? colors.edgeSelected : colors.edgeDefault, isHighlighted)
+    drawArrow(ctx, targetPoint, arrowTangentPoint, style.arrowEnd, isHighlighted ? colors.value.edgeSelected : colors.value.edgeDefault, isHighlighted)
   }
 }
 
@@ -934,7 +1017,7 @@ function drawAnimatedEdge(
   const drawProgress = getLineDrawProgress(animation, currentTime)
 
   // Draw edge styling
-  ctx.strokeStyle = isHighlighted ? colors.edgeSelected : colors.edgeDefault
+  ctx.strokeStyle = isHighlighted ? colors.value.edgeSelected : colors.value.edgeDefault
   ctx.lineWidth = isHighlighted ? 2 : 1.5
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -999,7 +1082,7 @@ function drawAnimatedEdge(
 
     ctx.beginPath()
     ctx.arc(pulseX, pulseY, 4, 0, Math.PI * 2)
-    ctx.fillStyle = colors.nodeSelected
+    ctx.fillStyle = colors.value.nodeSelected
     ctx.globalAlpha = opacity
     ctx.fill()
     ctx.globalAlpha = 1
@@ -1008,7 +1091,7 @@ function drawAnimatedEdge(
   // Draw arrow at end if animation is complete - use control point for tangent
   if (drawProgress >= 1 && style.arrowEnd !== 'none') {
     const tangentPoint = style.type === 'bezier' ? { x: cx2, y: cy2 } : sourcePoint
-    drawArrow(ctx, targetPoint, tangentPoint, style.arrowEnd, isHighlighted ? colors.edgeSelected : colors.edgeDefault, isHighlighted)
+    drawArrow(ctx, targetPoint, tangentPoint, style.arrowEnd, isHighlighted ? colors.value.edgeSelected : colors.value.edgeDefault, isHighlighted)
   }
 }
 
@@ -1110,18 +1193,18 @@ function drawAnchors(ctx: CanvasRenderingContext2D, node: Node, anchors: Anchor[
 
     // Glow effect for snapped anchor
     if (isSnapped) {
-      ctx.shadowColor = colors.nodeSelected
+      ctx.shadowColor = colors.value.nodeSelected
       ctx.shadowBlur = 12
     }
 
     // Outer ring
     ctx.beginPath()
     ctx.arc(point.x, point.y, size / 2, 0, Math.PI * 2)
-    ctx.fillStyle = isSnapped ? colors.nodeSelected : '#1A1A20'
+    ctx.fillStyle = isSnapped ? colors.value.nodeSelected : (isLightTheme.value ? '#F5F5F3' : '#1A1A20')
     ctx.fill()
 
     // Border
-    ctx.strokeStyle = isSnapped ? colors.nodeSelected : 'rgba(255,255,255,0.4)'
+    ctx.strokeStyle = isSnapped ? colors.value.nodeSelected : (isLightTheme.value ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.4)')
     ctx.lineWidth = isSnapped ? 2 : 1.5
     ctx.stroke()
 
@@ -1145,11 +1228,11 @@ function drawRootIndicator(ctx: CanvasRenderingContext2D, node: Node) {
   const indicatorY = y - 10
 
   // Subtle glow
-  ctx.shadowColor = colors.nodeSelected
+  ctx.shadowColor = colors.value.nodeSelected
   ctx.shadowBlur = 6
 
   // Draw premium pill-shaped indicator
-  ctx.fillStyle = colors.nodeSelected
+  ctx.fillStyle = colors.value.nodeSelected
   ctx.globalAlpha = 0.6
 
   // Rounded rectangle (pill shape)
@@ -1189,7 +1272,7 @@ function drawBoxSelection(ctx: CanvasRenderingContext2D) {
   ctx.fill()
 
   // Animated dashed border with teal
-  ctx.strokeStyle = colors.nodeSelected
+  ctx.strokeStyle = colors.value.nodeSelected
   ctx.lineWidth = 1 / props.camera.zoom
   const dashSize = 4 / props.camera.zoom
   ctx.setLineDash([dashSize, dashSize])
@@ -1212,7 +1295,7 @@ function drawBoxSelection(ctx: CanvasRenderingContext2D) {
     const badgeW = Math.max(metrics.width + 8 / props.camera.zoom, 16 / props.camera.zoom)
     const badgeH = 14 / props.camera.zoom
 
-    ctx.fillStyle = colors.nodeSelected
+    ctx.fillStyle = colors.value.nodeSelected
     ctx.beginPath()
     ctx.roundRect(badgeX - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, badgeH / 2)
     ctx.fill()
@@ -1303,11 +1386,11 @@ function drawConnectionPreview(ctx: CanvasRenderingContext2D) {
   }
 
   // Subtle glow effect
-  ctx.shadowColor = colors.nodeSelected
+  ctx.shadowColor = colors.value.nodeSelected
   ctx.shadowBlur = 8
 
   // Draw bezier curve with animated dashes
-  ctx.strokeStyle = colors.nodeSelected
+  ctx.strokeStyle = colors.value.nodeSelected
   ctx.lineWidth = 2
   ctx.setLineDash([8, 6])
   const dashOffset = -(performance.now() / 40) % 14
@@ -1322,7 +1405,7 @@ function drawConnectionPreview(ctx: CanvasRenderingContext2D) {
 
   // Draw end indicator
   ctx.globalAlpha = 1
-  ctx.fillStyle = colors.nodeSelected
+  ctx.fillStyle = colors.value.nodeSelected
 
   if (connectionSnapTarget.value) {
     // Snapped: draw premium ring indicator
@@ -1542,13 +1625,20 @@ function handlePointerDown(event: PointerEvent) {
           mapStore.select([], [edge.id])
         }
       } else {
-        // Click on empty canvas - start box selection
-        if (!event.shiftKey) {
+        // Empty canvas interaction
+        if (isMobileViewport && event.pointerType === 'touch') {
+          // Mobile: single-finger on empty canvas → pan
           mapStore.clearSelection()
+          isPanning.value = true
+        } else {
+          // Desktop: box selection
+          if (!event.shiftKey) {
+            mapStore.clearSelection()
+          }
+          isBoxSelecting.value = true
+          boxSelectionStart.value = worldPos
+          boxSelectionEnd.value = worldPos
         }
-        isBoxSelecting.value = true
-        boxSelectionStart.value = worldPos
-        boxSelectionEnd.value = worldPos
       }
     }
   } else if (props.tool === 'node') {
@@ -1922,7 +2012,11 @@ const touchStartZoom = ref(1)
 
 function handleTouchStart(event: TouchEvent) {
   if (event.touches.length === 2) {
-    // Pinch zoom start
+    // Pinch zoom start — cancel any single-finger drag in progress
+    pendingDrag.value = false
+    isDragging.value = false
+    isPanning.value = false
+
     const touch0 = event.touches[0]
     const touch1 = event.touches[1]
     if (!touch0 || !touch1) return
@@ -1930,12 +2024,14 @@ function handleTouchStart(event: TouchEvent) {
     const dy = touch0.clientY - touch1.clientY
     touchStartDistance.value = Math.sqrt(dx * dx + dy * dy)
     touchStartZoom.value = props.camera.zoom
+    event.preventDefault()
   }
 }
 
 function handleTouchMove(event: TouchEvent) {
   if (event.touches.length === 2 && touchStartDistance.value > 0) {
     // Pinch zoom
+    event.preventDefault()
     const touch0 = event.touches[0]
     const touch1 = event.touches[1]
     if (!touch0 || !touch1) return
@@ -1964,8 +2060,8 @@ onKeyStroke('Delete', () => {
   }
 })
 
-onKeyStroke('Backspace', () => {
-  if (!editingNode.value) {
+onKeyStroke('Backspace', (e) => {
+  if (!editingNode.value && (e.metaKey || e.ctrlKey)) {
     mapStore.deleteSelected()
   }
 })
@@ -2083,6 +2179,7 @@ function handleDrop(event: DragEvent) {
 // Expose methods and state for parent components
 defineExpose({
   containerRef,
+  canvasRef,
   hoveredNodeId,
   isDragOver,
   aiSuggestionNodeIds,
@@ -2112,6 +2209,8 @@ const cursorStyle = computed(() => {
   <div
     ref="containerRef"
     :class="['relative w-full h-full overflow-hidden select-none', cursorStyle]"
+    style="touch-action: none"
+    tabindex="0"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"

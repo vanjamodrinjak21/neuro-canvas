@@ -18,17 +18,72 @@ const isLoading = ref(true)
 const searchQuery = ref('')
 const sortBy = ref<'recent' | 'alphabetical' | 'nodes'>('recent')
 
+// Selection state
+const selectMode = ref(false)
+const selectedIds = ref<Set<string>>(new Set())
+
+const selectedCount = computed(() => selectedIds.value.size)
+const allSelected = computed(() =>
+  filteredMaps.value.length > 0 && selectedIds.value.size === filteredMaps.value.length
+)
+
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value
+  if (!selectMode.value) selectedIds.value = new Set()
+}
+
+function toggleSelect(mapId: string, event: Event) {
+  event.stopPropagation()
+  const next = new Set(selectedIds.value)
+  if (next.has(mapId)) next.delete(mapId)
+  else next.add(mapId)
+  selectedIds.value = next
+}
+
+function toggleSelectAll() {
+  if (allSelected.value) {
+    selectedIds.value = new Set()
+  } else {
+    selectedIds.value = new Set(filteredMaps.value.map(m => m.id))
+  }
+}
+
+async function deleteSelected() {
+  if (selectedIds.value.size === 0) return
+
+  const count = selectedIds.value.size
+  const confirmed = await confirm({
+    title: `Delete ${count} map${count > 1 ? 's' : ''}`,
+    description: `This will permanently delete ${count} map${count > 1 ? 's' : ''}. This action cannot be undone.`,
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    variant: 'danger',
+    icon: 'i-lucide-trash-2'
+  })
+
+  if (!confirmed) return
+
+  try {
+    for (const id of selectedIds.value) {
+      await db.deleteMap(id)
+    }
+    allMaps.value = allMaps.value.filter(m => !selectedIds.value.has(m.id))
+    selectedIds.value = new Set()
+    selectMode.value = false
+  } catch (error) {
+    console.error('Failed to delete maps:', error)
+  }
+}
+
 // Filtered and sorted maps
 const filteredMaps = computed(() => {
   let maps = [...allMaps.value]
 
-  // Filter by search query
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
     maps = maps.filter(m => m.title.toLowerCase().includes(query))
   }
 
-  // Sort
   switch (sortBy.value) {
     case 'recent':
       maps.sort((a, b) => b.updatedAt - a.updatedAt)
@@ -55,12 +110,10 @@ onMounted(async () => {
   }
 })
 
-// Open map
 function openMap(mapId: string) {
   router.push(`/map/${mapId}`)
 }
 
-// Delete map
 async function deleteMap(mapId: string, event: Event) {
   event.stopPropagation()
 
@@ -83,7 +136,6 @@ async function deleteMap(mapId: string, event: Event) {
   }
 }
 
-// Create new map
 async function createNewMap() {
   mapStore.newDocument()
   const doc = mapStore.toSerializable()
@@ -91,7 +143,6 @@ async function createNewMap() {
   await navigateTo(`/map/${doc.id}`)
 }
 
-// Format date
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp)
   const now = new Date()
@@ -106,65 +157,63 @@ function formatDate(timestamp: number): string {
 </script>
 
 <template>
-  <div class="maps-page">
-    <!-- Background effects -->
-    <div class="bg-grid" />
-    <div class="bg-noise" />
+  <div class="maps-layout">
+    <AppSidebar active-nav="maps" />
+    <MobileTabBar />
 
-    <!-- Header -->
-    <header class="header">
-      <div class="header-left">
-        <NuxtLink to="/dashboard" class="back-btn">
-          <span class="i-lucide-arrow-left" />
-        </NuxtLink>
-        <div class="header-text">
+    <main class="maps-main">
+      <!-- Header -->
+      <div class="maps-header">
+        <div class="header-left">
           <h1 class="header-title">All Maps</h1>
-          <p class="header-subtitle">{{ filteredMaps.length }} maps</p>
+          <span class="header-count">{{ filteredMaps.length }} mind maps</span>
         </div>
-      </div>
 
-      <button class="btn-primary" @click="createNewMap">
-        <span class="i-lucide-plus" />
-        New Map
-      </button>
-    </header>
-
-    <!-- Main content -->
-    <main class="main-content">
-      <!-- Search and filters -->
-      <div class="toolbar">
-        <div class="search-wrapper">
-          <span class="i-lucide-search search-icon" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            class="search-input"
-            placeholder="Search maps..."
+        <div class="header-actions">
+          <div class="search-box">
+            <span class="i-lucide-search search-icon" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="search-input"
+              placeholder="Search maps..."
+            >
+          </div>
+          <button
+            :class="['btn-filter', selectMode && 'active']"
+            @click="toggleSelectMode"
           >
-        </div>
-
-        <div class="sort-wrapper">
-          <label class="sort-label">Sort by:</label>
-          <select v-model="sortBy" class="sort-select">
-            <option value="recent">Most Recent</option>
-            <option value="alphabetical">Alphabetical</option>
-            <option value="nodes">Node Count</option>
-          </select>
+            <span class="i-lucide-check-square" />
+            {{ selectMode ? 'Cancel' : 'Select' }}
+          </button>
+          <button class="btn-sort">
+            <span class="i-lucide-arrow-up-down" />
+            Sort
+          </button>
         </div>
       </div>
 
-      <!-- Loading state -->
+      <!-- Select toolbar -->
+      <div v-if="selectMode" class="select-bar">
+        <button class="btn-select-all" @click="toggleSelectAll">
+          <span :class="allSelected ? 'i-lucide-check-square' : 'i-lucide-square'" />
+          {{ allSelected ? 'Deselect all' : 'Select all' }}
+        </button>
+        <span class="select-count">{{ selectedCount }} selected</span>
+        <button v-if="selectedCount > 0" class="btn-delete" @click="deleteSelected">
+          <span class="i-lucide-trash-2" />
+          Delete
+        </button>
+      </div>
+
+      <!-- Loading -->
       <div v-if="isLoading" class="loading-state">
-        <div class="loading-orbit">
-          <div class="loading-dot" />
-        </div>
+        <div class="spinner" />
       </div>
 
       <!-- Empty state -->
       <div v-else-if="filteredMaps.length === 0 && !searchQuery" class="empty-state">
-        <div class="empty-icon">
-          <span class="i-lucide-map" />
-        </div>
+        <span class="i-lucide-map empty-icon" />
         <h3 class="empty-title">No maps yet</h3>
         <p class="empty-desc">Create your first mind map to get started</p>
         <button class="btn-primary" @click="createNewMap">
@@ -175,9 +224,7 @@ function formatDate(timestamp: number): string {
 
       <!-- No results -->
       <div v-else-if="filteredMaps.length === 0 && searchQuery" class="empty-state">
-        <div class="empty-icon">
-          <span class="i-lucide-search-x" />
-        </div>
+        <span class="i-lucide-search-x empty-icon" />
         <h3 class="empty-title">No maps found</h3>
         <p class="empty-desc">Try a different search term</p>
         <button class="btn-ghost" @click="searchQuery = ''">
@@ -190,273 +237,379 @@ function formatDate(timestamp: number): string {
         <div
           v-for="map in filteredMaps"
           :key="map.id"
-          class="map-card"
-          @click="openMap(map.id)"
+          :class="['map-card', selectMode && selectedIds.has(map.id) && 'selected']"
+          @click="selectMode ? toggleSelect(map.id, $event) : openMap(map.id)"
         >
+          <!-- Checkbox -->
           <button
-            class="map-delete"
-            title="Delete map"
-            @click="deleteMap(map.id, $event)"
+            v-if="selectMode"
+            class="card-checkbox"
+            @click="toggleSelect(map.id, $event)"
           >
-            <span class="i-lucide-trash-2" />
+            <span :class="selectedIds.has(map.id) ? 'i-lucide-check-square' : 'i-lucide-square'" />
           </button>
 
-          <div class="map-preview">
-            <img v-if="map.preview" :src="map.preview" :alt="map.title" class="map-img">
-            <div v-else class="map-placeholder">
+          <!-- Preview -->
+          <div class="card-preview">
+            <img v-if="map.preview" :src="map.preview" :alt="map.title" class="preview-img">
+            <div v-else class="preview-placeholder">
               <span class="i-lucide-map" />
             </div>
           </div>
 
-          <div class="map-info">
-            <h3 class="map-title">{{ map.title }}</h3>
-            <div class="map-meta">
+          <!-- Info -->
+          <div class="card-info">
+            <div class="card-top">
+              <span class="card-title">{{ map.title }}</span>
+              <button
+                v-if="!selectMode"
+                class="card-menu"
+                @click="deleteMap(map.id, $event)"
+              >
+                <span class="i-lucide-ellipsis" />
+              </button>
+            </div>
+            <div class="card-meta">
               <span>{{ map.nodes.length }} nodes</span>
-              <span>{{ formatDate(map.updatedAt) }}</span>
+              <span class="meta-dot">&middot;</span>
+              <span>Edited {{ formatDate(map.updatedAt) }}</span>
             </div>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Confirm Dialog -->
     <component :is="ConfirmDialog" />
   </div>
 </template>
 
 <style scoped>
-/* CSS Custom Properties */
-.maps-page {
-  --bg: #06060A;
-  --surface: #0C0C10;
-  --surface-2: #121216;
-  --surface-3: #18181D;
-  --surface-hover: #1E1E24;
-  --border: #252529;
-  --border-subtle: #1A1A1E;
-  --border-glow: rgba(0, 210, 190, 0.3);
-
-  --text: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
-  --text-dim: #52525B;
-
-  --accent: #00D2BE;
-  --accent-light: #00FFE5;
-  --accent-dark: #00A89A;
-  --accent-glow: rgba(0, 210, 190, 0.12);
-  --accent-glow-strong: rgba(0, 210, 190, 0.25);
-
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Base */
-.maps-page {
+.maps-layout {
+  display: flex;
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Cabinet Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
-  position: relative;
+  background: #09090B;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Background */
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 30%, transparent 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.bg-noise {
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.018;
-  pointer-events: none;
-  z-index: 9999;
+/* Main content */
+.maps-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 40px;
+  overflow-y: auto;
+  gap: 24px;
 }
 
 /* Header */
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+.maps-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2.5rem;
-  background: rgba(6, 6, 10, 0.7);
-  backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
 .header-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.back-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: all 0.2s var(--ease);
-}
-
-.back-btn:hover {
-  background: var(--surface-3);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.header-text {
   display: flex;
   flex-direction: column;
 }
 
 .header-title {
-  font-size: 1.375rem;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
+  color: #FAFAFA;
+  margin: 0;
   letter-spacing: -0.02em;
-  margin: 0;
+  line-height: 32px;
 }
 
-.header-subtitle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0;
+.header-count {
+  font-size: 13px;
+  color: #71717A;
+  line-height: 18px;
 }
 
-/* Main content */
-.main-content {
-  position: relative;
-  z-index: 2;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 2.5rem;
-}
-
-/* Toolbar */
-.toolbar {
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: 8px;
 }
 
-.search-wrapper {
-  position: relative;
-  flex: 1;
-  max-width: 400px;
+/* Search */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #09090B;
+  border: 1px solid #27272A;
+  border-radius: 6px;
+  min-width: 180px;
 }
 
 .search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-dim);
-  font-size: 1.125rem;
+  font-size: 14px;
+  color: #52525B;
+  flex-shrink: 0;
 }
 
 .search-input {
-  width: 100%;
-  padding: 0.875rem 1rem 0.875rem 2.75rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text);
-  font-size: 0.95rem;
-  font-family: inherit;
+  flex: 1;
+  background: none;
+  border: none;
   outline: none;
-  transition: all 0.2s var(--ease);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: #FAFAFA;
+  min-width: 0;
 }
 
 .search-input::placeholder {
-  color: var(--text-dim);
+  color: #52525B;
 }
 
-.search-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-.sort-wrapper {
+/* Buttons */
+.btn-filter,
+.btn-sort {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-}
-
-.sort-label {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.sort-select {
-  padding: 0.625rem 1rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 0.9rem;
-  font-family: inherit;
-  outline: none;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #111113;
+  border: 1px solid #27272A;
+  border-radius: 6px;
+  color: #A1A1AA;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
-  transition: all 0.2s var(--ease);
+  transition: border-color 0.15s, color 0.15s;
 }
 
-.sort-select:focus {
-  border-color: var(--accent);
+.btn-filter:hover,
+.btn-sort:hover {
+  border-color: #3F3F46;
+  color: #FAFAFA;
 }
 
-/* Loading state */
+.btn-filter.active {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+}
+
+/* Select bar */
+.select-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #111113;
+  border: 1px solid #27272A;
+  border-radius: 6px;
+  color: #A1A1AA;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.select-count {
+  font-size: 13px;
+  color: var(--nc-ink-muted);
+}
+
+.btn-delete {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  color: #EF4444;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+/* Maps grid */
+.maps-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.map-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 352px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #111113;
+  border: 1px solid #1A1A1E;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.map-card:hover {
+  border-color: #27272A;
+}
+
+.map-card.selected {
+  border-color: #00D2BE;
+}
+
+/* Card checkbox */
+.card-checkbox {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 9, 11, 0.8);
+  border: 1px solid #27272A;
+  border-radius: 6px;
+  color: #52525B;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.map-card.selected .card-checkbox {
+  color: #00D2BE;
+  border-color: #00D2BE;
+}
+
+/* Card preview */
+.card-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  padding: 20px;
+  background: #0D0D0F;
+  flex-shrink: 0;
+}
+
+.preview-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.preview-placeholder {
+  font-size: 32px;
+  color: #27272A;
+}
+
+/* Card info */
+.card-info {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 8px;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #FAFAFA;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-menu {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--nc-ink-faint);
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.map-card:hover .card-menu {
+  opacity: 1;
+}
+
+.card-menu:hover {
+  color: #A1A1AA;
+}
+
+/* Touch devices: always show action buttons */
+@media (hover: none) {
+  .card-menu {
+    opacity: 1;
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--nc-ink-muted);
+  line-height: 16px;
+}
+
+.meta-dot {
+  color: var(--nc-ink-faint);
+}
+
+/* Loading */
 .loading-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5rem;
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  border: 1px solid var(--border-subtle);
-  border-radius: 24px;
+  padding: 80px;
 }
 
-.loading-orbit {
-  width: 60px;
-  height: 60px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #27272A;
+  border-top-color: #00D2BE;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  position: relative;
-}
-
-.loading-dot {
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 0 12px var(--accent-glow-strong);
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
 }
 
 /* Empty state */
@@ -464,236 +617,275 @@ function formatDate(timestamp: number): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 5rem 2rem;
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  border: 1px solid var(--border-subtle);
-  border-radius: 24px;
+  padding: 80px 24px;
   text-align: center;
 }
 
 .empty-icon {
-  width: 80px;
-  height: 80px;
-  background: var(--accent-glow);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: var(--accent);
-  margin-bottom: 1.5rem;
+  font-size: 32px;
+  color: #27272A;
+  margin-bottom: 16px;
 }
 
 .empty-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 0.625rem;
+  font-size: 16px;
+  font-weight: 600;
+  color: #FAFAFA;
+  margin: 0 0 6px;
 }
 
 .empty-desc {
-  font-size: 1rem;
-  color: var(--text-muted);
-  margin: 0 0 2rem;
+  font-size: 14px;
+  color: #52525B;
+  margin: 0 0 24px;
 }
 
-/* Maps grid */
-.maps-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
-}
-
-@media (max-width: 1200px) {
-  .maps-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .maps-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .maps-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.map-card {
-  position: relative;
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.4s var(--ease);
-}
-
-.map-card:hover {
-  border-color: var(--border-glow);
-  transform: translateY(-4px);
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.3),
-    0 0 40px var(--accent-glow);
-}
-
-.map-delete {
-  position: absolute;
-  top: 0.875rem;
-  right: 0.875rem;
-  z-index: 10;
-  width: 36px;
-  height: 36px;
-  background: rgba(6, 6, 10, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-muted);
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.2s var(--ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.map-card:hover .map-delete {
-  opacity: 1;
-}
-
-.map-delete:hover {
-  color: #EF4444;
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.map-preview {
-  aspect-ratio: 16 / 9;
-  background: var(--surface-2);
-  overflow: hidden;
-}
-
-.map-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s var(--ease);
-}
-
-.map-card:hover .map-img {
-  transform: scale(1.05);
-}
-
-.map-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--surface-2), var(--surface));
-  font-size: 2.5rem;
-  color: var(--text-dim);
-}
-
-.map-info {
-  padding: 1.25rem;
-}
-
-.map-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: color 0.2s var(--ease);
-}
-
-.map-card:hover .map-title {
-  color: var(--accent);
-}
-
-.map-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-/* Buttons */
 .btn-primary {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1.75rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  color: var(--bg);
-  font-size: 0.95rem;
+  gap: 6px;
+  padding: 10px 20px;
+  background: #00D2BE;
+  color: #09090B;
+  font-size: 14px;
   font-weight: 600;
   border: none;
-  border-radius: 14px;
+  border-radius: 6px;
   cursor: pointer;
-  overflow: hidden;
-  transition: all 0.3s var(--ease);
-  box-shadow:
-    0 4px 20px var(--accent-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  font-family: inherit;
-}
-
-.btn-primary:hover {
-  box-shadow:
-    0 8px 40px var(--accent-glow-strong),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .btn-ghost {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1.75rem;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid #27272A;
+  border-radius: 6px;
+  color: #A1A1AA;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s var(--ease);
-  font-family: inherit;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-.btn-ghost:hover {
-  border-color: var(--accent);
-  background: var(--surface-3);
-  color: var(--accent);
+/* Light theme */
+:root.light .maps-layout {
+  background: #FAFAF9;
 }
 
-/* Responsive */
+:root.light .header-title {
+  color: #111111;
+}
+
+:root.light .header-count {
+  color: #777777;
+}
+
+:root.light .search-box {
+  background: #F5F5F3;
+  border-color: #E8E8E6;
+}
+
+:root.light .search-input {
+  color: #111111;
+}
+
+:root.light .search-input::placeholder {
+  color: #777777;
+}
+
+:root.light .btn-filter,
+:root.light .btn-sort {
+  background: #F5F5F3;
+  border-color: #E8E8E6;
+  color: #52525B;
+}
+
+:root.light .btn-filter:hover,
+:root.light .btn-sort:hover {
+  border-color: #D4D4D8;
+  color: #111111;
+}
+
+:root.light .map-card {
+  background: #F5F5F3;
+  border-color: #E8E8E6;
+}
+
+:root.light .map-card:hover {
+  border-color: #D4D4D8;
+}
+
+:root.light .card-preview {
+  background: #F4F4F5;
+}
+
+:root.light .card-title {
+  color: #111111;
+}
+
+:root.light .card-meta {
+  color: #777777;
+}
+
+:root.light .card-menu {
+  color: #D4D4D8;
+}
+
+:root.light .card-menu:hover {
+  color: #52525B;
+}
+
+:root.light .preview-placeholder {
+  color: #D4D4D8;
+}
+
+:root.light .empty-title {
+  color: #111111;
+}
+
+:root.light .empty-desc {
+  color: #777777;
+}
+
+:root.light .btn-primary {
+  background: #00D2BE;
+  color: #FFFFFF;
+}
+
+:root.light .btn-ghost {
+  border-color: #E8E8E6;
+  color: #52525B;
+}
+
+/* Laptop breakpoint */
+@media (max-width: 1366px) {
+  .map-card {
+    width: calc((100% - 32px) / 3);
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .map-card {
+    width: calc((100% - 16px) / 2);
+    min-width: 240px;
+  }
+}
+
 @media (max-width: 768px) {
-  .header {
-    padding: 1rem 1.5rem;
-  }
-
-  .main-content {
-    padding: 1.5rem;
-  }
-
-  .toolbar {
+  .maps-layout {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .search-wrapper {
-    max-width: none;
+  :deep(.sidebar) {
+    display: none;
   }
 
-  .sort-wrapper {
+  .maps-main {
+    padding: 48px 0 100px;
+    max-height: none;
+  }
+
+  /* Header: title left, sort right */
+  .maps-header {
+    flex-direction: row;
+    align-items: center;
     justify-content: space-between;
+    gap: 0;
+    padding: 8px 24px 16px;
+    margin-bottom: 0;
+  }
+
+  .header-left {
+    flex-direction: column;
+  }
+
+  .header-title {
+    font-size: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  .header-count {
+    display: none;
+  }
+
+  /* Hide grid actions on mobile */
+  .header-actions {
+    display: none;
+  }
+
+  /* Search bar: full width, inside padding */
+  .search-box {
+    margin: 0 24px 20px;
+    height: 44px;
+    border-radius: 8px;
+    background: #111114;
+    border: 1px solid #1E1E22;
+  }
+
+  :root.light .search-box {
+    background: #FFFFFF;
+    border-color: #E8E8E6;
+  }
+
+  /* Map cards: list rows instead of grid */
+  .maps-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+
+  .map-card {
+    width: 100%;
+    min-width: 0;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid #1E1E22;
+    padding: 14px 24px;
+    min-height: 48px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* Always show card actions on mobile */
+  .map-card .card-menu {
+    opacity: 1;
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+
+  :root.light .map-card {
+    border-bottom-color: #E8E8E6;
+  }
+
+  /* Hide card previews on mobile — list view only */
+  .map-card .card-preview,
+  .map-card .canvas-preview {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 10px;
+  }
+
+  .map-card .card-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .map-card .card-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .map-card .card-meta {
+    font-size: 12px;
   }
 }
 </style>

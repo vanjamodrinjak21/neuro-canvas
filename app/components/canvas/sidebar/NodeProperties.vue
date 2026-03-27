@@ -9,11 +9,9 @@ import { nodeCategories, nodeColors, getCategoryInfo } from '~/composables/useSi
  */
 const props = defineProps<{
   selectedNode: Node | null
-  collapsed: boolean
 }>()
 
 const emit = defineEmits<{
-  toggle: []
   deleteNode: []
 }>()
 
@@ -72,15 +70,7 @@ function updateCategory(categoryId: string) {
 
 <template>
   <div class="properties">
-    <CanvasSidebarSidebarHeader
-      icon="i-lucide-sliders-horizontal"
-      label="Properties"
-      :collapsed="collapsed"
-      accent-color="#60A5FA"
-      @toggle="emit('toggle')"
-    />
-
-    <div :class="['properties__body', collapsed && 'properties__body--collapsed']">
+    <div class="properties__body">
       <template v-if="selectedNode">
         <!-- Category chips -->
         <div class="properties__field">
@@ -97,7 +87,8 @@ function updateCategory(categoryId: string) {
                 '--chip-color': cat.color,
                 ...(localCategory === cat.id ? {
                   borderColor: cat.color,
-                  background: `${cat.color}12`,
+                  background: `${cat.color}18`,
+                  color: cat.color,
                 } : {}),
               }"
               @click="updateCategory(cat.id)"
@@ -136,10 +127,11 @@ function updateCategory(categoryId: string) {
             <span class="i-lucide-type properties__label-icon" />
             Label
           </label>
-          <NcInput
+          <input
             v-model="localContent"
-            size="sm"
+            type="text"
             placeholder="Node label..."
+            class="properties__input"
             @blur="updateContent"
             @keydown.enter="updateContent"
           />
@@ -186,21 +178,12 @@ function updateCategory(categoryId: string) {
 }
 
 .properties__body {
-  padding: 0 14px 14px;
-  overflow: hidden;
-  max-height: 600px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.properties__body--collapsed {
-  max-height: 0;
-  padding-bottom: 0;
-  opacity: 0;
+  padding: 14px;
 }
 
 /* Fields */
 .properties__field {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .properties__label {
@@ -231,7 +214,8 @@ function updateCategory(categoryId: string) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 9px;
+  padding: 5px 9px;
+  min-height: 28px;
   background: transparent;
   border: 1px solid var(--nc-border-active);
   border-radius: 6px;
@@ -249,8 +233,8 @@ function updateCategory(categoryId: string) {
 }
 
 .properties__cat-chip--active {
-  color: var(--nc-ink);
   font-weight: 600;
+  /* color set inline via :style binding to match category color */
 }
 
 .properties__cat-icon {
@@ -293,6 +277,29 @@ function updateCategory(categoryId: string) {
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
 }
 
+/* Input */
+.properties__input {
+  width: 100%;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: var(--nc-font-body);
+  color: var(--nc-ink);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.properties__input::placeholder {
+  color: var(--nc-ink-faint);
+}
+
+.properties__input:focus {
+  outline: none;
+  border-color: var(--nc-accent);
+  box-shadow: 0 0 0 3px var(--nc-accent-glow);
+}
+
 /* Textarea */
 .properties__textarea {
   width: 100%;
@@ -322,6 +329,7 @@ function updateCategory(categoryId: string) {
 .properties__delete {
   width: 100%;
   margin-top: 4px;
+  cursor: pointer;
 }
 
 /* Empty */
@@ -329,14 +337,14 @@ function updateCategory(categoryId: string) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 20px 0;
+  gap: 4px;
+  padding: 10px 0;
   color: var(--nc-ink-faint);
   font-size: 11px;
 }
 
 .properties__empty-icon {
-  font-size: 22px;
+  font-size: 18px;
   opacity: 0.4;
 }
 </style>

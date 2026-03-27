@@ -133,7 +133,7 @@ export interface Selection {
 }
 
 // Tool Types
-export type CanvasTool = 'select' | 'pan' | 'node' | 'edge' | 'text' | 'connect'
+export type CanvasTool = 'select' | 'pan' | 'node' | 'connect'
 
 // Layout Types
 export type LayoutType = 'force' | 'radial' | 'tree' | 'orgChart'

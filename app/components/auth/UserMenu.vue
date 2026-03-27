@@ -8,7 +8,8 @@ import {
   DropdownMenuSeparator
 } from 'radix-vue'
 
-const { data: session, status } = useAuth()
+const { data: _sessionData, status } = useAuth()
+const session = _sessionData ?? ref(null)
 const { handleSignOut, isLoading } = useAuthStore()
 const router = useRouter()
 

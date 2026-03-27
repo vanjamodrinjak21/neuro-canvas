@@ -1,10 +1,10 @@
 // Spatial HUD overlay — "You Are Here" display
 // Shows current region name, visible/total node count, zoom %, distance to root
-// Drawn in screen space
+// Now rendered as a Vue overlay (SpatialHUDOverlay.vue) instead of canvas draw
 
 import type { Camera, Node, MapRegion } from '~/types/canvas'
 
-interface HUDData {
+export interface HUDData {
   regionName: string | null
   visibleCount: number
   totalCount: number
@@ -12,36 +12,61 @@ interface HUDData {
   distanceToRoot: number | null
 }
 
+const HUD_THROTTLE_MS = 200
+
 export function useSpatialHUD() {
+  // Throttle state
+  let lastComputeTime = 0
+  let cachedHUD: HUDData = {
+    regionName: null,
+    visibleCount: 0,
+    totalCount: 0,
+    zoomPercent: 100,
+    distanceToRoot: null
+  }
+
   /**
-   * Compute HUD data from current state
+   * Compute HUD data from current state.
+   * Throttled to at most once every 200ms. Returns cached result when throttled.
+   * When minimapVisible is false, skips the expensive region-finding loop.
    */
   function computeHUD(
     camera: Camera,
     nodes: Map<string, Node>,
     visibleNodeIds: Set<string>,
     regions: MapRegion[],
-    rootNodeId?: string
+    rootNodeId?: string,
+    minimapVisible: boolean = true
   ): HUDData {
+    const now = Date.now()
+    if (now - lastComputeTime < HUD_THROTTLE_MS) {
+      return cachedHUD
+    }
+    lastComputeTime = now
+
     // Find current region (viewport center is in which region)
     const viewCenterX = -camera.x / camera.zoom + (window.innerWidth / camera.zoom) / 2
     const viewCenterY = -camera.y / camera.zoom + (window.innerHeight / camera.zoom) / 2
 
     let regionName: string | null = null
-    let minDist = Infinity
 
-    for (const region of regions) {
-      const dx = viewCenterX - region.centerX
-      const dy = viewCenterY - region.centerY
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist < minDist) {
-        minDist = dist
-        regionName = region.label
+    // Only run the expensive region loop when the minimap is visible
+    if (minimapVisible) {
+      let minDist = Infinity
+
+      for (const region of regions) {
+        const dx = viewCenterX - region.centerX
+        const dy = viewCenterY - region.centerY
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < minDist) {
+          minDist = dist
+          regionName = region.label
+        }
       }
-    }
 
-    // Only show region if viewport center is close enough
-    if (minDist > 500) regionName = null
+      // Only show region if viewport center is close enough
+      if (minDist > 500) regionName = null
+    }
 
     // Distance to root
     let distanceToRoot: number | null = null
@@ -54,59 +79,18 @@ export function useSpatialHUD() {
       }
     }
 
-    return {
+    cachedHUD = {
       regionName,
       visibleCount: visibleNodeIds.size,
       totalCount: nodes.size,
       zoomPercent: Math.round(camera.zoom * 100),
       distanceToRoot
     }
-  }
 
-  /**
-   * Draw the HUD in screen space
-   */
-  function draw(
-    ctx: CanvasRenderingContext2D,
-    hud: HUDData,
-    x: number,
-    y: number
-  ) {
-    ctx.save()
-    ctx.globalAlpha = 0.6
-    ctx.font = '10px "Inter", system-ui, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-
-    let offsetY = 0
-    const lineHeight = 14
-
-    // Region name
-    if (hud.regionName) {
-      ctx.fillStyle = '#00D2BE'
-      ctx.fillText(hud.regionName, x, y + offsetY)
-      offsetY += lineHeight
-    }
-
-    // Node count
-    ctx.fillStyle = '#888890'
-    ctx.fillText(`${hud.visibleCount}/${hud.totalCount} nodes`, x, y + offsetY)
-    offsetY += lineHeight
-
-    // Zoom
-    ctx.fillText(`${hud.zoomPercent}%`, x, y + offsetY)
-    offsetY += lineHeight
-
-    // Distance to root
-    if (hud.distanceToRoot !== null) {
-      ctx.fillText(`Root: ${hud.distanceToRoot}px`, x, y + offsetY)
-    }
-
-    ctx.restore()
+    return cachedHUD
   }
 
   return {
-    computeHUD,
-    draw
+    computeHUD
   }
 }

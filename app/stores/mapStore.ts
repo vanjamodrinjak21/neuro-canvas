@@ -90,9 +90,9 @@ function measureNodeSize(
 // Default styles - Midnight Paper + Petronas Teal Theme
 const DEFAULT_NODE_STYLE: NodeStyle = {
   shape: 'rounded',
-  fillColor: '#1A1A20',      // Graphite (lighter for visibility)
-  borderColor: '#3A3A42',    // Visible border
-  borderWidth: 2,            // Visible border width
+  fillColor: '#111113',      // Paper spec node fill
+  borderColor: '#27272A',    // Paper spec node border
+  borderWidth: 1.5,          // Paper spec border width
   textColor: '#FAFAFA',      // Bright text
   fontSize: 14,
   fontWeight: 500,
@@ -221,6 +221,7 @@ export interface MapActions {
   canRedo(): boolean
 
   // Batch operations
+  batchUpdate(description: string, mutator: () => void): void
   deleteSelected(): void
   duplicateSelected(): Node[]
 
@@ -1003,6 +1004,73 @@ const actions: MapActions = {
     return outLinkIds
       .map(id => state.nodes.get(id))
       .filter((node): node is Node => node !== undefined)
+  },
+
+  /** Group multiple node/edge mutations into a single undo/redo entry. */
+  batchUpdate(description: string, mutator: () => void) {
+    // Snapshot current serializable state before any mutations
+    const before = getSerializableState()
+
+    // Run the mutator — it will call addNode/addEdge/deleteNode etc.
+    // which internally call recordHistory, BUT we want a single entry.
+    // So we temporarily capture history entries and discard individual ones.
+    const savedHistory = [...state.history]
+    const savedIndex = state.historyIndex
+
+    mutator()
+
+    // Restore history to pre-mutator state and create ONE combined entry
+    const after = getSerializableState()
+    state.history = savedHistory
+    state.historyIndex = savedIndex
+
+    // Use Immer to produce patches for the combined change
+    let patches: Patch[] = []
+    let inversePatches: Patch[] = []
+
+    produce(
+      before,
+      (draft: SerializableState) => {
+        // Copy the "after" state into the draft
+        Object.assign(draft, {
+          nodes: { ...after.nodes },
+          edges: { ...after.edges },
+          title: after.title,
+          camera: after.camera,
+          settings: after.settings,
+        })
+      },
+      (p, ip) => {
+        patches = p
+        inversePatches = ip
+      }
+    )
+
+    if (patches.length === 0) return
+
+    // Truncate future history
+    if (state.historyIndex < state.history.length - 1) {
+      state.history = state.history.slice(0, state.historyIndex + 1)
+    }
+
+    const entry: HistoryEntry = {
+      id: nanoid(),
+      timestamp: Date.now(),
+      description,
+      patches,
+      inversePatches
+    }
+
+    state.history.push(entry)
+    if (state.history.length > state.maxHistory) {
+      state.history.shift()
+    } else {
+      state.historyIndex++
+    }
+
+    // Apply the final state
+    applySerializableState(after)
+    state.isDirty = true
   },
 
   // Graph view management

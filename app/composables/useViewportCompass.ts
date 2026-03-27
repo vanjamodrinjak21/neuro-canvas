@@ -11,8 +11,19 @@ export interface CompassIndicator {
 }
 
 export function useViewportCompass() {
+  // Throttle state
+  const COMPASS_THROTTLE_MS = 100
+  const VIEWPORT_DELTA_THRESHOLD = 10 // px — skip if viewport moved less than this
+  let lastComputeTime = 0
+  let cachedIndicators: CompassIndicator[] = []
+  let lastCameraX = NaN
+  let lastCameraY = NaN
+  let lastCameraZoom = NaN
+
   /**
-   * Compute off-screen node indicators for each viewport edge
+   * Compute off-screen node indicators for each viewport edge.
+   * Throttled to at most once every 100ms. Skips recomputation when the
+   * viewport hasn't changed significantly (delta < 10px).
    */
   function computeIndicators(
     camera: Camera,
@@ -21,6 +32,29 @@ export function useViewportCompass() {
     viewportHeight: number
   ): CompassIndicator[] {
     if (nodes.size === 0) return []
+
+    // Skip if viewport hasn't changed significantly
+    const dx = Math.abs(camera.x - lastCameraX)
+    const dy = Math.abs(camera.y - lastCameraY)
+    const dz = Math.abs(camera.zoom - lastCameraZoom)
+    const viewportMoved = dx >= VIEWPORT_DELTA_THRESHOLD ||
+      dy >= VIEWPORT_DELTA_THRESHOLD ||
+      dz >= 0.01 ||
+      Number.isNaN(lastCameraX) // first call
+
+    if (!viewportMoved) {
+      return cachedIndicators
+    }
+
+    // Throttle: skip if called too frequently
+    const now = Date.now()
+    if (now - lastComputeTime < COMPASS_THROTTLE_MS) {
+      return cachedIndicators
+    }
+    lastComputeTime = now
+    lastCameraX = camera.x
+    lastCameraY = camera.y
+    lastCameraZoom = camera.zoom
 
     // Viewport bounds in world coordinates
     const worldLeft = -camera.x / camera.zoom
@@ -82,6 +116,7 @@ export function useViewportCompass() {
       }
     }
 
+    cachedIndicators = result
     return result
   }
 
@@ -97,6 +132,7 @@ export function useViewportCompass() {
   ) {
     for (const indicator of indicators) {
       drawEdgeGradient(ctx, indicator, viewportWidth, viewportHeight, accentColor)
+      drawEdgeAccentLine(ctx, indicator, viewportWidth, viewportHeight, accentColor)
       drawArrowIndicator(ctx, indicator, viewportWidth, viewportHeight, accentColor)
     }
   }
@@ -108,7 +144,7 @@ export function useViewportCompass() {
     vh: number,
     color: string
   ) {
-    const gradientSize = 30
+    const gradientSize = 40
     ctx.globalAlpha = indicator.opacity * 0.3
     let gradient: CanvasGradient
 
@@ -144,6 +180,42 @@ export function useViewportCompass() {
     }
 
     ctx.globalAlpha = 1
+  }
+
+  function drawEdgeAccentLine(
+    ctx: CanvasRenderingContext2D,
+    indicator: CompassIndicator,
+    vw: number,
+    vh: number,
+    color: string
+  ) {
+    ctx.save()
+    ctx.globalAlpha = indicator.opacity * 0.5
+    ctx.strokeStyle = color
+    ctx.lineWidth = 1
+    ctx.beginPath()
+
+    switch (indicator.direction) {
+      case 'top':
+        ctx.moveTo(0, 0.5)
+        ctx.lineTo(vw, 0.5)
+        break
+      case 'bottom':
+        ctx.moveTo(0, vh - 0.5)
+        ctx.lineTo(vw, vh - 0.5)
+        break
+      case 'left':
+        ctx.moveTo(0.5, 0)
+        ctx.lineTo(0.5, vh)
+        break
+      case 'right':
+        ctx.moveTo(vw - 0.5, 0)
+        ctx.lineTo(vw - 0.5, vh)
+        break
+    }
+
+    ctx.stroke()
+    ctx.restore()
   }
 
   function drawArrowIndicator(
@@ -195,21 +267,33 @@ export function useViewportCompass() {
     // Count badge
     ctx.rotate(-angle)
     const text = indicator.count.toString()
-    ctx.font = '10px "Inter", system-ui, sans-serif'
+    ctx.font = '12px "Inter", system-ui, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
-    // Badge background
+    // Badge background with ring stroke
     const metrics = ctx.measureText(text)
-    const badgeWidth = Math.max(metrics.width + 8, 18)
-    const badgeX = indicator.direction === 'left' ? 12 : indicator.direction === 'right' ? -12 : 0
-    const badgeY = indicator.direction === 'top' ? 12 : indicator.direction === 'bottom' ? -12 : 0
+    const badgeWidth = Math.max(metrics.width + 10, 20)
+    const badgeHeight = 18
+    const badgeX = indicator.direction === 'left' ? 14 : indicator.direction === 'right' ? -14 : 0
+    const badgeY = indicator.direction === 'top' ? 14 : indicator.direction === 'bottom' ? -14 : 0
 
+    // Background pill
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
     ctx.beginPath()
-    ctx.roundRect(badgeX - badgeWidth / 2, badgeY - 8, badgeWidth, 16, 8)
+    ctx.roundRect(badgeX - badgeWidth / 2, badgeY - badgeHeight / 2, badgeWidth, badgeHeight, badgeHeight / 2)
     ctx.fill()
 
+    // Ring stroke
+    ctx.strokeStyle = color
+    ctx.lineWidth = 1
+    ctx.globalAlpha = indicator.opacity * 0.4
+    ctx.beginPath()
+    ctx.roundRect(badgeX - badgeWidth / 2, badgeY - badgeHeight / 2, badgeWidth, badgeHeight, badgeHeight / 2)
+    ctx.stroke()
+
+    // Text
+    ctx.globalAlpha = indicator.opacity
     ctx.fillStyle = color
     ctx.fillText(text, badgeX, badgeY)
 

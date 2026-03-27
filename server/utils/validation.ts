@@ -42,12 +42,12 @@ export const aiCachePostSchema = z.object({
 })
 
 export const aiMemoryPostSchema = z.object({
-  data: z.record(z.unknown())
+  data: z.record(z.string(), z.any())
 })
 
 export const syncPushSchema = z.object({
   mapId: cuid,
-  data: z.record(z.unknown()).refine(
+  data: z.record(z.string(), z.any()).refine(
     (d) => JSON.stringify(d).length <= MAX_MAP_DATA_BYTES,
     { message: `Map data exceeds ${MAX_MAP_DATA_BYTES / 1024 / 1024}MB limit` }
   ),
@@ -63,7 +63,7 @@ export const syncPushSchema = z.object({
 export const syncBulkPushSchema = z.object({
   maps: z.array(z.object({
     mapId: cuid,
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.any()),
     title: safeTitle,
     syncVersion: z.number().int().min(0),
     checksum: z.string().min(1).max(128),
@@ -89,13 +89,13 @@ export const embeddingPostSchema = z.object({
   })).min(1).max(500)
 })
 
-export function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): T {
+export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body)
   if (!result.success) {
-    const firstError = result.error.errors[0]
+    const firstIssue = result.error.issues[0]
     throw createError({
       statusCode: 400,
-      statusMessage: `Validation failed: ${firstError?.path.join('.')} — ${firstError?.message}`
+      statusMessage: `Validation failed: ${firstIssue?.path.join('.')} — ${firstIssue?.message}`
     })
   }
   return result.data

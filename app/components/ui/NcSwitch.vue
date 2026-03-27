@@ -39,27 +39,42 @@ const sizeClasses = {
 </script>
 
 <template>
-  <SwitchRoot
-    v-model:checked="checked"
-    :disabled="disabled"
-    :class="[
-      'group relative inline-flex shrink-0 cursor-pointer items-center rounded-full',
-      'border-2 border-transparent transition-all duration-200',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
-      'data-[state=checked]:bg-nc-teal data-[state=unchecked]:bg-nc-pencil',
-      'data-[state=checked]:shadow-nc-glow',
-      disabled && 'opacity-50 cursor-not-allowed',
-      sizeClasses[size].root
-    ]"
-  >
-    <SwitchThumb
+  <span class="nc-switch-touch" :class="[disabled && 'cursor-not-allowed']">
+    <SwitchRoot
+      v-model:checked="checked"
+      :disabled="disabled"
       :class="[
-        'pointer-events-none block rounded-full bg-nc-ink shadow-nc-sm ring-0',
-        'transition-transform duration-200',
-        'data-[state=unchecked]:translate-x-0.5',
-        'group-data-[state=checked]:bg-nc-charcoal',
-        sizeClasses[size].thumb
+        'group relative inline-flex shrink-0 cursor-pointer items-center rounded-full',
+        'border-2 border-transparent transition-all duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
+        'data-[state=checked]:bg-nc-teal data-[state=unchecked]:bg-nc-pencil',
+        'data-[state=checked]:shadow-nc-glow',
+        disabled && 'opacity-40 grayscale-[0.3] cursor-not-allowed',
+        sizeClasses[size].root
       ]"
-    />
-  </SwitchRoot>
+    >
+      <SwitchThumb
+        :class="[
+          'pointer-events-none block rounded-full bg-nc-ink shadow-nc-sm ring-0',
+          'transition-all duration-200',
+          'data-[state=unchecked]:translate-x-0.5 data-[state=unchecked]:scale-90',
+          'data-[state=checked]:scale-100',
+          'group-data-[state=checked]:bg-nc-charcoal',
+          sizeClasses[size].thumb
+        ]"
+      />
+    </SwitchRoot>
+  </span>
 </template>
+
+<style scoped>
+/* Ensure 44px touch target on mobile without changing visual size */
+.nc-switch-touch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+</style>

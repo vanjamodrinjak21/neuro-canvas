@@ -19,10 +19,16 @@ import { useViewportCulling } from '~/composables/useViewportCulling'
 import { useReducedMotion } from '~/composables/useReducedMotion'
 import { useEdgeAnimations } from '~/composables/useEdgeAnimations'
 import { useSpatialHUD } from '~/composables/useSpatialHUD'
+import { useExport } from '~/composables/useExport'
+import { useSyncEngine } from '~/composables/useSyncEngine'
+import { useSemanticProcessor } from '~/composables/useSemanticProcessor'
 
 // Route
 const route = useRoute()
 const router = useRouter()
+
+// Platform
+const platform = usePlatform()
 const mapId = computed(() => route.params.id as string)
 
 // Stores
@@ -108,6 +114,50 @@ watch(selectedNode, (node) => {
   showPropertiesPanel.value = !!node
 })
 
+// Multi-select action bar
+const multiSelectCount = computed(() => mapStore.selection.nodeIds.size)
+const multiSelectPosition = computed(() => {
+  if (mapStore.selection.nodeIds.size < 2) return { x: 0, y: 0 }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity
+  for (const nodeId of mapStore.selection.nodeIds) {
+    const node = mapStore.nodes.get(nodeId)
+    if (node) {
+      minX = Math.min(minX, node.position.x)
+      minY = Math.min(minY, node.position.y)
+      maxX = Math.max(maxX, node.position.x + node.size.width)
+    }
+  }
+  const centerX = (minX + maxX) / 2
+  // Convert world to screen
+  return {
+    x: centerX * camera.value.zoom + camera.value.x,
+    y: minY * camera.value.zoom + camera.value.y
+  }
+})
+
+// Node hover preview
+const hoveredPreviewNode = ref<import('~/types/canvas').Node | null>(null)
+const hoverPreviewPosition = ref({ x: 0, y: 0 })
+let hoverDelayTimer: ReturnType<typeof setTimeout> | null = null
+
+function handleNodeHover(event: { nodeId: string | null; screenPosition: import('~/types/canvas').Point }) {
+  if (hoverDelayTimer) {
+    clearTimeout(hoverDelayTimer)
+    hoverDelayTimer = null
+  }
+  if (!event.nodeId) {
+    hoveredPreviewNode.value = null
+    return
+  }
+  hoverDelayTimer = setTimeout(() => {
+    const node = mapStore.nodes.get(event.nodeId!)
+    if (node) {
+      hoveredPreviewNode.value = node
+      hoverPreviewPosition.value = event.screenPosition
+    }
+  }, 500)
+}
+
 // Context menu
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref<Point>({ x: 0, y: 0 })
@@ -131,7 +181,13 @@ const sidebarCollapsed = ref(false)
 
 // Zoom presets (managed by ZoomControls component internally)
 
-// Minimap: always visible on desktop (no toggle)
+// Minimap collapse state (toggle with M key)
+const minimapCollapsed = ref(false)
+
+// Semantic search & settings
+const showSemanticSearch = ref(false)
+const showSemanticSettings = ref(false)
+const semanticSearchRef = ref<{ setResults: (r: import('~/types/semantic').SemanticSearchResult[]) => void; setSearching: (v: boolean) => void } | null>(null)
 
 // Semantic field visibility (toggle with S key)
 const semanticFieldEnabled = computed({
@@ -139,8 +195,30 @@ const semanticFieldEnabled = computed({
   set: (val) => semanticStore.toggleField(val)
 })
 
+// Watch semantic field toggle to start/stop processor
+watch(semanticFieldEnabled, (enabled) => {
+  if (enabled) {
+    semanticProcessor.startProcessor()
+    const allNodeIds = Array.from(mapStore.nodes.keys())
+    if (allNodeIds.length > 0) {
+      semanticProcessor.enqueueNodes(allNodeIds, 'normal')
+    }
+  } else {
+    semanticProcessor.pauseProcessor()
+  }
+})
+
+// Export
+const exportUtils = useExport()
+
+// Sync engine
+const syncEngine = useSyncEngine()
+
+// Semantic processor
+const semanticProcessor = useSemanticProcessor()
+
 // Canvas ref for highlighting and wheel listener
-const canvasRef = ref<{ containerRef: HTMLDivElement | null; isDragOver: boolean; highlightedNodeIds: Set<string>; dimmedNodeIds: Set<string> } | null>(null)
+const canvasRef = ref<{ containerRef: HTMLDivElement | null; canvasRef: HTMLCanvasElement | null; isDragOver: boolean; highlightedNodeIds: Set<string>; dimmedNodeIds: Set<string> } | null>(null)
 
 // Canvas container dimensions for minimap viewport calculation
 const canvasContainerWidth = ref(0)
@@ -155,6 +233,7 @@ onMounted(async () => {
       mapStore.newDocument()
       isLoading.value = false
       autoSave.start()
+      syncEngine.initialize()
       // Set up semantic store for new map
       semanticStore.setCurrentMap(mapStore.id)
       // Initialize AI in background
@@ -171,12 +250,26 @@ onMounted(async () => {
     }
     isLoading.value = false
     autoSave.start()
+    syncEngine.initialize()
 
     // Set up semantic store
     semanticStore.setCurrentMap(mapStore.id)
 
-    // Initialize AI in background
-    ai.initialize()
+    // Initialize AI in background and wire semantic processor
+    ai.initialize().then(() => {
+      // Wire semantic processor to the AI worker's sendMessage
+      semanticProcessor.setSendMessage(ai.sendMessage)
+
+      // Start the processor if semantic field is enabled
+      if (semanticStore.fieldSettings.enabled) {
+        semanticProcessor.startProcessor()
+        // Queue all existing nodes for initial embedding
+        const allNodeIds = Array.from(mapStore.nodes.keys())
+        if (allNodeIds.length > 0) {
+          semanticProcessor.enqueueNodes(allNodeIds, 'normal')
+        }
+      }
+    })
 
     // Trigger edge entrance animations on map load
     if (mapStore.edges.size > 0) {
@@ -190,7 +283,7 @@ onMounted(async () => {
     const nodeIds = Array.from(mapStore.nodes.keys())
     semanticStore.markDirtyBatch(nodeIds)
 
-    // Process embeddings after a short delay
+    // Process embeddings after a short delay (fallback for when processor not ready)
     setTimeout(() => {
       ai.processQueue(
         (nodeId) => mapStore.nodes.get(nodeId)?.content,
@@ -255,6 +348,28 @@ async function handleSave() {
   await autoSave.save()
 }
 
+// Share & Export
+async function handleShare() {
+  try {
+    await exportUtils.shareAsText(mapStore, platform)
+  } catch (e) {
+    console.error('Share failed:', e)
+  }
+}
+
+function handleExportPng() {
+  const el = canvasRef.value?.canvasRef
+  if (el) exportUtils.exportAsPng(el, mapStore.title as string)
+}
+
+function handleExportJson() {
+  exportUtils.exportAsJson(mapStore, mapStore.title as string)
+}
+
+function handleExportMarkdown() {
+  exportUtils.exportAsMarkdown(mapStore, mapStore.title as string)
+}
+
 function startEditingTitle() {
   editedTitle.value = mapStore.title as unknown as string
   isEditingTitle.value = true
@@ -280,12 +395,22 @@ onMounted(() => {
   })
 })
 
+// Helper to check if user is typing in an input field
+function isTyping(): boolean {
+  const el = document.activeElement
+  if (!el) return false
+  const tag = el.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  if ((el as HTMLElement).isContentEditable) return true
+  return false
+}
+
 // Keyboard shortcuts
-onKeyStroke('v', () => activeTool.value = 'select')
-onKeyStroke('h', () => activeTool.value = 'pan')
-onKeyStroke('n', () => activeTool.value = 'node')
-onKeyStroke('c', () => activeTool.value = 'connect')
-onKeyStroke('t', () => showTemplates.value = !showTemplates.value)
+onKeyStroke('v', () => { if (!isTyping()) activeTool.value = 'select' })
+onKeyStroke('h', () => { if (!isTyping()) activeTool.value = 'pan' })
+onKeyStroke('n', () => { if (!isTyping()) activeTool.value = 'node' })
+onKeyStroke('c', () => { if (!isTyping()) activeTool.value = 'connect' })
+onKeyStroke('t', () => { if (!isTyping()) showTemplates.value = !showTemplates.value })
 onKeyStroke('Escape', () => {
   activeTool.value = 'select'
   showTemplates.value = false
@@ -299,7 +424,7 @@ onKeyStroke('s', (e) => {
     handleSave()
   }
 })
-onKeyStroke('?', () => showShortcutsModal.value = !showShortcutsModal.value)
+onKeyStroke('?', () => { if (!isTyping()) showShortcutsModal.value = !showShortcutsModal.value })
 onKeyStroke('g', (e) => {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault()
@@ -312,86 +437,147 @@ onKeyStroke('b', (e) => {
     showBacklinksPanel.value = !showBacklinksPanel.value
   }
 })
-// M key: minimap is now always visible, no toggle needed
+onKeyStroke('m', () => { if (!isTyping()) minimapCollapsed.value = !minimapCollapsed.value })
 
 // Keyboard camera navigation
 onKeyStroke('ArrowLeft', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     springCamera.setTarget({ x: camera.value.x + 200 }, 'snappy')
   }
 })
 onKeyStroke('ArrowRight', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     springCamera.setTarget({ x: camera.value.x - 200 }, 'snappy')
   }
 })
 onKeyStroke('ArrowUp', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     springCamera.setTarget({ y: camera.value.y + 200 }, 'snappy')
   }
 })
 onKeyStroke('ArrowDown', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     springCamera.setTarget({ y: camera.value.y - 200 }, 'snappy')
   }
 })
 onKeyStroke('=', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     zoomIn()
   }
 })
 onKeyStroke('-', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     zoomOut()
   }
 })
 onKeyStroke('0', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     fitToContent()
   }
 })
 onKeyStroke('1', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     resetZoom()
   }
 })
 onKeyStroke('Tab', (e) => {
+  if (isTyping()) return
   e.preventDefault()
   const nodeId = cameraIntel.cycleNode(e.shiftKey ? 'prev' : 'next')
   if (nodeId) mapStore.select([nodeId])
 })
 onKeyStroke('Home', (e) => {
+  if (isTyping()) return
   e.preventDefault()
   const nodeId = cameraIntel.flyToRoot()
   if (nodeId) mapStore.select([nodeId])
 })
 onKeyStroke('f', (e) => {
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     cameraIntel.flyToSelection()
   }
 })
 onKeyStroke('Backspace', (e) => {
-  // Only navigate back if no editing is active and no selection to delete
-  if (!e.ctrlKey && !e.metaKey && mapStore.selection.nodeIds.size === 0 && mapStore.selection.edgeIds.size === 0) {
+  if (isTyping() || isEditingTitle.value) return
+  if (mapStore.selection.nodeIds.size > 0 || mapStore.selection.edgeIds.size > 0) {
+    e.preventDefault()
+    deleteSelectedWithAnimations()
+  } else if (!e.ctrlKey && !e.metaKey) {
     cameraIntel.goBack()
+  }
+})
+onKeyStroke('Delete', (e) => {
+  if (isTyping() || isEditingTitle.value) return
+  if (mapStore.selection.nodeIds.size > 0 || mapStore.selection.edgeIds.size > 0) {
+    e.preventDefault()
+    deleteSelectedWithAnimations()
   }
 })
 onKeyStroke('s', (e) => {
   // S without modifier toggles semantic field
-  if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+  if (!isTyping() && !e.ctrlKey && !e.metaKey && !e.altKey) {
     semanticStore.toggleField()
   }
 }, { eventName: 'keyup' })
-onKeyStroke('\\', () => sidebarCollapsed.value = !sidebarCollapsed.value)
+onKeyStroke('\\', () => { if (!isTyping()) sidebarCollapsed.value = !sidebarCollapsed.value })
+onKeyStroke('k', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    showSemanticSearch.value = !showSemanticSearch.value
+  }
+})
+
+// Delete selected nodes/edges with exit animations
+function deleteSelectedWithAnimations() {
+  for (const nodeId of mapStore.selection.nodeIds) {
+    const node = mapStore.nodes.get(nodeId)
+    if (node) {
+      nodeAnim.exitNode(node.id, {
+        position: { ...node.position },
+        size: { ...node.size },
+        content: node.content,
+        style: { ...node.style }
+      })
+    }
+  }
+  mapStore.deleteSelected()
+  // Focus canvas after delete
+  canvasRef.value?.containerRef?.focus()
+}
+
+// Space hold → temporary pan tool
+let toolBeforeSpace: typeof activeTool.value | null = null
+
+onKeyStroke(' ', (e) => {
+  if (isEditingTitle.value) return
+  const tag = (e.target as HTMLElement)?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+  e.preventDefault()
+  if (!toolBeforeSpace) {
+    toolBeforeSpace = activeTool.value
+    activeTool.value = 'pan'
+  }
+}, { eventName: 'keydown' })
+
+onKeyStroke(' ', (e) => {
+  if (isEditingTitle.value) return
+  const tag = (e.target as HTMLElement)?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+  e.preventDefault()
+  if (toolBeforeSpace) {
+    activeTool.value = toolBeforeSpace
+    toolBeforeSpace = null
+  }
+}, { eventName: 'keyup' })
 
 // Context menu
 function handleCanvasContextMenu(event: { node: Node | null; edge: Edge | null; position: Point; screenPosition: Point }) {
@@ -1068,6 +1254,33 @@ watch(
 )
 
 // Handle highlight nodes from insight panel
+async function handleSemanticSearch(query: string) {
+  if (!query.trim()) return
+  semanticSearchRef.value?.setSearching(true)
+  try {
+    const nodesWithEmbeddings = semanticStore.nodesWithEmbeddings
+    const nodes = nodesWithEmbeddings.map(n => ({
+      id: n.nodeId,
+      content: mapStore.nodes.get(n.nodeId)?.content ?? '',
+      embedding: n.embedding
+    })).filter(n => n.content)
+
+    if (nodes.length === 0) {
+      semanticSearchRef.value?.setResults([])
+      return
+    }
+
+    const result = await ai.sendMessage<{
+      results: import('~/types/semantic').SemanticSearchResult[]
+    }>('hybrid-search', { query, nodes, topK: 10 })
+
+    semanticSearchRef.value?.setResults(result.results)
+  } catch (e) {
+    console.error('Semantic search failed:', e)
+    semanticSearchRef.value?.setResults([])
+  }
+}
+
 function handleHighlightNodes(nodeIds: string[]) {
   if (canvasRef.value) {
     canvasRef.value.highlightedNodeIds = new Set(nodeIds)
@@ -1079,6 +1292,19 @@ function handleClearHighlights() {
     canvasRef.value.highlightedNodeIds = new Set()
   }
 }
+
+// ═══════════════ MOBILE BACK HANDLER ═══════════════
+function handleMobileBack() {
+  router.push('/dashboard')
+}
+
+const saveStatusText = computed(() => {
+  if (!autoSave.lastSavedAt.value) return 'Not saved'
+  const diff = Date.now() - autoSave.lastSavedAt.value
+  if (diff < 5000) return 'Saved just now'
+  if (diff < 60000) return `Saved ${Math.floor(diff / 1000)}s ago`
+  return `Saved ${Math.floor(diff / 60000)}m ago`
+})
 
 // Page meta
 definePageMeta({
@@ -1093,7 +1319,28 @@ useHead({
 
 <template>
   <div class="h-screen w-screen overflow-hidden relative flex bg-nc-bg">
+    <!-- ═══════════════ LOADING / ERROR (both mobile & desktop) ═══════════════ -->
+    <div v-if="isLoading" class="absolute inset-0 z-50 flex items-center justify-center bg-nc-bg">
+      <div class="flex flex-col items-center gap-3">
+        <span class="i-lucide-loader-circle text-3xl text-nc-accent animate-spin" />
+        <span class="text-sm text-nc-text-secondary">Loading map...</span>
+      </div>
+    </div>
+    <div v-else-if="loadError" class="absolute inset-0 z-50 flex items-center justify-center bg-nc-bg">
+      <div class="flex flex-col items-center gap-3">
+        <span class="i-lucide-alert-circle text-3xl text-red-400" />
+        <span class="text-sm text-nc-text-secondary">{{ loadError }}</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════ MOBILE OUTLINE EDITOR (< 768px) ═══════════════ -->
+    <OutlineEditor
+      v-if="isMobile && !isLoading && !loadError"
+      class="flex-1"
+    />
+
     <!-- ═══════════════ LEFT SIDEBAR (Desktop — UNTOUCHED) ═══════════════ -->
+    <template v-if="!isMobile">
     <Transition
       enter-active-class="transition-all duration-300 ease-out"
       leave-active-class="transition-all duration-200 ease-in"
@@ -1133,6 +1380,13 @@ useHead({
         :is-drag-over="canvasRef?.isDragOver ?? false"
       />
 
+      <!-- Empty canvas guide (shown when no nodes exist) -->
+      <CanvasEmptyCanvasGuide
+        v-if="!isLoading && !loadError && mapStore.nodes.size === 0"
+        @add-node="handleAddNodeFromSidebar"
+        @generate-map="showGenerateMapDialog = true"
+      />
+
       <!-- Canvas -->
       <CanvasInfiniteCanvas
         v-if="!isLoading && !loadError"
@@ -1143,8 +1397,42 @@ useHead({
         @update:camera="springCamera.setCurrent($event)"
         @pan-end="(v: { vx: number; vy: number }) => springCamera.addVelocity(v.vx, v.vy)"
         @contextmenu="handleCanvasContextMenu"
+        @node-hover="handleNodeHover"
         @drop-category="handleDropCategory"
         @drop-node="handleDropNode"
+      />
+
+      <!-- Multi-Select Action Bar -->
+      <Transition name="nc-fade-up">
+        <CanvasMultiSelectBar
+          v-if="multiSelectCount > 1"
+          :count="multiSelectCount"
+          :screen-x="multiSelectPosition.x"
+          :screen-y="multiSelectPosition.y"
+          @duplicate="mapStore.duplicateSelected()"
+          @ai-expand="handleSmartExpand()"
+          @delete="deleteSelectedWithAnimations()"
+        />
+      </Transition>
+
+      <!-- Node Hover Preview -->
+      <Transition name="nc-fade-up">
+        <CanvasNodeHoverPreview
+          v-if="hoveredPreviewNode && !contextMenuVisible"
+          :node="hoveredPreviewNode"
+          :screen-x="hoverPreviewPosition.x"
+          :screen-y="hoverPreviewPosition.y"
+        />
+      </Transition>
+
+      <!-- Spatial HUD Overlay -->
+      <CanvasSpatialHUDOverlay
+        :camera="camera"
+        :nodes="mapStore.nodes"
+        :visible-count="mapStore.nodes.size"
+        :regions="mapRegions.regions.value"
+        :root-node-id="mapStore.rootNodeId"
+        :is-editing-title="isEditingTitle"
       />
 
       <!-- Top Bar -->
@@ -1154,15 +1442,22 @@ useHead({
         :edited-title="editedTitle"
         :is-a-i-loading="isAILoading"
         :has-selection="!!selectedNode"
+        :breadcrumbs="cameraIntel.breadcrumbs.value"
+        :regions="mapRegions.regions.value"
         @start-editing="startEditingTitle"
         @save-title="saveTitle"
         @cancel-edit="cancelEditTitle"
         @title-input="editedTitle = $event"
         @smart-expand="handleSmartExpand"
         @save="handleSave"
+        @share="handleShare"
+        @export-png="handleExportPng"
+        @export-json="handleExportJson"
+        @export-markdown="handleExportMarkdown"
         @open-shortcuts="showShortcutsModal = true"
         @undo="mapStore.undo()"
         @redo="mapStore.redo()"
+        @navigate-breadcrumb="(crumb) => springCamera.setTarget(crumb, 'snappy')"
       />
     </div>
 
@@ -1171,8 +1466,13 @@ useHead({
       :active-tool="activeTool"
       :zoom="camera.zoom"
       :semantic-field-enabled="semanticFieldEnabled"
+      :can-undo="mapStore.canUndo()"
+      :can-redo="mapStore.canRedo()"
+      :processing-queue-size="semanticStore.embeddingQueueSize"
+      :processor-state="semanticStore.processorState"
       @update:active-tool="activeTool = $event"
       @toggle-semantic="semanticStore.toggleField()"
+      @open-semantic-settings="showSemanticSettings = true"
       @open-shortcuts="showShortcutsModal = true"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
@@ -1180,17 +1480,21 @@ useHead({
       @zoom-set="setZoom"
       @reset-zoom="resetZoom"
       @fit-to-content="fitToContent"
+      @undo="mapStore.undo()"
+      @redo="mapStore.redo()"
     />
 
     <!-- Minimap (always visible on desktop) -->
-    <div class="absolute bottom-20 right-4 z-toolbar pointer-events-auto hidden md:block">
+    <div class="minimap-wrapper">
       <Minimap
+        v-model:collapsed="minimapCollapsed"
         :camera="camera"
         :container-width="canvasContainerWidth"
         :container-height="canvasContainerHeight"
         :regions="mapRegions.regions.value"
         :breadcrumbs="cameraIntel.breadcrumbs.value"
         @update:camera="springCamera.setTarget($event, 'snappy')"
+        @fit-all="fitToContent"
       />
     </div>
 
@@ -1220,6 +1524,8 @@ useHead({
         </div>
       </div>
     </nav>
+
+    </template><!-- end desktop-only -->
 
     <!-- Mobile Sidebar Sheet -->
     <CanvasMobileSidebarSheet
@@ -1252,11 +1558,26 @@ useHead({
       @navigate-to-node="handleNavigateToNode"
     />
 
-    <CanvasGenerateMapDialog
+    <LazyCanvasGenerateMapDialog
       :visible="showGenerateMapDialog"
       :is-loading="isAILoading"
       @close="showGenerateMapDialog = false"
       @generate="handleGenerateMap"
+    />
+
+    <!-- Semantic Search Overlay -->
+    <CanvasSemanticSearch
+      ref="semanticSearchRef"
+      :visible="showSemanticSearch"
+      @close="showSemanticSearch = false"
+      @navigate-to-node="(nodeId) => { handleNavigateToNode(nodeId); showSemanticSearch = false }"
+      @search="handleSemanticSearch"
+    />
+
+    <!-- Semantic Settings Panel -->
+    <LazyCanvasSemanticSettingsPanel
+      :visible="showSemanticSettings"
+      @close="showSemanticSettings = false"
     />
 
     <!-- Context Menu -->
@@ -1272,6 +1593,72 @@ useHead({
       :visible="showShortcutsModal"
       @close="showShortcutsModal = false"
     />
+
+    <!-- Sync conflict resolution dialog -->
+    <SyncConflictDialog />
+
   </div>
 </template>
+
+<style scoped>
+.minimap-wrapper {
+  position: absolute;
+  bottom: 84px;
+  right: 20px;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .minimap-wrapper {
+    display: none;
+  }
+
+  /* Canvas sidebar becomes bottom sheet on mobile */
+  .nc-sidebar-wrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    max-height: 55vh;
+    z-index: 150;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .nc-sidebar-wrapper :deep(.shell) {
+    min-height: auto;
+    height: 100%;
+    border-right: none;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid #1E1E22;
+  }
+
+  :root.light .nc-sidebar-wrapper :deep(.shell) {
+    border-top-color: #E8E8E6;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  .nc-sidebar-wrapper :deep(.shell__spacer) {
+    display: none;
+  }
+
+  .nc-sidebar-wrapper :deep(.shell__content) {
+    padding-top: 0;
+  }
+
+  .nc-sidebar-wrapper :deep(.shell__resize-handle) {
+    display: none;
+  }
+
+  .nc-sidebar-show-btn {
+    display: none;
+  }
+
+  /* Top bar handled by TopBar.vue component's own mobile styles */
+}
+</style>
 

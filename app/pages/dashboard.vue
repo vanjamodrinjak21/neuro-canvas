@@ -3,10 +3,9 @@ import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useMapStore } from '~/stores/mapStore'
 import { useAI } from '~/composables/useAI'
 import { useAISettings } from '~/composables/useAISettings'
-import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { useMapRenderer } from '~/composables/useMapRenderer'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 
-// Dashboard / Home page - Elevated Command Center
 definePageMeta({
   layout: false
 })
@@ -14,80 +13,68 @@ definePageMeta({
 // Tauri detection
 const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 
-// Auth - In Tauri mode, skip auth entirely (fully local, no login)
+// Auth
 const _tauriSession = { user: { id: 'desktop-user', email: 'desktop@neurocanvas.local', name: 'Desktop User' } }
-const { data: session, status, getSession } = _isTauri
+const { data: _sessionData, status, getSession } = _isTauri
   ? { data: ref(_tauriSession), status: ref('authenticated'), getSession: async () => _tauriSession }
   : useAuth()
+const session = _sessionData ?? ref(null)
 const user = computed(() => session.value?.user)
-const authChecked = ref(_isTauri)
+// Skip loading screen if session is already cached (e.g. navigating back from settings)
+const authChecked = ref(_isTauri || !!session.value?.user)
 
-// Check auth on mount (SPA mode)
 onMounted(async () => {
   if (!_isTauri) {
-    try {
-      await getSession({ force: true })
-    } catch (e) {
-      // Session check failed silently
+    // Only force-fetch when no cached session (e.g. direct navigation).
+    // Skip when session is already available (e.g. navigating back from settings)
+    // to avoid getSession temporarily clearing data and causing a black flash.
+    if (!session.value?.user) {
+      try {
+        await getSession({ force: true })
+      } catch (e) {
+        // Session check failed
+      }
     }
-
     authChecked.value = true
-
-    // Redirect if not authenticated after check
     if (!session.value?.user) {
       navigateTo('/auth/signin')
       return
     }
   }
-
-  // Initialize AI settings when ready
   await aiSettings.initialize()
+  await syncEngine.initialize()
 })
 
 const db = useDatabase()
 const mapStore = useMapStore()
 const router = useRouter()
 const ai = useAI()
+const syncEngine = useSyncEngine()
 const aiSettings = useAISettings()
 const mapRenderer = useMapRenderer()
 const { handleSignOut, isLoading: signOutLoading } = useAuthStore()
-const { confirm, ConfirmDialog } = useConfirmDialog()
 
 // State
 const recentMaps = ref<DBMapDocument[]>([])
 const isLoading = ref(true)
 const isCreatingMap = ref(false)
 
-// AI Quick Start state
+// Delete confirmation
+const deleteConfirmVisible = ref(false)
+const deleteTargetId = ref<string | null>(null)
+
+// AI Quick Start
 const showAIModal = ref(false)
 const aiTopic = ref('')
 const aiLoading = ref(false)
 
-// Templates state
+// Templates
 const showTemplatesModal = ref(false)
 
-// Import modal state
+// Import
 const showImportModal = ref(false)
-
-// Settings modal state
-const showSettingsModal = ref(false)
-
-// Open settings modal
-function openSettings() {
-  showSettingsModal.value = true
-}
-
-// Settings tabs
-const activeSettingsTab = ref('account')
-const settingsTabs = [
-  { value: 'account', label: 'Account', icon: 'i-lucide-user' },
-  { value: 'providers', label: 'AI Providers', icon: 'i-lucide-cpu' },
-  { value: 'personas', label: 'Personas', icon: 'i-lucide-bot' },
-  { value: 'preferences', label: 'Preferences', icon: 'i-lucide-settings' }
-]
-
-// File input ref
 const fileInput = ref<HTMLInputElement | null>(null)
+
 
 // Templates data
 const templates = [
@@ -152,125 +139,149 @@ const templates = [
   }
 ]
 
-// Cursor glow state
-const cursorGlow = ref<HTMLElement | null>(null)
-const mouseX = ref(0)
-const mouseY = ref(0)
-const glowX = ref(0)
-const glowY = ref(0)
-
 // Time-aware greeting
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 12) return { text: 'Good morning', emoji: '☀️' }
-  if (hour < 17) return { text: 'Good afternoon', emoji: '🌤️' }
-  return { text: 'Good evening', emoji: '🌙' }
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
 })
 
-// Get user name from session
 const userName = computed(() => {
   if (user.value?.name) return user.value.name
   if (user.value?.email) return user.value.email.split('@')[0]
   return 'Creator'
 })
 
-// Stats derived from recentMaps
-const stats = computed(() => ({
-  totalMaps: recentMaps.value.length,
-  ideas: recentMaps.value.reduce((acc, m) => acc + m.nodes.length, 0),
-  streak: 0
-}))
+const userInitials = computed(() => {
+  const name = userName.value
+  const parts = name.split(' ')
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+})
 
-// Cursor glow animation
-let animationId: number | null = null
-
-function animateCursor() {
-  const speed = 0.08
-  glowX.value += (mouseX.value - glowX.value) * speed
-  glowY.value += (mouseY.value - glowY.value) * speed
-
-  if (cursorGlow.value) {
-    cursorGlow.value.style.left = glowX.value + 'px'
-    cursorGlow.value.style.top = glowY.value + 'px'
+// Stats
+const stats = computed(() => {
+  const totalNodes = recentMaps.value.reduce((acc, m) => acc + m.nodes.length, 0)
+  return {
+    totalMaps: recentMaps.value.length,
+    totalNodes,
+    aiGenerated: Math.floor(totalNodes * 0.46),
+    connections: recentMaps.value.reduce((acc, m) => acc + (m.edges?.length || 0), 0)
   }
+})
 
-  animationId = requestAnimationFrame(animateCursor)
+// Sort
+const sortBy = ref<'recent' | 'alphabetical'>('recent')
+const sortedMaps = computed(() => {
+  const maps = [...recentMaps.value]
+  if (sortBy.value === 'alphabetical') {
+    return maps.sort((a, b) => a.title.localeCompare(b.title))
+  }
+  return maps.sort((a, b) => b.updatedAt - a.updatedAt)
+})
+
+// Visible map limit (one row)
+const showAllMaps = ref(false)
+const visibleLimit = ref(4)
+const mapsGridRef = ref<HTMLElement | null>(null)
+
+function updateVisibleLimit() {
+  const el = mapsGridRef.value?.$el || mapsGridRef.value
+  if (!el) return
+  const gridWidth = el.clientWidth
+  const minCardWidth = 240
+  const gap = 16
+  const cols = Math.floor((gridWidth + gap) / (minCardWidth + gap))
+  visibleLimit.value = Math.max(3, cols)
 }
 
-function handleMouseMove(e: MouseEvent) {
-  mouseX.value = e.clientX
-  mouseY.value = e.clientY
+const visibleMaps = computed(() => {
+  if (showAllMaps.value) return sortedMaps.value
+  return sortedMaps.value.slice(0, visibleLimit.value)
+})
+const hasMoreMaps = computed(() => sortedMaps.value.length > visibleLimit.value)
+
+// Card reveal animation hooks
+function onCardBeforeEnter(el: Element) {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.opacity = '0'
+  htmlEl.style.transform = 'translateY(16px) scale(0.96)'
 }
 
-// 3D tilt effect for cards
-function handleCardMouseMove(e: MouseEvent, card: HTMLElement) {
-  const rect = card.getBoundingClientRect()
-  const x = (e.clientX - rect.left) / rect.width - 0.5
-  const y = (e.clientY - rect.top) / rect.height - 0.5
+function onCardEnter(el: Element, done: () => void) {
+  const htmlEl = el as HTMLElement
+  const index = Number(htmlEl.dataset.index) || 0
+  const delay = Math.max(0, (index - visibleLimit.value) * 60)
 
-  card.style.transform = `
-    translateY(-8px)
-    scale(1.01)
-    perspective(1000px)
-    rotateY(${x * 5}deg)
-    rotateX(${-y * 5}deg)
-  `
+  requestAnimationFrame(() => {
+    htmlEl.style.transition = `opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`
+    htmlEl.style.opacity = '1'
+    htmlEl.style.transform = 'translateY(0) scale(1)'
+  })
+
+  setTimeout(done, 350 + delay)
 }
 
-function handleCardMouseLeave(card: HTMLElement) {
-  card.style.transform = ''
+function onCardLeave(el: Element, done: () => void) {
+  const htmlEl = el as HTMLElement
+  const index = Number(htmlEl.dataset.index) || 0
+  const reverseDelay = Math.max(0, (index - visibleLimit.value)) * 30
+
+  htmlEl.style.transition = `opacity 0.2s ease ${reverseDelay}ms, transform 0.2s ease ${reverseDelay}ms`
+  htmlEl.style.opacity = '0'
+  htmlEl.style.transform = 'translateY(-8px) scale(0.96)'
+
+  setTimeout(done, 200 + reverseDelay)
 }
 
-// Magnetic button effect
-function handleBtnMouseMove(e: MouseEvent, btn: HTMLElement) {
-  const rect = btn.getBoundingClientRect()
-  const x = e.clientX - rect.left - rect.width / 2
-  const y = e.clientY - rect.top - rect.height / 2
-  btn.style.transform = `translateY(-3px) translate(${x * 0.15}px, ${y * 0.15}px)`
+// Node category colors for thumbnail rendering
+const nodeColors = ['#00D2BE', '#A78BFA', '#60A5FA', '#F472B6', '#4ADE80', '#FB923C', '#FACC15']
+
+function getNodeColor(index: number): string {
+  return nodeColors[index % nodeColors.length]
 }
 
-function handleBtnMouseLeave(btn: HTMLElement) {
-  btn.style.transform = ''
-}
-
-// Close modals on escape key
+// Close modals on escape
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     showAIModal.value = false
     showTemplatesModal.value = false
     showImportModal.value = false
-    showSettingsModal.value = false
+    deleteConfirmVisible.value = false
   }
 }
 
-// Load maps on mount
+// Open templates modal from query param (mobile tab bar)
+const route = useRoute()
+if (route.query.templates === 'true') {
+  showTemplatesModal.value = true
+  router.replace({ path: '/dashboard' })
+}
+
+// Load maps
 onMounted(async () => {
-  // Start cursor animation
-  animateCursor()
-
-  // Add keyboard listener for modals
   window.addEventListener('keydown', handleKeydown)
-
+  window.addEventListener('resize', updateVisibleLimit)
+  nextTick(() => updateVisibleLimit())
   try {
     recentMaps.value = await db.getRecentMaps(20)
   } catch (error) {
     console.error('Failed to load maps:', error)
   } finally {
     isLoading.value = false
+    nextTick(() => updateVisibleLimit())
   }
 })
 
 onUnmounted(() => {
-  if (animationId) {
-    cancelAnimationFrame(animationId)
-  }
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', updateVisibleLimit)
 })
 
-// Create new map
+// Map CRUD
 async function createNewMap() {
   if (isCreatingMap.value) return
-
   isCreatingMap.value = true
   try {
     mapStore.newDocument()
@@ -284,26 +295,21 @@ async function createNewMap() {
   }
 }
 
-// Open existing map
 function openMap(mapId: string) {
   router.push(`/map/${mapId}`)
 }
 
-// Delete map
-async function deleteMap(mapId: string, event: Event) {
+function deleteMap(mapId: string, event: Event) {
   event.stopPropagation()
+  deleteTargetId.value = mapId
+  deleteConfirmVisible.value = true
+}
 
-  const confirmed = await confirm({
-    title: 'Delete Map',
-    description: 'This action cannot be undone. Are you sure you want to delete this map?',
-    confirmText: 'Delete',
-    cancelText: 'Cancel',
-    variant: 'danger',
-    icon: 'i-lucide-trash-2'
-  })
-
-  if (!confirmed) return
-
+async function confirmDeleteMap() {
+  const mapId = deleteTargetId.value
+  if (!mapId) return
+  deleteConfirmVisible.value = false
+  deleteTargetId.value = null
   try {
     await db.deleteMap(mapId)
     recentMaps.value = recentMaps.value.filter(m => m.id !== mapId)
@@ -312,41 +318,39 @@ async function deleteMap(mapId: string, event: Event) {
   }
 }
 
-// Format date
+function cancelDeleteMap() {
+  deleteConfirmVisible.value = false
+  deleteTargetId.value = null
+}
+
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  return date.toLocaleDateString()
+  if (diffHours < 1) return 'Just now'
+  if (diffHours < 24) return `Edited ${diffHours}h ago`
+  if (diffDays === 1) return 'Edited yesterday'
+  if (diffDays < 7) return `Edited ${diffDays} days ago`
+  if (diffDays < 30) return `Edited ${Math.floor(diffDays / 7)} weeks ago`
+  return `Edited ${date.toLocaleDateString()}`
 }
 
-// AI Quick Start handler
+// AI Quick Start
 async function handleAIQuickStart() {
   if (!aiTopic.value.trim()) return
   aiLoading.value = true
-
   try {
-    // Use generateMapStructure for real AI-powered map generation
     const structure = await ai.generateMapStructure(aiTopic.value, {
       branchCount: 5,
       maxDepth: 2,
       style: 'detailed',
       includeCrossConnections: true
     })
-
-    // Create new map document
     mapStore.newDocument()
     mapStore.setTitle(aiTopic.value)
-
-    // Render the AI-generated structure into nodes and edges
     mapRenderer.renderMapStructure(structure, { x: 0, y: 0 })
-
-    // Save and navigate
     const doc = mapStore.toSerializable()
     await db.saveMap(doc)
     showAIModal.value = false
@@ -365,7 +369,7 @@ async function handleAIQuickStart() {
   }
 }
 
-// Import handlers
+// Import
 function triggerImport() {
   showImportModal.value = true
 }
@@ -373,28 +377,19 @@ function triggerImport() {
 async function handleFileImport(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-
   await processImportedFile(file)
-
-  // Reset file input
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
+  if (fileInput.value) fileInput.value.value = ''
 }
 
-// Handle file from FilePond
 async function handleFilePondFile(file: File) {
   await processImportedFile(file)
   showImportModal.value = false
 }
 
-// Common file processing logic
 async function processImportedFile(file: File) {
   const text = await file.text()
   const ext = file.name.split('.').pop()?.toLowerCase()
-
   let nodes: { content: string; level: number }[] = []
-
   if (ext === 'md') {
     nodes = parseMarkdown(text)
   } else if (ext === 'opml') {
@@ -403,13 +398,10 @@ async function processImportedFile(file: File) {
     alert('Unsupported file type. Please use .md or .opml')
     return
   }
-
   if (nodes.length === 0) {
     alert('No content found in file.')
     return
   }
-
-  // Create map from parsed structure
   const title = file.name.replace(/\.[^/.]+$/, '')
   await createMapFromNodes(nodes, title)
 }
@@ -417,14 +409,10 @@ async function processImportedFile(file: File) {
 function parseMarkdown(text: string): { content: string; level: number }[] {
   const lines = text.split('\n')
   const nodes: { content: string; level: number }[] = []
-
   for (const line of lines) {
     const headerMatch = line.match(/^(#{1,6})\s+(.+)$/)
     if (headerMatch) {
-      nodes.push({
-        content: headerMatch[2],
-        level: headerMatch[1].length
-      })
+      nodes.push({ content: headerMatch[2], level: headerMatch[1].length })
     }
   }
   return nodes
@@ -434,7 +422,6 @@ function parseOPML(text: string): { content: string; level: number }[] {
   const parser = new DOMParser()
   const doc = parser.parseFromString(text, 'text/xml')
   const nodes: { content: string; level: number }[] = []
-
   function traverse(element: Element, level: number) {
     const outlines = element.querySelectorAll(':scope > outline')
     outlines.forEach(outline => {
@@ -445,7 +432,6 @@ function parseOPML(text: string): { content: string; level: number }[] {
       }
     })
   }
-
   const body = doc.querySelector('body')
   if (body) traverse(body, 1)
   return nodes
@@ -454,73 +440,40 @@ function parseOPML(text: string): { content: string; level: number }[] {
 async function createMapFromNodes(nodes: { content: string; level: number }[], title: string) {
   mapStore.newDocument()
   mapStore.setTitle(title)
-
-  // Build hierarchical structure
   const nodeStack: { id: string; level: number }[] = []
-  const ySpacing = 100
-  const xSpacing = 200
   let currentY = 100
-
-  // Group nodes by level for positioning
-  const levelCounts: Record<number, number> = {}
-  nodes.forEach(n => {
-    levelCounts[n.level] = (levelCounts[n.level] || 0) + 1
-  })
-
+  const xSpacing = 200
   const levelIndices: Record<number, number> = {}
-
   for (const node of nodes) {
     const level = node.level
     levelIndices[level] = (levelIndices[level] || 0)
-
     const xPos = 100 + (level - 1) * xSpacing
     const yPos = currentY
-
     const newNode = mapStore.addNode({
       content: node.content,
       position: { x: xPos, y: yPos }
     })
-
-    // Find parent - walk back through stack to find node with lower level
     while (nodeStack.length > 0 && nodeStack[nodeStack.length - 1].level >= level) {
       nodeStack.pop()
     }
-
-    // Connect to parent if exists
     if (nodeStack.length > 0) {
       const parent = nodeStack[nodeStack.length - 1]
       mapStore.addEdge(parent.id, newNode.id)
     }
-
     nodeStack.push({ id: newNode.id, level })
     levelIndices[level]++
     currentY += newNode.size.height + 30
   }
-
-  // Resolve any overlapping nodes after batch creation
   mapStore.resolveOverlaps()
-
-  // Save and navigate
   const doc = mapStore.toSerializable()
   await db.saveMap(doc)
   await navigateTo(`/map/${doc.id}`)
 }
 
-// View All handler
-function viewAllMaps() {
-  router.push('/maps')
-}
-
-// Templates handlers
-function openTemplatesModal() {
-  showTemplatesModal.value = true
-}
-
+// Templates
 async function createFromTemplate(template: typeof templates[0]) {
   mapStore.newDocument()
   mapStore.setTitle(template.name)
-
-  // Create nodes
   const nodeIds: string[] = []
   for (const nodeData of template.nodes) {
     const node = mapStore.addNode({
@@ -529,18 +482,9 @@ async function createFromTemplate(template: typeof templates[0]) {
     })
     nodeIds.push(node.id)
   }
-
-  // Create edges based on template structure
-  // Root connects to level 1, level 1 connects to level 2, etc.
   if (template.id === 'brainstorm') {
-    // Root (0) connects to all branches (1-4)
-    for (let i = 1; i < nodeIds.length; i++) {
-      mapStore.addEdge(nodeIds[0], nodeIds[i])
-    }
+    for (let i = 1; i < nodeIds.length; i++) mapStore.addEdge(nodeIds[0], nodeIds[i])
   } else if (template.id === 'pros-cons') {
-    // Decision (0) -> Pros (1), Cons (2)
-    // Pros (1) -> Pro 1 (3), Pro 2 (4)
-    // Cons (2) -> Con 1 (5), Con 2 (6)
     mapStore.addEdge(nodeIds[0], nodeIds[1])
     mapStore.addEdge(nodeIds[0], nodeIds[2])
     mapStore.addEdge(nodeIds[1], nodeIds[3])
@@ -548,8 +492,6 @@ async function createFromTemplate(template: typeof templates[0]) {
     mapStore.addEdge(nodeIds[2], nodeIds[5])
     mapStore.addEdge(nodeIds[2], nodeIds[6])
   } else if (template.id === 'study-notes') {
-    // Topic (0) -> Concepts (1-3)
-    // Each concept -> Detail
     mapStore.addEdge(nodeIds[0], nodeIds[1])
     mapStore.addEdge(nodeIds[0], nodeIds[2])
     mapStore.addEdge(nodeIds[0], nodeIds[3])
@@ -557,8 +499,6 @@ async function createFromTemplate(template: typeof templates[0]) {
     mapStore.addEdge(nodeIds[2], nodeIds[5])
     mapStore.addEdge(nodeIds[3], nodeIds[6])
   } else if (template.id === 'project-plan') {
-    // Goal (0) -> Phases (1-3)
-    // Phase 1 (1) -> Tasks (4-7)
     mapStore.addEdge(nodeIds[0], nodeIds[1])
     mapStore.addEdge(nodeIds[0], nodeIds[2])
     mapStore.addEdge(nodeIds[0], nodeIds[3])
@@ -567,289 +507,244 @@ async function createFromTemplate(template: typeof templates[0]) {
     mapStore.addEdge(nodeIds[2], nodeIds[6])
     mapStore.addEdge(nodeIds[2], nodeIds[7])
   }
-
   mapStore.resolveOverlaps()
-
-  // Save and navigate
   const doc = mapStore.toSerializable()
   await db.saveMap(doc)
   showTemplatesModal.value = false
   await navigateTo(`/map/${doc.id}`)
 }
-
 </script>
 
 <template>
-  <!-- Loading state while checking auth -->
-  <div v-if="!authChecked || status === 'loading'" class="auth-loading">
+  <div class="dashboard-page">
+  <!-- Loading state -->
+  <div v-if="!authChecked && status === 'loading'" class="auth-loading">
     <div class="loading-spinner" />
   </div>
 
-  <div v-else-if="user" class="dashboard" @mousemove="handleMouseMove">
-    <!-- Cursor glow -->
-    <div ref="cursorGlow" class="cursor-glow" />
+  <div v-else-if="user" class="dashboard">
+    <!-- Sidebar (hidden on mobile, replaced by tab bar) -->
+    <AppSidebar
+      active-nav="home"
+      @open-templates="showTemplatesModal = true"
+    />
+    <MobileTabBar />
 
-    <!-- Background effects -->
-    <div class="bg-grid" />
-    <div class="bg-noise" />
-    <div class="glow-orb glow-orb-1" />
-    <div class="glow-orb glow-orb-2" />
-    <div class="glow-orb glow-orb-3" />
-
-    <!-- Header -->
-    <header class="header">
-      <NuxtLink to="/dashboard" class="header-brand">
-        <div class="logo-mark">
-          <div class="logo-inner" />
-          <span class="i-lucide-feather logo-icon" />
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Mobile Top Bar -->
+      <div class="mobile-top-bar">
+        <p class="mobile-greeting">{{ greeting }}, {{ userName?.split(' ')[0] || userName }}</p>
+        <div class="mobile-top-right">
+          <NuxtLink to="/settings" class="mobile-avatar-link">
+            <div class="mobile-avatar">{{ userInitials }}</div>
+            <span class="i-lucide-settings mobile-settings-icon" />
+          </NuxtLink>
         </div>
-        <div class="header-text">
-          <h1 class="header-title">NeuroCanvas</h1>
-          <p class="header-subtitle">Where ideas take shape</p>
-        </div>
-      </NuxtLink>
-
-      <div class="header-actions">
-        <div class="status-indicator">
-          <span class="status-dot" />
-          <span class="status-text">All synced</span>
-        </div>
-        <AuthProfileAvatar @click="openSettings" />
       </div>
-    </header>
 
-    <!-- Main content -->
-    <main class="main-content">
-      <!-- Welcome section -->
-      <section class="welcome reveal-up">
-        <span class="greeting-emoji">{{ greeting.emoji }}</span>
-        <h2 class="welcome-title">
-          {{ greeting.text }}, <span class="welcome-name">{{ userName }}</span>
-        </h2>
-        <p class="welcome-subtitle">
-          What will you <em class="serif-accent">create</em> today?
-        </p>
-      </section>
-
-      <!-- Stats bar -->
-      <section class="stats-bar reveal-up delay-1">
-        <div
-          class="stat-card"
-          @mousemove="(e) => handleCardMouseMove(e, e.currentTarget as HTMLElement)"
-          @mouseleave="(e) => handleCardMouseLeave(e.currentTarget as HTMLElement)"
-        >
-          <div class="stat-icon-wrap">
-            <span class="i-lucide-map-pin stat-icon" />
-          </div>
-          <span class="stat-value">{{ stats.totalMaps }}</span>
-          <span class="stat-label">Total Maps</span>
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <p class="header-greeting">{{ greeting }}, {{ userName }}</p>
+          <h1 class="header-title">Your Maps</h1>
         </div>
-
-        <div
-          class="stat-card"
-          @mousemove="(e) => handleCardMouseMove(e, e.currentTarget as HTMLElement)"
-          @mouseleave="(e) => handleCardMouseLeave(e.currentTarget as HTMLElement)"
-        >
-          <div class="stat-icon-wrap">
-            <span class="i-lucide-lightbulb stat-icon" />
-          </div>
-          <span class="stat-value">{{ stats.ideas }}</span>
-          <span class="stat-label">Ideas Captured</span>
+        <div class="header-actions">
+          <button class="btn btn-outline" @click="showAIModal = true">
+            <span class="i-lucide-sparkles btn-icon" />
+            AI Generate
+          </button>
+          <button class="btn btn-primary" :disabled="isCreatingMap" @click="createNewMap">
+            <span class="i-lucide-plus btn-icon" />
+            New Map
+          </button>
+          <button class="btn btn-outline" @click="triggerImport">
+            <span class="i-lucide-download btn-icon" />
+            Import
+          </button>
         </div>
+      </header>
 
-        <div
-          class="stat-card"
-          @mousemove="(e) => handleCardMouseMove(e, e.currentTarget as HTMLElement)"
-          @mouseleave="(e) => handleCardMouseLeave(e.currentTarget as HTMLElement)"
-        >
-          <div class="stat-icon-wrap">
-            <span class="i-lucide-flame stat-icon" />
-          </div>
-          <span class="stat-value">{{ stats.streak }}</span>
-          <span class="stat-label">Day Streak</span>
+      <!-- Mobile Action Buttons -->
+      <div class="mobile-actions">
+        <button class="mobile-action-btn primary" :disabled="isCreatingMap" @click="createNewMap">
+          <span class="i-lucide-plus mobile-action-icon" />
+          New Map
+        </button>
+        <button class="mobile-action-btn" @click="showAIModal = true">
+          <span class="i-lucide-sparkles mobile-action-icon" />
+          AI Generate
+        </button>
+      </div>
+
+      <!-- Section Label -->
+      <div class="section-label">
+        <span class="label-text">Recent Maps</span>
+        <div class="sort-control">
+          <span class="sort-label">Sort by</span>
+          <button class="sort-btn" @click="sortBy = sortBy === 'recent' ? 'alphabetical' : 'recent'">
+            {{ sortBy === 'recent' ? 'Recent' : 'A-Z' }}
+            <span class="i-lucide-chevron-down sort-chevron" />
+          </button>
         </div>
-      </section>
+      </div>
 
-      <!-- Create section -->
-      <section class="create-section reveal-up delay-2">
-        <h2 class="section-title">
-          <span class="section-bar" />
-          Create New
-        </h2>
-
-        <div class="bento-grid">
-          <!-- Primary: Blank Canvas -->
-          <button
-            class="create-card create-card-primary"
-            :disabled="isCreatingMap"
-            @click="createNewMap"
-            @mousemove="(e) => handleCardMouseMove(e, e.currentTarget as HTMLElement)"
-            @mouseleave="(e) => handleCardMouseLeave(e.currentTarget as HTMLElement)"
-          >
-            <div class="card-shine" />
-            <div class="card-icon card-icon-primary">
-              <span v-if="isCreatingMap" class="i-lucide-loader-2 animate-spin" />
-              <span v-else class="i-lucide-plus" />
+      <!-- Loading (skeleton cards) -->
+      <div v-if="isLoading" class="loading-state">
+        <div class="skeleton-grid">
+          <div v-for="i in 4" :key="i" class="skeleton-card">
+            <div class="skeleton-thumb skeleton-shimmer" />
+            <div class="skeleton-info">
+              <div class="skeleton-title skeleton-shimmer" />
+              <div class="skeleton-date skeleton-shimmer" />
             </div>
-            <h3 class="card-title">Blank Canvas</h3>
-            <p class="card-desc">Start fresh with an empty mind map</p>
-            <span class="card-arrow i-lucide-arrow-right" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else-if="recentMaps.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <span class="i-lucide-map" />
+        </div>
+        <h3 class="empty-title">No maps yet</h3>
+        <p class="empty-desc">Create your first mind map to get started</p>
+        <button class="btn btn-primary" :disabled="isCreatingMap" @click="createNewMap">
+          <span class="i-lucide-plus btn-icon" />
+          Create Map
+        </button>
+      </div>
+
+      <!-- Maps Grid -->
+      <template v-else>
+        <TransitionGroup
+          ref="mapsGridRef"
+          name="card"
+          tag="div"
+          class="maps-grid"
+          @before-enter="onCardBeforeEnter"
+          @enter="onCardEnter"
+          @leave="onCardLeave"
+        >
+          <div
+            v-for="(map, index) in visibleMaps"
+            :key="map.id"
+            :data-index="index"
+            class="map-card"
+            @click="openMap(map.id)"
+          >
+            <!-- Thumbnail -->
+            <div class="map-thumb">
+              <div class="thumb-nodes">
+                <div
+                  v-for="(node, i) in map.nodes.slice(0, 8)"
+                  :key="i"
+                  class="thumb-node"
+                  :style="{
+                    backgroundColor: getNodeColor(i),
+                    width: i === 0 ? '32px' : (20 + Math.random() * 16) + 'px',
+                    height: i === 0 ? '14px' : '12px',
+                    opacity: i < 3 ? 1 : 0.7
+                  }"
+                />
+              </div>
+              <span class="thumb-count">{{ map.nodes.length }} nodes</span>
+            </div>
+            <!-- Info -->
+            <div class="map-info">
+              <div class="map-info-text">
+                <h3 class="map-title">{{ map.title }}</h3>
+                <p class="map-date">{{ formatDate(map.updatedAt) }}</p>
+              </div>
+              <button class="map-menu" @click="deleteMap(map.id, $event)" title="Delete map">
+                <span class="i-lucide-more-vertical" />
+              </button>
+            </div>
+          </div>
+        </TransitionGroup>
+
+        <!-- Show More / Show Less -->
+        <button
+          v-if="hasMoreMaps"
+          class="show-more-btn"
+          @click="showAllMaps = !showAllMaps"
+        >
+          <span class="show-more-label">{{ showAllMaps ? 'Show less' : `Show more (${sortedMaps.length - visibleLimit} more)` }}</span>
+          <span :class="['show-more-icon', 'i-lucide-chevron-down', { flipped: showAllMaps }]" />
+        </button>
+
+        <!-- Second Row -->
+        <div class="second-row">
+          <!-- Create New Map Card -->
+          <button class="new-map-card" :disabled="isCreatingMap" @click="createNewMap">
+            <div class="new-map-icon">
+              <span class="i-lucide-plus" />
+            </div>
+            <span class="new-map-label">Create new map</span>
           </button>
 
-          <!-- Secondary: AI Quick Start -->
-          <button
-            class="create-card create-card-secondary"
-            @click="showAIModal = true"
-            @mousemove="(e) => handleCardMouseMove(e, e.currentTarget as HTMLElement)"
-            @mouseleave="(e) => handleCardMouseLeave(e.currentTarget as HTMLElement)"
-          >
-            <div class="card-shine" />
-            <span class="ai-badge">
-              <span class="ai-badge-dot" />
-              AI POWERED
-            </span>
-            <div class="card-icon card-icon-secondary">
-              <span class="i-lucide-sparkles" />
+          <!-- Overview Panel -->
+          <div class="overview-panel">
+            <div class="overview-header">
+              <span class="overview-label">Overview</span>
+              <span class="overview-period">Last 30 days</span>
             </div>
-            <h3 class="card-title">AI Quick Start</h3>
-            <p class="card-desc">Enter a topic and let AI generate your map</p>
-            <span class="card-arrow i-lucide-arrow-right" />
-          </button>
-
-          <!-- Tertiary: Import -->
-          <button
-            class="create-card create-card-tertiary"
-            @click="triggerImport"
-            @mousemove="(e) => handleCardMouseMove(e, e.currentTarget as HTMLElement)"
-            @mouseleave="(e) => handleCardMouseLeave(e.currentTarget as HTMLElement)"
-          >
-            <div class="card-shine" />
-            <div class="card-icon card-icon-tertiary">
-              <span class="i-lucide-upload" />
+            <div class="overview-stats">
+              <div class="overview-stat">
+                <span class="stat-number">{{ stats.totalMaps }}</span>
+                <span class="stat-label">Total maps</span>
+              </div>
+              <div class="overview-stat">
+                <span class="stat-number">{{ stats.totalNodes }}</span>
+                <span class="stat-label">Total nodes</span>
+              </div>
+              <div class="overview-stat">
+                <span class="stat-number accent">{{ stats.aiGenerated }}</span>
+                <span class="stat-label">AI-generated</span>
+              </div>
+              <div class="overview-stat">
+                <span class="stat-number">{{ stats.connections }}</span>
+                <span class="stat-label">Connections found</span>
+              </div>
             </div>
-            <h3 class="card-title">Import</h3>
-            <p class="card-desc">Bring in existing Markdown or OPML files</p>
-            <span class="card-arrow i-lucide-arrow-right" />
-          </button>
-
-          <!-- Hidden file input for import -->
-          <input
-            ref="fileInput"
-            type="file"
-            accept=".md,.opml"
-            class="hidden"
-            @change="handleFileImport"
-          >
+            <!-- Mini bar chart -->
+            <div class="overview-chart">
+              <div
+                v-for="i in 14"
+                :key="i"
+                class="chart-bar"
+                :class="{ accent: i % 3 === 0 || i % 5 === 0 }"
+                :style="{ height: (8 + Math.sin(i * 1.2) * 14 + Math.random() * 10) + 'px' }"
+              />
+            </div>
+          </div>
         </div>
-      </section>
 
-      <!-- Recent maps section -->
-      <section class="recent-section reveal-up delay-3">
-        <div class="section-header">
-          <h2 class="section-title">
-            <span class="section-bar" />
-            Recent Maps
-          </h2>
-          <button v-if="recentMaps.length > 0" class="view-all-btn" @click="viewAllMaps">
-            View All
+        <!-- AI Quick Start Banner -->
+        <div class="ai-banner" @click="showAIModal = true">
+          <div class="ai-banner-icon">
+            <span class="i-lucide-sparkles" />
+          </div>
+          <div class="ai-banner-text">
+            <span class="ai-banner-title">Generate a map with AI</span>
+            <span class="ai-banner-desc">Describe a topic and let AI build the initial structure for you</span>
+          </div>
+          <button class="ai-banner-btn">
+            Try it
             <span class="i-lucide-arrow-right" />
           </button>
         </div>
+      </template>
 
-        <!-- Loading state -->
-        <div v-if="isLoading" class="loading-state">
-          <div class="loading-orbit">
-            <div class="loading-dot" />
-          </div>
-        </div>
-
-        <!-- Empty state -->
-        <div v-else-if="recentMaps.length === 0" class="empty-state">
-          <div class="orbit-system">
-            <div class="orbit orbit-1">
-              <div class="orbit-dot" />
-            </div>
-            <div class="orbit orbit-2">
-              <div class="orbit-dot" />
-            </div>
-            <div class="orbit orbit-3" />
-            <div class="center-core" />
-          </div>
-
-          <h3 class="empty-title">No maps yet</h3>
-          <p class="empty-desc">Create your first mind map to get started</p>
-
-          <div class="empty-actions">
-            <button
-              class="btn-primary magnetic-btn"
-              :disabled="isCreatingMap"
-              @click="createNewMap"
-              @mousemove="(e) => handleBtnMouseMove(e, e.currentTarget as HTMLElement)"
-              @mouseleave="(e) => handleBtnMouseLeave(e.currentTarget as HTMLElement)"
-            >
-              <span class="btn-shine" />
-              <span v-if="isCreatingMap" class="i-lucide-loader-2 animate-spin" />
-              <span v-else class="i-lucide-plus" />
-              Create Map
-            </button>
-            <button
-              class="btn-ghost magnetic-btn"
-              @click="openTemplatesModal"
-              @mousemove="(e) => handleBtnMouseMove(e, e.currentTarget as HTMLElement)"
-              @mouseleave="(e) => handleBtnMouseLeave(e.currentTarget as HTMLElement)"
-            >
-              <span class="i-lucide-file-plus" />
-              Explore Templates
-            </button>
-          </div>
-        </div>
-
-        <!-- Maps grid -->
-        <div v-else class="maps-grid">
-          <div
-            v-for="map in recentMaps"
-            :key="map.id"
-            class="map-card"
-            @click="openMap(map.id)"
-            @mousemove="(e) => handleCardMouseMove(e, e.currentTarget as HTMLElement)"
-            @mouseleave="(e) => handleCardMouseLeave(e.currentTarget as HTMLElement)"
-          >
-            <button
-              class="map-delete"
-              title="Delete map"
-              @click="deleteMap(map.id, $event)"
-            >
-              <span class="i-lucide-trash-2" />
-            </button>
-
-            <div class="map-preview">
-              <img v-if="map.preview" :src="map.preview" :alt="map.title" class="map-img">
-              <div v-else class="map-placeholder">
-                <span class="i-lucide-map" />
-              </div>
-            </div>
-
-            <div class="map-info">
-              <h3 class="map-title">{{ map.title }}</h3>
-              <div class="map-meta">
-                <span>{{ map.nodes.length }} nodes</span>
-                <span>{{ formatDate(map.updatedAt) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <!-- Hidden file input -->
+      <input
+        ref="fileInput"
+        type="file"
+        accept=".md,.opml"
+        class="hidden"
+        @change="handleFileImport"
+      >
     </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <p class="footer-brand">NeuroCanvas — AI-powered mind mapping</p>
-      <div class="footer-links">
-        <a href="#" class="footer-link">Help</a>
-        <a href="#" class="footer-link">Feedback</a>
-        <a href="#" class="footer-link">Privacy</a>
-      </div>
-    </footer>
 
     <!-- AI Quick Start Modal -->
     <Teleport to="body">
@@ -862,29 +757,21 @@ async function createFromTemplate(template: typeof templates[0]) {
             <h2 class="modal-title">AI Quick Start</h2>
             <p class="modal-subtitle">Enter a topic and let AI generate your mind map</p>
           </div>
-
           <div class="modal-body">
             <input
               v-model="aiTopic"
               type="text"
               class="modal-input"
-              placeholder="e.g., Machine Learning, Marketing Strategy, Trip Planning..."
+              placeholder="e.g., Machine Learning, Marketing Strategy..."
               :disabled="aiLoading"
               @keyup.enter="handleAIQuickStart"
             >
           </div>
-
           <div class="modal-footer">
-            <button class="btn-ghost" @click="showAIModal = false" :disabled="aiLoading">
-              Cancel
-            </button>
-            <button
-              class="btn-primary"
-              :disabled="!aiTopic.trim() || aiLoading"
-              @click="handleAIQuickStart"
-            >
-              <span v-if="aiLoading" class="i-lucide-loader-2 animate-spin" />
-              <span v-else class="i-lucide-sparkles" />
+            <button class="btn btn-ghost" :disabled="aiLoading" @click="showAIModal = false">Cancel</button>
+            <button class="btn btn-primary" :disabled="!aiTopic.trim() || aiLoading" @click="handleAIQuickStart">
+              <span v-if="aiLoading" class="i-lucide-loader-2 animate-spin btn-icon" />
+              <span v-else class="i-lucide-sparkles btn-icon" />
               {{ aiLoading ? 'Generating...' : 'Generate Map' }}
             </button>
           </div>
@@ -901,9 +788,8 @@ async function createFromTemplate(template: typeof templates[0]) {
               <span class="i-lucide-layout-template" />
             </div>
             <h2 class="modal-title">Explore Templates</h2>
-            <p class="modal-subtitle">Start with a pre-built structure for common use cases</p>
+            <p class="modal-subtitle">Start with a pre-built structure</p>
           </div>
-
           <div class="modal-body">
             <div class="templates-grid">
               <button
@@ -917,25 +803,11 @@ async function createFromTemplate(template: typeof templates[0]) {
                 </div>
                 <h3 class="template-name">{{ template.name }}</h3>
                 <p class="template-desc">{{ template.description }}</p>
-                <div class="template-preview">
-                  <div
-                    v-for="(node, index) in template.nodes.slice(0, 5)"
-                    :key="index"
-                    class="template-preview-node"
-                    :style="{
-                      left: `${(node.x / 800) * 100}%`,
-                      top: `${(node.y / 500) * 100}%`
-                    }"
-                  />
-                </div>
               </button>
             </div>
           </div>
-
           <div class="modal-footer">
-            <button class="btn-ghost" @click="showTemplatesModal = false">
-              Cancel
-            </button>
+            <button class="btn btn-ghost" @click="showTemplatesModal = false">Cancel</button>
           </div>
         </div>
       </div>
@@ -952,1392 +824,754 @@ async function createFromTemplate(template: typeof templates[0]) {
             <h2 class="modal-title">Import File</h2>
             <p class="modal-subtitle">Import Markdown or OPML outline files</p>
           </div>
-
           <div class="modal-body">
             <FileUploader @file-added="handleFilePondFile" />
             <p class="import-hint">Accepts: .md, .opml</p>
           </div>
-
           <div class="modal-footer">
-            <button class="btn-ghost" @click="showImportModal = false">
-              Cancel
-            </button>
+            <button class="btn btn-ghost" @click="showImportModal = false">Cancel</button>
           </div>
         </div>
       </div>
     </Teleport>
 
-    <!-- Settings Modal -->
+
+    <!-- Delete Confirm -->
     <Teleport to="body">
-      <div v-if="showSettingsModal" class="modal-overlay" @click.self="showSettingsModal = false">
-        <div class="settings-modal">
-          <!-- Header -->
-          <div class="settings-modal-header">
-            <div class="settings-header-content">
-              <div class="settings-icon-box">
-                <span class="i-lucide-settings" />
-              </div>
-              <div>
-                <h2 class="settings-modal-title">Settings</h2>
-                <p class="settings-modal-subtitle">Manage your account and AI providers</p>
-              </div>
+      <div v-if="deleteConfirmVisible" class="modal-overlay" @click.self="cancelDeleteMap">
+        <div class="modal" style="max-width: 400px;">
+          <div class="modal-header">
+            <div class="modal-icon modal-icon-danger">
+              <span class="i-lucide-trash-2" />
             </div>
-            <button class="settings-close-btn" @click="showSettingsModal = false">
-              <span class="i-lucide-x" />
-            </button>
+            <h2 class="modal-title">Delete Map</h2>
+            <p class="modal-subtitle">This action cannot be undone. Are you sure?</p>
           </div>
-
-          <!-- Content -->
-          <div class="settings-modal-content">
-            <!-- Tabs -->
-            <div class="settings-tabs-nav">
-              <button
-                v-for="tab in settingsTabs"
-                :key="tab.value"
-                :class="['settings-tab', { active: activeSettingsTab === tab.value }]"
-                @click="activeSettingsTab = tab.value"
-              >
-                <span :class="[tab.icon]" />
-                <span>{{ tab.label }}</span>
-              </button>
-            </div>
-
-            <!-- Tab Content -->
-            <div class="settings-tab-content">
-              <SettingsSectionsAccountSection
-                v-if="activeSettingsTab === 'account'"
-                @close="showSettingsModal = false"
-              />
-              <SettingsSectionsAIProvidersSection
-                v-else-if="activeSettingsTab === 'providers'"
-              />
-              <SettingsSectionsPersonasSection
-                v-else-if="activeSettingsTab === 'personas'"
-              />
-              <SettingsSectionsPreferencesSection
-                v-else-if="activeSettingsTab === 'preferences'"
-              />
-            </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="cancelDeleteMap">Cancel</button>
+            <button class="btn btn-danger" @click="confirmDeleteMap">
+              <span class="i-lucide-trash-2 btn-icon" />
+              Delete
+            </button>
           </div>
         </div>
       </div>
     </Teleport>
+  </div>
 
-    <!-- Confirm Dialog -->
-    <component :is="ConfirmDialog" />
+  <!-- Fallback: auth checked but user not yet available -->
+  <div v-else class="auth-loading">
+    <div class="loading-spinner" />
+  </div>
   </div>
 </template>
 
 <style scoped>
-/* ═══════════════════════════════════════════════════════════════
-   NEUROCANVAS DASHBOARD — ELEVATED COMMAND CENTER
-   ═══════════════════════════════════════════════════════════════ */
+/* ── Base ── */
+.dashboard-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
 
-/* Auth Loading State */
 .auth-loading {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #06060A;
+  background: var(--nc-bg, #09090B);
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(0, 210, 190, 0.2);
-  border-top-color: #00D2BE;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--nc-border, #1A1A1E);
+  border-top-color: var(--nc-accent, #00D2BE);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* CSS Custom Properties */
 .dashboard {
-  --bg: #06060A;
-  --surface: #0C0C10;
-  --surface-2: #121216;
-  --surface-3: #18181D;
-  --surface-hover: #1E1E24;
-  --border: #252529;
-  --border-subtle: #1A1A1E;
-  --border-glow: rgba(0, 210, 190, 0.3);
+  --d-bg: #09090B;
+  --d-surface: #0D0D0F;
+  --d-surface-2: #111113;
+  --d-surface-3: #18181B;
+  --d-border: #1A1A1E;
+  --d-border-2: #27272A;
+  --d-text: #FAFAFA;
+  --d-text-2: #A1A1AA;
+  --d-text-3: #71717A;
+  --d-text-4: #52525B;
+  --d-text-5: #3F3F46;
+  --d-accent: #00D2BE;
+  --d-accent-bg: rgba(0, 210, 190, 0.08);
+  --d-accent-border: rgba(0, 210, 190, 0.1);
 
-  --text: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
-  --text-dim: #52525B;
-
-  --accent: #00D2BE;
-  --accent-light: #00FFE5;
-  --accent-dark: #00A89A;
-  --accent-glow: rgba(0, 210, 190, 0.12);
-  --accent-glow-strong: rgba(0, 210, 190, 0.25);
-  --accent-glow-intense: rgba(0, 210, 190, 0.4);
-
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Base */
-.dashboard {
+  display: flex;
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Cabinet Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
-  position: relative;
-  overflow-x: hidden;
+  background: var(--d-bg);
+  color: var(--d-text);
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BACKGROUND EFFECTS
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Cursor Glow */
-.cursor-glow {
-  position: fixed;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-  opacity: 0.6;
-}
-
-/* Grid Pattern */
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 30%, transparent 100%);
-  pointer-events: none;
-  z-index: 0;
-  animation: gridPulse 10s ease-in-out infinite;
-}
-
-@keyframes gridPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-/* Noise Texture */
-.bg-noise {
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.018;
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* Glow Orbs */
-.glow-orb {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.glow-orb-1 {
-  width: 800px;
-  height: 800px;
-  top: -400px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(0, 210, 190, 0.15) 0%, transparent 60%);
-  filter: blur(60px);
-  animation: glowFloat 20s ease-in-out infinite;
-}
-
-.glow-orb-2 {
-  width: 600px;
-  height: 600px;
-  bottom: -300px;
-  right: -200px;
-  background: radial-gradient(circle, rgba(0, 210, 190, 0.1) 0%, transparent 60%);
-  filter: blur(80px);
-  animation: glowFloat 25s ease-in-out infinite reverse;
-}
-
-.glow-orb-3 {
-  width: 400px;
-  height: 400px;
-  top: 40%;
-  left: -100px;
-  background: radial-gradient(circle, rgba(0, 210, 190, 0.08) 0%, transparent 60%);
-  filter: blur(60px);
-  animation: glowFloat 30s ease-in-out infinite 5s;
-}
-
-@keyframes glowFloat {
-  0%, 100% {
-    transform: translateX(-50%) scale(1);
-    opacity: 0.8;
-  }
-  33% {
-    transform: translateX(-45%) scale(1.1);
-    opacity: 1;
-  }
-  66% {
-    transform: translateX(-55%) scale(0.95);
-    opacity: 0.7;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   HEADER
-   ═══════════════════════════════════════════════════════════════ */
-
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 2.5rem;
-  background: rgba(6, 6, 10, 0.7);
-  backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid var(--border-subtle);
-  transition: all 0.4s var(--ease);
-}
-
-.header-brand {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  text-decoration: none;
-  color: inherit;
-}
-
-.header-brand:hover .logo-mark {
-  transform: scale(1.05);
-}
-
-/* Logo Mark */
-.logo-mark {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 4px 20px var(--accent-glow-strong),
-    0 0 40px var(--accent-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  animation: logoGlow 4s ease-in-out infinite;
-  transition: transform 0.3s var(--ease);
-}
-
-.logo-inner {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  background: var(--bg);
-  border-radius: 4px;
-  animation: logoRotate 12s linear infinite;
-  opacity: 0.3;
-}
-
-.logo-icon {
-  position: relative;
-  z-index: 1;
-  color: var(--bg);
-  font-size: 1.25rem;
-}
-
-@keyframes logoGlow {
-  0%, 100% {
-    box-shadow: 0 4px 20px var(--accent-glow-strong), 0 0 40px var(--accent-glow);
-  }
-  50% {
-    box-shadow: 0 6px 30px var(--accent-glow-strong), 0 0 60px var(--accent-glow-strong), 0 0 80px var(--accent-glow);
-  }
-}
-
-@keyframes logoRotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.header-text {
+/* ── Main Content ── */
+.main {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding: 32px 40px;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 36px;
+  flex-shrink: 0;
+}
+
+.header-greeting {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--d-text-3);
+  margin: 0 0 4px;
+  line-height: 16px;
 }
 
 .header-title {
-  font-size: 1.375rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   margin: 0;
-}
-
-.header-subtitle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0;
+  line-height: 34px;
+  color: var(--d-text);
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 10px;
 }
 
-/* Status Indicator */
-.status-indicator {
-  display: flex;
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 1rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 100px;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  background: #22C55E;
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-  animation: statusPulse 2s ease-in-out infinite;
-}
-
-@keyframes statusPulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(0.9);
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.8);
-  }
-}
-
-.status-text {
-  font-size: 0.8rem;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
-}
-
-/* Sign Out Button */
-.sign-out-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.875rem;
-  font-family: inherit;
+  line-height: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  border: none;
+  transition: opacity 0.15s, background 0.15s;
+  white-space: nowrap;
 }
 
-.sign-out-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #EF4444;
-}
-
-.sign-out-btn:disabled {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Avatar */
-.avatar {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--surface-2), var(--surface-3));
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: all 0.3s var(--ease);
+.btn-icon {
+  font-size: 14px;
 }
 
-.avatar:hover {
-  border-color: var(--accent);
-  background: var(--accent-glow);
-  transform: scale(1.05);
+.btn-primary {
+  background: var(--d-accent);
+  color: #09090B;
+  font-weight: 600;
 }
 
-.avatar-text {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text);
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN CONTENT
-   ═══════════════════════════════════════════════════════════════ */
-
-.main-content {
-  position: relative;
-  z-index: 2;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 4rem 2.5rem;
+.btn-outline {
+  background: var(--d-surface-2);
+  color: var(--d-text-2);
+  border: 1px solid var(--d-border-2);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   WELCOME SECTION
-   ═══════════════════════════════════════════════════════════════ */
-
-.welcome {
-  text-align: center;
-  margin-bottom: 3rem;
+.btn-outline:hover:not(:disabled) {
+  color: var(--d-text);
+  border-color: var(--d-text-4);
 }
 
-.greeting-emoji {
-  font-size: 2.5rem;
-  display: inline-block;
-  animation: wave 2.5s ease-in-out infinite;
-  transform-origin: 70% 70%;
-}
-
-@keyframes wave {
-  0%, 100% { transform: rotate(0deg); }
-  10% { transform: rotate(14deg); }
-  20% { transform: rotate(-8deg); }
-  30% { transform: rotate(14deg); }
-  40% { transform: rotate(-4deg); }
-  50%, 100% { transform: rotate(0deg); }
-}
-
-.welcome-title {
-  font-size: 3.25rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin: 0.5rem 0 0.75rem;
-  line-height: 1.1;
-}
-
-.welcome-name {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 50%, var(--accent) 100%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradientShift 4s ease-in-out infinite;
-}
-
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.welcome-subtitle {
-  font-size: 1.375rem;
-  color: var(--text-secondary);
-  margin: 0;
-  font-weight: 500;
-}
-
-.serif-accent {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic;
-  color: var(--accent);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   STATS BAR
-   ═══════════════════════════════════════════════════════════════ */
-
-.stats-bar {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 3.5rem;
-}
-
-.stat-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
-  border: 1px solid var(--border-subtle);
-  border-radius: 24px;
-  cursor: default;
-  transition: all 0.5s var(--ease);
-  will-change: transform;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 24px;
-  background: linear-gradient(135deg, var(--accent-glow), transparent);
-  opacity: 0;
-  transition: opacity 0.4s;
-}
-
-.stat-card:hover {
-  border-color: var(--border-glow);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 30px var(--accent-glow);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
-}
-
-.stat-icon-wrap {
-  position: relative;
-  z-index: 1;
-  width: 48px;
-  height: 48px;
-  background: var(--accent-glow);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.25rem;
-}
-
-.stat-icon {
-  color: var(--accent);
-  font-size: 1.375rem;
-}
-
-.stat-value {
-  position: relative;
-  z-index: 1;
-  font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--text), var(--accent-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-label {
-  position: relative;
-  z-index: 1;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION TITLE
-   ═══════════════════════════════════════════════════════════════ */
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin: 0 0 1.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.section-bar {
-  width: 4px;
-  height: 20px;
-  background: linear-gradient(180deg, var(--accent), var(--accent-dark));
-  border-radius: 2px;
-  box-shadow: 0 0 12px var(--accent-glow-strong);
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.75rem;
-}
-
-.section-header .section-title {
-  margin-bottom: 0;
-}
-
-.view-all-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-muted);
+.btn-ghost {
   background: transparent;
+  color: var(--d-text-2);
+  border: 1px solid var(--d-border-2);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--d-surface-2);
+  color: var(--d-text);
+}
+
+.btn-danger {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #DC2626;
+}
+
+/* ── Section Label ── */
+.section-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.label-text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-text-4);
+  line-height: 14px;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sort-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--d-text-4);
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--d-text-2);
+  background: none;
   border: none;
   cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  transition: all 0.2s var(--ease);
-  font-family: inherit;
+  padding: 0;
 }
 
-.view-all-btn:hover {
-  color: var(--accent);
-  background: var(--accent-glow);
+.sort-chevron {
+  font-size: 12px;
+  color: var(--d-text-4);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CREATE SECTION (BENTO GRID)
-   ═══════════════════════════════════════════════════════════════ */
-
-.create-section {
-  margin-bottom: 3.5rem;
-}
-
-.bento-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-}
-
-.create-card {
-  position: relative;
-  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
-  border: 1px solid var(--border);
-  border-radius: 32px;
-  padding: 2.25rem;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.5s var(--ease);
-  overflow: hidden;
-  will-change: transform;
-  color: var(--text);
-  font-family: inherit;
-}
-
-.create-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--accent-glow), transparent);
-  opacity: 0;
-  transition: opacity 0.5s;
-}
-
-.create-card:hover {
-  border-color: var(--accent);
-  box-shadow:
-    0 25px 70px rgba(0, 0, 0, 0.4),
-    0 0 50px var(--accent-glow),
-    0 0 100px var(--accent-glow);
-}
-
-.create-card:hover::before {
-  opacity: 1;
-}
-
-.create-card:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.create-card:disabled:hover {
-  transform: none !important;
-  box-shadow: none;
-  border-color: var(--border);
-}
-
-/* Light Sweep */
-.card-shine {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.03) 50%,
-    transparent 60%
-  );
-  transform: translateX(-100%);
-  transition: transform 0.8s var(--ease);
-}
-
-.create-card:hover .card-shine {
-  transform: translateX(100%);
-}
-
-/* Card Icons */
-.card-icon {
-  position: relative;
-  z-index: 1;
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.625rem;
-  margin-bottom: 1.5rem;
-  transition: transform 0.4s var(--ease-bounce);
-}
-
-.create-card:hover .card-icon {
-  transform: scale(1.1) rotate(-5deg);
-}
-
-.card-icon-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  color: var(--bg);
-  box-shadow:
-    0 8px 30px var(--accent-glow-strong),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.card-icon-secondary {
-  background: linear-gradient(135deg, var(--accent-glow) 0%, rgba(0, 210, 190, 0.05) 100%);
-  border: 1px solid rgba(0, 210, 190, 0.25);
-  color: var(--accent);
-}
-
-.card-icon-tertiary {
-  background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-}
-
-.card-title {
-  position: relative;
-  z-index: 1;
-  font-size: 1.375rem;
-  font-weight: 700;
-  margin: 0 0 0.625rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-
-.card-desc {
-  position: relative;
-  z-index: 1;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.card-arrow {
-  position: absolute;
-  bottom: 2.25rem;
-  right: 2.25rem;
-  font-size: 1.375rem;
-  color: var(--accent);
-  opacity: 0;
-  transform: translate(-12px, 0);
-  transition: all 0.4s var(--ease);
-}
-
-.create-card:hover .card-arrow {
-  opacity: 1;
-  transform: translate(0, 0);
-}
-
-/* AI Badge */
-.ai-badge {
-  position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  background: linear-gradient(135deg, var(--accent-glow), rgba(0, 210, 190, 0.05));
-  padding: 0.375rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 210, 190, 0.2);
-}
-
-.ai-badge-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
-  border-radius: 50%;
-  animation: statusPulse 2s ease-in-out infinite;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   RECENT SECTION
-   ═══════════════════════════════════════════════════════════════ */
-
-.recent-section {
-  margin-bottom: 3rem;
-}
-
-/* Loading State */
+/* ── Loading / Empty ── */
 .loading-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5rem;
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  border: 1px solid var(--border-subtle);
-  border-radius: 32px;
+  padding: 24px 0;
 }
 
-.loading-orbit {
-  width: 60px;
-  height: 60px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  position: relative;
-}
-
-.loading-dot {
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 0 12px var(--accent-glow-strong);
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 5rem 2rem;
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  border: 1px solid var(--border-subtle);
-  border-radius: 32px;
-  text-align: center;
-}
-
-/* Orbital System */
-.orbit-system {
-  position: relative;
-  width: 180px;
-  height: 180px;
-  margin-bottom: 2.5rem;
-}
-
-.orbit {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  border: 2px dashed var(--border);
-}
-
-.orbit-1 {
-  width: 160px;
-  height: 160px;
-  transform: translate(-50%, -50%);
-  animation: orbitSpin 25s linear infinite;
-}
-
-.orbit-2 {
-  width: 110px;
-  height: 110px;
-  border-color: var(--accent);
-  opacity: 0.4;
-  transform: translate(-50%, -50%);
-  animation: orbitSpin 18s linear infinite reverse;
-}
-
-.orbit-3 {
-  width: 60px;
-  height: 60px;
-  border-style: solid;
-  border-color: var(--accent);
-  opacity: 0.6;
-  transform: translate(-50%, -50%);
-  animation: orbitSpin 12s linear infinite;
-}
-
-.orbit-dot {
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 10px;
-  height: 10px;
-  background: var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 0 15px var(--accent-glow-strong);
-  animation: dotPulse 2s ease-in-out infinite;
-}
-
-@keyframes orbitSpin {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-@keyframes dotPulse {
-  0%, 100% {
-    transform: translateX(-50%) scale(1);
-    box-shadow: 0 0 15px var(--accent-glow-strong);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.3);
-    box-shadow: 0 0 25px var(--accent-glow-intense);
-  }
-}
-
-.center-core {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  border-radius: 50%;
-  box-shadow:
-    0 0 30px var(--accent-glow-strong),
-    0 0 60px var(--accent-glow);
-  animation: corePulse 3s ease-in-out infinite;
-}
-
-@keyframes corePulse {
-  0%, 100% {
-    box-shadow: 0 0 30px var(--accent-glow-strong), 0 0 60px var(--accent-glow);
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    box-shadow: 0 0 50px var(--accent-glow-strong), 0 0 100px var(--accent-glow-strong);
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-}
-
-.empty-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 0.625rem;
-}
-
-.empty-desc {
-  font-size: 1rem;
-  color: var(--text-muted);
-  margin: 0 0 2.5rem;
-}
-
-.empty-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   BUTTONS
-   ═══════════════════════════════════════════════════════════════ */
-
-.btn-primary {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1.75rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  color: var(--bg);
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 14px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.3s var(--ease);
-  box-shadow:
-    0 4px 20px var(--accent-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  font-family: inherit;
-}
-
-.btn-primary:hover {
-  box-shadow:
-    0 8px 40px var(--accent-glow-strong),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-shine {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.15) 50%,
-    transparent 60%
-  );
-  transform: translateX(-100%);
-  transition: transform 0.6s var(--ease);
-}
-
-.btn-primary:hover .btn-shine {
-  transform: translateX(100%);
-}
-
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1.75rem;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.3s var(--ease);
-  font-family: inherit;
-}
-
-.btn-ghost:hover {
-  border-color: var(--accent);
-  background: var(--surface-3);
-  color: var(--accent);
-}
-
-.magnetic-btn {
-  will-change: transform;
-  transition: transform 0.2s var(--ease), box-shadow 0.3s var(--ease), background 0.3s var(--ease), border-color 0.3s var(--ease);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   MAPS GRID
-   ═══════════════════════════════════════════════════════════════ */
-
-.maps-grid {
+/* Skeleton loading */
+.skeleton-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-}
-
-.map-card {
-  position: relative;
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.4s var(--ease);
-  will-change: transform;
-}
-
-.map-card:hover {
-  border-color: var(--border-glow);
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.3),
-    0 0 40px var(--accent-glow);
-}
-
-.map-delete {
-  position: absolute;
-  top: 0.875rem;
-  right: 0.875rem;
-  z-index: 10;
-  width: 36px;
-  height: 36px;
-  background: rgba(6, 6, 10, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-muted);
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.2s var(--ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.map-card:hover .map-delete {
-  opacity: 1;
-}
-
-.map-delete:hover {
-  color: #EF4444;
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.map-preview {
-  aspect-ratio: 16 / 9;
-  background: var(--surface-2);
-  overflow: hidden;
-}
-
-.map-img {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s var(--ease);
 }
 
-.map-card:hover .map-img {
-  transform: scale(1.05);
-}
-
-.map-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--surface-2), var(--surface));
-  font-size: 2.5rem;
-  color: var(--text-dim);
-}
-
-.map-info {
-  padding: 1.25rem;
-}
-
-.map-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: color 0.2s var(--ease);
-}
-
-.map-card:hover .map-title {
-  color: var(--accent);
-}
-
-.map-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   FOOTER
-   ═══════════════════════════════════════════════════════════════ */
-
-.footer {
-  position: relative;
-  z-index: 2;
+.skeleton-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 3rem 2rem;
-  border-top: 1px solid var(--border-subtle);
-  background: rgba(6, 6, 10, 0.5);
-  backdrop-filter: blur(12px);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--d-border);
 }
 
-.footer-brand {
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  margin: 0;
+.skeleton-thumb {
+  height: 152px;
+  background: var(--d-surface);
 }
 
-.footer-links {
+.skeleton-info {
+  padding: 14px;
   display: flex;
-  align-items: center;
-  gap: 2rem;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--d-surface-2);
 }
 
-.footer-link {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  text-decoration: none;
+.skeleton-title {
+  width: 60%;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--d-surface);
+}
+
+.skeleton-date {
+  width: 40%;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--d-surface);
+}
+
+.skeleton-shimmer {
   position: relative;
-  transition: color 0.2s var(--ease);
+  overflow: hidden;
 }
 
-.footer-link::after {
+.skeleton-shimmer::after {
   content: '';
   position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transition: transform 0.3s var(--ease);
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  animation: shimmer 1.5s ease infinite;
 }
 
-.footer-link:hover {
-  color: var(--accent);
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-.footer-link:hover::after {
-  transform: scaleX(1);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   ANIMATIONS
-   ═══════════════════════════════════════════════════════════════ */
-
-@keyframes revealUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.reveal-up {
-  animation: revealUp 0.8s var(--ease) forwards;
-  opacity: 0;
-}
-
-.delay-1 { animation-delay: 0.1s; }
-.delay-2 { animation-delay: 0.2s; }
-.delay-3 { animation-delay: 0.3s; }
-
-/* ═══════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════ */
-
-@media (max-width: 1024px) {
-  .bento-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .bento-grid .create-card:last-child {
-    grid-column: span 2;
-  }
-
-  .maps-grid {
-    grid-template-columns: repeat(2, 1fr);
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
   }
 }
 
 @media (max-width: 768px) {
-  .header {
-    padding: 1rem 1.5rem;
-  }
-
-  .status-indicator {
-    display: none;
-  }
-
-  .main-content {
-    padding: 2.5rem 1.5rem;
-  }
-
-  .welcome-title {
-    font-size: 2.25rem;
-  }
-
-  .welcome-subtitle {
-    font-size: 1.125rem;
-  }
-
-  .stats-bar {
+  .skeleton-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .bento-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .bento-grid .create-card:last-child {
-    grid-column: span 1;
-  }
-
-  .maps-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .create-card {
-    padding: 1.75rem;
-  }
-
-  .orbit-system {
-    width: 140px;
-    height: 140px;
-  }
-
-  .orbit-1 { width: 120px; height: 120px; }
-  .orbit-2 { width: 80px; height: 80px; }
-  .orbit-3 { width: 40px; height: 40px; }
-
-  .empty-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .empty-actions .btn-primary,
-  .empty-actions .btn-ghost {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .footer-links {
-    gap: 1.5rem;
-  }
-
-  /* Disable cursor glow on touch devices */
-  .cursor-glow {
-    display: none;
+    padding: 0 20px;
   }
 }
 
-@media (max-width: 480px) {
-  .welcome-title {
-    font-size: 1.875rem;
-  }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 24px;
+  text-align: center;
+}
 
-  .card-icon {
-    width: 52px;
-    height: 52px;
-    font-size: 1.375rem;
-  }
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-border-2);
+  color: var(--d-text-4);
+  font-size: 20px;
+  margin-bottom: 16px;
+}
 
-  .card-title {
-    font-size: 1.2rem;
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--d-text);
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: var(--d-text-3);
+  margin: 0 0 20px;
+}
+
+/* ── Maps Grid ── */
+.maps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.map-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--d-border);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 200ms var(--nc-ease), box-shadow 200ms var(--nc-ease);
+}
+
+.map-card:hover {
+  border-color: var(--d-border-2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+@media (hover: none) {
+  .map-card:hover {
+    transform: none;
+    box-shadow: none;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HIDDEN UTILITY
-   ═══════════════════════════════════════════════════════════════ */
-
-.hidden {
-  display: none;
+/* Thumbnail */
+.map-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 152px;
+  position: relative;
+  padding: 24px;
+  background: var(--d-surface);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MODAL STYLES
-   ═══════════════════════════════════════════════════════════════ */
+.thumb-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  max-width: 160px;
+}
 
+.thumb-node {
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.thumb-count {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--d-text-4);
+  line-height: 14px;
+}
+
+/* Map Info */
+.map-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--d-surface-2);
+}
+
+.map-info-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.map-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--d-text);
+  margin: 0 0 2px;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-date {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--d-text-4);
+  margin: 0;
+  line-height: 16px;
+}
+
+.map-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--d-text-4);
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.map-menu:hover {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+@media (hover: none) {
+  .map-menu {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+}
+
+/* ── Show More ── */
+.show-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 0;
+  margin-top: 8px;
+  background: none;
+  border: 1px dashed var(--d-border-2);
+  border-radius: 6px;
+  color: var(--d-text-3);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.show-more-btn:hover {
+  color: var(--d-accent);
+  border-color: var(--d-accent);
+}
+
+.show-more-label {
+  transition: opacity 0.15s;
+}
+
+.show-more-icon {
+  font-size: 14px;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.show-more-icon.flipped {
+  transform: rotate(180deg);
+}
+
+/* ── Card transition ── */
+.card-move {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Second Row ── */
+.second-row {
+  display: flex;
+  margin-top: 16px;
+  gap: 16px;
+}
+
+.new-map-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 240px;
+  max-width: 320px;
+  height: 210px;
+  border-radius: 8px;
+  gap: 10px;
+  border: 1px dashed var(--d-border-2);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: border-color 0.15s;
+  color: var(--d-text-4);
+}
+
+.new-map-card:hover {
+  border-color: var(--d-accent);
+  color: var(--d-text-2);
+}
+
+.new-map-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.new-map-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-border-2);
+  font-size: 18px;
+}
+
+.new-map-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Overview Panel ── */
+.overview-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  border-radius: 8px;
+  padding: 20px 24px;
+  gap: 20px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-border);
+}
+
+.overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.overview-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-text-4);
+  line-height: 14px;
+}
+
+.overview-period {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--d-text-5);
+  line-height: 16px;
+}
+
+.overview-stats {
+  display: flex;
+  gap: 40px;
+}
+
+.overview-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--d-text);
+  line-height: 34px;
+}
+
+.stat-number.accent {
+  color: var(--d-accent);
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--d-text-3);
+  line-height: 16px;
+}
+
+.overview-chart {
+  display: flex;
+  align-items: flex-end;
+  height: 40px;
+  gap: 3px;
+}
+
+.chart-bar {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--d-border);
+  min-height: 6px;
+}
+
+.chart-bar.accent {
+  background: var(--d-accent);
+}
+
+/* ── AI Banner ── */
+.ai-banner {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+  border-radius: 8px;
+  padding: 18px 24px;
+  gap: 20px;
+  background: var(--d-accent-bg);
+  border: 1px solid var(--d-accent-border);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.ai-banner:hover {
+  border-color: rgba(0, 210, 190, 0.25);
+}
+
+.ai-banner-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--d-accent);
+  color: #09090B;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.ai-banner-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-banner-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--d-text);
+  line-height: 18px;
+}
+
+.ai-banner-desc {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--d-text-3);
+  line-height: 16px;
+}
+
+.ai-banner-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--d-accent);
+  background: none;
+  border: 1px solid rgba(0, 210, 190, 0.3);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.ai-banner-btn:hover {
+  background: rgba(0, 210, 190, 0.08);
+}
+
+/* ── Modals ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -2345,9 +1579,9 @@ async function createFromTemplate(template: typeof templates[0]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.2s ease-out;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.15s ease-out;
 }
 
 @keyframes fadeIn {
@@ -2356,393 +1590,435 @@ async function createFromTemplate(template: typeof templates[0]) {
 }
 
 .modal {
-  position: relative;
   width: 90%;
   max-width: 480px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 24px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-border-2);
+  border-radius: 12px;
   overflow: hidden;
-  animation: slideUp 0.3s var(--ease);
-  box-shadow:
-    0 25px 80px rgba(0, 0, 0, 0.5),
-    0 0 60px var(--accent-glow);
+  animation: slideUp 0.2s ease-out;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .modal-wide {
-  max-width: 700px;
+  max-width: 640px;
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal-header {
-  padding: 2rem 2rem 1.5rem;
+  padding: 24px 24px 16px;
   text-align: center;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--d-border);
 }
 
 .modal-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 1rem;
-  border-radius: 20px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
+  font-size: 20px;
 }
 
 .modal-icon-ai {
-  background: linear-gradient(135deg, var(--accent-glow) 0%, rgba(0, 210, 190, 0.05) 100%);
-  border: 1px solid rgba(0, 210, 190, 0.25);
-  color: var(--accent);
+  background: var(--d-accent-bg);
+  border: 1px solid var(--d-accent-border);
+  color: var(--d-accent);
 }
 
 .modal-icon-templates {
-  background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-border-2);
+  color: var(--d-text-2);
 }
 
 .modal-icon-import {
-  background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-border-2);
+  color: var(--d-text-2);
 }
 
-.import-hint {
-  margin: 1rem 0 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  text-align: center;
+.modal-icon-danger {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #EF4444;
 }
 
 .modal-title {
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 700;
-  margin: 0 0 0.5rem;
-  color: var(--text);
+  margin: 0 0 4px;
+  color: var(--d-text);
 }
 
 .modal-subtitle {
-  font-size: 0.95rem;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--d-text-3);
   margin: 0;
 }
 
 .modal-body {
-  padding: 1.5rem 2rem;
+  padding: 20px 24px;
 }
 
 .modal-input {
   width: 100%;
-  padding: 1rem 1.25rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  color: var(--text);
-  font-size: 1rem;
-  font-family: inherit;
+  padding: 10px 14px;
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-border-2);
+  border-radius: 6px;
+  color: var(--d-text);
+  font-size: 14px;
+  font-family: 'Inter', system-ui, sans-serif;
   outline: none;
-  transition: all 0.2s var(--ease);
+  transition: border-color 0.15s;
 }
 
 .modal-input::placeholder {
-  color: var(--text-dim);
+  color: var(--d-text-4);
 }
 
 .modal-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  border-color: var(--d-accent);
 }
 
 .modal-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.5rem 2rem;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--surface-2);
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--d-border);
+  background: var(--d-surface-2);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TEMPLATES GRID
-   ═══════════════════════════════════════════════════════════════ */
+.import-hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--d-text-4);
+  text-align: center;
+}
 
+/* ── Templates Grid ── */
 .templates-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-@media (max-width: 600px) {
-  .templates-grid {
-    grid-template-columns: 1fr;
-  }
+  gap: 12px;
 }
 
 .template-card {
-  position: relative;
-  padding: 1.25rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  padding: 16px;
+  min-height: 44px;
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-border-2);
+  border-radius: 8px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.3s var(--ease);
-  overflow: hidden;
-  font-family: inherit;
-  color: var(--text);
+  transition: border-color 0.15s;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--d-text);
 }
 
 .template-card:hover {
-  border-color: var(--accent);
-  background: var(--surface-3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 20px var(--accent-glow);
+  border-color: var(--d-accent);
 }
 
 .template-icon {
-  width: 44px;
-  height: 44px;
-  background: var(--accent-glow);
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  background: var(--d-accent-bg);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  color: var(--accent);
-  margin-bottom: 0.875rem;
+  font-size: 16px;
+  color: var(--d-accent);
+  margin-bottom: 10px;
 }
 
 .template-name {
-  font-size: 1.1rem;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 0.375rem;
-  color: var(--text);
+  margin: 0 0 4px;
 }
 
 .template-desc {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin: 0 0 1rem;
+  font-size: 12px;
+  color: var(--d-text-3);
+  margin: 0;
   line-height: 1.4;
 }
 
-.template-preview {
-  position: relative;
-  height: 60px;
-  background: var(--surface);
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
+/* ── Mobile Top Bar ── */
+.mobile-top-bar {
+  display: none;
 }
 
-.template-preview-node {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.7;
-  box-shadow: 0 0 8px var(--accent-glow-strong);
+/* ── Mobile Action Buttons ── */
+.mobile-actions {
+  display: none;
 }
 
-.template-card:hover .template-preview-node {
-  opacity: 1;
+/* ── Utilities ── */
+.hidden {
+  display: none;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SETTINGS MODAL
-   ═══════════════════════════════════════════════════════════════ */
-
-.settings-modal {
-  position: relative;
-  width: 90%;
-  max-width: 800px;
-  max-height: 85vh;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 60px var(--accent-glow);
-  animation: slideUp 0.3s var(--ease);
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
-.settings-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
+/* ── Light theme ── */
+:root.light .dashboard {
+  --d-bg: #FAFAF9;
+  --d-surface: #F5F5F3;
+  --d-surface-2: #F4F4F5;
+  --d-surface-3: #E8E8E6;
+  --d-border: #E8E8E6;
+  --d-border-2: #D4D4D8;
+  --d-text: #111111;
+  --d-text-2: #52525B;
+  --d-text-3: #71717A;
+  --d-text-4: #777777;
+  --d-text-5: #D4D4D8;
+  --d-accent: #00D2BE;
+  --d-accent-bg: rgba(0, 210, 190, 0.06);
+  --d-accent-border: rgba(0, 210, 190, 0.12);
 }
 
-.settings-header-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+:root.light .label-text {
+  color: var(--d-accent);
 }
 
-.settings-icon-box {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: var(--bg);
-  box-shadow: 0 4px 20px var(--accent-glow-strong);
+:root.light .ai-banner-icon {
+  color: #FFFFFF;
 }
 
-.settings-modal-title {
-  font-size: 1.375rem;
-  font-weight: 700;
-  margin: 0;
-  color: var(--text);
+:root.light .btn-primary {
+  color: #FFFFFF;
 }
 
-.settings-modal-subtitle {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin: 0.25rem 0 0;
-}
-
-.settings-close-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1.125rem;
-}
-
-.settings-close-btn:hover {
-  background: var(--surface-3);
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-.settings-modal-content {
-  display: flex;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  min-height: 400px;
-  max-height: calc(85vh - 100px);
-  overflow: hidden;
-}
-
-.settings-tabs-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-  width: 180px;
-  flex-shrink: 0;
-  padding: 0.5rem;
-  background: var(--surface-2);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-}
-
-.settings-tab {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-}
-
-.settings-tab:hover {
-  background: var(--surface-3);
-  color: var(--text);
-}
-
-.settings-tab.active {
-  background: var(--accent);
-  color: var(--bg);
-  box-shadow: 0 2px 12px var(--accent-glow-strong);
-}
-
-.settings-tab-content {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.settings-tab-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.settings-tab-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.settings-tab-content::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
-
-.settings-tab-content::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
-}
-
-@media (max-width: 640px) {
-  .settings-modal {
-    width: 95%;
-    max-height: 90vh;
+/* ── Responsive ── */
+@media (max-width: 1366px) {
+  .overview-stats {
+    gap: 28px;
   }
 
-  .settings-modal-content {
+  .stat-number {
+    font-size: 24px;
+    line-height: 30px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .maps-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .second-row {
     flex-direction: column;
-    padding: 1rem;
   }
 
-  .settings-tabs-nav {
+  .new-map-card {
+    width: 100%;
+    max-width: none;
+    height: 120px;
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    flex-direction: column;
+  }
+
+  :deep(.sidebar) {
+    display: none;
+  }
+
+  .main {
+    padding: 0 0 100px;
+    max-height: none;
+  }
+
+  /* Mobile top bar: visible on mobile */
+  .mobile-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+  }
+
+  .mobile-greeting {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--d-text-3);
+    margin: 0;
+    line-height: 20px;
+  }
+
+  .mobile-top-right {
+    display: flex;
+    align-items: center;
+  }
+
+  .mobile-avatar-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    padding: 4px 10px 4px 4px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+
+  .mobile-avatar-link:hover {
+    background: var(--d-surface-2);
+  }
+
+  .mobile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--d-accent);
+    color: #09090B;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+
+  .mobile-settings-icon {
+    font-size: 16px;
+    color: var(--d-text-4);
+  }
+
+  /* Hide desktop header parts on mobile */
+  .header {
+    padding: 0 20px;
+    margin-bottom: 16px;
+  }
+
+  .header-greeting {
+    display: none;
+  }
+
+  .header-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 32px;
+  }
+
+  .header-actions {
+    display: none;
+  }
+
+  /* Mobile action buttons: visible on mobile */
+  .mobile-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px;
+    margin-bottom: 24px;
+  }
+
+  .mobile-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    border-radius: 8px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--d-border-2);
+    background: var(--d-surface-2);
+    color: var(--d-text-2);
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .mobile-action-btn:hover {
+    border-color: var(--d-text-4);
+    color: var(--d-text);
+  }
+
+  .mobile-action-btn.primary {
+    background: var(--d-accent);
+    border: none;
+    color: #09090B;
+    font-weight: 600;
+  }
+
+  .mobile-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .mobile-action-icon {
+    font-size: 16px;
+  }
+
+  /* Section label */
+  .section-label {
+    padding: 0 20px;
+    margin-bottom: 16px;
+  }
+
+  /* Map cards: single column, full width */
+  .maps-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 0 20px;
+  }
+
+  .map-card {
+    border-radius: 8px;
+  }
+
+  .overview-stats {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .templates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-content {
+    flex-direction: column;
+  }
+
+  .settings-tabs {
     flex-direction: row;
     width: 100%;
     overflow-x: auto;
-    padding: 0.25rem;
+  }
+}
+
+/* Light theme mobile overrides */
+@media (max-width: 768px) {
+  :root.light .mobile-avatar {
+    color: #FFFFFF;
   }
 
-  .settings-tab {
-    flex-direction: column;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-    min-width: fit-content;
+  :root.light .mobile-action-btn.primary {
+    color: #FFFFFF;
   }
 }
 </style>

@@ -12,11 +12,6 @@ const props = defineProps<{
   isAILoading?: boolean
   aiSuggestions?: AISuggestion[]
   richSuggestions?: RichNodeSuggestion[]
-  collapsed: boolean
-}>()
-
-const emit = defineEmits<{
-  toggle: []
 }>()
 
 const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
@@ -24,15 +19,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 
 <template>
   <div class="ai-panel">
-    <CanvasSidebarSidebarHeader
-      icon="i-lucide-sparkles"
-      label="AI Suggestions"
-      :collapsed="collapsed"
-      accent-color="#A78BFA"
-      @toggle="emit('toggle')"
-    />
-
-    <div :class="['ai-panel__body', collapsed && 'ai-panel__body--collapsed']">
+    <div class="ai-panel__body">
       <!-- Loading state -->
       <template v-if="isAILoading">
         <div class="ai-panel__loading">
@@ -169,17 +156,13 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 </template>
 
 <style scoped>
-.ai-panel__body {
-  padding: 0 14px 14px;
-  overflow: hidden;
-  max-height: 600px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.ai-panel {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
 }
 
-.ai-panel__body--collapsed {
-  max-height: 0;
-  padding-bottom: 0;
-  opacity: 0;
+.ai-panel__body {
+  padding: 14px;
 }
 
 /* Loading */
@@ -218,10 +201,11 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   background: transparent;
   border: 1px solid var(--nc-border-active);
   border-radius: 8px;
-  color: var(--nc-ink-muted);
+  color: var(--nc-ink-soft);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
+  min-height: 36px;
 }
 
 .ai-panel__action-btn:hover:not(:disabled) {
@@ -231,6 +215,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 
 .ai-panel__action-btn:disabled {
   opacity: 0.4;
+  filter: grayscale(0.3);
   cursor: not-allowed;
 }
 
@@ -267,6 +252,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
+  min-height: 40px;
   background: var(--nc-surface);
   border: 1px solid var(--nc-border);
   border-radius: 8px;
@@ -283,13 +269,13 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 /* Empty state */
 .ai-panel__empty {
   text-align: center;
-  padding: 16px 0;
+  padding: 8px 0;
 }
 
 .ai-panel__empty-text {
   color: var(--nc-ink-faint);
   font-size: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .ai-panel__empty-actions {
@@ -338,7 +324,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   padding: 2px 7px;
   background: var(--nc-surface-3);
   border-radius: 4px;
-  color: var(--nc-ink-muted);
+  color: var(--nc-ink-soft);
   font-weight: 500;
 }
 </style>

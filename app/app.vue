@@ -1,5 +1,9 @@
 <script setup lang="ts">
-// Global app setup
+import { useUserStore } from '~/stores/userStore'
+
+// Initialize user store at root so theme loads once for all pages
+useUserStore()
+
 useHead({
   htmlAttrs: {
     lang: 'en'
@@ -8,7 +12,7 @@ useHead({
 </script>
 
 <template>
-  <div id="neurocanvas-app" class="min-h-screen bg-nc-charcoal">
+  <div id="neurocanvas-app" class="min-h-screen">
     <NuxtRouteAnnouncer />
     <NuxtPage />
   </div>
@@ -20,6 +24,7 @@ useHead({
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-height: 100dvh; /* Dynamic viewport height for mobile */
+  min-height: 100dvh;
+  background: var(--nc-bg, #0A0A0C);
 }
 </style>

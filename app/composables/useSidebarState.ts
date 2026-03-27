@@ -60,8 +60,17 @@ export function getRelationshipBgColor(relationship: string): string {
   return relationshipBgColors[relationship] || 'rgba(136, 136, 144, 0.15)'
 }
 
+export type SidebarTab = 'explorer' | 'properties' | 'ai'
+
 export function useSidebarState() {
-  // Section collapse states
+  // Active tab (replaces section collapse for main layout)
+  const activeTab = ref<SidebarTab>('explorer')
+
+  function setActiveTab(tab: SidebarTab) {
+    activeTab.value = tab
+  }
+
+  // Section collapse states (kept for backward compat)
   const collapsedSections = reactive<Record<string, boolean>>({
     explorer: false,
     properties: false,
@@ -110,6 +119,8 @@ export function useSidebarState() {
   }
 
   return {
+    activeTab,
+    setActiveTab,
     collapsedSections,
     explorerHeight,
     isResizingExplorer,

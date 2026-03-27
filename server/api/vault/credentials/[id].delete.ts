@@ -1,0 +1,26 @@
+import { prisma } from '../../../utils/prisma'
+import { requireAuthSession } from '../../../utils/syncHelpers'
+
+export default defineEventHandler(async (event) => {
+  const { userId } = await requireAuthSession(event)
+  const credentialId = getRouterParam(event, 'id')
+
+  if (!credentialId) {
+    throw createError({ statusCode: 400, statusMessage: 'Missing credential ID' })
+  }
+
+  const credential = await prisma.credential.findFirst({
+    where: { id: credentialId, userId },
+    select: { id: true }
+  })
+
+  if (!credential) {
+    throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
+  }
+
+  await prisma.credential.delete({
+    where: { id: credentialId }
+  })
+
+  return { ok: true }
+})

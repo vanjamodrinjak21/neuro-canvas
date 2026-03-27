@@ -5,7 +5,6 @@ definePageMeta({
 
 const route = useRoute()
 
-// Error codes and their messages
 const errorMessages: Record<string, { title: string; message: string }> = {
   Configuration: {
     title: 'Server Error',
@@ -62,265 +61,269 @@ const errorMessages: Record<string, { title: string; message: string }> = {
 }
 
 const errorCode = computed(() => (route.query.error as string) || 'Default')
-
-const errorInfo = computed(() => {
-  return errorMessages[errorCode.value] || errorMessages.Default
-})
+const errorInfo = computed(() => errorMessages[errorCode.value] || errorMessages.Default)
 </script>
 
 <template>
-  <div class="auth-page">
-    <!-- Background effects -->
-    <div class="bg-grid" />
-    <div class="glow-orb glow-orb-1" />
-    <div class="glow-orb glow-orb-2" />
-
-    <div class="auth-container">
+  <div class="error-page">
+    <div class="error-container">
       <!-- Logo & brand -->
       <NuxtLink to="/" class="brand">
-        <div class="logo-mark">
-          <span class="i-lucide-feather logo-icon" />
-        </div>
+        <NcLogo :size="18" :container-size="36" :radius="8" />
         <span class="brand-name">NeuroCanvas</span>
       </NuxtLink>
 
-      <!-- Error card -->
-      <div class="error-card">
-        <div class="icon-wrapper">
-          <span class="i-lucide-alert-triangle error-icon" />
-        </div>
+      <!-- Shield illustration -->
+      <div class="illustration" aria-hidden="true">
+        <svg width="300" height="240" viewBox="0 0 300 240" fill="none">
+          <!-- Shield body -->
+          <path
+            d="M150 20 L230 60 L230 130 Q230 190 150 220 Q70 190 70 130 L70 60 Z"
+            class="shield-body"
+          />
+          <!-- Broken cable -->
+          <path
+            d="M150 60 L155 90 L145 110 L155 140 L148 170"
+            stroke="#EF4444"
+            stroke-width="2"
+            stroke-linecap="round"
+            opacity="0.6"
+          />
+          <!-- X mark -->
+          <line x1="130" y1="100" x2="170" y2="140" stroke="#EF4444" stroke-width="3" stroke-linecap="round" opacity="0.7" />
+          <line x1="170" y1="100" x2="130" y2="140" stroke="#EF4444" stroke-width="3" stroke-linecap="round" opacity="0.7" />
+          <!-- Lock -->
+          <rect x="138" y="155" width="24" height="18" rx="3" fill="#27272A" stroke="#3F3F46" stroke-width="1.5" />
+          <path d="M143 155 L143 148 Q143 140 150 140 Q157 140 157 148 L157 155" stroke="#3F3F46" stroke-width="1.5" fill="none" stroke-linecap="round" />
+          <circle cx="150" cy="164" r="2" fill="#EF4444" opacity="0.7" />
+        </svg>
+      </div>
 
-        <h1 class="error-title">{{ errorInfo.title }}</h1>
-        <p class="error-message">{{ errorInfo.message }}</p>
+      <!-- Copy -->
+      <h1 class="heading">Your session got unplugged</h1>
+      <p class="desc">
+        The authentication link expired, broke, or was used by a different brain.<br>
+        These things happen — even to the best neural networks.
+      </p>
 
-        <div class="error-actions">
-          <NuxtLink to="/auth/signin" class="primary-btn">
-            Try again
-          </NuxtLink>
-          <NuxtLink to="/" class="secondary-btn">
-            Back to home
-          </NuxtLink>
-        </div>
+      <!-- Actions -->
+      <div class="actions">
+        <NuxtLink to="/auth/signin" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
+          Try Signing In Again
+        </NuxtLink>
+        <NuxtLink to="/" class="btn-ghost">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+          Go Home
+        </NuxtLink>
+      </div>
 
-        <p v-if="errorCode !== 'Default'" class="error-code">
-          Error code: {{ errorCode }}
-        </p>
+      <!-- Error code footer -->
+      <div class="error-footer">
+        <span class="error-badge">AUTH_ERROR</span>
+        <span class="error-details">{{ errorCode !== 'Default' ? errorCode : 'session_expired' }} · token_invalid · try_again_or_cry</span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.auth-page {
-  --bg: #06060A;
-  --surface: #0C0C10;
-  --border: #252529;
-  --text: #FAFAFA;
-  --text-muted: #71717A;
-  --accent: #00D2BE;
-  --accent-glow: rgba(0, 210, 190, 0.12);
-  --accent-glow-strong: rgba(0, 210, 190, 0.25);
-  --error: #EF4444;
-  --error-glow: rgba(239, 68, 68, 0.15);
-
+.error-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background: var(--bg);
-  position: relative;
-  overflow: hidden;
-  font-family: 'Cabinet Grotesk', 'Inter', system-ui, sans-serif;
+  padding: 32px;
+  background: #09090B;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Background effects */
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 50% at 50% 50%, black 30%, transparent 100%);
-  pointer-events: none;
-}
-
-.glow-orb {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(80px);
-}
-
-.glow-orb-1 {
-  width: 600px;
-  height: 600px;
-  top: -200px;
-  right: -100px;
-  background: radial-gradient(circle, var(--error-glow) 0%, transparent 60%);
-}
-
-.glow-orb-2 {
-  width: 500px;
-  height: 500px;
-  bottom: -200px;
-  left: -100px;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
-}
-
-/* Container */
-.auth-container {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 420px;
-}
-
-/* Brand */
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
   text-decoration: none;
-  margin-bottom: 2rem;
-}
-
-.logo-mark {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--accent), #00A89A);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px var(--accent-glow-strong);
-}
-
-.logo-icon {
-  font-size: 1.375rem;
-  color: var(--bg);
+  margin-bottom: 32px;
 }
 
 .brand-name {
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
+  color: #FAFAFA;
+  letter-spacing: -0.03em;
 }
 
-/* Error card */
-.error-card {
-  width: 100%;
-  background: rgba(12, 12, 16, 0.8);
-  backdrop-filter: blur(24px);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 2.5rem 2rem;
-  text-align: center;
-}
-
-.icon-wrapper {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  background: var(--error-glow);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 20px;
-  margin-bottom: 1.5rem;
-}
-
-.error-icon {
-  font-size: 2.25rem;
-  color: var(--error);
-}
-
-.error-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 0.75rem;
-  letter-spacing: -0.02em;
-}
-
-.error-message {
-  font-size: 1rem;
-  color: var(--text-muted);
-  margin: 0 0 2rem;
-  line-height: 1.6;
-}
-
-.error-actions {
+.error-container {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  text-align: center;
+  max-width: 500px;
 }
 
-.primary-btn {
+/* Illustration */
+.illustration {
+  margin-bottom: 12px;
+}
+
+.shield-body {
+  stroke: #27272A;
+  stroke-width: 2;
+  fill: #111113;
+}
+
+/* Copy */
+.heading {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 36px;
+  color: #FAFAFA;
+  margin: 0 0 8px;
+}
+
+.desc {
+  font-size: 14px;
+  line-height: 22px;
+  color: #71717A;
+  margin: 0 0 28px;
+}
+
+/* Actions */
+.actions {
   display: flex;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.btn-primary {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, var(--accent), #00A89A);
-  color: var(--bg);
-  font-size: 1rem;
+  gap: 6px;
+  padding: 12px 20px;
+  min-height: 44px;
+  background: #00D2BE;
+  color: #09090B;
+  font-size: 14px;
   font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
   text-decoration: none;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 20px var(--accent-glow);
+  transition: opacity 0.15s;
+  font-family: inherit;
 }
 
-.primary-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px var(--accent-glow-strong);
+.btn-primary:hover {
+  opacity: 0.9;
 }
 
-.secondary-btn {
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  min-height: 44px;
+  background: transparent;
+  border: 1px solid #27272A;
+  color: #A1A1AA;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.btn-ghost:hover {
+  border-color: #3F3F46;
+  color: #FAFAFA;
+}
+
+/* Error footer */
+.error-footer {
+  position: fixed;
+  bottom: 32px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.875rem 1.5rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 1rem;
-  font-weight: 500;
-  text-decoration: none;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  gap: 8px;
 }
 
-.secondary-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-.error-code {
-  margin: 1.5rem 0 0;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.3);
+.error-badge {
   font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 14px;
+  color: #EF4444;
+  opacity: 0.85;
+  padding: 3px 8px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+}
+
+.error-details {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 14px;
+  color: #71717A;
+}
+
+/* Light theme */
+:root.light .brand-name {
+  color: #111111;
+}
+
+:root.light .error-page {
+  background: #FAFAF9;
+}
+
+:root.light .shield-body {
+  stroke: #D4D4D8;
+  fill: #F5F5F3;
+}
+
+:root.light .heading {
+  color: #111111;
+}
+
+:root.light .desc {
+  color: #71717A;
+}
+
+:root.light .btn-primary {
+  color: #FFFFFF;
+}
+
+:root.light .btn-ghost {
+  border-color: #E8E8E6;
+  color: #52525B;
+}
+
+:root.light .btn-ghost:hover {
+  border-color: #D4D4D8;
+  color: #111111;
+}
+
+:root.light .error-badge {
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+:root.light .error-details {
+  color: #D4D4D8;
 }
 
 /* Responsive */
 @media (max-width: 480px) {
-  .auth-page {
-    padding: 1rem;
+  .actions {
+    flex-direction: column;
+    width: 100%;
   }
 
-  .error-card {
-    padding: 2rem 1.5rem;
-    border-radius: 20px;
-  }
-
-  .error-title {
-    font-size: 1.5rem;
+  .btn-primary,
+  .btn-ghost {
+    justify-content: center;
+    width: 100%;
   }
 }
 </style>

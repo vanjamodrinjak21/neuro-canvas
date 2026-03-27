@@ -57,6 +57,7 @@ function handleDragStart(event: DragEvent) {
   align-items: flex-start;
   gap: 10px;
   padding: 7px 10px;
+  min-height: 36px;
   margin-left: 8px;
   width: calc(100% - 8px);
   border-radius: 6px;
@@ -69,7 +70,8 @@ function handleDragStart(event: DragEvent) {
 
 .explorer-item:hover {
   background: var(--nc-surface-3);
-  border-color: var(--nc-border);
+  border-color: var(--nc-border-active);
+  transform: translateX(2px);
 }
 
 .explorer-item--active {

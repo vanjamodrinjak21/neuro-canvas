@@ -17,8 +17,22 @@ export default defineNuxtConfig({
   modules: [
     '@unocss/nuxt',
     '@vueuse/nuxt',
-    '@sidebase/nuxt-auth'
+    '@sidebase/nuxt-auth',
+    '@nuxt/content'
   ],
+
+  // Nuxt Content configuration
+  content: {
+    build: {
+      markdown: {
+        toc: { depth: 3, searchDepth: 3 },
+        highlight: {
+          theme: { default: 'github-dark', light: 'github-light' },
+          langs: ['typescript', 'javascript', 'vue', 'bash', 'json', 'yaml', 'markdown', 'rust', 'html', 'css', 'dockerfile', 'sql']
+        }
+      }
+    }
+  },
 
   // Auth configuration
   auth: {
@@ -50,7 +64,7 @@ export default defineNuxtConfig({
     }
   },
 
-  // Route rules for security headers
+  // Route rules
   routeRules: {
     '/api/auth/**': {
       headers: {
@@ -58,11 +72,16 @@ export default defineNuxtConfig({
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'strict-origin-when-cross-origin'
       }
-    }
+    },
+    '/docs/**': { ssr: true },
+    '/docs': { redirect: '/docs/getting-started/introduction' },
+    '/privacy': { ssr: true },
+    '/terms': { ssr: true }
   },
 
   // App configuration
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       title: 'NeuroCanvas',
       meta: [
@@ -72,6 +91,10 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#050508' }
       ],
       link: [
+        // Favicon
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
         // Fontshare preconnect
         { rel: 'preconnect', href: 'https://api.fontshare.com' },
         // Google Fonts preconnect
@@ -81,8 +104,8 @@ export default defineNuxtConfig({
         { rel: 'stylesheet', href: 'https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,600,500,400&f[]=instrument-serif@400,400-italic&display=swap' },
         // JetBrains Mono for code
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap' },
-        // Inter fallback
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' }
+        // Inter (primary for landing page)
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap' }
       ]
     }
   },

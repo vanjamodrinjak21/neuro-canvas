@@ -33,9 +33,11 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # ML / ONNX Runtime
-ort = { version = "=2.0.0-rc.11", features = ["download-binaries"] }
+ort = { version = "=2.0.0-rc.11", features = ["download-binaries", "coreml"] }
 tokenizers = "0.21"
 ndarray = "0.16"
+
+# HTTP download for full model
 reqwest = { version = "0.12", features = ["stream"] }
 futures-util = "0.3"
 

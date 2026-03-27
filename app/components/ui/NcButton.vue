@@ -24,7 +24,7 @@ const emit = defineEmits<{
 const variantClasses: Record<string, string> = {
   primary: 'bg-nc-teal text-nc-charcoal hover:bg-nc-teal-hover hover:shadow-nc-glow hover:-translate-y-px active:scale-98',
   secondary: 'nc-glass text-nc-ink hover:border-nc-teal hover:text-nc-teal hover:shadow-nc-md active:scale-98',
-  ghost: 'text-nc-ink-muted hover:text-nc-ink hover:bg-nc-graphite bg-transparent border-transparent',
+  ghost: 'text-nc-ink-soft hover:text-nc-ink hover:bg-nc-graphite bg-transparent border-transparent',
   danger: 'bg-nc-error/10 text-nc-error border-nc-error/20 hover:bg-nc-error/20 hover:border-nc-error/40',
   ai: 'ai-gradient text-nc-charcoal font-semibold hover:brightness-110 hover:scale-102 active:scale-98 shadow-nc-glow',
   tool: `
@@ -67,7 +67,7 @@ const buttonClass = computed(() => [
   sizeClasses[props.size],
 
   // States
-  props.disabled && 'opacity-50 cursor-not-allowed pointer-events-none',
+  props.disabled && 'opacity-40 grayscale-[0.3] cursor-not-allowed pointer-events-none',
   props.loading && 'opacity-70 cursor-wait'
 ])
 

@@ -37,6 +37,10 @@ const state = reactive<{
   decryptedKeys: new Map()
 })
 
+// Module-scoped KEK cache — persists across all useAISettings() instances
+let _kekPassphrase: string | null = null
+let _kekFetched = false
+
 export function useAISettings() {
   const db = useDatabase()
   const vault = useCredentialVault()
@@ -45,9 +49,10 @@ export function useAISettings() {
   const _tauriSession = {
     user: { id: 'desktop-user', email: 'desktop@neurocanvas.local', name: 'Desktop User' }
   }
-  const { data: session } = _isTauri()
+  const { data: _sessionData } = _isTauri()
     ? { data: ref(_tauriSession) }
     : useAuth()
+  const session = _sessionData ?? ref(null)
 
   // Computed helpers
   const providers = computed(() => state.settings.providers)
@@ -64,10 +69,6 @@ export function useAISettings() {
   const enabledProviders = computed(() =>
     state.settings.providers.filter(p => p.isEnabled)
   )
-
-  // Cache for KEK-derived passphrase
-  let _kekPassphrase: string | null = null
-  let _kekFetched = false
 
   /**
    * Get the passphrase for encryption — tries KEK first, falls back to old pattern
@@ -210,7 +211,12 @@ export function useAISettings() {
 
     // Encrypt and store API key if provided
     if (apiKey) {
-      const passphrase = getPassphrase()
+      // Ensure KEK is loaded before encrypting
+      if (!_kekPassphrase && vault.isVaultAvailable.value) {
+        const kek = await vault.fetchKEK()
+        if (kek) _kekPassphrase = kek
+      }
+      const passphrase = _kekPassphrase || getPassphrase()
       if (!passphrase) {
         console.error('Cannot save API key: No user session available')
         throw new Error('Unable to save API key - please ensure you are signed in')
@@ -281,6 +287,11 @@ export function useAISettings() {
    * Uses KEK if available, otherwise falls back to legacy passphrase
    */
   async function updateProviderApiKey(id: string, apiKey: string): Promise<void> {
+    // Ensure KEK is loaded before encrypting
+    if (!_kekPassphrase && vault.isVaultAvailable.value) {
+      const kek = await vault.fetchKEK()
+      if (kek) _kekPassphrase = kek
+    }
     const passphrase = _kekPassphrase || getPassphrase()
     if (!passphrase) throw new Error('No user session')
 
@@ -325,6 +336,12 @@ export function useAISettings() {
     try {
       const encryptedKey = await db.getSecret(id)
       if (!encryptedKey) return null
+
+      // Ensure KEK is loaded from vault if not yet cached
+      if (!_kekPassphrase && vault.isVaultAvailable.value) {
+        const kek = await vault.fetchKEK()
+        if (kek) _kekPassphrase = kek
+      }
 
       // Try KEK passphrase first (if available)
       if (_kekPassphrase) {
@@ -610,6 +627,8 @@ export function useAISettings() {
     await clearAllSecrets()
     await save()
     state.isInitialized = false
+    _kekPassphrase = null
+    _kekFetched = false
   }
 
   return {

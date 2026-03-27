@@ -64,7 +64,7 @@ watch(() => props.visible, (isVisible) => {
     >
       <div
         v-if="visible"
-        class="fixed inset-0 z-modal bg-[#0A0A0C]/90 backdrop-blur-xl flex items-center justify-center p-4"
+        class="fixed inset-0 z-modal bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
         @click.self="handleClose"
       >
         <Transition
@@ -191,8 +191,8 @@ watch(() => props.visible, (isVisible) => {
 .nc-dialog {
   width: 100%;
   max-width: 480px;
-  background: #111114;
-  border: 1px solid #1E1E22;
+  background: var(--nc-surface, #111114);
+  border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -203,7 +203,7 @@ watch(() => props.visible, (isVisible) => {
   align-items: flex-start;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #1E1E22;
+  border-bottom: 1px solid var(--nc-border, #1E1E22);
 }
 
 .nc-dialog-icon {
@@ -226,7 +226,7 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-dialog-subtitle {
   font-size: 12px;
-  color: #666670;
+  color: var(--nc-ink-muted);
   margin: 2px 0 0;
 }
 
@@ -237,13 +237,16 @@ watch(() => props.visible, (isVisible) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666670;
+  background: transparent;
+  border: none;
+  color: var(--nc-ink-muted);
+  cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .nc-close-btn:hover {
-  color: #FAFAFA;
-  background: #1A1A1E;
+  color: var(--nc-ink, #FAFAFA);
+  background: var(--nc-surface-3, #1A1A1E);
 }
 
 .nc-dialog-content {
@@ -262,7 +265,7 @@ watch(() => props.visible, (isVisible) => {
 .nc-label {
   font-size: 12px;
   font-weight: 600;
-  color: #888890;
+  color: var(--nc-ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -270,22 +273,22 @@ watch(() => props.visible, (isVisible) => {
 .nc-optional {
   font-weight: 400;
   text-transform: none;
-  color: #555558;
+  color: var(--nc-ink-muted);
 }
 
 .nc-input {
   width: 100%;
   padding: 12px 14px;
-  background: #0D0D10;
-  border: 1px solid #1E1E22;
+  background: var(--nc-surface-3, #0D0D10);
+  border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 10px;
   font-size: 14px;
-  color: #FAFAFA;
+  color: var(--nc-ink, #FAFAFA);
   transition: border-color 0.15s ease;
 }
 
 .nc-input::placeholder {
-  color: #444448;
+  color: var(--nc-ink-muted);
 }
 
 .nc-input:focus {
@@ -300,7 +303,7 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-hint {
   font-size: 11px;
-  color: #555558;
+  color: var(--nc-ink-muted);
   margin: 0;
 }
 
@@ -316,8 +319,8 @@ watch(() => props.visible, (isVisible) => {
   align-items: flex-start;
   gap: 4px;
   padding: 12px;
-  background: #0D0D10;
-  border: 1px solid #1E1E22;
+  background: var(--nc-surface-3, #0D0D10);
+  border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 10px;
   text-align: left;
   cursor: pointer;
@@ -326,7 +329,7 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-option-btn:hover:not(:disabled) {
   border-color: #2A2A30;
-  background: #141418;
+  background: var(--nc-surface, #141418);
 }
 
 .nc-option-btn.active {
@@ -342,12 +345,12 @@ watch(() => props.visible, (isVisible) => {
 .nc-option-label {
   font-size: 13px;
   font-weight: 500;
-  color: #FAFAFA;
+  color: var(--nc-ink, #FAFAFA);
 }
 
 .nc-option-desc {
-  font-size: 10px;
-  color: #666670;
+  font-size: 11px;
+  color: var(--nc-ink-muted);
   line-height: 1.3;
 }
 
@@ -356,8 +359,8 @@ watch(() => props.visible, (isVisible) => {
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 24px;
-  background: #0D0D10;
-  border-top: 1px solid #1E1E22;
+  background: var(--nc-surface-3, #0D0D10);
+  border-top: 1px solid var(--nc-border, #1E1E22);
 }
 
 .nc-btn {
@@ -381,7 +384,7 @@ watch(() => props.visible, (isVisible) => {
 .nc-btn-secondary {
   background: transparent;
   border: 1px solid #2A2A30;
-  color: #888890;
+  color: var(--nc-ink-soft);
 }
 
 .nc-btn-secondary:hover:not(:disabled) {
@@ -390,12 +393,18 @@ watch(() => props.visible, (isVisible) => {
 }
 
 .nc-btn-primary {
-  background: #00D2BE;
+  background: var(--nc-accent, #00D2BE);
   border: none;
   color: #0A0A0C;
 }
 
 .nc-btn-primary:hover:not(:disabled) {
   background: #00E5CF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nc-dialog {
+    transition: none;
+  }
 }
 </style>

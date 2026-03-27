@@ -4,6 +4,7 @@
 //! including native commands and platform-specific optimizations.
 
 pub mod commands;
+pub mod ml;
 
 /// Initialize logging for development (non-panicking)
 fn init_logging() {
@@ -27,6 +28,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_http::init())
+        .manage(ml::state::MLState::new())
         .setup(|_app| {
             #[cfg(debug_assertions)]
             {
@@ -40,6 +42,15 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::greet,
             commands::get_system_info,
+            commands::get_hardware_capabilities,
+            commands::ml::ml_init,
+            commands::ml::ml_embed,
+            commands::ml::ml_embed_batch,
+            commands::ml::ml_compute_similarities,
+            commands::ml::ml_get_progress,
+            commands::ml::ml_download_full_model,
+            commands::ml::ml_is_full_model_available,
+            commands::ml::ml_delete_full_model,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {

@@ -34,9 +34,10 @@ export function useSyncEngine() {
 
   // Auth gate: sync only when logged in
   const _tauriSession = _isTauri() ? { user: null } : null
-  const { data: session } = _tauriSession
+  const { data: _sessionData } = _tauriSession
     ? { data: ref(_tauriSession) }
     : useAuth()
+  const session = _sessionData ?? ref(null)
 
   const isSyncEnabled = computed(() => {
     return !!session.value?.user && (session.value.user as { id?: string }).id !== undefined

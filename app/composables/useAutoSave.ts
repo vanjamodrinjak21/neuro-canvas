@@ -1,6 +1,7 @@
 import { useMapStore } from '~/stores/mapStore'
 import { useUserStore } from '~/stores/userStore'
 import { useDatabase } from '~/composables/useDatabase'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 
 export interface AutoSaveState {
   isSaving: Ref<boolean>
@@ -15,6 +16,7 @@ export interface AutoSaveActions {
   stop: () => void
   enable: () => void
   disable: () => void
+  notifyInteraction: () => void
 }
 
 export type AutoSave = AutoSaveState & AutoSaveActions
@@ -23,6 +25,7 @@ export function useAutoSave(): AutoSave {
   const mapStore = useMapStore()
   const userStore = useUserStore()
   const db = useDatabase()
+  const syncEngine = useSyncEngine()
 
   // State
   const isSaving = ref(false)
@@ -33,6 +36,17 @@ export function useAutoSave(): AutoSave {
   // Internal state
   let saveTimer: ReturnType<typeof setTimeout> | null = null
   let isRunning = false
+  let lastInteractionTime = 0
+  const INTERACTION_COOLDOWN_MS = 2000 // wait 2s after last interaction before saving
+
+  /**
+   * Notify auto-save that the user is actively interacting with the canvas
+   * (e.g. dragging, resizing, typing). Saves are deferred until the
+   * interaction cooldown expires.
+   */
+  function notifyInteraction() {
+    lastInteractionTime = Date.now()
+  }
 
   // Save function
   async function save(): Promise<void> {
@@ -46,6 +60,8 @@ export function useAutoSave(): AutoSave {
       await db.saveMap(doc)
       mapStore.markClean()
       lastSavedAt.value = Date.now()
+      // Trigger cloud sync (fire-and-forget, checks isSyncEnabled internally)
+      syncEngine.debouncedPush(doc.id)
     } catch (error) {
       lastError.value = error as Error
       console.error('Auto-save failed:', error)
@@ -58,10 +74,24 @@ export function useAutoSave(): AutoSave {
   function scheduleNextCheck() {
     if (!isRunning || !isEnabled.value) return
 
-    const interval = userStore.preferences.value?.autoSaveInterval ?? 30000
+    const interval = userStore.preferences?.value?.autoSaveInterval ?? 30000
 
     saveTimer = setTimeout(() => {
       if (mapStore.isDirty && isEnabled.value) {
+        // Defer save if user is actively interacting with the canvas
+        const timeSinceInteraction = Date.now() - lastInteractionTime
+        if (timeSinceInteraction < INTERACTION_COOLDOWN_MS) {
+          // Re-check after the cooldown expires
+          const remaining = INTERACTION_COOLDOWN_MS - timeSinceInteraction
+          saveTimer = setTimeout(() => {
+            if (mapStore.isDirty && isEnabled.value) {
+              save().finally(scheduleNextCheck)
+            } else {
+              scheduleNextCheck()
+            }
+          }, remaining)
+          return
+        }
         save().finally(scheduleNextCheck)
       } else {
         scheduleNextCheck()
@@ -75,7 +105,7 @@ export function useAutoSave(): AutoSave {
     isRunning = true
 
     // Only start if auto-save is enabled in preferences
-    if (userStore.preferences.value?.autoSave !== false) {
+    if (userStore.preferences?.value?.autoSave !== false) {
       scheduleNextCheck()
     }
   }
@@ -108,7 +138,7 @@ export function useAutoSave(): AutoSave {
 
   // Watch for preference changes
   watch(
-    () => userStore.preferences.value?.autoSave,
+    () => userStore.preferences?.value?.autoSave,
     (autoSaveEnabled) => {
       if (autoSaveEnabled === false) {
         disable()
@@ -132,6 +162,7 @@ export function useAutoSave(): AutoSave {
     start,
     stop,
     enable,
-    disable
+    disable,
+    notifyInteraction
   }
 }

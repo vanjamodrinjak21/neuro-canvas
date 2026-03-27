@@ -16,9 +16,6 @@ const mapStore = useMapStore()
 const semanticStore = useSemanticStore()
 const insightEngine = useInsightEngine()
 
-// Section collapse state
-const isCollapsed = ref(false)
-
 // Insight type icons (v1 + v2 types)
 const insightIcons: Record<string, string> = {
   bridge: 'i-lucide-git-merge',
@@ -197,23 +194,15 @@ function getActionText(insight: Insight): string {
 
 <template>
   <div class="nc-insight-panel">
-    <button
-      class="nc-insight-header"
-      @click="isCollapsed = !isCollapsed"
-    >
+    <div class="nc-insight-header">
       <span class="flex items-center gap-2">
         <span class="i-lucide-lightbulb text-sm" />
         <span>Insights</span>
         <span v-if="insights.length > 0" class="nc-insight-count">{{ insights.length }}</span>
       </span>
-      <span
-        :class="['i-lucide-chevron-down text-sm transition-transform', isCollapsed && '-rotate-90']"
-      />
-    </button>
+    </div>
 
-    <div
-      :class="['nc-insight-content', isCollapsed && 'collapsed']"
-    >
+    <div class="nc-insight-content">
       <!-- Analyze buttons -->
       <div class="nc-insight-analyze-row">
         <button
@@ -246,7 +235,7 @@ function getActionText(insight: Insight): string {
 
       <!-- Empty state -->
       <div v-if="insights.length === 0 && !insightEngine.isAnalyzing.value" class="nc-insight-empty">
-        <span class="i-lucide-brain text-2xl mb-2 text-[#444448]" />
+        <span class="i-lucide-brain text-2xl mb-2 text-nc-ink-muted" />
         <p v-if="semanticStore.nodesWithEmbeddings.length < 3">
           Add more nodes to discover insights
         </p>
@@ -256,11 +245,12 @@ function getActionText(insight: Insight): string {
       </div>
 
       <!-- Insights list -->
-      <div v-else class="nc-insight-list">
+      <TransitionGroup v-else name="nc-fade-up" tag="div" class="nc-insight-list">
         <div
-          v-for="insight in insights"
+          v-for="(insight, index) in insights"
           :key="insight.id"
           class="nc-insight-card"
+          :style="{ transitionDelay: `${index * 50}ms` }"
           @mouseenter="handleMouseEnter(insight)"
           @mouseleave="handleMouseLeave"
         >
@@ -268,7 +258,7 @@ function getActionText(insight: Insight): string {
           <div class="nc-insight-card-header">
             <span
               :class="[insightIcons[insight.type] || 'i-lucide-lightbulb', 'text-base']"
-              :style="{ color: insightColors[insight.type] || '#888890' }"
+              :style="{ color: insightColors[insight.type] || '#AAAAB0' }"
             />
             <span class="nc-insight-title">{{ insight.title }}</span>
             <span v-if="isEnriched(insight)" class="nc-insight-ai-badge">AI</span>
@@ -307,7 +297,7 @@ function getActionText(insight: Insight): string {
                 class="nc-insight-confidence-fill"
                 :style="{
                   width: `${insight.confidence * 100}%`,
-                  backgroundColor: insightColors[insight.type] || '#888890'
+                  backgroundColor: insightColors[insight.type] || '#AAAAB0'
                 }"
               />
             </span>
@@ -334,14 +324,16 @@ function getActionText(insight: Insight): string {
             </button>
           </div>
         </div>
-      </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>
 
 <style scoped>
 .nc-insight-panel {
-  border-bottom: 1px solid #1A1A1E;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 400px;
+  border-bottom: 1px solid var(--nc-border, #1A1A1E);
 }
 
 .nc-insight-header {
@@ -349,10 +341,10 @@ function getActionText(insight: Insight): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 10px 14px;
   font-size: 11px;
   font-weight: 600;
-  color: #666670;
+  color: var(--nc-ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: transparent;
@@ -362,7 +354,7 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-header:hover {
-  color: #FAFAFA;
+  color: var(--nc-ink);
 }
 
 .nc-insight-count {
@@ -377,7 +369,7 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-content {
-  padding: 0 16px 16px;
+  padding: 0 14px 14px;
   overflow: hidden;
   max-height: 400px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -395,8 +387,8 @@ function getActionText(insight: Insight): string {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
   background: rgba(0, 210, 190, 0.1);
   border: 1px solid rgba(0, 210, 190, 0.3);
   border-radius: 6px;
@@ -413,7 +405,8 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-analyze-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
+  filter: grayscale(0.3);
   cursor: not-allowed;
 }
 
@@ -421,8 +414,8 @@ function getActionText(insight: Insight): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px;
-  color: #555558;
+  padding: 8px 0;
+  color: var(--nc-ink-muted);
   font-size: 11px;
   text-align: center;
 }
@@ -434,8 +427,8 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-card {
-  background: #141418;
-  border: 1px solid #1A1A1E;
+  background: var(--nc-surface, #141418);
+  border: 1px solid var(--nc-border, #1A1A1E);
   border-radius: 8px;
   padding: 12px;
   transition: all 0.15s ease;
@@ -443,7 +436,7 @@ function getActionText(insight: Insight): string {
 
 .nc-insight-card:hover {
   border-color: #2A2A30;
-  background: #1A1A1E;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .nc-insight-card-header {
@@ -470,7 +463,7 @@ function getActionText(insight: Insight): string {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: #555558;
+  color: var(--nc-ink-muted);
   opacity: 0;
   transition: all 0.15s ease;
 }
@@ -486,7 +479,7 @@ function getActionText(insight: Insight): string {
 
 .nc-insight-description {
   font-size: 11px;
-  color: #888890;
+  color: var(--nc-ink-soft);
   line-height: 1.5;
   margin-bottom: 10px;
 }
@@ -514,7 +507,7 @@ function getActionText(insight: Insight): string {
 
 .nc-insight-confidence-text {
   font-size: 10px;
-  color: #555558;
+  color: var(--nc-ink-muted);
   white-space: nowrap;
 }
 
@@ -533,7 +526,7 @@ function getActionText(insight: Insight): string {
   background: transparent;
   border: 1px solid #2A2A30;
   border-radius: 4px;
-  color: #888890;
+  color: var(--nc-ink-soft);
   font-size: 10px;
   font-weight: 500;
   cursor: pointer;
@@ -543,7 +536,7 @@ function getActionText(insight: Insight): string {
 .nc-insight-action-btn:hover {
   border-color: #3A3A42;
   color: #FAFAFA;
-  background: #1A1A1E;
+  background: var(--nc-surface-3, #1A1A1E);
 }
 
 .nc-insight-action-primary {
@@ -561,7 +554,7 @@ function getActionText(insight: Insight): string {
 .nc-insight-analyze-row {
   display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .nc-insight-analyze-row .nc-insight-analyze-btn {
@@ -598,7 +591,7 @@ function getActionText(insight: Insight): string {
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: #666670;
+  color: var(--nc-ink-muted);
   background: none;
   border: none;
   cursor: pointer;
@@ -611,12 +604,101 @@ function getActionText(insight: Insight): string {
 
 .nc-insight-reasoning-text {
   font-size: 11px;
-  color: #777780;
+  color: var(--nc-ink-soft);
   line-height: 1.5;
   margin-top: 6px;
   padding: 8px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 4px;
   border-left: 2px solid #A78BFA;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nc-insight-card {
+    transition: none;
+  }
+  .nc-insight-content {
+    transition: none;
+  }
+}
+
+/* Light theme */
+:root.light .nc-insight-panel {
+  border-bottom-color: #E8E8E6;
+}
+
+:root.light .nc-insight-header {
+  color: #777777;
+}
+
+:root.light .nc-insight-header:hover {
+  color: #111111;
+}
+
+:root.light .nc-insight-count {
+  color: #FFFFFF;
+}
+
+:root.light .nc-insight-empty {
+  color: #A1A1AA;
+}
+
+:root.light .nc-insight-card {
+  background: #F5F5F3;
+  border-color: #E8E8E6;
+}
+
+:root.light .nc-insight-card:hover {
+  border-color: #D4D4D8;
+  background: #EEEEEC;
+}
+
+:root.light .nc-insight-title {
+  color: #111111;
+}
+
+:root.light .nc-insight-dismiss {
+  color: #A1A1AA;
+}
+
+:root.light .nc-insight-dismiss:hover {
+  color: #111111;
+  background: #E8E8E6;
+}
+
+:root.light .nc-insight-description {
+  color: #777777;
+}
+
+:root.light .nc-insight-confidence-bar {
+  background: #E8E8E6;
+}
+
+:root.light .nc-insight-confidence-text {
+  color: #A1A1AA;
+}
+
+:root.light .nc-insight-action-btn {
+  border-color: #E8E8E6;
+  color: #777777;
+}
+
+:root.light .nc-insight-action-btn:hover {
+  border-color: #D4D4D8;
+  color: #111111;
+  background: #E8E8E6;
+}
+
+:root.light .nc-insight-reasoning-btn {
+  color: #777777;
+}
+
+:root.light .nc-insight-reasoning-btn:hover {
+  color: #111111;
+}
+
+:root.light .nc-insight-reasoning-text {
+  color: #777777;
+  background: rgba(0, 0, 0, 0.03);
 }
 </style>

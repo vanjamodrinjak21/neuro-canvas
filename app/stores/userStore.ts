@@ -49,15 +49,23 @@ const actions = {
         if (stored) {
           const parsed = JSON.parse(stored)
           Object.assign(state.preferences, parsed)
-          // Migrate to IndexedDB
-          await db.savePreferences('user-preferences', state.preferences)
+          // Migrate to IndexedDB (plain object to avoid DataCloneError)
+          await db.savePreferences('user-preferences', JSON.parse(JSON.stringify(state.preferences)))
           // Clean up localStorage
           localStorage.removeItem('neurocanvas-preferences')
         }
       }
 
-      // Apply theme
+      // Apply theme and cache for instant load on next visit
       actions.applyTheme(state.preferences.theme)
+      localStorage.setItem('nc-theme-cache', state.preferences.theme)
+
+      // Listen for OS preference changes so "system" mode updates in real-time
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (state.preferences.theme === 'system') {
+          actions.applyTheme('system')
+        }
+      })
 
       // Apply reduced motion
       if (state.preferences.reducedMotion) {
@@ -80,7 +88,9 @@ const actions = {
 
     try {
       const db = useDatabase()
-      await db.savePreferences('user-preferences', state.preferences)
+      // Convert reactive proxy to plain object for IndexedDB's structured clone
+      const plain = JSON.parse(JSON.stringify(state.preferences))
+      await db.savePreferences('user-preferences', plain)
     } catch (error) {
       console.error('Failed to save preferences:', error)
     }
@@ -99,6 +109,7 @@ const actions = {
     // Apply side effects
     if (key === 'theme') {
       actions.applyTheme(value as UserPreferences['theme'])
+      localStorage.setItem('nc-theme-cache', value as string)
     }
     if (key === 'reducedMotion') {
       if (value) {
@@ -134,6 +145,7 @@ const actions = {
     Object.assign(state.preferences, DEFAULT_PREFERENCES)
     await actions.savePreferences()
     actions.applyTheme(DEFAULT_PREFERENCES.theme)
+    localStorage.setItem('nc-theme-cache', DEFAULT_PREFERENCES.theme)
   }
 }
 

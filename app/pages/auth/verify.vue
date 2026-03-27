@@ -8,18 +8,11 @@ const email = computed(() => route.query.email as string | undefined)
 </script>
 
 <template>
-  <div class="auth-page">
-    <!-- Background effects -->
-    <div class="bg-grid" />
-    <div class="glow-orb glow-orb-1" />
-    <div class="glow-orb glow-orb-2" />
-
-    <div class="auth-container">
+  <div class="verify-page">
+    <div class="verify-container">
       <!-- Logo & brand -->
       <NuxtLink to="/" class="brand">
-        <div class="logo-mark">
-          <span class="i-lucide-feather logo-icon" />
-        </div>
+        <NcLogo :size="18" :container-size="36" :radius="8" />
         <span class="brand-name">NeuroCanvas</span>
       </NuxtLink>
 
@@ -62,66 +55,17 @@ const email = computed(() => route.query.email as string | undefined)
 </template>
 
 <style scoped>
-.auth-page {
-  --bg: #06060A;
-  --surface: #0C0C10;
-  --border: #252529;
-  --text: #FAFAFA;
-  --text-muted: #71717A;
-  --accent: #00D2BE;
-  --accent-glow: rgba(0, 210, 190, 0.12);
-  --accent-glow-strong: rgba(0, 210, 190, 0.25);
-
+.verify-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background: var(--bg);
-  position: relative;
-  overflow: hidden;
-  font-family: 'Cabinet Grotesk', 'Inter', system-ui, sans-serif;
+  padding: 32px;
+  background: #09090B;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Background effects */
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 50% at 50% 50%, black 30%, transparent 100%);
-  pointer-events: none;
-}
-
-.glow-orb {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(80px);
-}
-
-.glow-orb-1 {
-  width: 600px;
-  height: 600px;
-  top: -200px;
-  right: -100px;
-  background: radial-gradient(circle, var(--accent-glow-strong) 0%, transparent 60%);
-}
-
-.glow-orb-2 {
-  width: 500px;
-  height: 500px;
-  bottom: -200px;
-  left: -100px;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
-}
-
-/* Container */
-.auth-container {
-  position: relative;
-  z-index: 1;
+.verify-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -133,42 +77,25 @@ const email = computed(() => route.query.email as string | undefined)
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
   text-decoration: none;
-  margin-bottom: 2rem;
-}
-
-.logo-mark {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--accent), #00A89A);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px var(--accent-glow-strong);
-}
-
-.logo-icon {
-  font-size: 1.375rem;
-  color: var(--bg);
+  margin-bottom: 32px;
 }
 
 .brand-name {
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
+  color: #FAFAFA;
+  letter-spacing: -0.03em;
 }
 
-/* Verify card */
+/* Card */
 .verify-card {
   width: 100%;
-  background: rgba(12, 12, 16, 0.8);
-  backdrop-filter: blur(24px);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 2.5rem 2rem;
+  background: #111113;
+  border: 1px solid #1A1A1E;
+  border-radius: 8px;
+  padding: 40px 32px;
   text-align: center;
 }
 
@@ -176,58 +103,60 @@ const email = computed(() => route.query.email as string | undefined)
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.2);
-  border-radius: 20px;
-  margin-bottom: 1.5rem;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 210, 190, 0.08);
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
 .verify-icon {
-  font-size: 2.25rem;
-  color: var(--accent);
+  font-size: 24px;
+  color: #00D2BE;
 }
 
 .verify-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 0.75rem;
+  font-size: 20px;
+  font-weight: 600;
+  color: #FAFAFA;
+  margin: 0 0 8px;
   letter-spacing: -0.02em;
 }
 
 .verify-message {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 0.5rem;
-  line-height: 1.5;
+  font-size: 14px;
+  color: #A1A1AA;
+  margin: 0 0 4px;
+  line-height: 22px;
 }
 
 .verify-message strong {
-  color: var(--text);
+  color: #FAFAFA;
+  font-weight: 500;
 }
 
 .verify-hint {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  margin: 0 0 1.5rem;
-  line-height: 1.6;
+  font-size: 13px;
+  color: #52525B;
+  margin: 0 0 24px;
+  line-height: 20px;
 }
 
+/* Tips */
 .verify-tips {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 14px;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
+  background: #0D0D0F;
+  border: 1px solid #1A1A1E;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 24px;
   text-align: left;
 }
 
 .tips-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 0.75rem;
+  font-size: 13px;
+  font-weight: 500;
+  color: #A1A1AA;
+  margin: 0 0 10px;
 }
 
 .tips-list {
@@ -236,59 +165,111 @@ const email = computed(() => route.query.email as string | undefined)
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 6px;
 }
 
 .tips-list li {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  padding-left: 1.25rem;
+  font-size: 13px;
+  color: #A1A1AA;
+  padding-left: 16px;
   position: relative;
+  line-height: 20px;
 }
 
 .tips-list li::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 0.5em;
+  top: 7px;
   width: 4px;
   height: 4px;
-  background: var(--accent);
+  background: #00D2BE;
   border-radius: 50%;
 }
 
+/* Back button */
 .back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 20px;
+  min-height: 44px;
+  background: #00D2BE;
+  border: none;
+  border-radius: 6px;
+  color: #09090B;
+  font-size: 14px;
+  font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: opacity 0.15s;
 }
 
 .back-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
+  opacity: 0.9;
 }
 
-/* Responsive */
-@media (max-width: 480px) {
-  .auth-page {
-    padding: 1rem;
-  }
+/* Light theme */
+:root.light .verify-page {
+  background: #FAFAF9;
+}
 
-  .verify-card {
-    padding: 2rem 1.5rem;
-    border-radius: 20px;
-  }
+:root.light .brand-name {
+  color: #111111;
+}
 
-  .verify-title {
-    font-size: 1.5rem;
-  }
+:root.light .verify-card {
+  background: #F5F5F3;
+  border-color: #E8E8E6;
+}
+
+:root.light .icon-wrapper {
+  background: rgba(0, 210, 190, 0.08);
+}
+
+:root.light .verify-icon {
+  color: #00D2BE;
+}
+
+:root.light .verify-title {
+  color: #111111;
+}
+
+:root.light .verify-message {
+  color: #52525B;
+}
+
+:root.light .verify-message strong {
+  color: #111111;
+}
+
+:root.light .verify-hint {
+  color: #777777;
+}
+
+:root.light .verify-tips {
+  background: #F4F4F5;
+  border-color: #E8E8E6;
+}
+
+:root.light .tips-title {
+  color: #52525B;
+}
+
+:root.light .tips-list li {
+  color: #52525B;
+}
+
+:root.light .tips-list li::before {
+  background: #00D2BE;
+}
+
+:root.light .back-btn {
+  background: #00D2BE;
+  color: #FFFFFF;
+}
+
+:root.light .back-btn:hover {
+  opacity: 0.9;
 }
 </style>

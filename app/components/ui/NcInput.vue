@@ -39,7 +39,7 @@ const inputClass = computed(() => [
   'w-full rounded-nc-md',
   'bg-nc-graphite',
   'border transition-all duration-200',
-  'text-nc-ink placeholder-nc-ink-faint',
+  'text-nc-ink placeholder-nc-ink-muted',
   'font-sans',
   'focus:outline-none',
 
@@ -55,7 +55,7 @@ const inputClass = computed(() => [
   isFocused.value && !props.error && 'shadow-[0_0_0_3px_rgba(0,210,190,0.1)]',
 
   // Disabled
-  props.disabled && 'opacity-50 cursor-not-allowed bg-nc-pencil'
+  props.disabled && 'opacity-40 grayscale-[0.3] cursor-not-allowed bg-nc-pencil'
 ])
 
 function handleInput(event: Event) {

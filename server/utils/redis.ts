@@ -3,6 +3,7 @@ import Redis from 'ioredis'
 // Singleton pattern for Redis client
 const globalForRedis = globalThis as unknown as {
   redis: Redis | undefined
+  redisSubscriber: Redis | undefined
 }
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
@@ -115,7 +116,18 @@ export const cacheKeys = {
   embeddingsByMap: (mapId: string) => `emb:map:${mapId}:*`,
   // AI response cache keys
   aiResponse: (hash: string) => `ai:resp:${hash}`,
-  aiResponsePattern: () => `ai:resp:*`
+  aiResponsePattern: () => `ai:resp:*`,
+  // Sync cache keys
+  syncState: (userId: string) => `sync:state:${userId}`,
+  syncLock: (mapId: string) => `sync:lock:${mapId}`,
+  syncQueue: (userId: string) => `sync:queue:${userId}`,
+  syncChanges: (userId: string) => `sync:changes:${userId}`,
+  syncChannel: (userId: string) => `sync:${userId}`,
+  syncRate: (userId: string) => `sync:rate:${userId}`,
+  syncMetrics: () => `sync:metrics:${new Date().toISOString().slice(0, 10)}`,
+  syncDevices: (userId: string) => `sync:devices:${userId}`,
+  mapMeta: (mapId: string) => `map:meta:${mapId}`,
+  mapData: (mapId: string) => `map:data:${mapId}`
 }
 
 /**
@@ -129,4 +141,146 @@ export function hashText(text: string): string {
     hash = hash & hash // Convert to 32-bit integer
   }
   return hash.toString(36)
+}
+
+// ─── Sync Utilities ────────────────────────────────────────────────
+
+/**
+ * Dedicated Redis subscriber instance (ioredis requires a separate connection for SUBSCRIBE mode)
+ */
+export function getSubscriber(): Redis {
+  if (!globalForRedis.redisSubscriber) {
+    globalForRedis.redisSubscriber = new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: true
+    })
+  }
+  return globalForRedis.redisSubscriber
+}
+
+/**
+ * Distributed lock for map sync operations
+ */
+export const syncLock = {
+  async acquire(mapId: string, deviceId: string, ttlSeconds: number = 10): Promise<boolean> {
+    try {
+      const key = cacheKeys.syncLock(mapId)
+      const result = await redis.set(key, deviceId, 'EX', ttlSeconds, 'NX')
+      return result === 'OK'
+    } catch (error) {
+      console.error('syncLock.acquire error:', error)
+      return false
+    }
+  },
+
+  async release(mapId: string): Promise<void> {
+    try {
+      await redis.del(cacheKeys.syncLock(mapId))
+    } catch (error) {
+      console.error('syncLock.release error:', error)
+    }
+  }
+}
+
+/**
+ * Rate limiter using INCR + EXPIRE pattern
+ */
+export async function checkRateLimit(
+  userId: string,
+  max: number = 120,
+  windowSeconds: number = 60
+): Promise<{ allowed: boolean; remaining: number }> {
+  try {
+    const key = cacheKeys.syncRate(userId)
+    const count = await redis.incr(key)
+    if (count === 1) {
+      await redis.expire(key, windowSeconds)
+    }
+    return { allowed: count <= max, remaining: Math.max(0, max - count) }
+  } catch (error) {
+    console.error('checkRateLimit error:', error)
+    return { allowed: true, remaining: max } // Fail open
+  }
+}
+
+/**
+ * Redis Streams for sync event log
+ */
+export const syncStream = {
+  async addEntry(userId: string, entry: Record<string, string>): Promise<string | null> {
+    try {
+      const key = cacheKeys.syncChanges(userId)
+      const id = await redis.xadd(key, 'MAXLEN', '~', '1000', '*', ...Object.entries(entry).flat())
+      return id
+    } catch (error) {
+      console.error('syncStream.addEntry error:', error)
+      return null
+    }
+  },
+
+  async readSince(userId: string, lastId: string = '0'): Promise<Array<{ id: string; data: Record<string, string> }>> {
+    try {
+      const key = cacheKeys.syncChanges(userId)
+      const results = await redis.xread('COUNT', '100', 'BLOCK', '0', 'STREAMS', key, lastId)
+      if (!results) return []
+
+      const entries: Array<{ id: string; data: Record<string, string> }> = []
+      for (const [, messages] of results) {
+        for (const [id, fields] of messages) {
+          const data: Record<string, string> = {}
+          for (let i = 0; i < fields.length; i += 2) {
+            data[fields[i]!] = fields[i + 1]!
+          }
+          entries.push({ id, data })
+        }
+      }
+      return entries
+    } catch (error) {
+      console.error('syncStream.readSince error:', error)
+      return []
+    }
+  }
+}
+
+/**
+ * Sync state stored as Redis hash for fast access
+ */
+export const syncStateCache = {
+  async get(userId: string): Promise<Record<string, string> | null> {
+    try {
+      const key = cacheKeys.syncState(userId)
+      const data = await redis.hgetall(key)
+      return Object.keys(data).length > 0 ? data : null
+    } catch (error) {
+      console.error('syncStateCache.get error:', error)
+      return null
+    }
+  },
+
+  async update(userId: string, fields: Record<string, string | number>): Promise<void> {
+    try {
+      const key = cacheKeys.syncState(userId)
+      const flat: string[] = []
+      for (const [k, v] of Object.entries(fields)) {
+        flat.push(k, String(v))
+      }
+      await redis.hset(key, ...flat)
+      await redis.expire(key, 86400) // 24h TTL
+    } catch (error) {
+      console.error('syncStateCache.update error:', error)
+    }
+  }
+}
+
+/**
+ * Track sync metrics (daily counters)
+ */
+export async function trackSyncMetric(metric: string, increment: number = 1): Promise<void> {
+  try {
+    const key = cacheKeys.syncMetrics()
+    await redis.hincrby(key, metric, increment)
+    await redis.expire(key, 172800) // 48h TTL
+  } catch (error) {
+    console.error('trackSyncMetric error:', error)
+  }
 }

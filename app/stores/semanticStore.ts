@@ -3,7 +3,10 @@ import type {
   SimilarityEntry,
   Insight,
   AIState,
-  FieldSettings
+  FieldSettings,
+  SemanticCluster,
+  FieldInteractionState,
+  ProcessorState
 } from '~/types/semantic'
 
 // Semantic store state interface
@@ -15,6 +18,10 @@ export interface SemanticState {
   fieldSettings: FieldSettings
   dirtyNodeIds: Set<string>
   currentMapId: string | null
+  clusters: SemanticCluster[]
+  fieldInteraction: FieldInteractionState
+  processorState: ProcessorState
+  embeddingQueueSize: number
 }
 
 // Semantic store actions interface
@@ -24,9 +31,10 @@ export interface SemanticActions {
   markDirtyBatch(nodeIds: string[]): void
   clearDirty(nodeId: string): void
   clearAllDirty(): void
-  setNodeEmbedding(nodeId: string, embedding: number[], version?: number): void
+  setNodeEmbedding(nodeId: string, embedding: number[], version?: number, contentHash?: number): void
   removeNodeData(nodeId: string): void
   updateSimilarities(pairs: Array<{ sourceId: string; targetId: string; similarity: number }>): void
+  updateSimilaritiesIncremental(pairs: Array<{ sourceId: string; targetId: string; similarity: number }>): void
   getTopSimilar(nodeId: string, limit?: number): SimilarityEntry[]
   getSimilarity(nodeId1: string, nodeId2: string): number | null
   addInsight(insight: Omit<Insight, 'id' | 'createdAt'>): void
@@ -39,6 +47,10 @@ export interface SemanticActions {
   setAIError(error: string | undefined): void
   toggleField(enabled?: boolean): void
   updateFieldSettings(settings: Partial<FieldSettings>): void
+  setClusters(clusters: SemanticCluster[]): void
+  setFieldInteraction(interaction: Partial<FieldInteractionState>): void
+  setProcessorState(state: ProcessorState): void
+  setEmbeddingQueueSize(size: number): void
   $reset(): void
 }
 
@@ -51,6 +63,9 @@ export type SemanticStore = SemanticState & SemanticActions & {
   readonly dirtyNodeCount: number
   readonly shouldRenderField: boolean
   readonly visibleSimilarityPairs: Array<{ sourceId: string; targetId: string; similarity: number }>
+  readonly clusterCount: number
+  readonly embeddedNodeCount: number
+  clusterForNode(nodeId: string): SemanticCluster | undefined
 }
 
 // Default field settings
@@ -61,7 +76,12 @@ const DEFAULT_FIELD_SETTINGS: FieldSettings = {
   showPulses: true,
   similarityThreshold: 0.5,
   maxFieldLines: 50,
-  maxParticles: 200
+  maxParticles: 200,
+  showClusterGlow: true,
+  showClusterLabels: true,
+  interactiveExploration: false,
+  adaptiveLineCount: true,
+  embeddingBatchSize: 16
 }
 
 // Default AI state
@@ -69,7 +89,16 @@ const DEFAULT_AI_STATE: AIState = {
   status: 'idle',
   modelLoaded: false,
   modelProgress: 0,
-  hasWebGPU: false
+  hasWebGPU: false,
+  backendType: null
+}
+
+// Default field interaction state
+const DEFAULT_FIELD_INTERACTION: FieldInteractionState = {
+  hoveredNodeId: null,
+  highlightedLineIds: new Set(),
+  dimmedLineIds: new Set(),
+  showSimilarityLabels: false
 }
 
 // Create initial state
@@ -81,7 +110,11 @@ function createInitialState(): SemanticState {
     aiState: { ...DEFAULT_AI_STATE },
     fieldSettings: { ...DEFAULT_FIELD_SETTINGS },
     dirtyNodeIds: new Set(),
-    currentMapId: null
+    currentMapId: null,
+    clusters: [],
+    fieldInteraction: { ...DEFAULT_FIELD_INTERACTION },
+    processorState: 'idle',
+    embeddingQueueSize: 0
   }
 }
 
@@ -96,6 +129,7 @@ const actions: SemanticActions = {
       state.similarities.clear()
       state.insights = []
       state.dirtyNodeIds.clear()
+      state.clusters = []
       state.currentMapId = mapId
     }
   },
@@ -118,12 +152,15 @@ const actions: SemanticActions = {
     state.dirtyNodeIds.clear()
   },
 
-  setNodeEmbedding(nodeId: string, embedding: number[], version: number = 1) {
+  setNodeEmbedding(nodeId: string, embedding: number[], version: number = 1, contentHash: number = 0) {
+    const existing = state.nodeData.get(nodeId)
     state.nodeData.set(nodeId, {
       nodeId,
       embedding,
       embeddingVersion: version,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      contentHash,
+      clusterId: existing?.clusterId ?? null
     })
     state.dirtyNodeIds.delete(nodeId)
   },
@@ -140,6 +177,16 @@ const actions: SemanticActions = {
         entries.splice(index, 1)
       }
     }
+
+    // Remove from clusters
+    for (const cluster of state.clusters) {
+      const idx = cluster.nodeIds.indexOf(nodeId)
+      if (idx !== -1) {
+        cluster.nodeIds.splice(idx, 1)
+      }
+    }
+    // Remove empty clusters
+    state.clusters = state.clusters.filter(c => c.nodeIds.length >= 2)
   },
 
   updateSimilarities(pairs: Array<{ sourceId: string; targetId: string; similarity: number }>) {
@@ -156,6 +203,48 @@ const actions: SemanticActions = {
       })
 
       // Add to target's list (bidirectional)
+      if (!state.similarities.has(pair.targetId)) {
+        state.similarities.set(pair.targetId, [])
+      }
+      state.similarities.get(pair.targetId)!.push({
+        nodeId: pair.sourceId,
+        similarity: pair.similarity
+      })
+    }
+  },
+
+  updateSimilaritiesIncremental(pairs: Array<{ sourceId: string; targetId: string; similarity: number }>) {
+    // Collect which nodes have changed pairs
+    const changedNodes = new Set<string>()
+    for (const pair of pairs) {
+      changedNodes.add(pair.sourceId)
+      changedNodes.add(pair.targetId)
+    }
+
+    // Remove old entries for changed nodes
+    for (const nodeId of changedNodes) {
+      state.similarities.delete(nodeId)
+    }
+
+    // Also remove references to changed nodes from other nodes' lists
+    for (const [sourceId, entries] of state.similarities) {
+      if (changedNodes.has(sourceId)) continue
+      const filtered = entries.filter(e => !changedNodes.has(e.nodeId))
+      if (filtered.length !== entries.length) {
+        state.similarities.set(sourceId, filtered)
+      }
+    }
+
+    // Re-insert all pairs involving changed nodes from the full set
+    for (const pair of pairs) {
+      if (!state.similarities.has(pair.sourceId)) {
+        state.similarities.set(pair.sourceId, [])
+      }
+      state.similarities.get(pair.sourceId)!.push({
+        nodeId: pair.targetId,
+        similarity: pair.similarity
+      })
+
       if (!state.similarities.has(pair.targetId)) {
         state.similarities.set(pair.targetId, [])
       }
@@ -234,6 +323,42 @@ const actions: SemanticActions = {
     state.fieldSettings = { ...state.fieldSettings, ...settings }
   },
 
+  setClusters(clusters: SemanticCluster[]) {
+    state.clusters = clusters
+    // Update clusterId on node data
+    for (const cluster of clusters) {
+      for (const nodeId of cluster.nodeIds) {
+        const data = state.nodeData.get(nodeId)
+        if (data) {
+          data.clusterId = cluster.id
+        }
+      }
+    }
+  },
+
+  setFieldInteraction(interaction: Partial<FieldInteractionState>) {
+    if (interaction.hoveredNodeId !== undefined) {
+      state.fieldInteraction.hoveredNodeId = interaction.hoveredNodeId
+    }
+    if (interaction.highlightedLineIds !== undefined) {
+      state.fieldInteraction.highlightedLineIds = interaction.highlightedLineIds
+    }
+    if (interaction.dimmedLineIds !== undefined) {
+      state.fieldInteraction.dimmedLineIds = interaction.dimmedLineIds
+    }
+    if (interaction.showSimilarityLabels !== undefined) {
+      state.fieldInteraction.showSimilarityLabels = interaction.showSimilarityLabels
+    }
+  },
+
+  setProcessorState(processorState: ProcessorState) {
+    state.processorState = processorState
+  },
+
+  setEmbeddingQueueSize(size: number) {
+    state.embeddingQueueSize = size
+  },
+
   $reset() {
     state.nodeData.clear()
     state.similarities.clear()
@@ -242,6 +367,10 @@ const actions: SemanticActions = {
     state.fieldSettings = { ...DEFAULT_FIELD_SETTINGS }
     state.dirtyNodeIds.clear()
     state.currentMapId = null
+    state.clusters = []
+    state.fieldInteraction = { ...DEFAULT_FIELD_INTERACTION }
+    state.processorState = 'idle'
+    state.embeddingQueueSize = 0
   }
 }
 
@@ -256,6 +385,10 @@ export function useSemanticStore(): SemanticStore {
     get fieldSettings() { return state.fieldSettings },
     get dirtyNodeIds() { return state.dirtyNodeIds },
     get currentMapId() { return state.currentMapId },
+    get clusters() { return state.clusters },
+    get fieldInteraction() { return state.fieldInteraction },
+    get processorState() { return state.processorState },
+    get embeddingQueueSize() { return state.embeddingQueueSize },
 
     // Computed getters
     get isAIReady() {
@@ -298,6 +431,18 @@ export function useSemanticStore(): SemanticStore {
       return pairs
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, state.fieldSettings.maxFieldLines)
+    },
+
+    get clusterCount() {
+      return state.clusters.length
+    },
+
+    get embeddedNodeCount() {
+      return Array.from(state.nodeData.values()).filter(d => d.embedding && d.embedding.length > 0).length
+    },
+
+    clusterForNode(nodeId: string): SemanticCluster | undefined {
+      return state.clusters.find(c => c.nodeIds.includes(nodeId))
     },
 
     // Actions

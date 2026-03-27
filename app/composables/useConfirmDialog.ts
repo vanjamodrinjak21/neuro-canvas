@@ -1,4 +1,5 @@
 import { ref, h, defineComponent, type Component } from 'vue'
+import NcConfirmDialogComponent from '~/components/ui/NcConfirmDialog.vue'
 
 export interface ConfirmDialogOptions {
   title?: string
@@ -40,7 +41,7 @@ export function useConfirmDialog() {
     name: 'ConfirmDialogWrapper',
     setup() {
       return () => h(
-        resolveComponent('NcConfirmDialog'),
+        NcConfirmDialogComponent,
         {
           open: isOpen.value,
           'onUpdate:open': (value: boolean) => {

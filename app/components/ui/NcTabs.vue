@@ -62,7 +62,7 @@ const activeTab = computed({
           'text-sm font-medium transition-all duration-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
           'data-[state=active]:bg-nc-teal data-[state=active]:text-nc-charcoal data-[state=active]:shadow-nc-glow',
-          'data-[state=inactive]:text-nc-ink-muted data-[state=inactive]:hover:text-nc-ink data-[state=inactive]:hover:bg-nc-graphite',
+          'data-[state=inactive]:text-nc-ink-soft data-[state=inactive]:hover:text-nc-ink data-[state=inactive]:hover:bg-nc-graphite',
           tab.disabled && 'opacity-50 cursor-not-allowed'
         ]"
       >

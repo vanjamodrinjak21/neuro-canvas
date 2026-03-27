@@ -45,6 +45,26 @@ export interface DBMapDocument {
   createdAt: number
   updatedAt: number
   tags: string[]
+  syncVersion?: number
+  checksum?: string
+}
+
+export interface DBSyncQueueEntry {
+  id?: number // Auto-increment
+  mapId: string
+  action: 'push' | 'delete'
+  status: 'pending' | 'processing' | 'failed'
+  retries: number
+  createdAt: number
+  lastAttempt?: number
+  error?: string
+}
+
+export interface DBSyncMeta {
+  id: string // 'default'
+  deviceId: string
+  lastSyncAt: number
+  lastStreamId: string
 }
 
 export interface DBPreferences {
@@ -92,6 +112,8 @@ class NeuroCanvasDB extends Dexie {
   aiSettings!: EntityTable<DBAISettings, 'id'>
   aiCache!: EntityTable<DBAICacheEntry, 'key'>
   userMemory!: EntityTable<DBUserMemory, 'id'>
+  syncQueue!: EntityTable<DBSyncQueueEntry, 'id'>
+  syncMeta!: EntityTable<DBSyncMeta, 'id'>
 
   constructor() {
     super('neurocanvas')
@@ -117,6 +139,18 @@ class NeuroCanvasDB extends Dexie {
       aiSettings: 'id',
       aiCache: 'key, createdAt, lastAccessed',
       userMemory: 'id'
+    })
+
+    // Version 4: Add sync queue and sync meta tables
+    this.version(4).stores({
+      maps: 'id, title, updatedAt, createdAt, *tags',
+      preferences: 'id',
+      secrets: 'id, updatedAt',
+      aiSettings: 'id',
+      aiCache: 'key, createdAt, lastAccessed',
+      userMemory: 'id',
+      syncQueue: '++id, mapId, status, createdAt',
+      syncMeta: 'id'
     })
   }
 }
@@ -266,6 +300,65 @@ export function useDatabase() {
     await database.secrets.clear()
   }
 
+  // ─── Sync Queue Operations ───────────────────────────────────────
+
+  async function addToSyncQueue(entry: Omit<DBSyncQueueEntry, 'id'>): Promise<void> {
+    const database = await ensureDBReady()
+    // Avoid duplicate entries for same mapId+action
+    const existing = await database.syncQueue
+      .where('mapId').equals(entry.mapId)
+      .and(e => e.action === entry.action && e.status === 'pending')
+      .first()
+    if (!existing) {
+      await database.syncQueue.add(entry as DBSyncQueueEntry)
+    }
+  }
+
+  async function getPendingSyncOps(): Promise<DBSyncQueueEntry[]> {
+    const database = await ensureDBReady()
+    return database.syncQueue
+      .where('status').equals('pending')
+      .sortBy('createdAt')
+  }
+
+  async function updateSyncQueueEntry(id: number, updates: Partial<DBSyncQueueEntry>): Promise<void> {
+    const database = await ensureDBReady()
+    await database.syncQueue.update(id, updates)
+  }
+
+  async function removeSyncQueueEntry(id: number): Promise<void> {
+    const database = await ensureDBReady()
+    await database.syncQueue.delete(id)
+  }
+
+  async function countPendingSyncOps(): Promise<number> {
+    const database = await ensureDBReady()
+    return database.syncQueue.where('status').equals('pending').count()
+  }
+
+  // ─── Sync Meta Operations ────────────────────────────────────────
+
+  async function getSyncMeta(): Promise<DBSyncMeta | undefined> {
+    const database = await ensureDBReady()
+    return database.syncMeta.get('default')
+  }
+
+  async function saveSyncMeta(meta: Partial<DBSyncMeta>): Promise<void> {
+    const database = await ensureDBReady()
+    const existing = await database.syncMeta.get('default')
+    await database.syncMeta.put({
+      id: 'default',
+      deviceId: meta.deviceId || existing?.deviceId || '',
+      lastSyncAt: meta.lastSyncAt ?? existing?.lastSyncAt ?? 0,
+      lastStreamId: meta.lastStreamId ?? existing?.lastStreamId ?? '0'
+    })
+  }
+
+  async function updateMapSyncVersion(mapId: string, syncVersion: number, checksum: string): Promise<void> {
+    const database = await ensureDBReady()
+    await database.maps.update(mapId, { syncVersion, checksum })
+  }
+
   // Initialize on first use if in browser
   if (typeof window !== 'undefined') {
     init()
@@ -290,6 +383,16 @@ export function useDatabase() {
     getSecret,
     saveSecret,
     deleteSecret,
-    clearAllSecrets
+    clearAllSecrets,
+    // Sync Queue
+    addToSyncQueue,
+    getPendingSyncOps,
+    updateSyncQueueEntry,
+    removeSyncQueueEntry,
+    countPendingSyncOps,
+    // Sync Meta
+    getSyncMeta,
+    saveSyncMeta,
+    updateMapSyncVersion
   }
 }

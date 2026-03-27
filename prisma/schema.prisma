@@ -11,7 +11,6 @@ datasource db {
 }
 
 // Auth.js required models
-// Note: App data (maps, etc.) is stored in Convex, not here
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -22,6 +21,9 @@ model User {
 
   accounts      Account[]
   sessions      Session[]
+  credentials   Credential[]
+  maps          Map[]
+  syncState     SyncState?
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -61,4 +63,85 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ─── Sync & Map Storage ────────────────────────────────────────────
+
+model Map {
+  id          String       @id           // Client-generated CUID
+  userId      String
+  title       String
+  data        Json                       // { nodes, edges, camera, settings, rootNodeId }
+  checksum    String                     // SHA-256 for integrity + quick diff
+  preview     String?      @db.Text      // Base64 thumbnail
+  syncVersion Int          @default(1)   // Optimistic concurrency
+  byteSize    Int          @default(0)
+  tags        String[]     @default([])
+  deletedAt   DateTime?                  // Soft-delete for cross-device propagation
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions    MapVersion[]
+
+  @@index([userId, updatedAt])
+  @@index([userId])
+}
+
+model MapVersion {
+  id        String   @id @default(cuid())
+  mapId     String
+  version   Int
+  data      Json
+  checksum  String
+  deviceId  String?
+  byteSize  Int      @default(0)
+  createdAt DateTime @default(now())
+  map       Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+
+  @@unique([mapId, version])
+  @@index([mapId])
+}
+
+model SyncState {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  lastSyncAt     DateTime @default(now())
+  lastDeviceId   String?
+  totalMaps      Int      @default(0)
+  totalByteSize  BigInt   @default(0)
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Share Links ──────────────────────────────────────────────────
+
+model MapShare {
+  id        String    @id @default(cuid())
+  mapId     String
+  token     String    @unique
+  createdBy String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  @@index([token])
+  @@index([mapId])
+}
+
+// ─── Credential Vault ──────────────────────────────────────────────
+
+model Credential {
+  id             String    @id @default(cuid())
+  userId         String
+  provider       String     // 'openai', 'anthropic', 'openrouter', 'custom'
+  label          String?
+  encryptedValue String    @db.Text  // Double-encrypted: client AES-GCM + server AES-256-GCM
+  keyHash        String              // HMAC of first 8 chars for identification
+  lastUsed       DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider, label])
+  @@index([userId])
 }

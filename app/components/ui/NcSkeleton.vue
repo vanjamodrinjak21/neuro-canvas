@@ -74,7 +74,7 @@ const variantClass = computed(() => {
   background: linear-gradient(
     90deg,
     #1A1A1E 0%,
-    #2A2A30 50%,
+    #2E2E34 50%,
     #1A1A1E 100%
   );
   background-size: 200% 100%;

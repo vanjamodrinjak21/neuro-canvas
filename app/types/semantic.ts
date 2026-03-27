@@ -2,6 +2,21 @@
 
 import type { Point } from './canvas'
 
+// ═══════════════ UTILITIES ═══════════════
+
+/**
+ * FNV-1a hash for quick content change detection.
+ * Returns a 32-bit unsigned integer.
+ */
+export function fnv1aHash(str: string): number {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return hash >>> 0
+}
+
 // ═══════════════ NODE SEMANTIC DATA ═══════════════
 
 export interface NodeSemanticData {
@@ -9,6 +24,8 @@ export interface NodeSemanticData {
   embedding: number[]
   embeddingVersion: number
   updatedAt: number
+  contentHash: number
+  clusterId: string | null
 }
 
 // Sparse similarity entry (only store pairs above threshold)
@@ -31,6 +48,14 @@ export interface FieldLine {
   controlPoint2?: Point
 }
 
+/** Extended field line with animation properties */
+export interface AnimatedFieldLine extends FieldLine {
+  opacity: number
+  targetOpacity: number
+  fadeStartTime: number
+  lineWidth: number
+}
+
 export interface FieldParticle {
   id: string
   lineId: string
@@ -50,6 +75,36 @@ export interface ResonancePulse {
   startTime: number
 }
 
+// ═══════════════ CLUSTERS ═══════════════
+
+export interface SemanticCluster {
+  id: string
+  nodeIds: string[]
+  centroid: Point
+  radius: number
+  averageSimilarity: number
+  dominantCategory: string | null
+  keywords: string[]
+}
+
+// ═══════════════ FIELD INTERACTION ═══════════════
+
+export interface FieldInteractionState {
+  hoveredNodeId: string | null
+  highlightedLineIds: Set<string>
+  dimmedLineIds: Set<string>
+  showSimilarityLabels: boolean
+}
+
+// ═══════════════ SEARCH ═══════════════
+
+export interface SemanticSearchResult {
+  nodeId: string
+  content: string
+  similarity: number
+  matchType: 'exact' | 'semantic' | 'hybrid'
+}
+
 // ═══════════════ INSIGHTS ═══════════════
 
 export type InsightType =
@@ -62,6 +117,11 @@ export type InsightType =
   | 'balance-issue'
   | 'deepening-opportunity'
   | 'accuracy-concern'
+  | 'hub-node'
+  | 'dead-end'
+  | 'chain-risk'
+  | 'imbalanced-cluster'
+  | 'orphan-cluster'
 
 export interface Insight {
   id: string
@@ -102,9 +162,14 @@ export interface AIState {
   modelLoaded: boolean
   modelProgress: number // 0-100 for loading progress
   hasWebGPU: boolean
+  backendType: 'native' | 'web' | null
   error?: string
   lastEmbeddingTime?: number // ms for last embedding computation
 }
+
+// ═══════════════ PROCESSOR STATE ═══════════════
+
+export type ProcessorState = 'idle' | 'embedding' | 'similarity' | 'clustering' | 'insights'
 
 // ═══════════════ FIELD SETTINGS ═══════════════
 
@@ -116,6 +181,11 @@ export interface FieldSettings {
   similarityThreshold: number // 0-1, minimum similarity to show field line
   maxFieldLines: number
   maxParticles: number
+  showClusterGlow: boolean
+  showClusterLabels: boolean
+  interactiveExploration: boolean
+  adaptiveLineCount: boolean
+  embeddingBatchSize: number
 }
 
 // Default field settings
@@ -126,7 +196,12 @@ export const DEFAULT_FIELD_SETTINGS: FieldSettings = {
   showPulses: true,
   similarityThreshold: 0.5,
   maxFieldLines: 50,
-  maxParticles: 200
+  maxParticles: 200,
+  showClusterGlow: true,
+  showClusterLabels: true,
+  interactiveExploration: false,
+  adaptiveLineCount: true,
+  embeddingBatchSize: 16
 }
 
 // ═══════════════ DATABASE TYPES ═══════════════
@@ -148,6 +223,10 @@ export type SemanticWorkerMessageType =
   | 'embed'
   | 'embed-batch'
   | 'compute-similarities'
+  | 'update-similarities'
+  | 'detect-clusters'
+  | 'hybrid-search'
+  | 'benchmark-batch-size'
   | 'search'
   | 'suggest'
   | 'dispose'
@@ -157,6 +236,7 @@ export interface EmbedBatchPayload {
   texts: Array<{
     id: string
     text: string
+    contentHash?: number
   }>
 }
 
@@ -181,5 +261,68 @@ export interface ComputeSimilaritiesResult {
     sourceId: string
     targetId: string
     similarity: number
+  }>
+}
+
+export interface UpdateSimilaritiesPayload {
+  changedNodeIds: string[]
+  embeddings: Array<{
+    id: string
+    embedding: number[]
+  }>
+  currentSimilarities: Array<{
+    sourceId: string
+    targetId: string
+    similarity: number
+  }>
+  threshold: number
+}
+
+export interface UpdateSimilaritiesResult {
+  similarities: Array<{
+    sourceId: string
+    targetId: string
+    similarity: number
+  }>
+}
+
+export interface DetectClustersPayload {
+  embeddings: Array<{
+    id: string
+    embedding: number[]
+  }>
+  similarities: Array<{
+    sourceId: string
+    targetId: string
+    similarity: number
+  }>
+  minClusterSize: number
+  minSimilarity: number
+}
+
+export interface DetectClustersResult {
+  clusters: SemanticCluster[]
+}
+
+export interface HybridSearchPayload {
+  query: string
+  nodes: Array<{
+    id: string
+    content: string
+    embedding: number[]
+  }>
+  topK: number
+}
+
+export interface HybridSearchResult {
+  results: SemanticSearchResult[]
+}
+
+export interface BenchmarkBatchSizeResult {
+  optimalBatchSize: number
+  results: Array<{
+    batchSize: number
+    throughput: number
+    avgTime: number
   }>
 }
