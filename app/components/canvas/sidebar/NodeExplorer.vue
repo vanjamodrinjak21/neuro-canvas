@@ -5,7 +5,7 @@ import { getCategoryInfo, nodeCategories, type NodeCategory } from '~/composable
 
 /**
  * NodeExplorer — Search, filter, and grouped node list
- * Now rendered as a tab (no collapsible header)
+ * Redesigned with filter pills, root node card, and section divider
  */
 const props = defineProps<{
   selectedNode: Node | null
@@ -25,6 +25,19 @@ const mapStore = useMapStore()
 // Local search & filter
 const searchQuery = ref('')
 const filterCategory = ref<string | null>(null)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+
+// Keyboard shortcut: / to focus search
+onMounted(() => {
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      e.preventDefault()
+      searchInputRef.value?.focus()
+    }
+  }
+  document.addEventListener('keydown', handleKeydown)
+  onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
+})
 
 // Filtered nodes
 const filteredNodes = computed(() => {
@@ -40,21 +53,62 @@ const filteredNodes = computed(() => {
   return nodes
 })
 
-// Grouped by category
-const groupedNodes = computed(() => {
-  const groups: Record<string, Node[]> = {}
-  for (const node of filteredNodes.value) {
-    const cat = (node.metadata?.category as string) || 'uncategorized'
-    if (!groups[cat]) groups[cat] = []
-    groups[cat].push(node)
+const totalNodeCount = computed(() => mapStore.nodes.size)
+
+// Find root node (node with most connections or first node)
+const rootNode = computed(() => {
+  const nodes = Array.from(mapStore.nodes.values())
+  if (nodes.length === 0) return null
+  // Find node with most edges or the first one
+  let root = nodes[0]
+  let maxEdges = 0
+  for (const node of nodes) {
+    const edgeCount = Array.from(mapStore.edges.values()).filter(
+      e => e.source === node.id || e.target === node.id
+    ).length
+    if (edgeCount > maxEdges) {
+      maxEdges = edgeCount
+      root = node
+    }
   }
-  return groups
+  return root
+})
+
+const childNodes = computed(() => {
+  if (!rootNode.value) return []
+  return filteredNodes.value.filter(n => n.id !== rootNode.value!.id)
+})
+
+const rootChildCount = computed(() => {
+  if (!rootNode.value) return 0
+  return Array.from(mapStore.edges.values()).filter(
+    e => e.source === rootNode.value!.id || e.target === rootNode.value!.id
+  ).length
 })
 
 function selectNode(nodeId: string) {
   mapStore.select([nodeId])
   emit('navigateToNode', nodeId)
 }
+
+function getNodeChildCount(nodeId: string): number {
+  return Array.from(mapStore.edges.values()).filter(
+    e => e.source === nodeId || e.target === nodeId
+  ).length
+}
+
+function toggleFilter(categoryId: string) {
+  filterCategory.value = filterCategory.value === categoryId ? null : categoryId
+}
+
+// Filter chip categories (subset for display)
+const filterChips = computed(() => [
+  { id: 'main-fact', label: 'Main', color: '#00D2BE' },
+  { id: 'description', label: 'Desc', color: '#60A5FA' },
+  { id: 'evidence', label: 'Evidence', color: '#4ADE80' },
+  { id: 'question', label: 'Question', color: '#FACC15' },
+  { id: 'idea', label: 'Idea', color: '#FB923C' },
+])
 </script>
 
 <template>
@@ -64,6 +118,7 @@ function selectNode(nodeId: string) {
       <div :class="['explorer__search', searchQuery && 'explorer__search--active']">
         <span class="i-lucide-search explorer__search-icon" />
         <input
+          ref="searchInputRef"
           v-model="searchQuery"
           type="text"
           placeholder="Search nodes..."
@@ -76,40 +131,64 @@ function selectNode(nodeId: string) {
         >
           <span class="i-lucide-x" />
         </button>
+        <kbd v-else class="explorer__search-kbd">/</kbd>
       </div>
     </div>
 
-    <!-- Category quick-add -->
-    <CanvasSidebarCategoryQuickAdd
-      @add-category="(cat) => emit('addCategorizedNode', cat)"
-      @drag-start-category="(cat) => emit('dragStartCategory', cat)"
-    />
+    <!-- Filter pills -->
+    <div class="explorer__filters">
+      <button
+        :class="['explorer__filter-pill', !filterCategory && 'explorer__filter-pill--active']"
+        @click="filterCategory = null"
+      >
+        <span class="explorer__filter-label">All</span>
+        <span class="explorer__filter-count">{{ totalNodeCount }}</span>
+      </button>
+      <button
+        v-for="chip in filterChips"
+        :key="chip.id"
+        :class="['explorer__filter-pill', filterCategory === chip.id && 'explorer__filter-pill--active']"
+        :style="filterCategory === chip.id ? {
+          background: `${chip.color}1A`,
+          borderColor: `${chip.color}40`,
+        } : {}"
+        @click="toggleFilter(chip.id)"
+      >
+        <span class="explorer__filter-dot" :style="{ background: chip.color }" />
+        <span class="explorer__filter-label">{{ chip.label }}</span>
+      </button>
+    </div>
+
+    <!-- Section divider -->
+    <div class="explorer__section-divider">
+      <span class="explorer__section-label">NODES</span>
+      <span class="explorer__section-line" />
+      <span class="explorer__section-count">{{ totalNodeCount }}</span>
+    </div>
+
+    <!-- Root node card -->
+    <div v-if="rootNode && !searchQuery && !filterCategory" class="explorer__root-card" @click="selectNode(rootNode.id)">
+      <div class="explorer__root-avatar" :style="{ background: `${rootNode.style?.borderColor || '#00D2BE'}1F` }">
+        <span :style="{ color: rootNode.style?.borderColor || '#00D2BE' }">{{ rootNode.content.charAt(0).toUpperCase() }}</span>
+      </div>
+      <div class="explorer__root-info">
+        <span class="explorer__root-name">{{ rootNode.content }}</span>
+        <span class="explorer__root-meta">Root · {{ rootChildCount }} children</span>
+      </div>
+      <span class="i-lucide-chevron-down explorer__root-chevron" />
+    </div>
 
     <!-- Node list -->
     <div class="explorer__list">
-      <template v-for="(nodes, categoryId) in groupedNodes" :key="categoryId">
-        <div class="explorer__group">
-          <div class="explorer__group-header">
-            <span
-              :class="getCategoryInfo(categoryId as string).icon"
-              :style="{ color: getCategoryInfo(categoryId as string).color }"
-              class="explorer__group-icon"
-            />
-            <span class="explorer__group-label">
-              {{ getCategoryInfo(categoryId as string).label }}
-            </span>
-            <span class="explorer__group-count">{{ nodes.length }}</span>
-          </div>
-          <CanvasSidebarNodeExplorerItem
-            v-for="node in nodes"
-            :key="node.id"
-            :node="node"
-            :is-active="selectedNode?.id === node.id"
-            @select="selectNode"
-            @drag-start="(ev, id) => emit('dragStartNode', id)"
-          />
-        </div>
-      </template>
+      <CanvasSidebarNodeExplorerItem
+        v-for="node in (searchQuery || filterCategory ? filteredNodes : childNodes)"
+        :key="node.id"
+        :node="node"
+        :is-active="selectedNode?.id === node.id"
+        :child-count="getNodeChildCount(node.id)"
+        @select="selectNode"
+        @drag-start="(ev, id) => emit('dragStartNode', id)"
+      />
 
       <!-- Empty state -->
       <div v-if="filteredNodes.length === 0" class="explorer__empty">
@@ -118,7 +197,7 @@ function selectNode(nodeId: string) {
           No nodes match "{{ searchQuery }}"
         </p>
         <p v-else class="explorer__empty-text">
-          No nodes yet — click a category above to start
+          No nodes yet — click Expand to start
         </p>
       </div>
     </div>
@@ -134,7 +213,7 @@ function selectNode(nodeId: string) {
 
 /* Search */
 .explorer__search-wrap {
-  padding: 12px 14px 8px;
+  padding: 12px 14px 0;
   flex-shrink: 0;
 }
 
@@ -144,8 +223,8 @@ function selectNode(nodeId: string) {
   gap: 8px;
   background: #111113;
   border: 1px solid #1A1A1E;
-  border-radius: 6px;
-  padding: 7px 10px;
+  border-radius: 8px;
+  padding: 8px 12px;
   transition: all 0.2s ease;
 }
 
@@ -156,8 +235,8 @@ function selectNode(nodeId: string) {
 }
 
 .explorer__search-icon {
-  font-size: 13px;
-  color: var(--nc-ink-faint);
+  font-size: 14px;
+  color: #3F3F46;
   flex-shrink: 0;
 }
 
@@ -171,13 +250,8 @@ function selectNode(nodeId: string) {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.explorer__search-input:focus-visible {
-  outline: none;
-  /* Focus ring handled by parent .explorer__search:focus-within */
-}
-
 .explorer__search-input::placeholder {
-  color: var(--nc-ink-faint);
+  color: #3F3F46;
 }
 
 .explorer__search-clear {
@@ -200,11 +274,168 @@ function selectNode(nodeId: string) {
   background: var(--nc-surface-3);
 }
 
+.explorer__search-kbd {
+  padding: 2px 6px;
+  background: #18181B;
+  border: 1px solid #27272A;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #3F3F46;
+  line-height: 1;
+}
+
+/* Filter pills */
+.explorer__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+
+.explorer__filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid #27272A;
+  border-radius: 100px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.explorer__filter-pill:hover {
+  border-color: #3F3F46;
+}
+
+.explorer__filter-pill--active {
+  background: rgba(0, 210, 190, 0.12);
+  border-color: rgba(0, 210, 190, 0.25);
+}
+
+.explorer__filter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.explorer__filter-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #71717A;
+}
+
+.explorer__filter-pill--active .explorer__filter-label {
+  color: #00D2BE;
+  font-weight: 600;
+}
+
+.explorer__filter-count {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  color: rgba(0, 210, 190, 0.5);
+}
+
+/* Section divider */
+.explorer__section-divider {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px 4px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.explorer__section-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: #27272A;
+  letter-spacing: 0.08em;
+}
+
+.explorer__section-line {
+  flex: 1;
+  height: 1px;
+  background: #18181B;
+}
+
+.explorer__section-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #27272A;
+}
+
+/* Root node card */
+.explorer__root-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 0 10px;
+  background: rgba(0, 210, 190, 0.05);
+  border-radius: 8px;
+  border-left: 2px solid #00D2BE;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.explorer__root-card:hover {
+  background: rgba(0, 210, 190, 0.08);
+}
+
+.explorer__root-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.explorer__root-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.explorer__root-name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #FAFAFA;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.explorer__root-meta {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  color: #52525B;
+}
+
+.explorer__root-chevron {
+  font-size: 14px;
+  color: #52525B;
+  flex-shrink: 0;
+}
+
 /* Node list */
 .explorer__list {
   flex: 1;
   overflow-y: auto;
-  padding: 0 8px 8px;
+  padding: 4px 10px 8px;
   scrollbar-width: thin;
   scrollbar-color: var(--nc-surface-3) transparent;
   content-visibility: auto;
@@ -221,41 +452,6 @@ function selectNode(nodeId: string) {
 .explorer__list::-webkit-scrollbar-thumb {
   background: var(--nc-surface-3);
   border-radius: 4px;
-}
-
-/* Groups */
-.explorer__group {
-  margin-bottom: 4px;
-}
-
-.explorer__group-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--nc-ink-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.explorer__group-icon {
-  font-size: 11px;
-}
-
-.explorer__group-label {
-  flex: 1;
-}
-
-.explorer__group-count {
-  margin-left: auto;
-  background: var(--nc-surface-3);
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-size: 9px;
-  font-family: var(--nc-font-mono);
-  color: var(--nc-ink-faint);
 }
 
 /* Empty */
@@ -283,8 +479,8 @@ function selectNode(nodeId: string) {
 
 /* Light theme */
 :root.light .explorer__search {
-  background: #E8E8E6;
-  border-color: #E8E8E6;
+  background: #F4F4F5;
+  border-color: #E4E4E7;
 }
 
 :root.light .explorer__search-icon {
@@ -292,6 +488,41 @@ function selectNode(nodeId: string) {
 }
 
 :root.light .explorer__search-input::placeholder {
+  color: #A1A1AA;
+}
+
+:root.light .explorer__search-kbd {
+  background: #E4E4E7;
+  border-color: #D4D4D8;
+  color: #A1A1AA;
+}
+
+:root.light .explorer__filter-pill {
+  border-color: #E4E4E7;
+}
+
+:root.light .explorer__filter-label {
+  color: #71717A;
+}
+
+:root.light .explorer__section-label,
+:root.light .explorer__section-count {
+  color: #A1A1AA;
+}
+
+:root.light .explorer__section-line {
+  background: #E4E4E7;
+}
+
+:root.light .explorer__root-card {
+  background: rgba(0, 210, 190, 0.06);
+}
+
+:root.light .explorer__root-name {
+  color: #18181B;
+}
+
+:root.light .explorer__root-meta {
   color: #A1A1AA;
 }
 </style>

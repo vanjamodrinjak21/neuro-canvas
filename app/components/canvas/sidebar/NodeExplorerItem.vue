@@ -2,12 +2,12 @@
 import type { Node } from '~/types'
 
 /**
- * NodeExplorerItem — Single node row in the explorer list
- * Improved readability: larger text, color indicator, notes preview
+ * NodeExplorerItem — Single node row with description preview and child count
  */
 const props = defineProps<{
   node: Node
   isActive: boolean
+  childCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -19,6 +19,13 @@ const nodeLabel = computed(() => props.node.content || 'Untitled')
 const notePreview = computed(() => {
   const notes = props.node.metadata?.notes as string | undefined
   return notes ? notes.slice(0, 60) : ''
+})
+
+// Description from AI metadata or notes preview
+const descriptionPreview = computed(() => {
+  const desc = props.node.metadata?.description as { summary?: string } | undefined
+  if (desc?.summary) return desc.summary.slice(0, 50)
+  return notePreview.value
 })
 
 function handleDragStart(event: DragEvent) {
@@ -45,8 +52,9 @@ function handleDragStart(event: DragEvent) {
     />
     <span class="explorer-item__content">
       <span class="explorer-item__label">{{ nodeLabel }}</span>
-      <span v-if="notePreview" class="explorer-item__notes">{{ notePreview }}</span>
+      <span v-if="descriptionPreview" class="explorer-item__notes">{{ descriptionPreview }}</span>
     </span>
+    <span v-if="childCount !== undefined" class="explorer-item__count">{{ childCount }}</span>
   </button>
 </template>
 
@@ -54,33 +62,29 @@ function handleDragStart(event: DragEvent) {
 .explorer-item {
   width: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  padding: 7px 10px;
-  min-height: 36px;
-  margin-left: 8px;
-  width: calc(100% - 8px);
+  padding: 7px 10px 7px 24px;
   border-radius: 6px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   cursor: grab;
   transition: all 0.15s ease;
   text-align: left;
 }
 
 .explorer-item:hover {
-  background: var(--nc-surface-3);
-  border-color: var(--nc-border-active);
-  transform: translateX(2px);
+  background: rgba(250, 250, 250, 0.03);
 }
 
 .explorer-item--active {
-  background: var(--nc-accent-glow);
-  border-color: rgba(0, 210, 190, 0.15);
+  background: rgba(0, 210, 190, 0.06);
+  border-left: 2px solid #00D2BE;
+  padding-left: 22px;
 }
 
 .explorer-item--active .explorer-item__label {
-  color: var(--nc-accent);
+  color: #FAFAFA;
 }
 
 .explorer-item:active {
@@ -93,14 +97,11 @@ function handleDragStart(event: DragEvent) {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 4px;
   transition: transform 0.15s ease;
-  box-shadow: 0 0 0 0 transparent;
 }
 
 .explorer-item:hover .explorer-item__dot {
   transform: scale(1.2);
-  box-shadow: 0 0 6px currentColor;
 }
 
 .explorer-item__content {
@@ -108,13 +109,14 @@ function handleDragStart(event: DragEvent) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .explorer-item__label {
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 12px;
-  font-weight: 450;
-  color: var(--nc-ink-soft);
+  font-weight: 500;
+  color: #D4D4D8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -123,15 +125,56 @@ function handleDragStart(event: DragEvent) {
 }
 
 .explorer-item:hover .explorer-item__label {
-  color: var(--nc-ink);
+  color: #FAFAFA;
 }
 
 .explorer-item__notes {
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 10px;
-  color: var(--nc-ink-faint);
+  color: #3F3F46;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+}
+
+.explorer-item__count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #3F3F46;
+  background: #18181B;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Light theme */
+:root.light .explorer-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+:root.light .explorer-item__label {
+  color: #3F3F46;
+}
+
+:root.light .explorer-item:hover .explorer-item__label {
+  color: #18181B;
+}
+
+:root.light .explorer-item__notes {
+  color: #A1A1AA;
+}
+
+:root.light .explorer-item__count {
+  background: #F4F4F5;
+  color: #A1A1AA;
+}
+
+:root.light .explorer-item--active {
+  background: rgba(0, 210, 190, 0.06);
+}
+
+:root.light .explorer-item--active .explorer-item__label {
+  color: #18181B;
 }
 </style>

@@ -30,9 +30,9 @@ const {
 } = useSidebarState()
 
 const tabs: { id: SidebarTab; label: string; icon: string }[] = [
-  { id: 'explorer', label: 'Explorer', icon: 'i-lucide-network' },
-  { id: 'properties', label: 'Properties', icon: 'i-lucide-square-pen' },
-  { id: 'ai', label: 'AI', icon: 'i-lucide-sparkles' },
+  { id: 'explorer', label: 'Explorer', icon: 'i-lucide-search' },
+  { id: 'properties', label: 'Properties', icon: 'i-lucide-layout-dashboard' },
+  { id: 'ai', label: 'AI', icon: 'i-lucide-waypoints' },
 ]
 
 // Sidebar width resize
@@ -138,34 +138,32 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
       </Transition>
     </div>
 
-    <!-- Bottom actions -->
-    <div class="shell__bottom-actions">
+    <!-- Bottom actions (Explorer tab) -->
+    <template v-if="activeTab === 'explorer'">
+      <div class="shell__bottom-actions">
+        <button
+          class="shell__action-btn shell__action-btn--teal"
+          @click="dispatch({ type: 'ai:smart-expand' })"
+        >
+          <span class="i-lucide-plus shell__action-icon" />
+          Expand
+        </button>
+        <button
+          class="shell__action-btn shell__action-btn--purple"
+          @click="setActiveTab('ai')"
+        >
+          <span class="i-lucide-info shell__action-icon" />
+          Insights
+        </button>
+      </div>
       <button
-        class="shell__action-btn shell__action-btn--teal"
-        @click="dispatch({ type: 'ai:smart-expand' })"
+        class="shell__generate-btn"
+        @click="dispatch({ type: 'ai:generate-map' })"
       >
-        <span class="i-lucide-sparkles shell__action-icon" />
-        Expand
+        <span class="i-lucide-layout-grid shell__action-icon" />
+        Generate map from topic
       </button>
-      <button
-        class="shell__action-btn shell__action-btn--purple"
-        @click="setActiveTab('ai')"
-      >
-        <span class="i-lucide-brain shell__action-icon" />
-        Insights
-      </button>
-    </div>
-
-    <button
-      class="shell__generate-btn"
-      @click="dispatch({ type: 'ai:generate-map' })"
-    >
-      <span class="i-lucide-layout-grid shell__action-icon" />
-      Generate map from topic
-    </button>
-
-    <!-- Footer -->
-    <CanvasSidebarFooter />
+    </template>
 
     <!-- Width resize handle (right edge) -->
     <div class="shell__resize-handle" @mousedown="startWidthResize" />
@@ -273,10 +271,10 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   justify-content: center;
   gap: 6px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   border: 1px solid;
   cursor: pointer;
   transition: all 0.15s;
@@ -284,25 +282,25 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
 }
 
 .shell__action-btn--teal {
-  background: rgba(0, 210, 190, 0.06);
-  border-color: rgba(0, 210, 190, 0.12);
+  background: rgba(0, 210, 190, 0.1);
+  border-color: rgba(0, 210, 190, 0.2);
   color: #00D2BE;
 }
 
 .shell__action-btn--teal:hover {
-  background: rgba(0, 210, 190, 0.10);
-  border-color: rgba(0, 210, 190, 0.20);
+  background: rgba(0, 210, 190, 0.15);
+  border-color: rgba(0, 210, 190, 0.3);
 }
 
 .shell__action-btn--purple {
-  background: rgba(167, 139, 250, 0.06);
-  border-color: rgba(167, 139, 250, 0.12);
+  background: rgba(167, 139, 250, 0.08);
+  border-color: rgba(167, 139, 250, 0.2);
   color: #A78BFA;
 }
 
 .shell__action-btn--purple:hover {
-  background: rgba(167, 139, 250, 0.10);
-  border-color: rgba(167, 139, 250, 0.20);
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.3);
 }
 
 .shell__action-icon {
@@ -314,22 +312,22 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin: 0 14px 6px;
-  padding: 8px;
-  border-radius: 6px;
+  margin: 0 14px 12px;
+  padding: 9px;
+  border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 500;
-  background: transparent;
-  border: 1px solid #27272A;
-  color: #A1A1AA;
+  background: #111113;
+  border: 1px solid #1A1A1E;
+  color: #71717A;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .shell__generate-btn:hover {
-  border-color: var(--nc-ink-faint);
-  color: #E4E4E7;
+  border-color: #27272A;
+  color: #A1A1AA;
 }
 
 /* Width resize handle */
