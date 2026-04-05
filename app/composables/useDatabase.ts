@@ -76,6 +76,7 @@ export interface DBPreferences {
 export interface DBEncryptedSecret {
   id: string // Format: providerId
   encryptedValue: string // AES-GCM encrypted API key
+  encryptionVersion: number // 1=legacy, 2=KEK, 3=rotated
   createdAt: number
   updatedAt: number
 }
@@ -280,11 +281,19 @@ export function useDatabase() {
     return record?.encryptedValue
   }
 
-  async function saveSecret(id: string, encryptedValue: string): Promise<void> {
+  async function getSecretWithVersion(id: string): Promise<{ encryptedValue: string; encryptionVersion: number } | undefined> {
+    const database = await ensureDBReady()
+    const record = await database.secrets.get(id)
+    if (!record) return undefined
+    return { encryptedValue: record.encryptedValue, encryptionVersion: record.encryptionVersion ?? 1 }
+  }
+
+  async function saveSecret(id: string, encryptedValue: string, encryptionVersion: number = 2): Promise<void> {
     const database = await ensureDBReady()
     await database.secrets.put({
       id,
       encryptedValue,
+      encryptionVersion,
       createdAt: Date.now(),
       updatedAt: Date.now()
     })
@@ -381,6 +390,7 @@ export function useDatabase() {
     saveAISettings,
     // Secrets
     getSecret,
+    getSecretWithVersion,
     saveSecret,
     deleteSecret,
     clearAllSecrets,

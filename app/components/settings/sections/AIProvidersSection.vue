@@ -11,6 +11,7 @@ const isNewProvider = ref(false)
 
 // Track which providers have API keys
 const providerKeyStatus = ref<Map<string, boolean>>(new Map())
+const unmigratedCount = ref(0)
 
 // Load key status for all providers
 async function loadKeyStatus() {
@@ -18,6 +19,7 @@ async function loadKeyStatus() {
     const hasKey = await aiSettings.hasProviderApiKey(provider.id)
     providerKeyStatus.value.set(provider.id, hasKey)
   }
+  unmigratedCount.value = await aiSettings.getUnmigratedCount()
 }
 
 watch(() => aiSettings.providers.value, loadKeyStatus, { immediate: true })
@@ -173,6 +175,14 @@ async function handleSetDefault(provider: AIProviderConfig) {
         />
       </div>
 
+      <!-- Migration Warning -->
+      <div v-if="unmigratedCount > 0" class="migration-warning">
+        <span class="i-lucide-shield-alert migration-icon" />
+        <p class="migration-text">
+          {{ unmigratedCount }} API key{{ unmigratedCount > 1 ? 's use' : ' uses' }} older encryption. Open each provider and save to update.
+        </p>
+      </div>
+
       <!-- Info Box -->
       <div v-if="aiSettings.providers.value.length > 0" class="info-box">
         <span class="i-lucide-info info-icon" />
@@ -299,6 +309,29 @@ async function handleSetDefault(provider: AIProviderConfig) {
 }
 
 .info-text {
+  font-size: 0.75rem;
+  color: var(--nc-ink-muted, #A1A1AA);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.migration-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+}
+
+.migration-icon {
+  font-size: 1rem;
+  color: #F59E0B;
+  flex-shrink: 0;
+}
+
+.migration-text {
   font-size: 0.75rem;
   color: var(--nc-ink-muted, #A1A1AA);
   margin: 0;

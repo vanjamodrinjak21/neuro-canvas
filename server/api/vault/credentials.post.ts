@@ -23,13 +23,15 @@ export default defineEventHandler(async (event) => {
       provider: body.provider,
       label: body.label || null,
       encryptedValue: doubleEncrypted,
-      keyHash
+      keyHash,
+      encryptionVersion: body.encryptionVersion
     },
     update: {
       encryptedValue: doubleEncrypted,
-      keyHash
+      keyHash,
+      encryptionVersion: body.encryptionVersion
     },
-    select: { id: true, provider: true, label: true, keyHash: true, createdAt: true }
+    select: { id: true, provider: true, label: true, keyHash: true, encryptionVersion: true, createdAt: true }
   })
 
   return { ok: true, credential }

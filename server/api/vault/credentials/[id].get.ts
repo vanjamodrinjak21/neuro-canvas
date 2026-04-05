@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 
   const credential = await prisma.credential.findFirst({
     where: { id: credentialId, userId },
-    select: { id: true, provider: true, label: true, encryptedValue: true }
+    select: { id: true, provider: true, label: true, encryptedValue: true, encryptionVersion: true }
   })
 
   if (!credential) {
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Remove server encryption layer, return client-encrypted value
-  const clientEncryptedValue = serverDecrypt(credential.encryptedValue)
+  const { decrypted: clientEncryptedValue } = serverDecrypt(credential.encryptedValue)
 
   // Update lastUsed
   await prisma.credential.update({
@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
     id: credential.id,
     provider: credential.provider,
     label: credential.label,
-    encryptedValue: clientEncryptedValue // Still KEK-encrypted by client
+    encryptedValue: clientEncryptedValue, // Still KEK-encrypted by client
+    encryptionVersion: credential.encryptionVersion
   }
 })

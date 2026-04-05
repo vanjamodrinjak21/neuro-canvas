@@ -63,13 +63,13 @@ export function useCredentialVault() {
   /**
    * Sync an encrypted credential to the server vault
    */
-  async function syncToVault(provider: string, encryptedValue: string, keyPrefix?: string, label?: string): Promise<void> {
+  async function syncToVault(provider: string, encryptedValue: string, keyPrefix?: string, label?: string, encryptionVersion: number = 2): Promise<void> {
     if (!isVaultAvailable.value) return
 
     try {
       await ($fetch as any)('/api/vault/credentials', {
         method: 'POST',
-        body: { provider, encryptedValue, keyPrefix, label }
+        body: { provider, encryptedValue, keyPrefix, label, encryptionVersion }
       })
     } catch (err) {
       console.error('Failed to sync credential to vault:', err)
@@ -77,29 +77,48 @@ export function useCredentialVault() {
   }
 
   /**
-   * Restore credentials from vault to local Dexie secrets table
+   * Update encryption version for a credential in the vault
    */
-  async function restoreFromVault(): Promise<number> {
-    if (!isVaultAvailable.value) return 0
+  async function updateVaultCredential(credentialId: string, data: { encryptedValue?: string; encryptionVersion?: number }): Promise<void> {
+    if (!isVaultAvailable.value) return
 
     try {
-      const response: { credentials: Array<{ id: string; provider: string; label: string | null }> } =
+      await ($fetch as any)(`/api/vault/credentials/${credentialId}`, {
+        method: 'PUT',
+        body: data
+      })
+    } catch (err) {
+      console.error('Failed to update vault credential:', err)
+    }
+  }
+
+  /**
+   * Restore credentials from vault to local Dexie secrets table
+   */
+  async function restoreFromVault(): Promise<{ restored: number; failed: number }> {
+    if (!isVaultAvailable.value) return { restored: 0, failed: 0 }
+
+    try {
+      const response: { credentials: Array<{ id: string; provider: string; label: string | null; encryptionVersion?: number }> } =
         await ($fetch as any)('/api/vault/credentials')
 
       let restored = 0
+      let failed = 0
       for (const cred of response.credentials) {
-        // Fetch the full encrypted value
-        const detail: { encryptedValue: string } = await ($fetch as any)(`/api/vault/credentials/${cred.id}`)
-        if (detail.encryptedValue) {
-          // Store in local Dexie under provider ID
-          const localId = cred.label || cred.provider
-          await db.saveSecret(localId, detail.encryptedValue)
-          restored++
+        try {
+          const detail: { encryptedValue: string; encryptionVersion?: number } = await ($fetch as any)(`/api/vault/credentials/${cred.id}`)
+          if (detail.encryptedValue) {
+            const localId = cred.label || cred.provider
+            await db.saveSecret(localId, detail.encryptedValue, detail.encryptionVersion ?? cred.encryptionVersion ?? 1)
+            restored++
+          }
+        } catch {
+          failed++
         }
       }
-      return restored
+      return { restored, failed }
     } catch {
-      return 0
+      return { restored: 0, failed: 0 }
     }
   }
 
@@ -116,6 +135,7 @@ export function useCredentialVault() {
     encryptApiKey,
     decryptApiKey,
     syncToVault,
+    updateVaultCredential,
     restoreFromVault,
     clearKEK
   }

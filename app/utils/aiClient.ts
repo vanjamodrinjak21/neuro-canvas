@@ -308,12 +308,20 @@ export async function aiComplete(req: AICompletionRequest): Promise<AICompletion
 
   // Web: prefer credentialId for server-side decrypt (key never leaves server)
   const { apiKey, credentialId, ...rest } = req
-  return $fetch<AICompletionResponse>('/api/ai/completions', {
-    method: 'POST',
-    body: credentialId
-      ? { ...rest, credentialId }
-      : { ...rest, apiKey }
-  })
+  try {
+    return await $fetch<AICompletionResponse>('/api/ai/completions', {
+      method: 'POST',
+      body: credentialId
+        ? { ...rest, credentialId }
+        : { ...rest, apiKey }
+    })
+  } catch (e: unknown) {
+    const fetchError = e as { data?: { data?: { code?: string } }; statusCode?: number }
+    if (fetchError.data?.data?.code === 'CREDENTIAL_DECRYPT_FAILED') {
+      throw new Error('Failed to decrypt API key. Please re-enter your key in Settings.')
+    }
+    throw e
+  }
 }
 
 /**

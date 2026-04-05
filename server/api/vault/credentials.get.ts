@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
       provider: true,
       label: true,
       keyHash: true,
+      encryptionVersion: true,
       lastUsed: true,
       expiresAt: true,
       createdAt: true,

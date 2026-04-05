@@ -1,26 +1,43 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync, createHmac } from 'crypto'
 
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || ''
+const AUTH_SECRET_OLD = process.env.AUTH_SECRET_OLD || ''
 
 /**
- * Derive a master key from AUTH_SECRET using scrypt
+ * Derive a master key from a given secret using scrypt
+ */
+function deriveMasterKey(secret: string): Buffer {
+  if (!secret) {
+    throw new Error('Cannot derive encryption key from empty secret')
+  }
+  return scryptSync(secret, 'neurocanvas:master:v1', 32)
+}
+
+/**
+ * Derive a master key from the current AUTH_SECRET
  */
 function getMasterKey(): Buffer {
-  if (!AUTH_SECRET) {
-    throw new Error('AUTH_SECRET is not set — cannot derive encryption keys')
-  }
-  return scryptSync(AUTH_SECRET, 'neurocanvas:master:v1', 32)
+  return deriveMasterKey(AUTH_SECRET)
 }
 
 /**
  * Derive a per-user Key Encryption Key (KEK) using HMAC-SHA256
- * Replaces the weak `nc-${userId}-${email}-key` pattern
  */
 export function deriveUserKEK(userId: string): string {
   if (!AUTH_SECRET) {
     throw new Error('AUTH_SECRET is not set')
   }
   const hmac = createHmac('sha256', AUTH_SECRET)
+  hmac.update(`neurocanvas:kek:v1:${userId}`)
+  return hmac.digest('hex')
+}
+
+/**
+ * Derive a per-user KEK from the old AUTH_SECRET (for rotation)
+ */
+function deriveUserKEKOld(userId: string): string | null {
+  if (!AUTH_SECRET_OLD) return null
+  const hmac = createHmac('sha256', AUTH_SECRET_OLD)
   hmac.update(`neurocanvas:kek:v1:${userId}`)
   return hmac.digest('hex')
 }
@@ -42,25 +59,42 @@ export function serverEncrypt(plaintext: string): string {
 }
 
 /**
- * Server-side AES-256-GCM decryption
+ * Server-side AES-256-GCM decryption.
+ * Tries current AUTH_SECRET first, falls back to AUTH_SECRET_OLD if set.
+ * Returns the decrypted value and whether the old key was used.
  */
-export function serverDecrypt(encrypted: string): string {
+export function serverDecrypt(encrypted: string): { decrypted: string; usedOldKey: boolean } {
   const parts = encrypted.split(':')
   if (parts.length !== 3) {
     throw new Error('Invalid encrypted format')
   }
 
   const [ivHex, authTagHex, ciphertext] = parts as [string, string, string]
-  const key = getMasterKey()
+
+  // Try current key first
+  try {
+    const key = getMasterKey()
+    const iv = Buffer.from(ivHex, 'hex')
+    const authTag = Buffer.from(authTagHex, 'hex')
+    const decipher = createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAuthTag(authTag)
+    let decrypted = decipher.update(ciphertext, 'hex', 'utf8')
+    decrypted += decipher.final('utf8')
+    return { decrypted, usedOldKey: false }
+  } catch (currentKeyError) {
+    // If no old key configured, rethrow
+    if (!AUTH_SECRET_OLD) throw currentKeyError
+  }
+
+  // Try old key
+  const oldKey = deriveMasterKey(AUTH_SECRET_OLD)
   const iv = Buffer.from(ivHex, 'hex')
   const authTag = Buffer.from(authTagHex, 'hex')
-  const decipher = createDecipheriv('aes-256-gcm', key, iv)
+  const decipher = createDecipheriv('aes-256-gcm', oldKey, iv)
   decipher.setAuthTag(authTag)
-
   let decrypted = decipher.update(ciphertext, 'hex', 'utf8')
   decrypted += decipher.final('utf8')
-
-  return decrypted
+  return { decrypted, usedOldKey: true }
 }
 
 /**
@@ -76,10 +110,44 @@ export function hashKeyPrefix(apiKey: string): string {
   return hmac.digest('hex').slice(0, 16)
 }
 
-export function serverFullDecrypt(userId: string, doubleEncryptedValue: string): string {
-  const clientEncrypted = serverDecrypt(doubleEncryptedValue)
-  const kek = deriveUserKEK(userId)
-  return decryptClientLayer(clientEncrypted, kek)
+/**
+ * Full decrypt: remove server layer, then client layer.
+ * If AUTH_SECRET_OLD was used, self-heals by re-encrypting with current secret.
+ * Returns { plaintext, credentialUpdate } — caller should persist credentialUpdate if present.
+ */
+export function serverFullDecrypt(
+  userId: string,
+  doubleEncryptedValue: string
+): { plaintext: string; credentialUpdate?: { encryptedValue: string; encryptionVersion: number } } {
+  const { decrypted: clientEncrypted, usedOldKey } = serverDecrypt(doubleEncryptedValue)
+
+  // Try KEK from current AUTH_SECRET first
+  let plaintext: string | null = null
+  try {
+    const kek = deriveUserKEK(userId)
+    plaintext = decryptClientLayer(clientEncrypted, kek)
+  } catch {
+    // If old key was used for server layer, try old KEK for client layer too
+    const oldKek = deriveUserKEKOld(userId)
+    if (oldKek) {
+      plaintext = decryptClientLayer(clientEncrypted, oldKek)
+    }
+  }
+
+  if (plaintext === null) {
+    throw new Error('Failed to decrypt credential: no valid key')
+  }
+
+  // Self-heal: re-encrypt with current AUTH_SECRET
+  if (usedOldKey) {
+    const reEncrypted = serverEncrypt(clientEncrypted)
+    return {
+      plaintext,
+      credentialUpdate: { encryptedValue: reEncrypted, encryptionVersion: 3 }
+    }
+  }
+
+  return { plaintext }
 }
 
 function decryptClientLayer(base64Blob: string, passphrase: string): string {

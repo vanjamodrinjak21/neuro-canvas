@@ -40,6 +40,7 @@ const state = reactive<{
 // Module-scoped KEK cache — persists across all useAISettings() instances
 let _kekPassphrase: string | null = null
 let _kekFetched = false
+let _migrationResult: { migrated: number; failed: string[] } | null = null
 
 export function useAISettings() {
   const db = useDatabase()
@@ -87,41 +88,51 @@ export function useAISettings() {
   }
 
   /**
-   * Fetch KEK from server and re-encrypt existing secrets (one-time migration)
+   * Fetch KEK from server and re-encrypt existing secrets (one-time migration).
+   * Returns migration results for tracking.
    */
-  async function migrateToKEK(): Promise<void> {
-    if (_kekFetched || !vault.isVaultAvailable.value) return
+  async function migrateToKEK(): Promise<{ migrated: number; failed: string[] }> {
+    const result = { migrated: 0, failed: [] as string[] }
+    if (_kekFetched || !vault.isVaultAvailable.value) return result
     _kekFetched = true
 
     try {
       const kek = await vault.fetchKEK()
-      if (!kek) return
+      if (!kek) return result
 
       const oldPassphrase = getPassphrase()
-      if (!oldPassphrase || oldPassphrase === kek) return
+      if (!oldPassphrase || oldPassphrase === kek) {
+        _kekPassphrase = kek
+        return result
+      }
 
       // Re-encrypt all existing secrets with the new KEK
       for (const provider of state.settings.providers) {
-        const encryptedKey = await db.getSecret(provider.id)
-        if (!encryptedKey) continue
+        const secretData = await db.getSecretWithVersion(provider.id)
+        if (!secretData) continue
+        // Skip already-migrated secrets
+        if (secretData.encryptionVersion >= 2) continue
 
         try {
           // Decrypt with old passphrase
-          const plainKey = await decrypt(encryptedKey, oldPassphrase)
+          const plainKey = await decrypt(secretData.encryptedValue, oldPassphrase)
           // Re-encrypt with KEK
           const reEncrypted = await encrypt(plainKey, kek)
-          await db.saveSecret(provider.id, reEncrypted)
-          // Also sync to vault
-          await vault.syncToVault(provider.type, reEncrypted, plainKey.slice(0, 8))
+          await db.saveSecret(provider.id, reEncrypted, 2)
+          // Sync to vault with version 2
+          await vault.syncToVault(provider.type, reEncrypted, plainKey.slice(0, 8), provider.id, 2)
+          result.migrated++
         } catch {
-          // Key might already be KEK-encrypted, or decrypt failed — skip
+          result.failed.push(provider.id)
         }
       }
 
       _kekPassphrase = kek
+      _migrationResult = result
     } catch {
       // KEK fetch failed — continue with old passphrase
     }
+    return result
   }
 
   /**
@@ -153,7 +164,11 @@ export function useAISettings() {
       state.isInitialized = true
 
       // Attempt KEK migration in background (no-op if vault unavailable)
-      migrateToKEK().catch(() => {})
+      migrateToKEK().then((result) => {
+        if (result.failed.length > 0) {
+          console.warn('KEK migration: failed to migrate credentials:', result.failed)
+        }
+      }).catch(() => {})
     } catch (e) {
       state.error = e instanceof Error ? e.message : 'Failed to load AI settings'
       console.error('Failed to initialize AI settings:', e)
@@ -222,7 +237,7 @@ export function useAISettings() {
         throw new Error('Unable to save API key - please ensure you are signed in')
       }
       const encryptedKey = await encrypt(apiKey, passphrase)
-      await db.saveSecret(id, encryptedKey)
+      await db.saveSecret(id, encryptedKey, 2)
       state.decryptedKeys.set(id, apiKey)
 
       // Web only: sync encrypted key to server vault for server-side decrypt
@@ -234,7 +249,8 @@ export function useAISettings() {
               provider: type,
               encryptedValue: encryptedKey,
               keyPrefix: apiKey.slice(0, 8),
-              label: id
+              label: id,
+              encryptionVersion: 2
             }
           })
           if (result.ok && result.credential) {
@@ -296,7 +312,7 @@ export function useAISettings() {
     if (!passphrase) throw new Error('No user session')
 
     const encryptedKey = await encrypt(apiKey, passphrase)
-    await db.saveSecret(id, encryptedKey)
+    await db.saveSecret(id, encryptedKey, 2)
     state.decryptedKeys.set(id, apiKey)
 
     // Web only: sync updated key to server vault
@@ -309,7 +325,8 @@ export function useAISettings() {
             provider: provider.type,
             encryptedValue: encryptedKey,
             keyPrefix: apiKey.slice(0, 8),
-            label: id
+            label: id,
+            encryptionVersion: 2
           }
         })
         if (result.ok && result.credential) {
@@ -324,8 +341,8 @@ export function useAISettings() {
   }
 
   /**
-   * Get decrypted API key for a provider
-   * Tries KEK first, then falls back to legacy passphrase
+   * Get decrypted API key for a provider.
+   * Uses encryptionVersion to choose passphrase instead of blind try/catch.
    */
   async function getProviderApiKey(id: string): Promise<string | null> {
     // Check in-memory cache first
@@ -334,8 +351,10 @@ export function useAISettings() {
     }
 
     try {
-      const encryptedKey = await db.getSecret(id)
-      if (!encryptedKey) return null
+      const secretData = await db.getSecretWithVersion(id)
+      if (!secretData) return null
+
+      const { encryptedValue, encryptionVersion } = secretData
 
       // Ensure KEK is loaded from vault if not yet cached
       if (!_kekPassphrase && vault.isVaultAvailable.value) {
@@ -343,24 +362,24 @@ export function useAISettings() {
         if (kek) _kekPassphrase = kek
       }
 
-      // Try KEK passphrase first (if available)
-      if (_kekPassphrase) {
+      // Version 2+: use KEK
+      if (encryptionVersion >= 2 && _kekPassphrase) {
         try {
-          const decrypted = await decrypt(encryptedKey, _kekPassphrase)
+          const decrypted = await decrypt(encryptedValue, _kekPassphrase)
           state.decryptedKeys.set(id, decrypted)
           return decrypted
         } catch {
-          // KEK didn't work — fall through to legacy passphrase
+          // KEK failed on a v2+ secret — unexpected, fall through to legacy as last resort
         }
       }
 
-      // Fall back to legacy session passphrase
+      // Version 1 (legacy) or KEK failed: try legacy passphrase
       const user = session.value?.user
       if (user?.email) {
         const uid = (user as { id?: string }).id || user.email
         const legacyPassphrase = generateSessionPassphrase(uid, user.email)
         try {
-          const decrypted = await decrypt(encryptedKey, legacyPassphrase)
+          const decrypted = await decrypt(encryptedValue, legacyPassphrase)
           state.decryptedKeys.set(id, decrypted)
           return decrypted
         } catch {
@@ -374,6 +393,27 @@ export function useAISettings() {
       console.error('Failed to decrypt API key:', e)
       return null
     }
+  }
+
+  /**
+   * Get count of credentials still on legacy encryption (version 1)
+   */
+  async function getUnmigratedCount(): Promise<number> {
+    let count = 0
+    for (const provider of state.settings.providers) {
+      const secretData = await db.getSecretWithVersion(provider.id)
+      if (secretData && (secretData.encryptionVersion ?? 1) < 2) {
+        count++
+      }
+    }
+    return count
+  }
+
+  /**
+   * Get the last migration result (from migrateToKEK)
+   */
+  function getMigrationResult(): { migrated: number; failed: string[] } | null {
+    return _migrationResult
   }
 
   /**
@@ -654,6 +694,8 @@ export function useAISettings() {
     getProviderApiKey,
     getProviderCredentialId,
     hasProviderApiKey,
+    getUnmigratedCount,
+    getMigrationResult,
     deleteProvider,
     setDefaultProvider,
     testConnection,

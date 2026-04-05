@@ -77,7 +77,15 @@ export const vaultStoreSchema = z.object({
   provider: z.string().min(1).max(100),
   label: safeLabel.optional(),
   encryptedValue: z.string().min(1).max(10_000),
-  keyPrefix: z.string().max(20).optional()
+  keyPrefix: z.string().max(20).optional(),
+  encryptionVersion: z.number().int().min(1).max(3).default(2)
+})
+
+export const vaultUpdateSchema = z.object({
+  encryptedValue: z.string().min(1).max(10_000).optional(),
+  encryptionVersion: z.number().int().min(1).max(3).optional()
+}).refine(d => d.encryptedValue || d.encryptionVersion, {
+  message: 'At least one of encryptedValue or encryptionVersion must be provided'
 })
 
 export const embeddingPostSchema = z.object({

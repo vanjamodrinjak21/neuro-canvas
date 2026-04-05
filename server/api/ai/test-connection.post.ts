@@ -19,13 +19,21 @@ export default defineEventHandler(async (event) => {
   if (body.credentialId) {
     const credential = await prisma.credential.findFirst({
       where: { id: body.credentialId, userId },
-      select: { encryptedValue: true }
+      select: { id: true, encryptedValue: true }
     })
     if (!credential) {
       return { success: false, message: 'Credential not found' }
     }
     try {
-      apiKey = serverFullDecrypt(userId, credential.encryptedValue)
+      const result = serverFullDecrypt(userId, credential.encryptedValue)
+      apiKey = result.plaintext
+      // Self-heal on rotation
+      if (result.credentialUpdate) {
+        prisma.credential.update({
+          where: { id: credential.id },
+          data: result.credentialUpdate
+        }).catch(() => {})
+      }
     } catch {
       return { success: false, message: 'Failed to decrypt stored credential' }
     }
