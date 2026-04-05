@@ -20,16 +20,18 @@ export default defineEventHandler(async (event) => {
   const style = body.style || 'detailed'
   const domain = body.domain || null
 
-  // Find the user's most recently used credential
+  // Find the user's most recent credential
   const credential = await prisma.credential.findFirst({
     where: { userId },
-    orderBy: { lastUsed: 'desc' },
+    orderBy: { createdAt: 'desc' },
   })
 
   if (!credential) {
+    // Count all credentials for debugging
+    const count = await prisma.credential.count()
     throw createError({
       statusCode: 400,
-      statusMessage: 'No AI provider configured. Add an API key in Settings > AI Providers.',
+      statusMessage: `No API key found for your account. Total credentials in DB: ${count}. Add an API key in Settings > AI Providers.`,
     })
   }
 

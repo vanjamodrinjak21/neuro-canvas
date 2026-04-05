@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
-    "build:docker": "prisma generate && nuxt build",
+    "build:docker": "prisma generate && prisma db push --accept-data-loss && nuxt build",
     "start": "node .output/server/index.mjs",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
