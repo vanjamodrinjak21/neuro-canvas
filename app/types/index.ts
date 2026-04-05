@@ -1,5 +1,6 @@
 // Re-export all types
 export * from './canvas'
+export * from './template'
 export {
   type RelationshipType,
   type NodeCategory,

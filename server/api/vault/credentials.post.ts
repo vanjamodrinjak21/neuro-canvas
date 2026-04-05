@@ -5,31 +5,50 @@ import { validateBody, vaultStoreSchema } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
-  const body = validateBody(vaultStoreSchema, await readBody(event))
+  const body = await readBody(event)
 
-  const doubleEncrypted = serverEncrypt(body.encryptedValue)
-  const keyHash = body.keyPrefix ? hashKeyPrefix(body.keyPrefix) : ''
+  // Support rawValue (server-only encryption v4) or encryptedValue (double-encrypted v2)
+  const rawValue = body.rawValue as string | undefined
+  let encryptedForStorage: string
+  let version: number
+  let keyHash: string
+
+  if (rawValue) {
+    // Server-only encryption: encrypt the raw API key directly
+    encryptedForStorage = serverEncrypt(rawValue)
+    version = 4
+    keyHash = rawValue.length >= 8 ? hashKeyPrefix(rawValue) : ''
+  } else {
+    // Legacy double-encryption: validate and wrap client-encrypted value
+    const validated = validateBody(vaultStoreSchema, body)
+    encryptedForStorage = serverEncrypt(validated.encryptedValue)
+    version = validated.encryptionVersion
+    keyHash = validated.keyPrefix ? hashKeyPrefix(validated.keyPrefix) : ''
+  }
+
+  const provider = body.provider as string
+  const label = (body.label as string) || ''
 
   const credential = await prisma.credential.upsert({
     where: {
       userId_provider_label: {
         userId,
-        provider: body.provider,
-        label: body.label || ''
+        provider,
+        label,
       }
     },
     create: {
       userId,
-      provider: body.provider,
-      label: body.label || null,
-      encryptedValue: doubleEncrypted,
+      provider,
+      label: label || null,
+      encryptedValue: encryptedForStorage,
       keyHash,
-      encryptionVersion: body.encryptionVersion
+      encryptionVersion: version,
     },
     update: {
-      encryptedValue: doubleEncrypted,
+      encryptedValue: encryptedForStorage,
       keyHash,
-      encryptionVersion: body.encryptionVersion
+      encryptionVersion: version,
     },
     select: { id: true, provider: true, label: true, keyHash: true, encryptionVersion: true, createdAt: true }
   })

@@ -21,13 +21,13 @@ export default defineEventHandler(async (event) => {
   if (body.credentialId) {
     const credential = await prisma.credential.findFirst({
       where: { id: body.credentialId, userId },
-      select: { id: true, encryptedValue: true }
+      select: { id: true, encryptedValue: true, encryptionVersion: true }
     })
     if (!credential) {
       throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
     }
     try {
-      const result = serverFullDecrypt(userId, credential.encryptedValue)
+      const result = serverFullDecrypt(userId, credential.encryptedValue, credential.encryptionVersion)
       apiKey = result.plaintext
       // Self-heal: re-encrypt with current AUTH_SECRET if rotated
       const updateData: { lastUsed: Date; encryptedValue?: string; encryptionVersion?: number } = { lastUsed: new Date() }
@@ -39,8 +39,14 @@ export default defineEventHandler(async (event) => {
         where: { id: credential.id },
         data: updateData
       }).catch(() => {})
-    } catch {
-      throw createError({ statusCode: 500, statusMessage: 'Failed to decrypt credential', data: { code: 'CREDENTIAL_DECRYPT_FAILED' } })
+    } catch (decryptErr) {
+      // If client also sent apiKey as fallback, use that
+      if (body.apiKey) {
+        apiKey = body.apiKey
+      } else {
+        console.error('Credential decrypt failed:', decryptErr)
+        throw createError({ statusCode: 500, statusMessage: 'Failed to decrypt credential', data: { code: 'CREDENTIAL_DECRYPT_FAILED' } })
+      }
     }
   } else if (body.apiKey) {
     apiKey = body.apiKey

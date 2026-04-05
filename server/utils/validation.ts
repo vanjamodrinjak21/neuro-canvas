@@ -10,6 +10,7 @@ export const safeLabel = z.string().max(MAX_LABEL_LENGTH).trim()
 export const cuid = z.string().min(1).max(128)
 
 const aiProvider = z.enum(['openai', 'anthropic', 'ollama', 'openrouter', 'custom'])
+const optionalUrl = z.string().max(500).optional().transform(v => v === '' ? undefined : v).pipe(z.string().url().optional())
 const aiMessage = z.object({
   role: z.enum(['user', 'assistant', 'system']),
   content: z.string().min(1).max(100_000)
@@ -24,14 +25,14 @@ export const aiCompletionSchema = z.object({
   systemPrompt: z.string().max(50_000).optional(),
   maxTokens: z.number().int().min(1).max(200_000).default(500),
   temperature: z.number().min(0).max(2).default(0.7),
-  baseUrl: z.string().url().max(500).optional()
+  baseUrl: optionalUrl,
 })
 
 export const aiTestConnectionSchema = z.object({
   provider: aiProvider,
   credentialId: z.string().optional(),
   apiKey: z.string().max(500).optional(),
-  baseUrl: z.string().url().max(500).optional()
+  baseUrl: optionalUrl,
 })
 
 export const aiCachePostSchema = z.object({

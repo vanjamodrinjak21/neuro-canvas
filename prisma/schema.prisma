@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   credentials   Credential[]
   maps          Map[]
+  templates     Template[]
   syncState     SyncState?
 
   createdAt     DateTime  @default(now())
@@ -145,4 +146,42 @@ model Credential {
 
   @@unique([userId, provider, label])
   @@index([userId])
+}
+
+// ─── Templates ──────────────────────────────────────────────────
+
+model Template {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  description String?   @db.Text
+  category    TemplateCategory
+  tags        String[]  @default([])
+  nodes       Json      // Serialized node map
+  edges       Json      // Serialized edge map
+  settings    Json?     // Map settings (grid, colors, etc.)
+  nodeCount   Int       @default(0)
+  levelCount  Int       @default(0)
+  previewData Json?     // CSS preview shape/color data
+  aiEnhanced  Boolean   @default(false)
+  isSystem    Boolean   @default(false)
+  isPublic    Boolean   @default(true)
+  usageCount  Int       @default(0)
+  authorId    String?
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category])
+  @@index([authorId])
+  @@index([isPublic, category])
+  @@index([slug])
+}
+
+enum TemplateCategory {
+  education
+  business
+  creative
+  planning
+  research
 }

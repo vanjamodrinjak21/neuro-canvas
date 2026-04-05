@@ -5,9 +5,6 @@ const props = defineProps<{
   activeNav?: string
 }>()
 
-const emit = defineEmits<{
-  (e: 'open-templates'): void
-}>()
 
 const userStore = useUserStore()
 const { handleSignOut } = useAuthStore()
@@ -39,6 +36,7 @@ const currentNav = computed(() => {
   if (props.activeNav) return props.activeNav
   if (route.path === '/dashboard') return 'home'
   if (route.path.startsWith('/maps')) return 'maps'
+  if (route.path.startsWith('/templates')) return 'templates'
   if (route.path === '/settings') return 'settings'
   return 'home'
 })
@@ -46,15 +44,10 @@ const currentNav = computed(() => {
 const navItems = [
   { id: 'home', label: 'Home', icon: 'i-lucide-house', to: '/dashboard' },
   { id: 'maps', label: 'All Maps', icon: 'i-lucide-layout-grid', to: '/maps' },
-  { id: 'templates', label: 'Templates', icon: 'i-lucide-layers', action: 'open-templates' },
+  { id: 'templates', label: 'Templates', icon: 'i-lucide-layers', to: '/templates' },
   { id: 'settings', label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
 ]
 
-function handleNavClick(item: typeof navItems[0]) {
-  if (item.action) {
-    emit(item.action as 'open-templates')
-  }
-}
 
 // Sidebar collapse
 const collapsed = ref(false)
@@ -146,26 +139,16 @@ onMounted(() => {
 
     <!-- Navigation -->
     <nav class="sidebar-nav">
-      <template v-for="item in navItems" :key="item.id">
-        <NuxtLink
-          v-if="item.to"
-          :to="item.to"
-          :class="['nav-item', { active: currentNav === item.id }]"
-          :title="collapsed ? item.label : undefined"
-        >
-          <span :class="['nav-icon', item.icon]" />
-          <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
-        </NuxtLink>
-        <button
-          v-else
-          :class="['nav-item', { active: currentNav === item.id }]"
-          :title="collapsed ? item.label : undefined"
-          @click="handleNavClick(item)"
-        >
-          <span :class="['nav-icon', item.icon]" />
-          <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
-        </button>
-      </template>
+      <NuxtLink
+        v-for="item in navItems"
+        :key="item.id"
+        :to="item.to"
+        :class="['nav-item', { active: currentNav === item.id }]"
+        :title="collapsed ? item.label : undefined"
+      >
+        <span :class="['nav-icon', item.icon]" />
+        <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
+      </NuxtLink>
     </nav>
 
     <!-- Bottom section -->

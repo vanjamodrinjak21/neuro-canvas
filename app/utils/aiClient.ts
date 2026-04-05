@@ -306,14 +306,15 @@ export async function aiComplete(req: AICompletionRequest): Promise<AICompletion
     return directComplete(req)
   }
 
-  // Web: prefer credentialId for server-side decrypt (key never leaves server)
+  // Web: send credentialId for server-side decrypt, plus apiKey as fallback
   const { apiKey, credentialId, ...rest } = req
   try {
+    const body: Record<string, unknown> = { ...rest }
+    if (credentialId) body.credentialId = credentialId
+    if (apiKey) body.apiKey = apiKey
     return await $fetch<AICompletionResponse>('/api/ai/completions', {
       method: 'POST',
-      body: credentialId
-        ? { ...rest, credentialId }
-        : { ...rest, apiKey }
+      body,
     })
   } catch (e: unknown) {
     const fetchError = e as { data?: { data?: { code?: string } }; statusCode?: number }

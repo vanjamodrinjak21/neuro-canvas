@@ -300,22 +300,29 @@ export function useAISettings() {
 
   /**
    * Update provider API key
-   * Uses KEK if available, otherwise falls back to legacy passphrase
+   * Sends raw key to server vault (v4 server-only encryption).
+   * Also stores locally for offline/Tauri use.
    */
   async function updateProviderApiKey(id: string, apiKey: string): Promise<void> {
-    // Ensure KEK is loaded before encrypting
-    if (!_kekPassphrase && vault.isVaultAvailable.value) {
-      const kek = await vault.fetchKEK()
-      if (kek) _kekPassphrase = kek
-    }
-    const passphrase = _kekPassphrase || getPassphrase()
-    if (!passphrase) throw new Error('No user session')
-
-    const encryptedKey = await encrypt(apiKey, passphrase)
-    await db.saveSecret(id, encryptedKey, 2)
+    // Cache in memory immediately
     state.decryptedKeys.set(id, apiKey)
 
-    // Web only: sync updated key to server vault
+    // Local storage (for Tauri/offline): encrypt with KEK or legacy passphrase
+    try {
+      if (!_kekPassphrase && vault.isVaultAvailable.value) {
+        const kek = await vault.fetchKEK()
+        if (kek) _kekPassphrase = kek
+      }
+      const passphrase = _kekPassphrase || getPassphrase()
+      if (passphrase) {
+        const encryptedKey = await encrypt(apiKey, passphrase)
+        await db.saveSecret(id, encryptedKey, 2)
+      }
+    } catch {
+      // Local storage is best-effort; server vault is the source of truth
+    }
+
+    // Web: send raw key to server vault (server-only encryption v4)
     const provider = state.settings.providers.find(p => p.id === id)
     if (vault.isVaultAvailable.value && provider) {
       try {
@@ -323,10 +330,8 @@ export function useAISettings() {
           method: 'POST',
           body: {
             provider: provider.type,
-            encryptedValue: encryptedKey,
-            keyPrefix: apiKey.slice(0, 8),
+            rawValue: apiKey,
             label: id,
-            encryptionVersion: 2
           }
         })
         if (result.ok && result.credential) {
@@ -624,10 +629,16 @@ export function useAISettings() {
     }
 
     try {
+      // Prefer credentialId for server-side decrypt (avoids client-side passphrase issues)
+      const credentialId = typeof providerIdOrConfig === 'string'
+        ? getProviderCredentialId(providerIdOrConfig)
+        : null
+
       const result = await aiTestConnection({
         provider: provider.type,
         apiKey,
-        baseUrl: provider.baseUrl
+        credentialId: credentialId || undefined,
+        baseUrl: provider.baseUrl,
       })
 
       return result

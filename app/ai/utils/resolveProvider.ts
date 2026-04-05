@@ -24,17 +24,20 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     throw new Error('No AI provider configured. Please configure an AI provider in settings.')
   }
 
+  // On web, prefer credentialId for server-side decryption (key never leaves server)
+  const credentialId = aiSettings.getProviderCredentialId(defaultProvider.id)
+
+  // Try client-side decrypt (may fail if KEK not loaded yet)
   const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-  if (!apiKey) {
+
+  // Need at least one: credentialId (server decrypts) or apiKey (client decrypted)
+  if (!apiKey && !credentialId) {
     throw new Error('No API key configured for the selected provider.')
   }
 
-  // On web, prefer credentialId for server-side decryption
-  const credentialId = aiSettings.getProviderCredentialId(defaultProvider.id)
-
   return {
     type: defaultProvider.type,
-    apiKey,
+    apiKey: apiKey || '',
     credentialId: credentialId || undefined,
     baseUrl: defaultProvider.baseUrl,
     selectedModelId: defaultProvider.selectedModelId

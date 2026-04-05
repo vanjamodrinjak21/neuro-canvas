@@ -20,13 +20,13 @@ export default defineEventHandler(async (event) => {
   if (body.credentialId) {
     const credential = await prisma.credential.findFirst({
       where: { id: body.credentialId, userId },
-      select: { id: true, encryptedValue: true }
+      select: { id: true, encryptedValue: true, encryptionVersion: true }
     })
     if (!credential) {
       throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
     }
     try {
-      const result = serverFullDecrypt(userId, credential.encryptedValue)
+      const result = serverFullDecrypt(userId, credential.encryptedValue, credential.encryptionVersion)
       apiKey = result.plaintext
       // Self-heal: re-encrypt with current AUTH_SECRET if rotated
       const updateData: { lastUsed: Date; encryptedValue?: string; encryptionVersion?: number } = { lastUsed: new Date() }

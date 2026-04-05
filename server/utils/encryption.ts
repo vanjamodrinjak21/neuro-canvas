@@ -115,22 +115,36 @@ export function hashKeyPrefix(apiKey: string): string {
  * If AUTH_SECRET_OLD was used, self-heals by re-encrypting with current secret.
  * Returns { plaintext, credentialUpdate } — caller should persist credentialUpdate if present.
  */
+/**
+ * Full decrypt: supports both server-only (v4) and double-encrypted (v1-3) credentials.
+ * v4: server-only AES-256-GCM — just unwrap the server layer.
+ * v1-3: double-encrypted — unwrap server layer, then client layer with KEK.
+ */
 export function serverFullDecrypt(
   userId: string,
-  doubleEncryptedValue: string
+  encryptedValue: string,
+  encryptionVersion: number = 2
 ): { plaintext: string; credentialUpdate?: { encryptedValue: string; encryptionVersion: number } } {
-  const { decrypted: clientEncrypted, usedOldKey } = serverDecrypt(doubleEncryptedValue)
+  const { decrypted, usedOldKey } = serverDecrypt(encryptedValue)
 
-  // Try KEK from current AUTH_SECRET first
+  // Version 4: server-only encryption — decrypted value IS the plaintext
+  if (encryptionVersion >= 4) {
+    if (usedOldKey) {
+      const reEncrypted = serverEncrypt(decrypted)
+      return { plaintext: decrypted, credentialUpdate: { encryptedValue: reEncrypted, encryptionVersion: 4 } }
+    }
+    return { plaintext: decrypted }
+  }
+
+  // Version 1-3: double-encrypted — need to peel client layer too
   let plaintext: string | null = null
   try {
     const kek = deriveUserKEK(userId)
-    plaintext = decryptClientLayer(clientEncrypted, kek)
+    plaintext = decryptClientLayer(decrypted, kek)
   } catch {
-    // If old key was used for server layer, try old KEK for client layer too
     const oldKek = deriveUserKEKOld(userId)
     if (oldKek) {
-      plaintext = decryptClientLayer(clientEncrypted, oldKek)
+      plaintext = decryptClientLayer(decrypted, oldKek)
     }
   }
 
@@ -138,13 +152,9 @@ export function serverFullDecrypt(
     throw new Error('Failed to decrypt credential: no valid key')
   }
 
-  // Self-heal: re-encrypt with current AUTH_SECRET
   if (usedOldKey) {
-    const reEncrypted = serverEncrypt(clientEncrypted)
-    return {
-      plaintext,
-      credentialUpdate: { encryptedValue: reEncrypted, encryptionVersion: 3 }
-    }
+    const reEncrypted = serverEncrypt(decrypted)
+    return { plaintext, credentialUpdate: { encryptedValue: reEncrypted, encryptionVersion: 3 } }
   }
 
   return { plaintext }
