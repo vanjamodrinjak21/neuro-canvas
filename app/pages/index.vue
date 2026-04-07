@@ -5,6 +5,14 @@ const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__T
 const { status } = _isTauri ? { status: ref('authenticated') } : useAuth()
 const isAuthenticated = computed(() => _isTauri || status.value === 'authenticated')
 
+import { useGuestMode } from '~/composables/useGuestMode'
+const guest = useGuestMode()
+
+function handleTryFree() {
+  guest.enterGuestMode()
+  navigateTo('/map/new')
+}
+
 const isScrolled = ref(false)
 
 onMounted(() => {
@@ -59,6 +67,9 @@ function scrollTo(id: string) {
         </template>
         <template v-else>
           <NuxtLink to="/auth/signin" class="nav-link">Sign in</NuxtLink>
+          <button class="try-free-btn" @click="handleTryFree">
+            Try for Free
+          </button>
         </template>
         <NuxtLink
           :to="isAuthenticated ? '/dashboard' : '/auth/signup'"
@@ -520,6 +531,23 @@ nav.scrolled {
 
 .nav-link:hover {
   color: var(--text);
+}
+
+.try-free-btn {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid var(--nc-teal, #00D2BE);
+  border-radius: 10px;
+  color: var(--nc-teal, #00D2BE);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.try-free-btn:hover {
+  background: rgba(0, 210, 190, 0.1);
 }
 
 /* ═══════════════════════

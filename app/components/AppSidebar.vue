@@ -9,6 +9,9 @@ const props = defineProps<{
 const userStore = useUserStore()
 const { handleSignOut } = useAuthStore()
 
+import { useGuestMode } from '~/composables/useGuestMode'
+const guest = useGuestMode()
+
 const route = useRoute()
 
 const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
@@ -48,6 +51,10 @@ const navItems = [
   { id: 'settings', label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
 ]
 
+const visibleNavItems = computed(() => {
+  if (guest.isGuest.value) return []
+  return navItems
+})
 
 // Sidebar collapse
 const collapsed = ref(false)
@@ -140,7 +147,7 @@ onMounted(() => {
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <NuxtLink
-        v-for="item in navItems"
+        v-for="item in visibleNavItems"
         :key="item.id"
         :to="item.to"
         :class="['nav-item', { active: currentNav === item.id }]"
@@ -180,8 +187,17 @@ onMounted(() => {
         </div>
       </Transition>
 
+      <!-- Guest: show sign-up CTA -->
+      <div v-if="guest.isGuest.value" class="guest-cta">
+        <NuxtLink to="/auth/signup" class="guest-signup-btn" @click="guest.exitGuestMode()">
+          <span class="i-lucide-user-plus" />
+          <span v-if="!collapsed">Sign up free</span>
+        </NuxtLink>
+      </div>
+
       <!-- User Profile -->
       <div
+        v-if="!guest.isGuest.value"
         class="user-section"
         @mouseenter="onUserEnter"
         @mouseleave="onUserLeave"
@@ -565,6 +581,34 @@ onMounted(() => {
   color: var(--sb-muted-2, #3F3F46);
   flex-shrink: 0;
   transition: transform 0.2s ease;
+}
+
+/* Guest CTA */
+.guest-cta {
+  padding: 12px;
+}
+
+.guest-signup-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--nc-teal, #00D2BE);
+  border: none;
+  border-radius: 10px;
+  color: #09090B;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.guest-signup-btn:hover {
+  opacity: 0.9;
 }
 
 /* User section wrapper */
