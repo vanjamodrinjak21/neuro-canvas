@@ -1,4 +1,5 @@
 import { useAISettings } from '~/composables/useAISettings'
+import { useGuestMode } from '~/composables/useGuestMode'
 
 export interface ResolvedProvider {
   type: string
@@ -12,6 +13,11 @@ export interface ResolvedProvider {
  * Server handles all key decryption — client just passes credentialId.
  */
 export async function resolveProvider(): Promise<ResolvedProvider> {
+  const guest = useGuestMode()
+  if (guest.isGuest.value) {
+    throw new Error('AI features require a free account. Sign up to unlock AI-powered mind mapping.')
+  }
+
   const aiSettings = useAISettings()
 
   // Ensure AI settings are loaded from IndexedDB

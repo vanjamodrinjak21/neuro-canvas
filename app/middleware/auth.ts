@@ -1,17 +1,34 @@
 /**
  * Auth middleware - Protects routes that require authentication
- * Redirects to /auth/signin if not authenticated
- * Bypassed entirely in Tauri (desktop) mode — app is fully local, no login needed
+ * Allows guest mode users to access their single map
+ * Bypassed entirely in Tauri (desktop) mode
  */
+import { useGuestMode } from '~/composables/useGuestMode'
+
 export default defineNuxtRouteMiddleware(async (to) => {
   // Skip auth entirely in Tauri desktop mode
   if (typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)) {
     return
   }
 
-  const { data, status, getSession } = useAuth()
+  // Guest mode: allow access to their one map only
+  const guest = useGuestMode()
+  if (guest.isGuest.value) {
+    if (to.path.startsWith('/map/')) {
+      const mapId = to.params.id as string
+      if (mapId === 'new' || mapId === guest.guestMapId.value) {
+        return
+      }
+      return navigateTo(`/map/${guest.guestMapId.value || 'new'}`)
+    }
+    if (!to.path.startsWith('/auth/') && to.path !== '/') {
+      return navigateTo(`/map/${guest.guestMapId.value || 'new'}`)
+    }
+    return
+  }
 
-  // For client-side SPA, always fetch fresh session
+  const { data, getSession } = useAuth()
+
   if (import.meta.client) {
     try {
       await getSession({ force: true })
@@ -20,15 +37,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  // Check session data directly (more reliable than status for SPA)
   const session = data.value
 
   if (session?.user) {
-    // User is authenticated
     return
   }
 
-  // Not authenticated - redirect to sign in
   if (!to.path.startsWith('/auth/')) {
     return navigateTo('/auth/signin')
   }

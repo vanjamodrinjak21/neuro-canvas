@@ -1,12 +1,16 @@
 import type { MapStore } from '~/stores/mapStore'
+import { useGuestMode } from '~/composables/useGuestMode'
 
 /**
  * Mind map export & share utilities.
  * Pure functions — no UI, no side effects beyond download / clipboard.
  */
 export function useExport() {
+  const guest = useGuestMode()
+
   // ── PNG export ──────────────────────────────────────────────────────
   function exportAsPng(canvasEl: HTMLCanvasElement, title: string) {
+    if (!guest.requireFeature('export')) return
     canvasEl.toBlob((blob) => {
       if (blob) downloadBlob(blob, sanitizeFilename(title) + '.png')
     }, 'image/png')
@@ -14,6 +18,7 @@ export function useExport() {
 
   // ── JSON export ─────────────────────────────────────────────────────
   function exportAsJson(mapStore: MapStore, title: string) {
+    if (!guest.requireFeature('export')) return
     const data = mapStore.toSerializable()
     const json = JSON.stringify(data, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
@@ -22,6 +27,7 @@ export function useExport() {
 
   // ── Markdown export ─────────────────────────────────────────────────
   function exportAsMarkdown(mapStore: MapStore, title: string) {
+    if (!guest.requireFeature('export')) return
     const md = mapToMarkdown(mapStore)
     const blob = new Blob([md], { type: 'text/markdown' })
     downloadBlob(blob, sanitizeFilename(title) + '.md')
@@ -32,6 +38,7 @@ export function useExport() {
     mapStore: MapStore,
     platform: ReturnType<typeof usePlatform>
   ): Promise<boolean> {
+    if (!guest.requireFeature('share')) return false
     const md = mapToMarkdown(mapStore)
 
     // Native share on mobile platforms
