@@ -23,6 +23,7 @@ import { useExport } from '~/composables/useExport'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useSemanticProcessor } from '~/composables/useSemanticProcessor'
 import { useAISettings } from '~/composables/useAISettings'
+import { useGuestMode } from '~/composables/useGuestMode'
 
 // Route
 const route = useRoute()
@@ -40,10 +41,15 @@ const autoSave = useAutoSave()
 const ai = useAI()
 const aiSettings = useAISettings()
 const mapRenderer = useMapRenderer()
+const guest = useGuestMode()
 
 // Loading
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
+
+// Guest onboarding overlays
+const showOnboarding = ref(false)
+const showTemplatePicker = ref(false)
 
 // Reduced motion detection
 const { isReduced: reducedMotion } = useReducedMotion()
@@ -226,6 +232,60 @@ const canvasRef = ref<{ containerRef: HTMLDivElement | null; canvasRef: HTMLCanv
 const canvasContainerWidth = ref(0)
 const canvasContainerHeight = ref(0)
 
+// Guest template handler
+function handleGuestTemplateSelect(templateId: string | null) {
+  showTemplatePicker.value = false
+  if (!templateId) return
+
+  const templates: Record<string, { nodes: Array<{ content: string; x: number; y: number }>; edges: number[][] }> = {
+    brainstorm: {
+      nodes: [
+        { content: 'Main Idea', x: 400, y: 300 },
+        { content: 'Concept A', x: 200, y: 150 },
+        { content: 'Concept B', x: 600, y: 150 },
+        { content: 'Concept C', x: 200, y: 450 },
+        { content: 'Concept D', x: 600, y: 450 },
+      ],
+      edges: [[0, 1], [0, 2], [0, 3], [0, 4]],
+    },
+    'pros-cons': {
+      nodes: [
+        { content: 'Decision', x: 400, y: 200 },
+        { content: 'Pros', x: 200, y: 400 },
+        { content: 'Cons', x: 600, y: 400 },
+        { content: 'Pro 1', x: 100, y: 550 },
+        { content: 'Con 1', x: 500, y: 550 },
+      ],
+      edges: [[0, 1], [0, 2], [1, 3], [2, 4]],
+    },
+    'project-plan': {
+      nodes: [
+        { content: 'Project', x: 100, y: 300 },
+        { content: 'Phase 1', x: 300, y: 150 },
+        { content: 'Phase 2', x: 500, y: 300 },
+        { content: 'Phase 3', x: 700, y: 150 },
+        { content: 'Launch', x: 700, y: 450 },
+      ],
+      edges: [[0, 1], [1, 2], [2, 3], [2, 4]],
+    },
+  }
+
+  const tmpl = templates[templateId]
+  if (!tmpl) return
+
+  const nodeIds: string[] = []
+  for (const n of tmpl.nodes) {
+    const id = mapStore.addNode({ x: n.x, y: n.y, content: n.content })
+    nodeIds.push(id)
+  }
+
+  for (const [srcIdx, tgtIdx] of tmpl.edges) {
+    if (nodeIds[srcIdx] && nodeIds[tgtIdx]) {
+      mapStore.addEdge(nodeIds[srcIdx], nodeIds[tgtIdx])
+    }
+  }
+}
+
 // Load map
 onMounted(async () => {
   document.body.classList.add('canvas-page')
@@ -238,9 +298,21 @@ onMounted(async () => {
       syncEngine.initialize()
       // Set up semantic store for new map
       semanticStore.setCurrentMap(mapStore.id)
-      // Initialize AI settings (loads providers/keys from IndexedDB) + worker
-      aiSettings.initialize()
-      ai.initialize()
+
+      // Only initialize AI for authenticated users
+      if (!guest.isGuest.value) {
+        aiSettings.initialize()
+        ai.initialize()
+      }
+
+      // Track guest map ID and show onboarding
+      if (guest.isGuest.value) {
+        guest.setGuestMapId(mapStore.id)
+        if (!guest.onboardingComplete.value) {
+          showOnboarding.value = true
+        }
+      }
+
       return
     }
 
@@ -258,22 +330,24 @@ onMounted(async () => {
     // Set up semantic store
     semanticStore.setCurrentMap(mapStore.id)
 
-    // Initialize AI settings (loads providers/keys from IndexedDB) then worker
-    aiSettings.initialize()
-    ai.initialize().then(() => {
-      // Wire semantic processor to the AI worker's sendMessage
-      semanticProcessor.setSendMessage(ai.sendMessage)
+    // Only initialize AI for authenticated users
+    if (!guest.isGuest.value) {
+      aiSettings.initialize()
+      ai.initialize().then(() => {
+        // Wire semantic processor to the AI worker's sendMessage
+        semanticProcessor.setSendMessage(ai.sendMessage)
 
-      // Start the processor if semantic field is enabled
-      if (semanticStore.fieldSettings.enabled) {
-        semanticProcessor.startProcessor()
-        // Queue all existing nodes for initial embedding
-        const allNodeIds = Array.from(mapStore.nodes.keys())
-        if (allNodeIds.length > 0) {
-          semanticProcessor.enqueueNodes(allNodeIds, 'normal')
+        // Start the processor if semantic field is enabled
+        if (semanticStore.fieldSettings.enabled) {
+          semanticProcessor.startProcessor()
+          // Queue all existing nodes for initial embedding
+          const allNodeIds = Array.from(mapStore.nodes.keys())
+          if (allNodeIds.length > 0) {
+            semanticProcessor.enqueueNodes(allNodeIds, 'normal')
+          }
         }
-      }
-    })
+      })
+    }
 
     // Trigger edge entrance animations on map load
     if (mapStore.edges.size > 0) {
@@ -1600,6 +1674,21 @@ useHead({
 
     <!-- Sync conflict resolution dialog -->
     <SyncConflictDialog />
+
+    <!-- Guest Onboarding -->
+    <GuestOnboardingWalkthrough
+      v-if="showOnboarding"
+      @complete="showOnboarding = false; showTemplatePicker = true"
+    />
+
+    <!-- Guest Template Picker -->
+    <GuestTemplatePicker
+      v-if="showTemplatePicker"
+      @select="handleGuestTemplateSelect"
+    />
+
+    <!-- Guest Upgrade Modal -->
+    <GuestUpgradeModal v-if="guest.isGuest.value" />
 
   </div>
 </template>
