@@ -28,7 +28,7 @@ function isTauriEnvironment(): boolean {
 export async function streamCompletion(
   params: {
     provider: string
-    apiKey: string
+    apiKey?: string
     credentialId?: string // Server vault credential ID (web only)
     baseUrl?: string
     model?: string
@@ -46,11 +46,11 @@ export async function streamCompletion(
     return streamViaTauri(params, options)
   }
 
-  // Web: prefer credentialId for server-side decrypt (key never sent)
+  // Web: only send credentialId — server decrypts
   const { apiKey, credentialId, ...rest } = params
-  const streamBody = credentialId
-    ? { ...rest, credentialId }
-    : { ...rest, apiKey }
+  const streamBody: Record<string, unknown> = { ...rest }
+  if (credentialId) streamBody.credentialId = credentialId
+  // Never send apiKey to server
 
   // In web, use the SSE endpoint
   try {

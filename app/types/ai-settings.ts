@@ -16,8 +16,7 @@ export interface AIProviderConfig {
   id: string
   type: AIProviderType
   name: string
-  apiKey?: string // Encrypted when stored
-  credentialId?: string // Server vault credential ID (web only)
+  credentialId?: string // Server vault credential ID
   baseUrl?: string // For custom/Ollama providers
   models: AIModel[]
   selectedModelId?: string

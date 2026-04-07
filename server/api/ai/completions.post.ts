@@ -1,9 +1,8 @@
 import { requireAuthSession } from '../../utils/syncHelpers'
 import { checkRateLimit } from '../../utils/redis'
-import { serverFullDecrypt } from '../../utils/encryption'
-import { prisma } from '../../utils/prisma'
 import { validateBody, aiCompletionSchema } from '../../utils/validation'
-import { validateOutboundUrl } from '../../utils/ssrf'
+import { validateOutboundUrl, safeFetch } from '../../utils/ssrf'
+import { resolveCredential } from '../../utils/resolveCredential'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
@@ -16,44 +15,11 @@ export default defineEventHandler(async (event) => {
 
   const body = validateBody(aiCompletionSchema, await readBody(event))
 
+  // Resolve API key from vault (never from request body)
   let apiKey: string | null = null
-
-  if (body.credentialId) {
-    const credential = await prisma.credential.findFirst({
-      where: { id: body.credentialId, userId },
-      select: { id: true, encryptedValue: true, encryptionVersion: true }
-    })
-    if (!credential) {
-      throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
-    }
-    try {
-      const result = serverFullDecrypt(userId, credential.encryptedValue, credential.encryptionVersion)
-      apiKey = result.plaintext
-      // Self-heal: re-encrypt with current AUTH_SECRET if rotated
-      const updateData: { lastUsed: Date; encryptedValue?: string; encryptionVersion?: number } = { lastUsed: new Date() }
-      if (result.credentialUpdate) {
-        updateData.encryptedValue = result.credentialUpdate.encryptedValue
-        updateData.encryptionVersion = result.credentialUpdate.encryptionVersion
-      }
-      prisma.credential.update({
-        where: { id: credential.id },
-        data: updateData
-      }).catch(() => {})
-    } catch (decryptErr) {
-      // If client also sent apiKey as fallback, use that
-      if (body.apiKey) {
-        apiKey = body.apiKey
-      } else {
-        console.error('Credential decrypt failed:', decryptErr)
-        throw createError({ statusCode: 500, statusMessage: 'Failed to decrypt credential', data: { code: 'CREDENTIAL_DECRYPT_FAILED' } })
-      }
-    }
-  } else if (body.apiKey) {
-    apiKey = body.apiKey
-  }
-
-  if (!apiKey && body.provider !== 'ollama') {
-    throw createError({ statusCode: 400, statusMessage: 'API key required (provide credentialId or apiKey)' })
+  if (body.provider !== 'ollama') {
+    const cred = await resolveCredential(userId, body.credentialId)
+    apiKey = cred.apiKey
   }
 
   const urlCheck = validateOutboundUrl(body.baseUrl, body.provider)
@@ -66,7 +32,7 @@ export default defineEventHandler(async (event) => {
     switch (body.provider) {
       case 'openai':
       case 'openrouter': {
-        const response = await fetch(`${baseUrl}/chat/completions`, {
+        const response = await safeFetch(`${baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -102,7 +68,7 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'anthropic': {
-        const response = await fetch(`${baseUrl}/messages`, {
+        const response = await safeFetch(`${baseUrl}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -133,7 +99,7 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'ollama': {
-        const response = await fetch(`${baseUrl}/api/chat`, {
+        const response = await safeFetch(`${baseUrl}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -160,7 +126,7 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'custom': {
-        const response = await fetch(`${baseUrl}/chat/completions`, {
+        const response = await safeFetch(`${baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

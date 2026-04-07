@@ -249,23 +249,19 @@ export function useAI() {
     // Try to use BYOK provider first
     const aiSettings = useAISettings()
 
-    // Check if we have a configured and enabled provider with an API key
+    // Check if we have a configured and enabled provider with a credential
     const defaultProvider = aiSettings.defaultProvider.value
-    if (defaultProvider?.isEnabled) {
-      const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-      if (apiKey) {
-        try {
-          return await smartExpandWithProvider(
-            nodeContent,
-            context,
-            maxSuggestions,
-            defaultProvider,
-            apiKey
-          )
-        } catch (e) {
-          console.warn('Provider-based expand failed, falling back to local:', e)
-          // Fall through to local approach
-        }
+    if (defaultProvider?.isEnabled && (defaultProvider.credentialId || defaultProvider.type === 'ollama')) {
+      try {
+        return await smartExpandWithProvider(
+          nodeContent,
+          context,
+          maxSuggestions,
+          defaultProvider
+        )
+      } catch (e) {
+        console.warn('Provider-based expand failed, falling back to local:', e)
+        // Fall through to local approach
       }
     }
 
@@ -303,8 +299,7 @@ export function useAI() {
     nodeContent: string,
     context: string[],
     maxSuggestions: number,
-    provider: { type: string; baseUrl?: string; selectedModelId?: string },
-    apiKey: string
+    provider: { type: string; credentialId?: string; baseUrl?: string; selectedModelId?: string }
   ): Promise<string[]> {
     isLoading.value = true
     error.value = null
@@ -318,7 +313,7 @@ export function useAI() {
     try {
       const response = await aiComplete({
         provider: provider.type,
-        apiKey,
+        credentialId: provider.credentialId,
         baseUrl: provider.baseUrl,
         model: provider.selectedModelId,
         systemPrompt,
@@ -375,7 +370,6 @@ export function useAI() {
             return streamCompletion(
               {
                 provider: provider.type,
-                apiKey: provider.apiKey,
                 credentialId: provider.credentialId,
                 baseUrl: provider.baseUrl,
                 model: provider.selectedModelId,
@@ -390,7 +384,6 @@ export function useAI() {
 
           const response = await aiComplete({
             provider: provider.type,
-            apiKey: provider.apiKey,
             credentialId: provider.credentialId,
             baseUrl: provider.baseUrl,
             model: provider.selectedModelId,
@@ -452,7 +445,6 @@ export function useAI() {
       const content = await executeWithRetry(async () => {
         const response = await aiComplete({
           provider: provider.type,
-          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
@@ -506,8 +498,7 @@ export function useAI() {
           return streamCompletion(
             {
               provider: provider.type,
-              apiKey: provider.apiKey,
-            credentialId: provider.credentialId,
+              credentialId: provider.credentialId,
               baseUrl: provider.baseUrl,
               model: provider.selectedModelId,
               systemPrompt: system,
@@ -521,7 +512,6 @@ export function useAI() {
 
         const response = await aiComplete({
           provider: provider.type,
-          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
@@ -572,7 +562,6 @@ export function useAI() {
       const content = await executeWithRetry(async () => {
         const response = await aiComplete({
           provider: provider.type,
-          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
@@ -635,7 +624,6 @@ export function useAI() {
       const content = await executeWithRetry(async () => {
         const response = await aiComplete({
           provider: provider.type,
-          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,

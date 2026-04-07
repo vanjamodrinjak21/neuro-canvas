@@ -19,7 +19,6 @@ const aiMessage = z.object({
 export const aiCompletionSchema = z.object({
   provider: aiProvider,
   credentialId: z.string().optional(),
-  apiKey: z.string().max(500).optional(),
   model: z.string().max(200).optional(),
   messages: z.array(aiMessage).min(1).max(100),
   systemPrompt: z.string().max(50_000).optional(),
@@ -28,10 +27,13 @@ export const aiCompletionSchema = z.object({
   baseUrl: optionalUrl,
 })
 
+// Printable ASCII only — blocks CRLF injection in HTTP headers
+const safeApiKey = z.string().min(1).max(500).regex(/^[\x20-\x7E]+$/, 'API key contains invalid characters')
+
 export const aiTestConnectionSchema = z.object({
   provider: aiProvider,
   credentialId: z.string().optional(),
-  apiKey: z.string().max(500).optional(),
+  rawApiKey: safeApiKey.optional(),
   baseUrl: optionalUrl,
 })
 
@@ -72,6 +74,19 @@ export const syncBulkPushSchema = z.object({
     tags: z.array(z.string().max(100)).max(50).optional()
   })).min(1).max(100),
   deviceId: z.string().max(200).optional()
+})
+
+export const vaultStoreV4Schema = z.object({
+  provider: z.string().min(1).max(100),
+  label: safeLabel.optional(),
+  rawValue: z.string().min(1).max(10_000),
+})
+
+export const templateGenerateSchema = z.object({
+  topic: z.string().min(1).max(1_000).trim(),
+  depth: z.enum(['shallow', 'medium', 'deep']).default('medium'),
+  style: z.enum(['detailed', 'concise', 'creative']).default('detailed'),
+  domain: z.string().max(200).trim().optional().transform(v => v === '' ? undefined : v),
 })
 
 export const vaultStoreSchema = z.object({

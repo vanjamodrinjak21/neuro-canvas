@@ -147,7 +147,7 @@ export class CognitiveAgent {
     const fullContent = await streamCompletion(
       {
         provider: this.provider.type,
-        apiKey: this.provider.apiKey,
+        credentialId: this.provider.credentialId,
         baseUrl: this.provider.baseUrl,
         model: this.provider.selectedModelId,
         systemPrompt: this.systemPrompt,

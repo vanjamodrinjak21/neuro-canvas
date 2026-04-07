@@ -1,44 +1,37 @@
-// Extract provider resolution pattern repeated across useAI.ts
-
 import { useAISettings } from '~/composables/useAISettings'
 
 export interface ResolvedProvider {
   type: string
-  apiKey: string
-  credentialId?: string // Server vault credential ID (web only, for server-side decrypt)
+  credentialId?: string
   baseUrl?: string
   selectedModelId?: string
 }
 
 /**
- * Resolve the default AI provider and its API key.
- * On web: returns credentialId so server can decrypt from vault (key never leaves server).
- * On Tauri: returns decrypted apiKey for direct provider calls.
- * Throws descriptive errors if not configured.
+ * Resolve the default AI provider config.
+ * Server handles all key decryption — client just passes credentialId.
  */
 export async function resolveProvider(): Promise<ResolvedProvider> {
   const aiSettings = useAISettings()
+
+  // Ensure AI settings are loaded from IndexedDB
+  if (!aiSettings.isInitialized.value) {
+    await aiSettings.initialize()
+  }
+
   const defaultProvider = aiSettings.defaultProvider.value
 
   if (!defaultProvider?.isEnabled) {
     throw new Error('No AI provider configured. Please configure an AI provider in settings.')
   }
 
-  // On web, prefer credentialId for server-side decryption (key never leaves server)
-  const credentialId = aiSettings.getProviderCredentialId(defaultProvider.id)
-
-  // Try client-side decrypt (may fail if KEK not loaded yet)
-  const apiKey = await aiSettings.getProviderApiKey(defaultProvider.id)
-
-  // Need at least one: credentialId (server decrypts) or apiKey (client decrypted)
-  if (!apiKey && !credentialId) {
-    throw new Error('No API key configured for the selected provider.')
+  if (!defaultProvider.credentialId && defaultProvider.type !== 'ollama') {
+    throw new Error('No API key configured for the selected provider. Please add one in Settings.')
   }
 
   return {
     type: defaultProvider.type,
-    apiKey: apiKey || '',
-    credentialId: credentialId || undefined,
+    credentialId: defaultProvider.credentialId || undefined,
     baseUrl: defaultProvider.baseUrl,
     selectedModelId: defaultProvider.selectedModelId
   }

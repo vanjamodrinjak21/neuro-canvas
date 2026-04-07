@@ -10,13 +10,20 @@ const PRIVATE_PREFIXES = [
   '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
   '172.25.', '172.26.', '172.27.', '172.28.', '172.29.',
   '172.30.', '172.31.', '192.168.', '169.254.', '127.',
-  '0.0.0.0', '::1', 'fd', 'fe80:'
+  '0.0.0.0', '::1', 'fd', 'fe80:',
+  // IPv4-mapped IPv6 addresses (::ffff:x.x.x.x)
+  '::ffff:10.', '::ffff:172.', '::ffff:192.168.', '::ffff:169.254.',
+  '::ffff:127.', '::ffff:0.', '0:0:0:0:0:0:0:1',
+  // Bracket notation from URL parsers
+  '[::1]', '[::]', '[::ffff:'
 ]
 
 const BLOCKED_HOSTS = [
   'metadata.google.internal',
   'metadata.google',
-  '169.254.169.254'
+  '169.254.169.254',
+  '[169.254.169.254]',
+  '::ffff:169.254.169.254'
 ]
 
 export function validateOutboundUrl(
@@ -79,4 +86,12 @@ export function validateOutboundUrl(
   }
 
   return { safe: true, resolvedUrl: parsed.toString() }
+}
+
+/**
+ * Hardened fetch — disables redirect following to prevent SSRF via open redirects.
+ * Use this for all outbound AI provider calls.
+ */
+export function safeFetch(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(url, { ...init, redirect: 'error' })
 }

@@ -1,69 +1,29 @@
-import { prisma } from '../../utils/prisma'
 import { requireAuthSession } from '../../utils/syncHelpers'
-import { serverFullDecrypt } from '../../utils/encryption'
-import { validateOutboundUrl } from '../../utils/ssrf'
+import { checkRateLimit } from '../../utils/redis'
+import { resolveCredential } from '../../utils/resolveCredential'
+import { validateOutboundUrl, safeFetch } from '../../utils/ssrf'
+import { validateBody, templateGenerateSchema } from '../../utils/validation'
 
 /**
  * Server-side AI template generation.
- * Bypasses client-side vault chain — fetches credential directly from DB.
+ * Uses centralized resolveCredential for consistent credential handling.
  */
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
-  const body = await readBody(event)
 
-  const topic = body.topic?.trim()
-  if (!topic) {
-    throw createError({ statusCode: 400, statusMessage: 'Topic is required' })
+  const { allowed } = await checkRateLimit(`ai:gen:${userId}`, 10, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Rate limit exceeded' })
   }
 
-  const depth = body.depth || 'medium'
-  const style = body.style || 'detailed'
-  const domain = body.domain || null
+  const { topic, depth, style, domain } = validateBody(templateGenerateSchema, await readBody(event))
 
-  // Find the user's most recent credential
-  const credential = await prisma.credential.findFirst({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  if (!credential) {
-    // Count all credentials for debugging
-    const count = await prisma.credential.count()
-    throw createError({
-      statusCode: 400,
-      statusMessage: `No API key found for your account. Total credentials in DB: ${count}. Add an API key in Settings > AI Providers.`,
-    })
-  }
-
-  // Decrypt server-side
-  let apiKey: string
-  try {
-    const result = serverFullDecrypt(userId, credential.encryptedValue, credential.encryptionVersion)
-    apiKey = result.plaintext
-    // Self-heal if needed
-    if (result.credentialUpdate) {
-      prisma.credential.update({
-        where: { id: credential.id },
-        data: {
-          ...result.credentialUpdate,
-          lastUsed: new Date(),
-        },
-      }).catch(() => {})
-    } else {
-      prisma.credential.update({
-        where: { id: credential.id },
-        data: { lastUsed: new Date() },
-      }).catch(() => {})
-    }
-  } catch {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to decrypt API key. Try removing and re-adding your key in Settings.',
-    })
-  }
+  // Resolve credential from vault (consistent with AI endpoints)
+  const cred = await resolveCredential(userId)
+  const apiKey = cred.apiKey
 
   // Determine provider type and base URL
-  const provider = credential.provider
+  const provider = cred.provider
   const urlCheck = validateOutboundUrl(undefined, provider)
   if (!urlCheck.safe) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid provider configuration' })
@@ -108,7 +68,7 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
     let content: string
 
     if (provider === 'anthropic') {
-      const response = await fetch(`${baseUrl}/messages`, {
+      const response = await safeFetch(`${baseUrl}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +102,7 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
         headers['X-Title'] = 'NeuroCanvas'
       }
 
-      const response = await fetch(`${baseUrl}/chat/completions`, {
+      const response = await safeFetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

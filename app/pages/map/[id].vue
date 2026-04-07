@@ -22,6 +22,7 @@ import { useSpatialHUD } from '~/composables/useSpatialHUD'
 import { useExport } from '~/composables/useExport'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useSemanticProcessor } from '~/composables/useSemanticProcessor'
+import { useAISettings } from '~/composables/useAISettings'
 
 // Route
 const route = useRoute()
@@ -37,6 +38,7 @@ const semanticStore = useSemanticStore()
 const db = useDatabase()
 const autoSave = useAutoSave()
 const ai = useAI()
+const aiSettings = useAISettings()
 const mapRenderer = useMapRenderer()
 
 // Loading
@@ -236,7 +238,8 @@ onMounted(async () => {
       syncEngine.initialize()
       // Set up semantic store for new map
       semanticStore.setCurrentMap(mapStore.id)
-      // Initialize AI in background
+      // Initialize AI settings (loads providers/keys from IndexedDB) + worker
+      aiSettings.initialize()
       ai.initialize()
       return
     }
@@ -255,7 +258,8 @@ onMounted(async () => {
     // Set up semantic store
     semanticStore.setCurrentMap(mapStore.id)
 
-    // Initialize AI in background and wire semantic processor
+    // Initialize AI settings (loads providers/keys from IndexedDB) then worker
+    aiSettings.initialize()
     ai.initialize().then(() => {
       // Wire semantic processor to the AI worker's sendMessage
       semanticProcessor.setSendMessage(ai.sendMessage)

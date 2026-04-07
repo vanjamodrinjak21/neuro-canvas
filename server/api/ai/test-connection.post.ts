@@ -1,8 +1,8 @@
 import { requireAuthSession } from '../../utils/syncHelpers'
-import { serverFullDecrypt } from '../../utils/encryption'
-import { prisma } from '../../utils/prisma'
+import { checkRateLimit } from '../../utils/redis'
 import { validateBody, aiTestConnectionSchema } from '../../utils/validation'
-import { validateOutboundUrl } from '../../utils/ssrf'
+import { validateOutboundUrl, safeFetch } from '../../utils/ssrf'
+import { resolveCredential } from '../../utils/resolveCredential'
 
 interface AIModel {
   id: string
@@ -12,33 +12,26 @@ interface AIModel {
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
+
+  const { allowed } = await checkRateLimit(`ai:test:${userId}`, 10, 60)
+  if (!allowed) {
+    return { success: false, message: 'Rate limit exceeded. Try again in a minute.' }
+  }
+
   const body = validateBody(aiTestConnectionSchema, await readBody(event))
 
   let apiKey: string | null = null
 
-  if (body.credentialId) {
-    const credential = await prisma.credential.findFirst({
-      where: { id: body.credentialId, userId },
-      select: { id: true, encryptedValue: true, encryptionVersion: true }
-    })
-    if (!credential) {
-      return { success: false, message: 'Credential not found' }
-    }
+  if (body.rawApiKey) {
+    // Testing a new key before saving — use it directly
+    apiKey = body.rawApiKey
+  } else if (body.credentialId || body.provider !== 'ollama') {
     try {
-      const result = serverFullDecrypt(userId, credential.encryptedValue, credential.encryptionVersion)
-      apiKey = result.plaintext
-      // Self-heal on rotation
-      if (result.credentialUpdate) {
-        prisma.credential.update({
-          where: { id: credential.id },
-          data: result.credentialUpdate
-        }).catch(() => {})
-      }
+      const cred = await resolveCredential(userId, body.credentialId)
+      apiKey = cred.apiKey
     } catch {
-      return { success: false, message: 'Failed to decrypt stored credential' }
+      return { success: false, message: 'No API key found. Add one in Settings.' }
     }
-  } else if (body.apiKey) {
-    apiKey = body.apiKey
   }
 
   const urlCheck = validateOutboundUrl(body.baseUrl, body.provider)
@@ -50,7 +43,7 @@ export default defineEventHandler(async (event) => {
   try {
     switch (body.provider) {
       case 'ollama': {
-        const response = await fetch(`${baseUrl}/api/tags`)
+        const response = await safeFetch(`${baseUrl}/api/tags`)
         if (!response.ok) {
           return { success: false, message: 'Failed to connect to Ollama server' }
         }
@@ -64,7 +57,7 @@ export default defineEventHandler(async (event) => {
 
       case 'openai': {
         if (!apiKey) return { success: false, message: 'API key not set' }
-        const response = await fetch(`${baseUrl}/models`, {
+        const response = await safeFetch(`${baseUrl}/models`, {
           headers: { 'Authorization': `Bearer ${apiKey}` }
         })
         if (!response.ok) {
@@ -76,7 +69,7 @@ export default defineEventHandler(async (event) => {
 
       case 'anthropic': {
         if (!apiKey) return { success: false, message: 'API key not set' }
-        const response = await fetch(`${baseUrl}/messages`, {
+        const response = await safeFetch(`${baseUrl}/messages`, {
           method: 'POST',
           headers: {
             'x-api-key': apiKey,
@@ -98,7 +91,7 @@ export default defineEventHandler(async (event) => {
 
       case 'openrouter': {
         if (!apiKey) return { success: false, message: 'API key not set' }
-        const response = await fetch(`${baseUrl}/models`, {
+        const response = await safeFetch(`${baseUrl}/models`, {
           headers: { 'Authorization': `Bearer ${apiKey}` }
         })
         if (!response.ok) return { success: false, message: 'Invalid API key' }
@@ -112,7 +105,7 @@ export default defineEventHandler(async (event) => {
       }
 
       case 'custom': {
-        const response = await fetch(baseUrl, { method: 'HEAD' }).catch(() => null)
+        const response = await safeFetch(baseUrl, { method: 'HEAD' }).catch(() => null)
         if (response?.ok) return { success: true, message: 'Endpoint reachable' }
         return { success: false, message: 'Could not reach endpoint' }
       }

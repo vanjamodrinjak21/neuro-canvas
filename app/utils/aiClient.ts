@@ -10,8 +10,8 @@
 
 interface AICompletionRequest {
   provider: string
-  apiKey: string
-  credentialId?: string // Server vault credential ID (web only)
+  apiKey?: string       // Only used in Tauri mode
+  credentialId?: string // Used in web mode
   baseUrl?: string
   model?: string
   systemPrompt?: string
@@ -27,8 +27,9 @@ interface AICompletionResponse {
 
 interface AITestConnectionRequest {
   provider: string
-  apiKey?: string | null
-  credentialId?: string // Server vault credential ID (web only)
+  apiKey?: string | null   // Only used in Tauri mode
+  credentialId?: string    // Used in web mode
+  rawApiKey?: string       // For testing new keys before saving (web)
   baseUrl?: string
 }
 
@@ -306,12 +307,12 @@ export async function aiComplete(req: AICompletionRequest): Promise<AICompletion
     return directComplete(req)
   }
 
-  // Web: send credentialId for server-side decrypt, plus apiKey as fallback
+  // Web: only send credentialId — server decrypts from vault
   const { apiKey, credentialId, ...rest } = req
   try {
     const body: Record<string, unknown> = { ...rest }
     if (credentialId) body.credentialId = credentialId
-    if (apiKey) body.apiKey = apiKey
+    // Never send apiKey to server
     return await $fetch<AICompletionResponse>('/api/ai/completions', {
       method: 'POST',
       body,
@@ -344,12 +345,15 @@ export async function aiTestConnection(req: AITestConnectionRequest): Promise<AI
     return directTestConnection(req)
   }
 
-  // Web: prefer credentialId for server-side decrypt
-  const { apiKey, credentialId, ...rest } = req
+  // Web: send credentialId or rawApiKey for testing new keys
+  const { apiKey, credentialId, rawApiKey, ...rest } = req
+  const body: Record<string, unknown> = { ...rest }
+  if (credentialId) body.credentialId = credentialId
+  if (rawApiKey) body.rawApiKey = rawApiKey
+  // Never send apiKey to server
+
   return $fetch<AITestConnectionResponse>('/api/ai/test-connection', {
     method: 'POST',
-    body: credentialId
-      ? { ...rest, credentialId }
-      : { ...rest, apiKey }
+    body
   })
 }
