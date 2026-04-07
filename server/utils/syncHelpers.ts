@@ -25,14 +25,21 @@ export function computeByteSize(data: unknown): number {
 export async function requireAuthSession(event: H3Event): Promise<{ userId: string; email: string }> {
   const session = await getServerSession(event)
 
-  if (!session?.user?.email) {
+  // Prefer ID-based lookup (from JWT token.id) over email to prevent TOCTOU issues
+  const sessionUser = session?.user as { id?: string; email?: string } | undefined
+  if (!sessionUser?.id && !sessionUser?.email) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true, email: true }
-  })
+  const user = sessionUser.id
+    ? await prisma.user.findUnique({
+        where: { id: sessionUser.id },
+        select: { id: true, email: true }
+      })
+    : await prisma.user.findUnique({
+        where: { email: sessionUser.email! },
+        select: { id: true, email: true }
+      })
 
   if (!user || !user.email) {
     throw createError({ statusCode: 401, statusMessage: 'User not found' })

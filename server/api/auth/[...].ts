@@ -26,20 +26,11 @@ const authUrl = process.env.NEXTAUTH_URL
   || config.public?.authOrigin
   || 'https://neuro-canvas.com' // Fallback for production
 
-console.log('[Auth] Initializing auth handler...')
-console.log('[Auth] NODE_ENV:', process.env.NODE_ENV)
-console.log('[Auth] AUTH_SECRET configured:', !!authSecret)
-console.log('[Auth] AUTH_ORIGIN:', process.env.AUTH_ORIGIN)
-console.log('[Auth] NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
-console.log('[Auth] Resolved authUrl:', authUrl)
-
-if (!authSecret) {
-  console.error('[Auth] AUTH_SECRET is not configured!')
-}
+// Startup validation only — no secrets or PII in logs
+if (!authSecret) console.error('[Auth] FATAL: AUTH_SECRET is not configured')
 
 // ALWAYS set NEXTAUTH_URL - NextAuth requires this
 process.env.NEXTAUTH_URL = authUrl
-console.log('[Auth] Force set NEXTAUTH_URL to:', authUrl)
 
 const resend = config.resendApiKey || process.env.RESEND_API_KEY
   ? new Resend(config.resendApiKey || process.env.RESEND_API_KEY)
@@ -48,20 +39,12 @@ const resend = config.resendApiKey || process.env.RESEND_API_KEY
 // Build providers array conditionally
 const providers: any[] = []
 
-// Debug: Log OAuth configuration
-console.log('[Auth] Google Client ID configured:', !!googleClientId, googleClientId ? googleClientId.slice(0, 20) + '...' : 'MISSING')
-console.log('[Auth] Google Client Secret configured:', !!googleClientSecret)
-console.log('[Auth] GitHub Client ID configured:', !!githubClientId, githubClientId ? githubClientId.slice(0, 10) + '...' : 'MISSING')
-console.log('[Auth] GitHub Client Secret configured:', !!githubClientSecret)
-
 // Add OAuth providers only if configured
 if (googleClientId && googleClientSecret) {
-  console.log('[Auth] Adding Google provider')
   providers.push(
     GoogleProvider.default({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
-      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           prompt: 'consent',
@@ -72,16 +55,13 @@ if (googleClientId && googleClientSecret) {
     })
   )
 } else {
-  console.log('[Auth] Google provider NOT added - missing credentials')
 }
 
 if (githubClientId && githubClientSecret) {
-  console.log('[Auth] Adding GitHub provider')
   providers.push(
     GitHubProvider.default({
       clientId: githubClientId,
       clientSecret: githubClientSecret,
-      allowDangerousEmailAccountLinking: true,
       authorization: {
         url: 'https://github.com/login/oauth/authorize',
         params: {
@@ -107,7 +87,6 @@ if (githubClientId && githubClientSecret) {
             })
           })
           const tokens = await response.json()
-          console.log('[Auth] GitHub token response keys:', Object.keys(tokens))
           if (tokens.error) {
             console.error('[Auth] GitHub token error:', tokens.error, tokens.error_description)
             throw new Error(tokens.error_description || tokens.error)
@@ -120,7 +99,6 @@ if (githubClientId && githubClientSecret) {
       userinfo: {
         url: 'https://api.github.com/user',
         async request({ tokens }: { tokens: { access_token: string } }) {
-          console.log('[Auth] GitHub userinfo request, token exists:', !!tokens?.access_token)
           const response = await fetch('https://api.github.com/user', {
             headers: {
               Authorization: `Bearer ${tokens.access_token}`,
@@ -167,7 +145,6 @@ if (githubClientId && githubClientSecret) {
     })
   )
 } else {
-  console.log('[Auth] GitHub provider NOT added - missing credentials')
 }
 
 // Add Email provider only if Resend is configured
@@ -225,29 +202,24 @@ providers.push(
       password: { label: 'Password', type: 'password' }
     },
     async authorize(credentials: { email?: string; password?: string } | undefined) {
-      console.log('[Auth] authorize called for:', credentials?.email)
       if (!credentials?.email || !credentials?.password) {
-        console.log('[Auth] Missing credentials')
         throw new Error('Email and password are required')
       }
 
       const user = await prisma.user.findUnique({
-        where: { email: credentials.email }
+        where: { email: credentials.email.toLowerCase() }
       })
 
       if (!user || !user.password) {
-        console.log('[Auth] User not found or no password:', credentials.email)
         throw new Error('Invalid email or password')
       }
 
       const isValidPassword = await bcrypt.compare(credentials.password, user.password)
 
       if (!isValidPassword) {
-        console.log('[Auth] Invalid password for:', credentials.email)
         throw new Error('Invalid email or password')
       }
 
-      console.log('[Auth] Authorization successful for:', user.email)
       return {
         id: user.id,
         email: user.email,
@@ -259,7 +231,6 @@ providers.push(
 )
 
 // Log which providers are registered
-console.log('[Auth] Registered providers:', providers.map((p: any) => p.id || p.name))
 
 // Determine if we're in production
 const isProduction = process.env.NODE_ENV === 'production'
@@ -296,7 +267,7 @@ export default NuxtAuthHandler({
       name: isProduction ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url',
       options: {
         httpOnly: false,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: 'lax',
         path: '/',
         secure: isProduction,
         domain: undefined
@@ -316,7 +287,7 @@ export default NuxtAuthHandler({
       name: 'next-auth.pkce.code_verifier',
       options: {
         httpOnly: true,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: 'lax',
         path: '/',
         secure: isProduction,
         maxAge: 900,
@@ -327,7 +298,7 @@ export default NuxtAuthHandler({
       name: 'next-auth.state',
       options: {
         httpOnly: true,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: 'lax',
         path: '/',
         secure: isProduction,
         maxAge: 900,
@@ -338,7 +309,7 @@ export default NuxtAuthHandler({
       name: 'next-auth.nonce',
       options: {
         httpOnly: true,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: 'lax',
         path: '/',
         secure: isProduction,
         maxAge: 900,
@@ -361,7 +332,6 @@ export default NuxtAuthHandler({
     async redirect({ url, baseUrl }) {
       // Fix for undefined baseUrl - use our known URL
       const safeBaseUrl = baseUrl || 'https://neuro-canvas.com'
-      console.log('[Auth] redirect callback - url:', url, 'baseUrl:', baseUrl, 'safeBaseUrl:', safeBaseUrl)
 
       // If url is relative, prepend baseUrl
       if (url.startsWith('/')) {
@@ -376,14 +346,12 @@ export default NuxtAuthHandler({
     },
 
     async jwt({ token, user }) {
-      console.log('[Auth] JWT callback - user:', user?.email, 'token exists:', !!token)
       // Initial sign in
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
         token.picture = user.image
-        console.log('[Auth] JWT created for user:', user.email)
       }
 
       // Track last activity for session refresh
@@ -403,17 +371,14 @@ export default NuxtAuthHandler({
     },
 
     async signIn({ user, account }) {
-      console.log('[Auth] signIn callback - provider:', account?.provider, 'user:', user?.email)
       // Allow all OAuth sign-ins
       if (account?.provider === 'google' || account?.provider === 'github') {
-        console.log('[Auth] OAuth sign-in allowed')
         return true
       }
 
       // For credentials, user must exist and have verified email
       if (account?.provider === 'credentials') {
         const allowed = !!user
-        console.log('[Auth] Credentials sign-in:', allowed ? 'allowed' : 'denied')
         return allowed
       }
 
@@ -429,7 +394,6 @@ export default NuxtAuthHandler({
   events: {
     async signIn({ user, isNewUser }) {
       if (isNewUser) {
-        console.log(`New user signed up: ${user.email}`)
       }
     }
   }
