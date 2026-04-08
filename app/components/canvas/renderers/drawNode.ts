@@ -7,6 +7,7 @@ export type NodeState = 'normal' | 'hover' | 'selected' | 'dragging' | 'ai-sugge
 export interface NodeColors {
   nodeBg: string
   nodeBorder: string
+  nodeTier2Bg: string
   nodeText: string
   nodeSelected: string
   nodeGlow: string
@@ -45,6 +46,8 @@ export interface NodeAnimProps {
  * @param isRoot          - Whether this node is the root / main-topic node.
  * @param lerpColor       - A function that linearly interpolates between two CSS color strings.
  * @param animProps       - Optional animation interpolation values (hover, selection).
+ * @param isLight         - Whether the light theme is active (affects hover fill blend target).
+ * @param parentIsRoot    - Whether the direct parent of this node is the root node (for tier-2+ differentiation).
  */
 export function drawNode(
   ctx: CanvasRenderingContext2D,
@@ -55,7 +58,9 @@ export function drawNode(
   isSelected: boolean,
   isRoot: boolean,
   lerpColor: (a: string, b: string, t: number) => string,
-  animProps?: NodeAnimProps
+  animProps?: NodeAnimProps,
+  isLight?: boolean,
+  parentIsRoot?: boolean
 ) {
   const { x, y } = node.position
   const { width, height } = node.size
@@ -88,14 +93,28 @@ export function drawNode(
   let borderWidth = style.borderWidth || 2
   let fillColor = style.fillColor || colors.nodeBg
 
-  // Ensure minimum visibility - root nodes always have 2px border
-  if (borderWidth < 2) borderWidth = 2
-  if (isRoot) borderWidth = Math.max(borderWidth, 2)
+  // Root nodes: solid teal fill, no border per Paper spec
+  if (isRoot) {
+    fillColor = '#00D2BE'
+    borderWidth = 0
+  } else {
+    // Tier differentiation per Paper spec:
+    // Tier-2+ (deeper, parent is not root): bg nodeTier2Bg, 1px border
+    if (node.parentId && !parentIsRoot) {
+      fillColor = style.fillColor === '#111113' || !style.fillColor
+        ? colors.nodeTier2Bg
+        : fillColor
+      borderWidth = 1
+    }
+
+    // Ensure minimum visibility for non-root nodes
+    if (borderWidth < 1) borderWidth = 1
+  }
 
   // Interpolated hover: blend border color and fill based on hoverProgress
   if (hoverProg > 0 && nodeState !== 'selected' && nodeState !== 'dragging') {
     borderColor = lerpColor(style.borderColor || colors.nodeBorder, colors.nodeHoverBorder, hoverProg)
-    fillColor = lerpColor(style.fillColor || colors.nodeBg, '#1E1E24', hoverProg)
+    fillColor = lerpColor(style.fillColor || colors.nodeBg, isLight ? '#E8E8E6' : '#1E1E24', hoverProg)
   }
 
   switch (nodeState) {
@@ -126,7 +145,7 @@ export function drawNode(
   ctx.strokeStyle = borderColor
   ctx.lineWidth = borderWidth
 
-  const radius = style.shape === 'circle' ? Math.min(drawWidth, drawHeight) / 2 : 8
+  const radius = style.shape === 'circle' ? Math.min(drawWidth, drawHeight) / 2 : 6
 
   if (style.shape === 'circle') {
     ctx.beginPath()
@@ -171,8 +190,8 @@ export function drawNode(
   ctx.shadowOffsetX = 0
   ctx.shadowOffsetY = 0
 
-  // Draw text
-  ctx.fillStyle = style.textColor || colors.nodeText
+  // Draw text — root node always uses white text for contrast on teal bg
+  ctx.fillStyle = isRoot ? '#FAFAFA' : (style.textColor || colors.nodeText)
   ctx.font = `${style.fontWeight || 500} ${style.fontSize || 14}px "Inter", system-ui, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'

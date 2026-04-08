@@ -1,49 +1,13 @@
 import type { Node, Edge, Point } from '~/types/canvas'
 import type { ConnectionAnimation } from '~/composables/useConnectionAnimation'
-import { getAnchorPoint } from '~/composables/useAnchors'
 import { getLineDrawProgress, getPulseProgress } from '~/composables/useConnectionAnimation'
+import { resolveEdgeEndpoints, calculateBezierControlPoints, bezierPoint } from './shared'
 
 /** Color values required by the edge drawing functions. */
 export interface EdgeColors {
   edgeSelected: string
   edgeDefault: string
   nodeSelected: string
-}
-
-// ---------------------------------------------------------------------------
-// getEdgePoint
-// ---------------------------------------------------------------------------
-
-/**
- * Calculate the point where an edge intersects a rectangular node boundary.
- *
- * Given a node and an external target point, this projects a ray from the
- * node center toward the target and returns the intersection with the node's
- * bounding rectangle.
- *
- * @param node        - The node whose boundary is used for intersection.
- * @param targetPoint - An external point (typically the center of the
- *                      connected node) that defines the ray direction.
- * @returns The intersection point on the node boundary.
- */
-export function getEdgePoint(node: Node, targetPoint: Point): Point {
-  const cx = node.position.x + node.size.width / 2
-  const cy = node.position.y + node.size.height / 2
-  const dx = targetPoint.x - cx
-  const dy = targetPoint.y - cy
-
-  const hw = node.size.width / 2
-  const hh = node.size.height / 2
-
-  // Calculate intersection with rectangle boundary
-  const sx = dx === 0 ? 0 : Math.abs(hw / dx)
-  const sy = dy === 0 ? 0 : Math.abs(hh / dy)
-  const s = Math.min(sx || Infinity, sy || Infinity)
-
-  return {
-    x: cx + dx * s,
-    y: cy + dy * s
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -199,28 +163,9 @@ export function drawEdge(
                                   selectionNodeIds.has(edge.targetId)
 
   // Get edge points - use anchor points if available, otherwise calculate from boundaries
-  let sourcePoint: Point
-  let targetPoint: Point
-
-  if (edge.sourceAnchor) {
-    sourcePoint = getAnchorPoint(sourceNode, edge.sourceAnchor)
-  } else {
-    const targetCenter = {
-      x: targetNode.position.x + targetNode.size.width / 2,
-      y: targetNode.position.y + targetNode.size.height / 2
-    }
-    sourcePoint = getEdgePoint(sourceNode, targetCenter)
-  }
-
-  if (edge.targetAnchor) {
-    targetPoint = getAnchorPoint(targetNode, edge.targetAnchor)
-  } else {
-    const sourceCenter = {
-      x: sourceNode.position.x + sourceNode.size.width / 2,
-      y: sourceNode.position.y + sourceNode.size.height / 2
-    }
-    targetPoint = getEdgePoint(targetNode, sourceCenter)
-  }
+  const { sourcePoint, targetPoint } = resolveEdgeEndpoints(
+    sourceNode, targetNode, edge.sourceAnchor, edge.targetAnchor
+  )
 
   // Edge styling - highlight if selected or connected to selected node
   const isHighlighted = isSelected || isConnectedToSelection
@@ -247,42 +192,10 @@ export function drawEdge(
   let arrowTangentPoint: Point = sourcePoint
 
   if (style.type === 'bezier') {
-    // Premium bezier curve with smart control points
-    const dx = targetPoint.x - sourcePoint.x
-    const dy = targetPoint.y - sourcePoint.y
-    const distance = Math.sqrt(dx * dx + dy * dy)
-
-    // Control point offset scales with distance for elegant curves
-    const controlOffset = Math.min(distance * 0.4, 80)
-
-    // Determine control point direction based on anchor positions
-    let cx1: number, cy1: number, cx2: number, cy2: number
-
-    if (edge.sourceAnchor === 'right' || edge.sourceAnchor === 'left') {
-      const dir = edge.sourceAnchor === 'right' ? 1 : -1
-      cx1 = sourcePoint.x + controlOffset * dir
-      cy1 = sourcePoint.y
-    } else if (edge.sourceAnchor === 'top' || edge.sourceAnchor === 'bottom') {
-      const dir = edge.sourceAnchor === 'bottom' ? 1 : -1
-      cx1 = sourcePoint.x
-      cy1 = sourcePoint.y + controlOffset * dir
-    } else {
-      cx1 = sourcePoint.x + controlOffset * Math.sign(dx || 1)
-      cy1 = sourcePoint.y
-    }
-
-    if (edge.targetAnchor === 'right' || edge.targetAnchor === 'left') {
-      const dir = edge.targetAnchor === 'right' ? 1 : -1
-      cx2 = targetPoint.x + controlOffset * dir
-      cy2 = targetPoint.y
-    } else if (edge.targetAnchor === 'top' || edge.targetAnchor === 'bottom') {
-      const dir = edge.targetAnchor === 'bottom' ? 1 : -1
-      cx2 = targetPoint.x
-      cy2 = targetPoint.y + controlOffset * dir
-    } else {
-      cx2 = targetPoint.x - controlOffset * Math.sign(dx || 1)
-      cy2 = targetPoint.y
-    }
+    // Premium bezier curve with smart control points (via shared utility)
+    const { cx1, cy1, cx2, cy2 } = calculateBezierControlPoints(
+      sourcePoint, targetPoint, edge.sourceAnchor, edge.targetAnchor
+    )
 
     ctx.moveTo(sourcePoint.x, sourcePoint.y)
     ctx.bezierCurveTo(cx1, cy1, cx2, cy2, targetPoint.x, targetPoint.y)
@@ -373,62 +286,14 @@ export function drawAnimatedEdge(
   const isHighlighted = isSelected || isConnectedToSelection
 
   // Get anchor-based points if available, otherwise use boundary calculation
-  let sourcePoint: Point
-  let targetPoint: Point
+  const { sourcePoint, targetPoint } = resolveEdgeEndpoints(
+    sourceNode, targetNode, edge.sourceAnchor, edge.targetAnchor
+  )
 
-  if (edge.sourceAnchor) {
-    sourcePoint = getAnchorPoint(sourceNode, edge.sourceAnchor)
-  } else {
-    const targetCenter = {
-      x: targetNode.position.x + targetNode.size.width / 2,
-      y: targetNode.position.y + targetNode.size.height / 2
-    }
-    sourcePoint = getEdgePoint(sourceNode, targetCenter)
-  }
-
-  if (edge.targetAnchor) {
-    targetPoint = getAnchorPoint(targetNode, edge.targetAnchor)
-  } else {
-    const sourceCenter = {
-      x: sourceNode.position.x + sourceNode.size.width / 2,
-      y: sourceNode.position.y + sourceNode.size.height / 2
-    }
-    targetPoint = getEdgePoint(targetNode, sourceCenter)
-  }
-
-  // Calculate bezier control points (matching drawEdge logic)
-  const dx = targetPoint.x - sourcePoint.x
-  const dy = targetPoint.y - sourcePoint.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
-  const controlOffset = Math.min(distance * 0.4, 80)
-
-  let cx1: number, cy1: number, cx2: number, cy2: number
-
-  if (edge.sourceAnchor === 'right' || edge.sourceAnchor === 'left') {
-    const dir = edge.sourceAnchor === 'right' ? 1 : -1
-    cx1 = sourcePoint.x + controlOffset * dir
-    cy1 = sourcePoint.y
-  } else if (edge.sourceAnchor === 'top' || edge.sourceAnchor === 'bottom') {
-    const dir = edge.sourceAnchor === 'bottom' ? 1 : -1
-    cx1 = sourcePoint.x
-    cy1 = sourcePoint.y + controlOffset * dir
-  } else {
-    cx1 = sourcePoint.x + controlOffset * Math.sign(dx || 1)
-    cy1 = sourcePoint.y
-  }
-
-  if (edge.targetAnchor === 'right' || edge.targetAnchor === 'left') {
-    const dir = edge.targetAnchor === 'right' ? 1 : -1
-    cx2 = targetPoint.x + controlOffset * dir
-    cy2 = targetPoint.y
-  } else if (edge.targetAnchor === 'top' || edge.targetAnchor === 'bottom') {
-    const dir = edge.targetAnchor === 'bottom' ? 1 : -1
-    cx2 = targetPoint.x
-    cy2 = targetPoint.y + controlOffset * dir
-  } else {
-    cx2 = targetPoint.x - controlOffset * Math.sign(dx || 1)
-    cy2 = targetPoint.y
-  }
+  // Calculate bezier control points via shared utility
+  const { cx1, cy1, cx2, cy2 } = calculateBezierControlPoints(
+    sourcePoint, targetPoint, edge.sourceAnchor, edge.targetAnchor
+  )
 
   // Get animation progress
   const drawProgress = getLineDrawProgress(animation, currentTime)
@@ -448,20 +313,15 @@ export function drawAnimatedEdge(
   ctx.beginPath()
 
   if (style.type === 'bezier') {
-    // Draw partial bezier curve for animation
+    // Draw partial bezier curve for animation using bezierPoint utility
     ctx.moveTo(sourcePoint.x, sourcePoint.y)
+    const cp1 = { x: cx1, y: cy1 }
+    const cp2 = { x: cx2, y: cy2 }
     const steps = 20
     for (let i = 1; i <= steps * drawProgress; i++) {
       const t = i / steps
-      const x = Math.pow(1 - t, 3) * sourcePoint.x +
-                3 * Math.pow(1 - t, 2) * t * cx1 +
-                3 * (1 - t) * Math.pow(t, 2) * cx2 +
-                Math.pow(t, 3) * targetPoint.x
-      const y = Math.pow(1 - t, 3) * sourcePoint.y +
-                3 * Math.pow(1 - t, 2) * t * cy1 +
-                3 * (1 - t) * Math.pow(t, 2) * cy2 +
-                Math.pow(t, 3) * targetPoint.y
-      ctx.lineTo(x, y)
+      const pt = bezierPoint(t, sourcePoint, cp1, cp2, targetPoint)
+      ctx.lineTo(pt.x, pt.y)
     }
   } else {
     // Straight line - simple partial draw
@@ -480,15 +340,11 @@ export function drawAnimatedEdge(
     let pulseX: number, pulseY: number
 
     if (style.type === 'bezier') {
-      const t = pulseProgress
-      pulseX = Math.pow(1 - t, 3) * sourcePoint.x +
-               3 * Math.pow(1 - t, 2) * t * cx1 +
-               3 * (1 - t) * Math.pow(t, 2) * cx2 +
-               Math.pow(t, 3) * targetPoint.x
-      pulseY = Math.pow(1 - t, 3) * sourcePoint.y +
-               3 * Math.pow(1 - t, 2) * t * cy1 +
-               3 * (1 - t) * Math.pow(t, 2) * cy2 +
-               Math.pow(t, 3) * targetPoint.y
+      const cp1 = { x: cx1, y: cy1 }
+      const cp2 = { x: cx2, y: cy2 }
+      const pt = bezierPoint(pulseProgress, sourcePoint, cp1, cp2, targetPoint)
+      pulseX = pt.x
+      pulseY = pt.y
     } else {
       pulseX = sourcePoint.x + (targetPoint.x - sourcePoint.x) * pulseProgress
       pulseY = sourcePoint.y + (targetPoint.y - sourcePoint.y) * pulseProgress
