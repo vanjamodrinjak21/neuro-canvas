@@ -6,6 +6,8 @@
  * and easy to test.
  */
 
+import { getShapePath } from './shapes'
+
 /** Snapshot of a node captured at the moment of deletion. */
 interface GhostSnapshot {
   position: { x: number; y: number }
@@ -82,34 +84,12 @@ export function drawGhostNodes(
     ctx.strokeStyle = snap.style.borderColor || colors.nodeBorder
     ctx.lineWidth = snap.style.borderWidth || 2
 
-    const radius =
-      snap.style.shape === 'circle'
-        ? Math.min(snap.size.width, snap.size.height) / 2
-        : 8
-
-    if (snap.style.shape === 'circle') {
-      ctx.beginPath()
-      ctx.arc(
-        snap.position.x + snap.size.width / 2,
-        snap.position.y + snap.size.height / 2,
-        radius,
-        0,
-        Math.PI * 2
-      )
-      ctx.fill()
-      ctx.stroke()
-    } else {
-      ctx.beginPath()
-      ctx.roundRect(
-        snap.position.x,
-        snap.position.y,
-        snap.size.width,
-        snap.size.height,
-        radius
-      )
-      ctx.fill()
-      ctx.stroke()
-    }
+    const shapePath = getShapePath(
+      (snap.style.shape as any) || 'rounded',
+      snap.position.x, snap.position.y, snap.size.width, snap.size.height
+    )
+    ctx.fill(shapePath)
+    ctx.stroke(shapePath)
 
     // --- Text ------------------------------------------------------------
     ctx.fillStyle = snap.style.textColor || colors.nodeText

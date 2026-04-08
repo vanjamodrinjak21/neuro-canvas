@@ -38,9 +38,14 @@ watch(() => props.node, (newNode) => {
 
 // Shape options
 const shapes: { value: NodeShape; icon: string; label: string }[] = [
-  { value: 'rounded', icon: 'i-lucide-square', label: 'Rounded' },
-  { value: 'circle', icon: 'i-lucide-circle', label: 'Circle' },
-  { value: 'diamond', icon: 'i-lucide-diamond', label: 'Diamond' }
+  { value: 'rounded',   icon: 'i-lucide-square',                label: 'Rounded' },
+  { value: 'rectangle', icon: 'i-lucide-rectangle-horizontal',  label: 'Rectangle' },
+  { value: 'circle',    icon: 'i-lucide-circle',                label: 'Circle' },
+  { value: 'diamond',   icon: 'i-lucide-diamond',               label: 'Diamond' },
+  { value: 'hexagon',   icon: 'i-lucide-hexagon',               label: 'Hexagon' },
+  { value: 'star',      icon: 'i-lucide-star',                  label: 'Star' },
+  { value: 'pill',      icon: 'i-lucide-pill',                  label: 'Pill' },
+  { value: 'dot',       icon: 'i-lucide-minus',                 label: 'Dot' },
 ]
 
 // Font weight options
@@ -167,6 +172,22 @@ onKeyStroke('Escape', () => {
           :style="{ backgroundColor: color }"
           @click="updateBorderColor(color)"
         />
+      </div>
+
+      <!-- Shape -->
+      <div class="flex flex-wrap gap-1.5 mb-3">
+        <button
+          v-for="shape in shapes"
+          :key="shape.value"
+          :title="shape.label"
+          class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+          :class="localShape === shape.value
+            ? 'bg-teal-500/20 ring-1 ring-teal-500'
+            : 'hover:bg-white/5'"
+          @click="updateShape(shape.value)"
+        >
+          <UIcon :name="shape.icon" class="w-4 h-4 opacity-70" />
+        </button>
       </div>
 
       <!-- Label input - clean, no label above -->

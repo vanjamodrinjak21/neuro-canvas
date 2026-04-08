@@ -1,4 +1,5 @@
 import type { Node } from '~/types/canvas'
+import { getShapePath } from './shapes'
 
 /** Visual state of a node on the canvas. */
 export type NodeState = 'normal' | 'hover' | 'selected' | 'dragging' | 'ai-suggestion' | 'highlighted' | 'dimmed'
@@ -145,29 +146,9 @@ export function drawNode(
   ctx.strokeStyle = borderColor
   ctx.lineWidth = borderWidth
 
-  const radius = style.shape === 'circle' ? Math.min(drawWidth, drawHeight) / 2 : 6
-
-  if (style.shape === 'circle') {
-    ctx.beginPath()
-    ctx.arc(drawX + drawWidth / 2, drawY + drawHeight / 2, radius, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-  } else if (style.shape === 'diamond') {
-    ctx.beginPath()
-    ctx.moveTo(drawX + drawWidth / 2, drawY)
-    ctx.lineTo(drawX + drawWidth, drawY + drawHeight / 2)
-    ctx.lineTo(drawX + drawWidth / 2, drawY + drawHeight)
-    ctx.lineTo(drawX, drawY + drawHeight / 2)
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-  } else {
-    // Rounded rectangle
-    ctx.beginPath()
-    ctx.roundRect(drawX, drawY, drawWidth, drawHeight, radius)
-    ctx.fill()
-    ctx.stroke()
-  }
+  const shapePath = getShapePath(style.shape || 'rounded', drawX, drawY, drawWidth, drawHeight)
+  ctx.fill(shapePath)
+  ctx.stroke(shapePath)
 
   // Animated selection ring — grows from center based on selectionProgress
   if (selProg > 0) {
@@ -175,9 +156,14 @@ export function drawNode(
     ctx.strokeStyle = colors.nodeSelected
     ctx.lineWidth = 1
     ctx.globalAlpha = selProg * 0.8
-    ctx.beginPath()
-    ctx.roundRect(drawX - ringExpand, drawY - ringExpand, drawWidth + ringExpand * 2, drawHeight + ringExpand * 2, radius + ringExpand)
-    ctx.stroke()
+    const ringPath = getShapePath(
+      style.shape || 'rounded',
+      drawX - ringExpand,
+      drawY - ringExpand,
+      drawWidth + ringExpand * 2,
+      drawHeight + ringExpand * 2
+    )
+    ctx.stroke(ringPath)
     ctx.globalAlpha = 1
   }
 
@@ -251,16 +237,7 @@ export function drawNodeSimplified(
   ctx.strokeStyle = isSelected ? colors.nodeSelected : (style.borderColor || colors.nodeBorder)
   ctx.lineWidth = isSelected ? 2 : 1
 
-  const radius = style.shape === 'circle' ? Math.min(width, height) / 2 : 6
-  if (style.shape === 'circle') {
-    ctx.beginPath()
-    ctx.arc(x + width / 2, y + height / 2, radius, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-  } else {
-    ctx.beginPath()
-    ctx.roundRect(x, y, width, height, radius)
-    ctx.fill()
-    ctx.stroke()
-  }
+  const shapePath = getShapePath(style.shape || 'rounded', x, y, width, height)
+  ctx.fill(shapePath)
+  ctx.stroke(shapePath)
 }
