@@ -24,7 +24,7 @@ export interface Viewport extends Rect {
 
 // Node Types
 export type NodeType = 'text' | 'image' | 'icon' | 'note'
-export type NodeShape = 'rounded' | 'rectangle' | 'circle' | 'diamond'
+export type NodeShape = 'rounded' | 'rectangle' | 'circle' | 'diamond' | 'hexagon' | 'star' | 'pill' | 'dot'
 
 // Anchor Types
 export type Anchor = 'top' | 'right' | 'bottom' | 'left'
