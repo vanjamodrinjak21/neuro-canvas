@@ -177,7 +177,7 @@ export function useRenderLoop(deps: RenderLoopDeps) {
       renderFrame(ctx)
     } catch (e) {
       // Don't let render errors kill the animation loop
-      if (import.meta.dev) console.warn('[RenderLoop] render error:', e)
+      console.warn('[RenderLoop] render error:', e)
     }
 
     rafId = requestAnimationFrame(render)
