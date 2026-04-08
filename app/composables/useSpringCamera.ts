@@ -22,7 +22,7 @@ export interface SpringPresets {
 const presets: SpringPresets = {
   navigation: { stiffness: 180, damping: 24, mass: 1, restThreshold: 0.01 },
   snappy: { stiffness: 300, damping: 30, mass: 1, restThreshold: 0.01 },
-  momentum: { stiffness: 50, damping: 12, mass: 1, restThreshold: 0.5 },
+  momentum:   { stiffness: 80,  damping: 17, mass: 1, restThreshold: 0.5  },
   elastic: { stiffness: 120, damping: 14, mass: 1, restThreshold: 0.01 },
   instant: { stiffness: 1000, damping: 100, mass: 1, restThreshold: 0.01 }
 }

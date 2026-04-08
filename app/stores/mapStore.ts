@@ -859,43 +859,54 @@ const actions: MapActions = {
     state.camera.zoom = newZoom
   },
 
-  fitToContent() {
-    if (state.nodes.size === 0) {
-      state.camera = { x: 0, y: 0, zoom: 1 }
-      return
-    }
+  fitToContent(canvasWidth?: number, canvasHeight?: number) {
+      if (state.nodes.size === 0) {
+        state.camera = { x: 0, y: 0, zoom: 1 }
+        return
+      }
 
-    // Calculate bounds
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
+      // Calculate content bounding box
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
 
-    for (const node of state.nodes.values()) {
-      minX = Math.min(minX, node.position.x)
-      minY = Math.min(minY, node.position.y)
-      maxX = Math.max(maxX, node.position.x + node.size.width)
-      maxY = Math.max(maxY, node.position.y + node.size.height)
-    }
+      for (const node of state.nodes.values()) {
+        minX = Math.min(minX, node.position.x)
+        minY = Math.min(minY, node.position.y)
+        maxX = Math.max(maxX, node.position.x + node.size.width)
+        maxY = Math.max(maxY, node.position.y + node.size.height)
+      }
 
-    const contentWidth = maxX - minX
-    const contentHeight = maxY - minY
-    const padding = 100
+      const contentWidth = maxX - minX
+      const contentHeight = maxY - minY
+      const padding = 80
 
-    // Assuming viewport size (this would come from the actual canvas)
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
+      // Use actual canvas dimensions if provided, else fall back to window
+      const viewportWidth = canvasWidth ?? window.innerWidth
+      const viewportHeight = canvasHeight ?? window.innerHeight
 
-    const scaleX = (viewportWidth - padding * 2) / contentWidth
-    const scaleY = (viewportHeight - padding * 2) / contentHeight
-    const scale = Math.min(scaleX, scaleY, 2)
+      const scaleX = (viewportWidth - padding * 2) / contentWidth
+      const scaleY = (viewportHeight - padding * 2) / contentHeight
+      // Clamp zoom to 0.5–2.0 — never land at extreme zoom
+      const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.5), 2.0)
 
-    state.camera = {
-      x: -(minX + contentWidth / 2) * scale + viewportWidth / 2,
-      y: -(minY + contentHeight / 2) * scale + viewportHeight / 2,
-      zoom: scale
-    }
-  },
+      // Bias root node toward center-left (40% horizontal) if root exists
+      let centerX = minX + contentWidth / 2
+      let centerY = minY + contentHeight / 2
+
+      if (state.rootNodeId) {
+        const rootNode = state.nodes.get(state.rootNodeId)
+        if (rootNode) {
+          // Weighted average: 30% root position, 70% content center
+          centerX = rootNode.position.x * 0.3 + centerX * 0.7
+          centerY = rootNode.position.y * 0.3 + centerY * 0.7
+        }
+      }
+
+      state.camera = {
+        x: -centerX * scale + viewportWidth * 0.4,
+        y: -centerY * scale + viewportHeight * 0.5,
+        zoom: scale
+      }
+    },
 
   undo() {
     if (state.historyIndex < 0) return
