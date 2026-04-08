@@ -9,6 +9,7 @@ import type {
 } from '~/types/ai-generation'
 import { useMapStore } from '~/stores/mapStore'
 import { getRelationshipLabel, getRelationshipColor } from '~/utils/ai-prompts'
+import { getCategoryColor } from '~/constants/categories'
 
 /**
  * Layout configuration for map rendering
@@ -54,25 +55,6 @@ export function useMapRenderer() {
   const mapStore = useMapStore()
 
   /**
-   * Category to color mapping
-   */
-  const categoryColors: Record<string, string> = {
-    concept: '#60A5FA',   // Blue
-    fact: '#4ADE80',      // Green
-    question: '#FACC15',  // Yellow
-    example: '#FB923C',   // Orange
-    definition: '#A78BFA', // Purple
-    process: '#F472B6'    // Pink
-  }
-
-  /**
-   * Get color for a category
-   */
-  function getCategoryColor(category: string): string {
-    return categoryColors[category] || '#00D2BE'
-  }
-
-  /**
    * Helper to create a node with partial style
    */
   function createNode(options: {
@@ -80,12 +62,14 @@ export function useMapRenderer() {
     content: string
     style?: Partial<NodeStyle>
     metadata?: Record<string, unknown>
+    parentId?: string
   }): Node {
     return mapStore.addNode({
       position: options.position,
       content: options.content,
       style: options.style as NodeStyle,
-      metadata: options.metadata
+      metadata: options.metadata,
+      parentId: options.parentId
     })
   }
 
@@ -127,9 +111,10 @@ export function useMapRenderer() {
       metadata: {
         description: structure.rootDescription,
         isRoot: true,
-        category: 'concept'
+        category: 'root'
       }
     })
+    mapStore.updateNode(rootNode.id, { isRoot: true })
     nodeIds.push(rootNode.id)
 
     // Calculate total weight for proportional spacing
@@ -223,13 +208,22 @@ export function useMapRenderer() {
       metadata: {
         description: branch.description,
         category: branch.category
-      }
+      },
+      parentId
     })
     nodeIds.push(node.id)
 
     // Create edge from parent
     const edge = mapStore.addEdge(parentId, node.id)
     edgeIds.push(edge.id)
+
+    mapStore.updateEdge(edge.id, {
+      ai: {
+        relationshipType: 'parent-child',
+        confidence: 1,
+        generatedBy: 'generate',
+      }
+    })
 
     // Render children with adaptive layout
     if (branch.children && branch.children.length > 0) {
@@ -334,7 +328,8 @@ export function useMapRenderer() {
           category: suggestion.category,
           relationshipToParent: suggestion.relationshipToParent,
           confidence: suggestion.confidence
-        }
+        },
+        parentId: parentNode.id
       })
       nodeIds.push(node.id)
 
@@ -348,6 +343,14 @@ export function useMapRenderer() {
           : undefined
       })
       edgeIds.push(edge.id)
+
+      mapStore.updateEdge(edge.id, {
+        ai: {
+          relationshipType: suggestion.relationshipToParent || 'related-to',
+          confidence: suggestion.confidence,
+          generatedBy: 'expand',
+        }
+      })
 
       // Render children if present and requested
       if (includeChildren && suggestion.suggestedChildren && suggestion.suggestedChildren.length > 0) {
@@ -390,7 +393,8 @@ export function useMapRenderer() {
         category: suggestion.category,
         relationshipToParent: suggestion.relationshipToParent,
         confidence: suggestion.confidence
-      }
+      },
+      parentId: parentNode.id
     })
 
     const edge = createEdge(parentNode.id, node.id, {
@@ -400,6 +404,14 @@ export function useMapRenderer() {
       style: suggestion.relationshipToParent
         ? { strokeColor: getRelationshipColor(suggestion.relationshipToParent) }
         : undefined
+    })
+
+    mapStore.updateEdge(edge.id, {
+      ai: {
+        relationshipType: suggestion.relationshipToParent || 'related-to',
+        confidence: suggestion.confidence,
+        generatedBy: 'expand',
+      }
     })
 
     return { nodeId: node.id, edgeId: edge.id }
@@ -427,6 +439,5 @@ export function useMapRenderer() {
     addRichSuggestion,
     calculateSuggestionPosition,
     getCategoryColor,
-    categoryColors
   }
 }

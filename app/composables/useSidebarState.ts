@@ -1,35 +1,24 @@
 import type { Node } from '~/types'
+import {
+  NODE_CATEGORIES,
+  getCategoryColor,
+  getCategoryInfo,
+  type CategoryId,
+  type CategoryDefinition
+} from '~/constants/categories'
 
-// Node category definitions — single source of truth
-export const nodeCategories = [
-  { id: 'main-fact', label: 'Main Fact', icon: 'i-lucide-star', color: '#00D2BE' },
-  { id: 'description', label: 'Description', icon: 'i-lucide-file-text', color: '#60A5FA' },
-  { id: 'evidence', label: 'Evidence', icon: 'i-lucide-check-circle', color: '#4ADE80' },
-  { id: 'question', label: 'Question', icon: 'i-lucide-help-circle', color: '#FACC15' },
-  { id: 'idea', label: 'Idea', icon: 'i-lucide-lightbulb', color: '#FB923C' },
-  { id: 'reference', label: 'Reference', icon: 'i-lucide-link', color: '#A78BFA' },
-] as const
+// Re-export for backward compatibility — consumers that import from here
+export const nodeCategories = Object.entries(NODE_CATEGORIES).map(
+  ([id, cat]) => ({ id, ...cat })
+)
 
 export type NodeCategory = typeof nodeCategories[number]
+
+export { getCategoryColor, getCategoryInfo }
 
 export const nodeColors = [
   '#00D2BE', '#A78BFA', '#F472B6', '#60A5FA', '#4ADE80', '#FB923C', '#FACC15'
 ] as const
-
-// Category color map for AI suggestions
-export const categoryColorMap: Record<string, string> = {
-  concept: '#60A5FA',
-  fact: '#4ADE80',
-  question: '#FACC15',
-  example: '#FB923C',
-  definition: '#A78BFA',
-  process: '#F472B6',
-  'main-fact': '#00D2BE',
-  description: '#60A5FA',
-  evidence: '#4ADE80',
-  idea: '#FB923C',
-  reference: '#A78BFA',
-}
 
 export const relationshipBgColors: Record<string, string> = {
   'is-a': 'rgba(96, 165, 250, 0.15)',
@@ -41,19 +30,6 @@ export const relationshipBgColors: Record<string, string> = {
   'example-of': 'rgba(251, 146, 60, 0.15)',
   'part-of': 'rgba(0, 210, 190, 0.15)',
   'leads-to': 'rgba(250, 204, 21, 0.15)',
-}
-
-export function getCategoryInfo(categoryId: string): NodeCategory & { id: string } {
-  return nodeCategories.find(c => c.id === categoryId) || {
-    id: 'uncategorized',
-    label: 'Uncategorized',
-    icon: 'i-lucide-circle',
-    color: '#555558',
-  }
-}
-
-export function getCategoryColor(category: string): string {
-  return categoryColorMap[category] || '#00D2BE'
 }
 
 export function getRelationshipBgColor(relationship: string): string {

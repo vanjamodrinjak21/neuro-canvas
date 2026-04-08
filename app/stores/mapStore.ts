@@ -15,6 +15,7 @@ import type {
 } from '~/types'
 import { useLinkIndex } from '~/composables/useLinkIndex'
 import type { DBMapDocument, DBNode, DBEdge } from '~/composables/useDatabase'
+import { resolveCategoryId, LEGACY_CATEGORY_MAP } from '~/constants/categories'
 
 // Enable Immer patches for undo/redo
 enablePatches()
@@ -473,6 +474,13 @@ const actions: MapActions = {
         if (measured.height > 50 || measured.width > 150) {
           node.size = measured
         }
+      }
+    }
+
+    // Migration: map legacy sidebar category IDs to unified categories
+    for (const [, node] of state.nodes) {
+      if (node.metadata?.category && node.metadata.category in LEGACY_CATEGORY_MAP) {
+        node.metadata.category = resolveCategoryId(node.metadata.category)
       }
     }
 
