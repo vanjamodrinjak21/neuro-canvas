@@ -444,7 +444,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
   function handleDoubleClick(event: MouseEvent) {
     if (!container()) return
 
-    const { screenPos, worldPos } = eventPositions(event)
+    const { worldPos } = eventPositions(event)
 
     // Check if double-clicked on a node
     const existingNode = findNodeAtPosition(worldPos, deps.nodes())
@@ -479,7 +479,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
 
     if (!container()) return
 
-    const { screenPos, worldPos } = eventPositions(event)
+    const { worldPos } = eventPositions(event)
 
     const node = findNodeAtPosition(worldPos, deps.nodes())
     let edge: Edge | null = null
