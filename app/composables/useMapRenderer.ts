@@ -9,6 +9,7 @@ import type {
 } from '~/types/ai-generation'
 import { useMapStore } from '~/stores/mapStore'
 import { getRelationshipLabel, getRelationshipColor } from '~/utils/ai-prompts'
+import { normalizedSimilarity } from '~/utils/fuzzyMatch'
 import { getCategoryColor } from '~/constants/categories'
 
 /**
@@ -173,17 +174,39 @@ export function useMapRenderer() {
   }
 
   /**
-   * Find a node by its content (case-insensitive partial match)
+   * Find a node by its content using exact then fuzzy matching.
+   * Falls back to Levenshtein similarity if no exact match is found.
    */
   function findNodeByContent(content: string, nodeIds: string[]): Node | undefined {
-    const searchLower = content.toLowerCase()
+    const searchLower = content.trim().toLowerCase()
+
+    // Primary: exact match on normalized title
     for (const nodeId of nodeIds) {
       const node = mapStore.nodes.get(nodeId)
-      if (node && node.content.toLowerCase().includes(searchLower)) {
+      if (node && node.content.trim().toLowerCase() === searchLower) {
         return node
       }
     }
-    return undefined
+
+    // Fallback: fuzzy match with 80% threshold
+    let bestNode: Node | undefined
+    let bestSimilarity = 0
+
+    for (const nodeId of nodeIds) {
+      const node = mapStore.nodes.get(nodeId)
+      if (!node) continue
+      const sim = normalizedSimilarity(content, node.content)
+      if (sim > bestSimilarity && sim >= 0.8) {
+        bestSimilarity = sim
+        bestNode = node
+      }
+    }
+
+    if (!bestNode) {
+      console.warn(`[useMapRenderer] Unresolved cross-connection: "${content}" — no node matched above 80% threshold`)
+    }
+
+    return bestNode
   }
 
   /**
