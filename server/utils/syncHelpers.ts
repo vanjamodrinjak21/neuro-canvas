@@ -24,7 +24,14 @@ export function computeByteSize(data: unknown): number {
  * Require authenticated session — returns userId + email or throws 401
  */
 export async function requireAuthSession(event: H3Event): Promise<{ userId: string; email: string }> {
-  const session = await getServerSession(event)
+  let session: Awaited<ReturnType<typeof getServerSession>>
+  try {
+    session = await getServerSession(event)
+  } catch (e) {
+    console.error(`[Auth] getServerSession threw:`, e instanceof Error ? e.message : e)
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  }
+  console.log(`[Auth] getServerSession returned: ${session === null ? 'null' : typeof session}, user=${JSON.stringify(session?.user || null)}`)
 
   // Prefer ID-based lookup (from JWT token.id) over email to prevent TOCTOU issues
   const sessionUser = session?.user as { id?: string; email?: string } | undefined
