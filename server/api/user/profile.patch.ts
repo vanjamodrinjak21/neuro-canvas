@@ -1,4 +1,4 @@
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
 
@@ -27,9 +27,9 @@ const updateProfileSchema = z.object({
 }).strict() // Reject unknown fields (mass assignment protection)
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
+  const token = await getToken({ event })
 
-  if (!session?.user?.email) {
+  if (!token?.email) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Unauthorized'
@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
   const { name, bio, image } = parsed.data
 
   const user = await prisma.user.update({
-    where: { email: session.user.email },
+    where: { email: token.email as string },
     data: {
       ...(name !== undefined && { name }),
       ...(bio !== undefined && { bio: bio || null }),

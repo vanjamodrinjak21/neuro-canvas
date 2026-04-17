@@ -1,4 +1,4 @@
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import { TOTP, Secret } from 'otpauth'
 import bcrypt from 'bcrypt'
 import { randomBytes } from 'node:crypto'
@@ -12,14 +12,14 @@ const verifySchema = z.object({
 }).strict()
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
+  const token = await getToken({ event })
 
-  if (!session?.user?.email) {
+  if (!token?.email) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
   // Rate limit: 10 verify attempts per 15 minutes
-  const { allowed } = await checkRateLimit(`totp-verify:${session.user.email}`, 10, 900)
+  const { allowed } = await checkRateLimit(`totp-verify:${token.email as string}`, 10, 900)
   if (!allowed) {
     throw createError({ statusCode: 429, statusMessage: 'Too many attempts. Try again later.' })
   }
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email: token.email as string },
     select: { id: true, totpSecret: true, totpEnabled: true }
   })
 
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
 
   const totp = new TOTP({
     issuer: 'NeuroCanvas',
-    label: session.user.email || 'user',
+    label: (token.email as string) || 'user',
     algorithm: 'SHA1',
     digits: 6,
     period: 30,

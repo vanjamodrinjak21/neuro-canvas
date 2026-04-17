@@ -75,6 +75,41 @@ const aiTopic = ref('')
 const aiLoading = ref(false)
 const aiError = ref<string | null>(null)
 
+// AI Generation Progress
+interface AIStep {
+  label: string
+  status: 'pending' | 'active' | 'done'
+  elapsed?: string
+}
+const aiSteps = ref<AIStep[]>([])
+const aiProgressPct = ref(0)
+
+function resetAIProgress() {
+  aiSteps.value = [
+    { label: 'Analyzing topic structure', status: 'pending' },
+    { label: 'Generating branches', status: 'pending' },
+    { label: 'Adding sub-nodes & details', status: 'pending' },
+    { label: 'Finding cross-connections', status: 'pending' },
+  ]
+  aiProgressPct.value = 0
+}
+
+function advanceStep(index: number, elapsed?: string) {
+  if (index > 0 && aiSteps.value[index - 1]) {
+    aiSteps.value[index - 1].status = 'done'
+    aiSteps.value[index - 1].elapsed = elapsed
+  }
+  if (aiSteps.value[index]) {
+    aiSteps.value[index].status = 'active'
+  }
+  aiProgressPct.value = Math.round(((index + 0.5) / aiSteps.value.length) * 100)
+}
+
+function completeAllSteps() {
+  aiSteps.value.forEach((s) => { s.status = 'done' })
+  aiProgressPct.value = 100
+}
+
 // Templates
 const showTemplatesModal = ref(false)
 
@@ -386,18 +421,42 @@ async function handleAIQuickStart() {
   if (!aiTopic.value.trim()) return
   aiLoading.value = true
   aiError.value = null
+  resetAIProgress()
+
+  const startTime = Date.now()
+  function elapsed() {
+    return `${((Date.now() - startTime) / 1000).toFixed(1)}s`
+  }
+
   try {
+    // Step 1: Analyzing
+    advanceStep(0)
+    await new Promise(r => setTimeout(r, 400))
+
+    // Step 2: Generating branches (actual AI call happens here)
+    advanceStep(1, elapsed())
     const structure = await ai.generateMapStructure(aiTopic.value, {
       branchCount: 5,
       maxDepth: 2,
       style: 'detailed',
       includeCrossConnections: true
     })
+
+    // Step 3: Building nodes
+    advanceStep(2, elapsed())
     mapStore.newDocument()
     mapStore.setTitle(aiTopic.value)
+    await new Promise(r => setTimeout(r, 300))
+
+    // Step 4: Rendering & connecting
+    advanceStep(3, elapsed())
     mapRenderer.renderMapStructure(structure, { x: 0, y: 0 })
     const doc = mapStore.toSerializable()
     await db.saveMap(doc)
+
+    completeAllSteps()
+    await new Promise(r => setTimeout(r, 500))
+
     showAIModal.value = false
     aiTopic.value = ''
     aiError.value = null
@@ -411,6 +470,7 @@ async function handleAIQuickStart() {
         : error?.message?.includes('No API key')
           ? 'Please add an API key for your AI provider in Settings.'
           : 'Failed to generate map. Please check your AI settings and try again.'
+    resetAIProgress()
   } finally {
     aiLoading.value = false
   }
@@ -795,40 +855,81 @@ async function createFromTemplate(template: typeof templates[0]) {
 
     <!-- AI Quick Start Modal -->
     <Teleport to="body">
-      <div v-if="showAIModal" class="modal-overlay" @click.self="showAIModal = false">
-        <div class="modal">
-          <div class="modal-header">
-            <div class="modal-icon modal-icon-ai">
-              <span class="i-lucide-sparkles" />
+      <div v-if="showAIModal" class="modal-overlay" @click.self="!aiLoading && (showAIModal = false)">
+        <div class="ai-modal">
+          <!-- Glow effect -->
+          <div class="ai-modal-glow" />
+
+          <!-- Input state -->
+          <template v-if="!aiLoading">
+            <div class="ai-modal-content">
+              <div class="ai-modal-icon-ring">
+                <span class="i-lucide-sparkles ai-modal-sparkle" />
+              </div>
+              <h2 class="ai-modal-title">Generate with AI</h2>
+              <p class="ai-modal-subtitle">Describe your topic. AI will structure the entire mind map.</p>
+
+              <div class="ai-modal-input-wrap">
+                <span class="i-lucide-search ai-modal-input-icon" />
+                <input
+                  v-model="aiTopic"
+                  type="text"
+                  class="ai-modal-input"
+                  placeholder="e.g., Quantum Computing, UX Research..."
+                  autofocus
+                  @keyup.enter="handleAIQuickStart"
+                >
+              </div>
+
+              <div v-if="aiError" class="ai-error-banner">
+                <span class="i-lucide-alert-triangle ai-error-icon" />
+                <span class="ai-error-text">{{ aiError }}</span>
+                <button class="ai-error-dismiss" @click="aiError = null">
+                  <span class="i-lucide-x" />
+                </button>
+              </div>
+
+              <div class="ai-modal-actions">
+                <button class="ai-modal-cancel" @click="showAIModal = false">Cancel</button>
+                <button class="ai-modal-generate" :disabled="!aiTopic.trim()" @click="handleAIQuickStart">
+                  <span class="i-lucide-sparkles ai-modal-btn-icon" />
+                  Generate
+                </button>
+              </div>
             </div>
-            <h2 class="modal-title">AI Quick Start</h2>
-            <p class="modal-subtitle">Enter a topic and let AI generate your mind map</p>
-          </div>
-          <div class="modal-body">
-            <input
-              v-model="aiTopic"
-              type="text"
-              class="modal-input"
-              placeholder="e.g., Machine Learning, Marketing Strategy..."
-              :disabled="aiLoading"
-              @keyup.enter="handleAIQuickStart"
-            >
-            <div v-if="aiError" class="ai-error-banner">
-              <span class="i-lucide-alert-triangle ai-error-icon" />
-              <span class="ai-error-text">{{ aiError }}</span>
-              <button class="ai-error-dismiss" @click="aiError = null">
-                <span class="i-lucide-x" />
-              </button>
+          </template>
+
+          <!-- Generating state with progress -->
+          <template v-else>
+            <div class="ai-modal-content">
+              <div class="ai-modal-icon-ring ai-modal-icon-ring--spinning">
+                <span class="i-lucide-sparkles ai-modal-sparkle" />
+              </div>
+              <h2 class="ai-modal-title">Generating "{{ aiTopic }}"</h2>
+              <p class="ai-modal-subtitle">Building your mind map structure...</p>
+
+              <!-- Progress bar -->
+              <div class="ai-progress-bar">
+                <div class="ai-progress-fill" :style="{ width: aiProgressPct + '%' }" />
+              </div>
+
+              <!-- Steps -->
+              <div class="ai-steps">
+                <div
+                  v-for="(step, i) in aiSteps"
+                  :key="i"
+                  :class="['ai-step', `ai-step--${step.status}`]"
+                >
+                  <div class="ai-step-indicator">
+                    <svg v-if="step.status === 'done'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    <div v-else-if="step.status === 'active'" class="ai-step-dot" />
+                  </div>
+                  <span class="ai-step-label">{{ step.label }}</span>
+                  <span v-if="step.elapsed" class="ai-step-elapsed">{{ step.elapsed }}</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" :disabled="aiLoading" @click="showAIModal = false">Cancel</button>
-            <button class="btn btn-primary" :disabled="!aiTopic.trim() || aiLoading" @click="handleAIQuickStart">
-              <span v-if="aiLoading" class="i-lucide-loader-2 animate-spin btn-icon" />
-              <span v-else class="i-lucide-sparkles btn-icon" />
-              {{ aiLoading ? 'Generating...' : 'Generate Map' }}
-            </button>
-          </div>
+          </template>
         </div>
       </div>
     </Teleport>
@@ -1792,6 +1893,306 @@ async function createFromTemplate(template: typeof templates[0]) {
 .ai-error-dismiss:hover {
   opacity: 1;
 }
+
+/* ── AI Quick Start Modal (Futuristic) ── */
+.ai-modal {
+  width: 90%;
+  max-width: 500px;
+  background: linear-gradient(180deg, rgba(0, 210, 190, 0.04) 0%, #0A0A0E 35%);
+  border: 1px solid rgba(0, 210, 190, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  animation: slideUp 200ms ease-out;
+}
+
+.ai-modal-glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(0, 210, 190, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ai-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 32px 28px;
+  gap: 20px;
+  position: relative;
+}
+
+.ai-modal-icon-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 210, 190, 0.25);
+  background: rgba(0, 210, 190, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-modal-icon-ring--spinning {
+  animation: ai-ring-spin 2s linear infinite;
+  border-color: transparent;
+  border-top-color: rgba(0, 210, 190, 0.5);
+  border-right-color: rgba(0, 210, 190, 0.15);
+}
+
+@keyframes ai-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-modal-sparkle {
+  font-size: 22px;
+  color: #00D2BE;
+}
+
+.ai-modal-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #FAFAFA;
+  letter-spacing: -0.03em;
+  margin: 0;
+  text-align: center;
+}
+
+.ai-modal-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #52525B;
+  margin: -12px 0 0;
+  text-align: center;
+}
+
+.ai-modal-input-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 210, 190, 0.15);
+  border-radius: 12px;
+  padding: 0 16px;
+  gap: 10px;
+  transition: border-color 150ms var(--nc-ease-out, ease);
+}
+
+.ai-modal-input-wrap:focus-within {
+  border-color: rgba(0, 210, 190, 0.4);
+  box-shadow: 0 0 0 3px rgba(0, 210, 190, 0.06);
+}
+
+.ai-modal-input-icon {
+  font-size: 16px;
+  color: rgba(0, 210, 190, 0.4);
+  flex-shrink: 0;
+}
+
+.ai-modal-input {
+  flex: 1;
+  height: 100%;
+  background: none;
+  border: none;
+  color: #FAFAFA;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  outline: none;
+}
+
+.ai-modal-input::placeholder {
+  color: #3F3F46;
+}
+
+.ai-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.ai-modal-cancel {
+  background: none;
+  border: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #3F3F46;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: color 150ms var(--nc-ease-out, ease);
+}
+
+.ai-modal-cancel:hover {
+  color: #71717A;
+}
+
+.ai-modal-generate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 24px;
+  background: #00D2BE;
+  border: none;
+  border-radius: 10px;
+  color: #09090B;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 120ms var(--nc-ease-out, ease);
+}
+
+.ai-modal-generate:hover {
+  opacity: 0.9;
+}
+
+.ai-modal-generate:active {
+  transform: scale(0.97);
+}
+
+.ai-modal-generate:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ai-modal-btn-icon {
+  font-size: 14px;
+}
+
+/* Progress bar */
+.ai-progress-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ai-progress-fill {
+  height: 100%;
+  background: #00D2BE;
+  border-radius: 2px;
+  transition: width 500ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  box-shadow: 0 0 8px rgba(0, 210, 190, 0.4);
+}
+
+/* Steps */
+.ai-steps {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0;
+}
+
+.ai-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.ai-step:last-child {
+  border-bottom: none;
+}
+
+.ai-step-indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 200ms var(--nc-ease-out, ease);
+}
+
+.ai-step--pending .ai-step-indicator {
+  border: 1.5px solid #252529;
+}
+
+.ai-step--active .ai-step-indicator {
+  border: 1.5px solid #00D2BE;
+}
+
+.ai-step--done .ai-step-indicator {
+  background: rgba(0, 210, 190, 0.15);
+  color: #00D2BE;
+}
+
+.ai-step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00D2BE;
+  animation: ai-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ai-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.ai-step-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #3F3F46;
+  transition: color 200ms ease;
+}
+
+.ai-step--active .ai-step-label {
+  font-weight: 600;
+  color: #FAFAFA;
+}
+
+.ai-step--done .ai-step-label {
+  font-weight: 500;
+  color: #71717A;
+}
+
+.ai-step-elapsed {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #3F3F46;
+  margin-left: auto;
+}
+
+/* Light theme overrides */
+:root.light .ai-modal {
+  background: linear-gradient(180deg, rgba(0, 210, 190, 0.04) 0%, #FAFAF9 35%);
+  border-color: rgba(0, 210, 190, 0.15);
+}
+
+:root.light .ai-modal-glow {
+  background: radial-gradient(circle, rgba(0, 210, 190, 0.08) 0%, transparent 70%);
+}
+
+:root.light .ai-modal-title { color: #111111; }
+:root.light .ai-modal-subtitle { color: #71717A; }
+:root.light .ai-modal-input-wrap {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 210, 190, 0.2);
+}
+:root.light .ai-modal-input { color: #111111; }
+:root.light .ai-modal-input::placeholder { color: #A1A1AA; }
+:root.light .ai-step--active .ai-step-label { color: #111111; }
+:root.light .ai-step--done .ai-step-label { color: #71717A; }
+:root.light .ai-step-label { color: #A1A1AA; }
+:root.light .ai-step--pending .ai-step-indicator { border-color: #E8E8E6; }
+:root.light .ai-step { border-bottom-color: rgba(0, 0, 0, 0.04); }
+:root.light .ai-progress-bar { background: rgba(0, 0, 0, 0.04); }
 
 .modal-footer {
   display: flex;

@@ -1,4 +1,4 @@
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import bcrypt from 'bcrypt'
 import { z } from 'zod'
 import { prisma } from '../../../utils/prisma'
@@ -9,14 +9,14 @@ const disableSchema = z.object({
 }).strict()
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
+  const token = await getToken({ event })
 
-  if (!session?.user?.email) {
+  if (!token?.email) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
   // Rate limit: 5 attempts per hour
-  const { allowed } = await checkRateLimit(`totp-disable:${session.user.email}`, 5, 3600)
+  const { allowed } = await checkRateLimit(`totp-disable:${token.email as string}`, 5, 3600)
   if (!allowed) {
     throw createError({ statusCode: 429, statusMessage: 'Too many attempts. Try again later.' })
   }
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email: token.email as string },
     select: { id: true, password: true, totpEnabled: true }
   })
 

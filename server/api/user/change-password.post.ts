@@ -1,4 +1,4 @@
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import bcrypt from 'bcrypt'
 import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
@@ -17,9 +17,9 @@ const changePasswordSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
+  const token = await getToken({ event })
 
-  if (!session?.user?.email) {
+  if (!token?.email) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Unauthorized'
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
 
   // Rate limit: 5 attempts per 15 minutes
   const { allowed } = await checkRateLimit(
-    `change-password:${session.user.email}`,
+    `change-password:${token.email as string}`,
     5,
     900
   )
@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email: token.email as string },
     select: { id: true, password: true }
   })
 

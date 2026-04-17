@@ -1,24 +1,24 @@
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import { TOTP, Secret } from 'otpauth'
 import { prisma } from '../../../utils/prisma'
 import { checkRateLimit } from '../../../utils/redis'
 import { serverEncrypt } from '../../../utils/encryption'
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
+  const token = await getToken({ event })
 
-  if (!session?.user?.email) {
+  if (!token?.email) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
   // Rate limit: 5 setup attempts per hour
-  const { allowed } = await checkRateLimit(`totp-setup:${session.user.email}`, 5, 3600)
+  const { allowed } = await checkRateLimit(`totp-setup:${token.email as string}`, 5, 3600)
   if (!allowed) {
     throw createError({ statusCode: 429, statusMessage: 'Too many attempts. Try again later.' })
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email: token.email as string },
     select: { id: true, totpEnabled: true, email: true }
   })
 

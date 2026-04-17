@@ -1,10 +1,10 @@
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
+  const token = await getToken({ event })
 
-  if (!session?.user?.email) {
+  if (!token?.email) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Unauthorized'
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email: token.email as string },
     select: {
       id: true,
       email: true,

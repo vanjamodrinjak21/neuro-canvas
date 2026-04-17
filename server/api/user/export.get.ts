@@ -1,11 +1,11 @@
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import { prisma } from '../../utils/prisma'
 import { checkRateLimit } from '../../utils/redis'
 
 export default defineEventHandler(async (event) => {
-  const session = await getServerSession(event)
+  const token = await getToken({ event })
 
-  if (!session?.user?.email) {
+  if (!token?.email) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Unauthorized'
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
   // Rate limit: 3 exports per hour
   const { allowed } = await checkRateLimit(
-    `export:${session.user.email}`,
+    `export:${token.email as string}`,
     3,
     3600
   )
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email: token.email as string },
     select: {
       id: true,
       name: true,

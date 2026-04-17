@@ -27,13 +27,13 @@ export default defineEventHandler(async (event) => {
 
   // If no share link, require authentication and ownership
   if (!share) {
-    const { getServerSession } = await import('#auth')
-    const session = await getServerSession(event)
-    if (!session?.user) {
+    const { getToken } = await import('#auth')
+    const token = await getToken({ event })
+    if (!token?.email) {
       throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
     }
     const userId = await prisma.user.findUnique({
-      where: { email: session.user.email! },
+      where: { email: token.email as string },
       select: { id: true }
     })
     if (!userId) {
