@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { Node } from '~/types'
-import type { AISuggestion, RichNodeSuggestion } from '~/types'
+import type { Node, AISuggestion, RichNodeSuggestion  } from '~/types'
 import { SIDEBAR_DISPATCH_KEY } from '~/types/sidebar'
 
 /**

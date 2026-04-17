@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "bash scripts/tauri-dev.sh",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "npm run generate",
+    "beforeBuildCommand": "npm run generate && node scripts/post-generate.cjs",
     "frontendDist": "../.output/public"
   },
   "app": {
@@ -71,5 +71,10 @@
       }
     }
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "endpoints": [],
+      "pubkey": ""
+    }
+  }
 }

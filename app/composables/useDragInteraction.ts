@@ -4,8 +4,8 @@ import type { Node, Point } from '~/types/canvas'
 const DRAG_THRESHOLD = 3 // pixels in screen space
 
 interface DragDeps {
-  nodes: Map<string, Node>
-  selectedNodeIds: Set<string>
+  nodes: () => Map<string, Node>
+  selectedNodeIds: () => Set<string>
   moveNode: (id: string, x: number, y: number, snap?: boolean) => void
   beginMoveNodes: (nodeIds: string[]) => Map<string, { x: number; y: number }>
   commitMoveNodes: (nodeIds: string[], originalPositions: Map<string, { x: number; y: number }>) => void
@@ -54,14 +54,14 @@ export function useDragInteraction(deps: DragDeps) {
 
     isDragging.value = true
 
-    const nodeIds = [...deps.selectedNodeIds]
+    const nodeIds = [...deps.selectedNodeIds()]
     dragOriginalPositions = deps.beginMoveNodes(nodeIds)
 
     // Store absolute offset: click point → node position, so we can reconstruct
     // each node's target position from the current mouse position without drift.
     dragNodeOffsets = new Map()
     for (const nodeId of nodeIds) {
-      const node = deps.nodes.get(nodeId)
+      const node = deps.nodes().get(nodeId)
       if (node && !(node as any).locked) {
         dragNodeOffsets.set(nodeId, {
           x: node.position.x - dragStart.value.x,
@@ -89,7 +89,7 @@ export function useDragInteraction(deps: DragDeps) {
     // Apply smart-guide snap correction
     if (snapDx !== 0 || snapDy !== 0) {
       for (const [nodeId] of dragNodeOffsets) {
-        const node = deps.nodes.get(nodeId)
+        const node = deps.nodes().get(nodeId)
         if (node && !(node as any).locked) {
           deps.moveNode(nodeId, node.position.x + snapDx, node.position.y + snapDy, false)
         }
@@ -108,7 +108,7 @@ export function useDragInteraction(deps: DragDeps) {
 
     // Snap-on-drop: apply grid snap to final positions
     for (const [nodeId] of dragNodeOffsets) {
-      const node = deps.nodes.get(nodeId)
+      const node = deps.nodes().get(nodeId)
       if (node && !(node as any).locked) {
         deps.moveNode(nodeId, node.position.x, node.position.y, true) // snap on drop
       }

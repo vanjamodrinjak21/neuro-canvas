@@ -118,7 +118,7 @@ export interface Edge {
     relationshipType?: string
     confidence?: number
     reasoning?: string
-    generatedBy?: 'expand' | 'connect' | 'agent' | 'insight' | 'user'
+    generatedBy?: 'expand' | 'connect' | 'generate' | 'agent' | 'insight' | 'user'
     bidirectional?: boolean
     strength?: number
   }

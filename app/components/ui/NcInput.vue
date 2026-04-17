@@ -38,7 +38,7 @@ const inputClass = computed(() => [
   // Base
   'w-full rounded-nc-md',
   'bg-nc-graphite',
-  'border transition-all duration-200',
+  'border transition-[border-color,box-shadow] duration-150',
   'text-nc-ink placeholder-nc-ink-muted',
   'font-sans',
   'focus:outline-none',

@@ -6,6 +6,7 @@ import { useDatabase } from '~/composables/useDatabase'
 
 definePageMeta({
   layout: false,
+  middleware: 'auth',
 })
 
 const router = useRouter()
@@ -24,6 +25,7 @@ const {
 const showPublishModal = ref(false)
 const aiPrompt = ref('')
 const aiGenerating = ref(false)
+const aiError = ref<string | null>(null)
 const searchQuery = ref('')
 
 const mapStore = useMapStore()
@@ -103,32 +105,30 @@ async function handleAIGenerate() {
     mapRenderer.renderMapStructure(result.structure, { x: 0, y: 0 })
     const doc = mapStore.toSerializable()
 
-    // 3. Save as a map first (needed as source for publish)
-    await db.saveMap(doc)
-
-    // 4. Publish as a template
+    // 3. Publish as template with inline data (map is in IndexedDB, not server DB)
     const { publishTemplate } = useTemplates()
     await publishTemplate({
-      sourceMapId: doc.id,
       title: aiPrompt.value,
       description: `AI-generated template: ${aiPrompt.value}`,
       category: 'creative',
       tags: ['ai-generated'],
       aiEnhanced: true,
+      nodes: doc.nodes,
+      edges: doc.edges,
+      settings: doc.settings,
     })
 
     aiPrompt.value = ''
     await fetchTemplates()
   } catch (e: any) {
     const msg = e?.data?.statusMessage || e?.message || ''
-    const message = msg.includes('No AI provider')
-      ? 'Please add an API key in Settings > AI Providers first.'
-      : msg.includes('Unauthorized')
-        ? 'Please sign in to generate templates.'
+    aiError.value = msg.includes('Session expired')
+      ? msg
+      : msg.includes('No AI provider')
+        ? 'Please add an API key in Settings > AI Providers first.'
         : msg.includes('decrypt')
           ? 'API key issue. Try removing and re-adding your key in Settings.'
           : `Failed to generate. ${msg || 'Check your AI settings and try again.'}`
-    alert(message)
   } finally {
     aiGenerating.value = false
   }
@@ -180,7 +180,7 @@ onMounted(() => {
             class="ai-bar-input"
             placeholder='e.g. "SWOT analysis for a SaaS product"'
             @keydown.enter="handleAIGenerate"
-          />
+          >
         </div>
         <button class="ai-generate-btn" :disabled="!aiPrompt.trim() || aiGenerating" @click="handleAIGenerate">
           <svg v-if="!aiGenerating" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -188,6 +188,13 @@ onMounted(() => {
           </svg>
           <div v-else class="btn-spinner" />
           {{ aiGenerating ? 'Generating...' : 'Generate' }}
+        </button>
+      </div>
+      <div v-if="aiError" class="ai-error-banner">
+        <span class="i-lucide-alert-triangle ai-error-icon" />
+        <span class="ai-error-text">{{ aiError }}</span>
+        <button class="ai-error-dismiss" @click="aiError = null">
+          <span class="i-lucide-x" />
         </button>
       </div>
 
@@ -216,7 +223,7 @@ onMounted(() => {
               class="search-input"
               placeholder="Search templates..."
               @input="handleSearch"
-            />
+            >
           </div>
           <div class="sort-wrap">
             <select v-model="sortBy" class="sort-select" @change="handleSortChange">
@@ -415,6 +422,46 @@ onMounted(() => {
 .ai-generate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.ai-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 20px 0;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ai-error-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+
+.ai-error-text {
+  flex: 1;
+}
+
+.ai-error-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.ai-error-dismiss:hover {
+  opacity: 1;
 }
 
 .btn-spinner {

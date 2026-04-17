@@ -2,14 +2,17 @@
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useMapStore } from '~/stores/mapStore'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 
 definePageMeta({
-  layout: false
+  layout: false,
+  middleware: 'auth'
 })
 
 const db = useDatabase()
 const mapStore = useMapStore()
 const router = useRouter()
+const syncEngine = useSyncEngine()
 const { confirm, ConfirmDialog } = useConfirmDialog()
 
 // State
@@ -65,6 +68,13 @@ async function deleteSelected() {
 
   try {
     for (const id of selectedIds.value) {
+      // Delete from server
+      if (!_isTauri && syncEngine.isSyncEnabled.value) {
+        await $fetch('/api/sync/push', {
+          method: 'POST',
+          body: { mapId: id, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
+        }).catch(() => {})
+      }
       await db.deleteMap(id)
     }
     allMaps.value = allMaps.value.filter(m => !selectedIds.value.has(m.id))
@@ -99,12 +109,35 @@ const filteredMaps = computed(() => {
   return maps
 })
 
-// Load all maps
+const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+const _session = _isTauri ? { data: ref({ user: { id: 'desktop-user' } }) } : useAuth()
+
+// Load all maps from server (PostgreSQL → Redis → client), fallback to IndexedDB
 onMounted(async () => {
   try {
-    allMaps.value = await db.getAllMaps()
+    if (!_isTauri && _session.data?.value?.user) {
+      const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
+      allMaps.value = response.maps.map((m: any) => ({
+        id: m.id,
+        title: m.title,
+        nodes: m.data?.nodes || [],
+        edges: m.data?.edges || [],
+        camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
+        settings: m.data?.settings || {},
+        rootNodeId: m.data?.rootNodeId,
+        preview: m.preview,
+        tags: m.tags || [],
+        createdAt: new Date(m.createdAt).getTime(),
+        updatedAt: new Date(m.updatedAt).getTime(),
+        syncVersion: m.syncVersion,
+        checksum: m.checksum
+      })) as DBMapDocument[]
+    } else {
+      allMaps.value = await db.getAllMaps()
+    }
   } catch (error) {
-    console.error('Failed to load maps:', error)
+    console.error('Failed to load maps from server, falling back to local:', error)
+    allMaps.value = await db.getAllMaps()
   } finally {
     isLoading.value = false
   }
@@ -129,6 +162,13 @@ async function deleteMap(mapId: string, event: Event) {
   if (!confirmed) return
 
   try {
+    // Delete from server
+    if (!_isTauri && syncEngine.isSyncEnabled.value) {
+      await $fetch('/api/sync/push', {
+        method: 'POST',
+        body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
+      })
+    }
     await db.deleteMap(mapId)
     allMaps.value = allMaps.value.filter(m => m.id !== mapId)
   } catch (error) {

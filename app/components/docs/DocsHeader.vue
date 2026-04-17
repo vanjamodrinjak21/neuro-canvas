@@ -33,7 +33,6 @@ function toggleTheme() {
   const cx = rect.left + rect.width / 2
   const cy = rect.top + rect.height / 2
 
-  // Calculate the max radius needed to cover the entire viewport
   const maxX = Math.max(cx, window.innerWidth - cx)
   const maxY = Math.max(cy, window.innerHeight - cy)
   const maxRadius = Math.ceil(Math.sqrt(maxX * maxX + maxY * maxY))
@@ -44,23 +43,18 @@ function toggleTheme() {
     return
   }
 
-  // Set clip-path origin to button center
   overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
   overlay.style.display = 'block'
   overlay.style.opacity = '1'
 
-  // Force reflow so the initial clip-path is applied before animating
   overlay.offsetHeight
 
-  // Expand the circle to cover entire viewport
   overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'
   overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
 
   setTimeout(() => {
-    // At peak coverage, swap the theme
     applyThemeChange()
 
-    // Begin fade out
     setTimeout(() => {
       overlay.style.transition = 'opacity 300ms ease'
       overlay.style.opacity = '0'
@@ -187,7 +181,7 @@ function applyThemeChange() {
   background: var(--nc-bg);
   border-bottom: 1px solid var(--nc-border);
   z-index: 100;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: background var(--nc-duration-slow) ease, border-color var(--nc-duration-slow) ease;
 }
 
 /* ─── Hamburger (mobile only) ─── */
@@ -259,7 +253,7 @@ function applyThemeChange() {
   color: var(--nc-text-secondary);
   text-decoration: none;
   line-height: 1;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast) ease;
 }
 
 .docs-header__docs-link:hover {
@@ -280,7 +274,7 @@ function applyThemeChange() {
   border: 1px solid var(--nc-border);
   border-radius: 6px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
 }
 
 .docs-header__search:hover {
@@ -336,7 +330,7 @@ function applyThemeChange() {
   border: 1px solid var(--nc-border);
   border-radius: 6px;
   background: none;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition: color var(--nc-duration-fast) ease, border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
 }
 
 .docs-header__app-btn:hover {
@@ -362,7 +356,7 @@ function applyThemeChange() {
   align-items: center;
   justify-content: center;
   color: var(--nc-text-secondary);
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
   flex-shrink: 0;
 }
 
@@ -377,8 +371,8 @@ function applyThemeChange() {
 
 .docs-header__theme-icon {
   position: absolute;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.3s ease;
+  transition: transform var(--nc-duration-slow) var(--nc-ease-smooth),
+              opacity var(--nc-duration-slow) ease;
 }
 
 /* Dark mode default: moon visible, sun hidden */

@@ -1,7 +1,15 @@
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync, createHmac } from 'crypto'
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync, createHmac, pbkdf2Sync } from 'node:crypto'
 
-const AUTH_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || ''
-const AUTH_SECRET_OLD = process.env.AUTH_SECRET_OLD || ''
+// ─── Lazy secret resolution ─────────────────────────────────────────
+// Read from process.env at call time, not import time.
+// Prevents build-time / runtime secret mismatch in Docker deployments.
+function getAuthSecret(): string {
+  return process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || ''
+}
+
+function getAuthSecretOld(): string {
+  return process.env.AUTH_SECRET_OLD || ''
+}
 
 /**
  * Derive a master key from a given secret using scrypt
@@ -17,17 +25,18 @@ function deriveMasterKey(secret: string): Buffer {
  * Derive a master key from the current AUTH_SECRET
  */
 function getMasterKey(): Buffer {
-  return deriveMasterKey(AUTH_SECRET)
+  return deriveMasterKey(getAuthSecret())
 }
 
 /**
  * Derive a per-user Key Encryption Key (KEK) using HMAC-SHA256
  */
 export function deriveUserKEK(userId: string): string {
-  if (!AUTH_SECRET) {
+  const secret = getAuthSecret()
+  if (!secret) {
     throw new Error('AUTH_SECRET is not set')
   }
-  const hmac = createHmac('sha256', AUTH_SECRET)
+  const hmac = createHmac('sha256', secret)
   hmac.update(`neurocanvas:kek:v1:${userId}`)
   return hmac.digest('hex')
 }
@@ -36,8 +45,9 @@ export function deriveUserKEK(userId: string): string {
  * Derive a per-user KEK from the old AUTH_SECRET (for rotation)
  */
 function deriveUserKEKOld(userId: string): string | null {
-  if (!AUTH_SECRET_OLD) return null
-  const hmac = createHmac('sha256', AUTH_SECRET_OLD)
+  const old = getAuthSecretOld()
+  if (!old) return null
+  const hmac = createHmac('sha256', old)
   hmac.update(`neurocanvas:kek:v1:${userId}`)
   return hmac.digest('hex')
 }
@@ -83,11 +93,11 @@ export function serverDecrypt(encrypted: string): { decrypted: string; usedOldKe
     return { decrypted, usedOldKey: false }
   } catch (currentKeyError) {
     // If no old key configured, rethrow
-    if (!AUTH_SECRET_OLD) throw currentKeyError
+    if (!getAuthSecretOld()) throw currentKeyError
   }
 
   // Try old key
-  const oldKey = deriveMasterKey(AUTH_SECRET_OLD)
+  const oldKey = deriveMasterKey(getAuthSecretOld())
   const iv = Buffer.from(ivHex, 'hex')
   const authTag = Buffer.from(authTagHex, 'hex')
   const decipher = createDecipheriv('aes-256-gcm', oldKey, iv)
@@ -101,20 +111,16 @@ export function serverDecrypt(encrypted: string): { decrypted: string; usedOldKe
  * HMAC of first 8 chars for key identification without decryption
  */
 export function hashKeyPrefix(apiKey: string): string {
-  if (!AUTH_SECRET) {
+  const secret = getAuthSecret()
+  if (!secret) {
     throw new Error('AUTH_SECRET is not set — cannot hash key prefix')
   }
   const prefix = apiKey.slice(0, 8)
-  const hmac = createHmac('sha256', AUTH_SECRET)
+  const hmac = createHmac('sha256', secret)
   hmac.update(prefix)
   return hmac.digest('hex').slice(0, 16)
 }
 
-/**
- * Full decrypt: remove server layer, then client layer.
- * If AUTH_SECRET_OLD was used, self-heals by re-encrypting with current secret.
- * Returns { plaintext, credentialUpdate } — caller should persist credentialUpdate if present.
- */
 /**
  * Full decrypt: supports both server-only (v4) and double-encrypted (v1-3) credentials.
  * v4: server-only AES-256-GCM — just unwrap the server layer.
@@ -161,7 +167,6 @@ export function serverFullDecrypt(
 }
 
 function decryptClientLayer(base64Blob: string, passphrase: string): string {
-  const { pbkdf2Sync } = require('crypto') as typeof import('crypto')
   const raw = Buffer.from(base64Blob, 'base64')
 
   if (raw.length < 28) {

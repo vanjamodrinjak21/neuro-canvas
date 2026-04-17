@@ -23,6 +23,11 @@ tauri-plugin-shell = "2"
 tauri-plugin-process = "2"
 tauri-plugin-os = "2"
 tauri-plugin-http = "2"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tauri-plugin-window-state = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-deep-link = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
@@ -42,7 +47,9 @@ reqwest = { version = "0.12", features = ["stream"] }
 futures-util = "0.3"
 
 [profile.release]
-panic = "abort"
+# NOTE: Do NOT use panic = "abort" — Tauri's IPC resolver has .expect() calls
+# that can panic when a webview navigates during async command execution.
+# Unwinding panics lets the app recover instead of crashing.
 codegen-units = 1
 lto = true
 opt-level = 3

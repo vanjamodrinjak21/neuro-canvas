@@ -17,7 +17,7 @@ describe('NODE_CATEGORIES', () => {
   it('all categories have required fields', () => {
     for (const [id, cat] of Object.entries(NODE_CATEGORIES)) {
       expect(cat.label).toBeTruthy()
-      expect(cat.color).toMatch(/^#[0-9A-Fa-f]{6}$/)
+      expect(cat.color).toMatch(/^#[0-9A-F]{6}$/i)
       expect(cat.icon).toMatch(/^i-lucide-/)
       expect(cat.defaultShape).toBeTruthy()
       expect(id).toBe(id.toLowerCase())

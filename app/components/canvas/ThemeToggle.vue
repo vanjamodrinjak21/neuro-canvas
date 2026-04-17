@@ -12,22 +12,71 @@ const isLight = computed(() => {
 })
 
 const isAnimating = ref(false)
+const toggleBtnRef = ref<HTMLButtonElement | null>(null)
+const overlayRef = ref<HTMLDivElement | null>(null)
 
 function toggle() {
   if (isAnimating.value) return
   isAnimating.value = true
 
-  const next = isLight.value ? 'dark' : 'light'
-  userStore.setPreference('theme', next)
+  const btn = toggleBtnRef.value
+  if (!btn || typeof window === 'undefined') {
+    applyThemeChange()
+    return
+  }
+
+  const rect = btn.getBoundingClientRect()
+  const cx = rect.left + rect.width / 2
+  const cy = rect.top + rect.height / 2
+
+  const maxX = Math.max(cx, window.innerWidth - cx)
+  const maxY = Math.max(cy, window.innerHeight - cy)
+  const maxRadius = Math.ceil(Math.sqrt(maxX * maxX + maxY * maxY))
+
+  const overlay = overlayRef.value
+  if (!overlay) {
+    applyThemeChange()
+    return
+  }
+
+  overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
+  overlay.style.display = 'block'
+  overlay.style.opacity = '1'
+
+  overlay.offsetHeight
+
+  overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'
+  overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
 
   setTimeout(() => {
-    isAnimating.value = false
-  }, 500)
+    applyThemeChange()
+
+    setTimeout(() => {
+      overlay.style.transition = 'opacity 300ms ease'
+      overlay.style.opacity = '0'
+
+      setTimeout(() => {
+        overlay.style.display = 'none'
+        overlay.style.transition = ''
+        overlay.style.clipPath = ''
+        isAnimating.value = false
+      }, 300)
+    }, 60)
+  }, 480)
+}
+
+function applyThemeChange() {
+  const next = isLight.value ? 'dark' : 'light'
+  userStore.setPreference('theme', next)
+  if (isAnimating.value && !overlayRef.value) {
+    setTimeout(() => { isAnimating.value = false }, 100)
+  }
 }
 </script>
 
 <template>
   <button
+    ref="toggleBtnRef"
     class="theme-toggle"
     :class="{ 'is-light': isLight, 'is-animating': isAnimating }"
     :aria-label="isLight ? 'Switch to dark mode' : 'Switch to light mode'"
@@ -73,6 +122,11 @@ function toggle() {
       </svg>
     </span>
   </button>
+
+  <!-- Theme swipe overlay -->
+  <Teleport to="body">
+    <div ref="overlayRef" class="theme-swipe-overlay" />
+  </Teleport>
 </template>
 
 <style scoped>
@@ -88,7 +142,7 @@ function toggle() {
   align-items: center;
   justify-content: center;
   color: var(--nc-ink-soft, #777777);
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
   flex-shrink: 0;
 }
 
@@ -117,8 +171,8 @@ function toggle() {
 
 .theme-icon {
   position: absolute;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.3s ease;
+  transition: transform var(--nc-duration-slow) var(--nc-ease-smooth),
+              opacity var(--nc-duration-slow) ease;
 }
 
 /* Dark mode: show moon, hide sun */
@@ -146,7 +200,22 @@ function toggle() {
 /* Animation burst on toggle */
 .is-animating .sun-icon,
 .is-animating .moon-icon {
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 0.3s ease;
+  transition: transform 500ms var(--nc-ease-bounce),
+              opacity var(--nc-duration-slow) ease;
+}
+
+/* Swipe overlay */
+.theme-swipe-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #00D2BE;
+  z-index: 9999;
+  pointer-events: none;
 }
 </style>

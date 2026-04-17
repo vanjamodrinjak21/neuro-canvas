@@ -56,21 +56,25 @@ const sizeClasses: Record<string, string> = {
       <DialogOverlay
         class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm pointer-events-auto
                data-[state=open]:animate-in data-[state=closed]:animate-out
-               data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+               data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0
+               data-[state=open]:duration-[200ms] data-[state=closed]:duration-[150ms]
                motion-reduce:animate-none"
       />
 
-      <!-- Content -->
+      <!-- Content: enter 200ms ease-out, exit 150ms faster -->
       <DialogContent
         :class="[
           'fixed left-1/2 top-1/2 z-[301] w-full -translate-x-1/2 -translate-y-1/2',
           'nc-glass-elevated rounded-nc-2xl p-6 shadow-nc-xl',
           'focus:outline-none',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-          'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+          'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+          // Scale starts from 0.97 minimum — never 0.95 or below
+          'data-[state=open]:zoom-in-97 data-[state=closed]:zoom-out-97',
           'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
           'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+          // Asymmetric timing: 200ms enter, 150ms exit
+          'data-[state=open]:duration-[200ms] data-[state=closed]:duration-[150ms]',
           'motion-reduce:animate-none',
           sizeClasses[size]
         ]"
@@ -103,7 +107,9 @@ const sizeClasses: Record<string, string> = {
           class="absolute right-4 top-4 p-1.5 rounded-nc-md
                  bg-transparent border-none
                  text-nc-ink-soft hover:text-nc-ink hover:bg-nc-pencil
-                 transition-colors focus:outline-none focus:ring-2 focus:ring-nc-teal"
+                 transition-[color,background-color] duration-100
+                 active:scale-97
+                 focus:outline-none focus:ring-2 focus:ring-nc-teal"
         >
           <span class="i-lucide-x text-lg" />
           <span class="sr-only">Close</span>

@@ -22,32 +22,32 @@ const aiEnabled = ref(false)
       <button
         class="nc-outline-tool"
         :disabled="!mapStore.canUndo()"
-        @click="$emit('undo')"
         aria-label="Undo"
+        @click="$emit('undo')"
       >
         <span class="i-lucide-undo-2" />
       </button>
       <button
         class="nc-outline-tool"
         :disabled="!mapStore.canRedo()"
-        @click="$emit('redo')"
         aria-label="Redo"
+        @click="$emit('redo')"
       >
         <span class="i-lucide-redo-2" />
       </button>
 
       <span class="nc-outline-tool-divider" />
 
-      <button class="nc-outline-tool" @click="$emit('outdent')" aria-label="Outdent">
+      <button class="nc-outline-tool" aria-label="Outdent" @click="$emit('outdent')">
         <span class="i-lucide-outdent" />
       </button>
-      <button class="nc-outline-tool" @click="$emit('indent')" aria-label="Indent">
+      <button class="nc-outline-tool" aria-label="Indent" @click="$emit('indent')">
         <span class="i-lucide-indent" />
       </button>
 
       <span class="nc-outline-tool-divider" />
 
-      <button class="nc-outline-tool" @click="$emit('bold')" aria-label="Bold">
+      <button class="nc-outline-tool" aria-label="Bold" @click="$emit('bold')">
         <span class="i-lucide-bold" />
       </button>
 
@@ -56,13 +56,13 @@ const aiEnabled = ref(false)
       <button
         class="nc-outline-tool"
         :class="{ 'is-active': aiEnabled }"
-        @click="aiEnabled = !aiEnabled; $emit('toggle-ai')"
         aria-label="Toggle AI suggestions"
+        @click="aiEnabled = !aiEnabled; $emit('toggle-ai')"
       >
         <span class="i-lucide-sparkles" />
       </button>
 
-      <button class="nc-outline-tool nc-outline-tool--export" @click="$emit('export')" aria-label="Export">
+      <button class="nc-outline-tool nc-outline-tool--export" aria-label="Export" @click="$emit('export')">
         <span class="i-lucide-download" />
       </button>
     </div>

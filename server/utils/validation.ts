@@ -104,6 +104,36 @@ export const vaultUpdateSchema = z.object({
   message: 'At least one of encryptedValue or encryptionVersion must be provided'
 })
 
+const templateCategory = z.enum(['education', 'business', 'creative', 'planning', 'research'])
+
+export const templatePublishSchema = z.object({
+  title: safeTitle,
+  description: z.string().max(5_000).trim().optional(),
+  category: templateCategory,
+  tags: z.array(z.string().max(50)).max(20).default([]),
+  aiEnhanced: z.boolean().default(false),
+  sourceMapId: cuid.optional(),
+  nodes: z.record(z.string(), z.any()).optional(),
+  edges: z.record(z.string(), z.any()).optional(),
+  settings: z.any().optional(),
+}).refine(
+  d => d.sourceMapId || (d.nodes && d.edges),
+  { message: 'Either sourceMapId or nodes/edges data is required' }
+).refine(
+  d => !d.nodes || JSON.stringify(d.nodes).length <= 5 * 1024 * 1024,
+  { message: 'Node data exceeds 5MB limit' }
+).refine(
+  d => !d.edges || JSON.stringify(d.edges).length <= 5 * 1024 * 1024,
+  { message: 'Edge data exceeds 5MB limit' }
+)
+
+export const templateAdaptSchema = z.object({
+  topic: z.string().min(1).max(1_000).trim(),
+  depth: z.enum(['shallow', 'medium', 'deep']).default('medium'),
+  style: z.enum(['detailed', 'concise', 'creative']).default('detailed'),
+  domain: z.string().max(200).trim().optional().transform(v => v === '' ? undefined : v),
+})
+
 export const embeddingPostSchema = z.object({
   mapId: cuid,
   embeddings: z.array(z.object({

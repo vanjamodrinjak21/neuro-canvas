@@ -60,12 +60,15 @@ export interface TemplateWithData extends Template {
 
 /** Payload for publishing a template */
 export interface PublishTemplatePayload {
-  sourceMapId: string
+  sourceMapId?: string
   title: string
   description: string
   category: TemplateCategory
   tags: string[]
   aiEnhanced: boolean
+  nodes?: Record<string, any>
+  edges?: Record<string, any>
+  settings?: any
 }
 
 /** Payload for AI adapting a template */

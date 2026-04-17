@@ -111,7 +111,7 @@ function updateFontWeight(value: string) {
   localFontWeight.value = value
   if (props.node) {
     mapStore.updateNode(props.node.id, {
-      style: { ...props.node.style, fontWeight: parseInt(value) }
+      style: { ...props.node.style, fontWeight: Number.parseInt(value) }
     })
   }
 }
@@ -151,8 +151,8 @@ onKeyStroke('Escape', () => {
 
 <template>
   <Transition
-    enter-active-class="transform transition-transform duration-200 ease-out"
-    leave-active-class="transform transition-transform duration-150 ease-in"
+    enter-active-class="nc-panel-enter"
+    leave-active-class="nc-panel-leave"
     enter-from-class="translate-x-full"
     leave-to-class="translate-x-full"
   >
@@ -167,7 +167,7 @@ onKeyStroke('Escape', () => {
         <button
           v-for="color in nodeColors"
           :key="color"
-          class="w-5 h-5 rounded-full transition-transform hover:scale-110"
+          class="nc-color-dot"
           :class="localBorderColor === color ? 'ring-2 ring-[#FAFAFA] ring-offset-2 ring-offset-[#111114]' : ''"
           :style="{ backgroundColor: color }"
           @click="updateBorderColor(color)"
@@ -211,3 +211,30 @@ onKeyStroke('Escape', () => {
     </aside>
   </Transition>
 </template>
+
+<style scoped>
+/* Panel slide: 200ms ease-out enter, 120ms exit */
+.nc-panel-enter {
+  transition: transform 200ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+.nc-panel-leave {
+  transition: transform 120ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Color dots */
+.nc-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nc-color-dot:hover {
+    transform: scale(1.15);
+  }
+}
+</style>

@@ -1,18 +1,16 @@
 import { prisma } from '../../../utils/prisma'
 import { requireAuthSession } from '../../../utils/syncHelpers'
+import { validateBody, templateAdaptSchema } from '../../../utils/validation'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
   const slug = getRouterParam(event, 'slug')
-  const body = await readBody(event)
 
   if (!slug) {
     throw createError({ statusCode: 400, statusMessage: 'Template slug required' })
   }
 
-  if (!body.topic) {
-    throw createError({ statusCode: 400, statusMessage: 'Topic is required' })
-  }
+  const body = validateBody(templateAdaptSchema, await readBody(event))
 
   const template = await prisma.template.findUnique({ where: { slug } })
 

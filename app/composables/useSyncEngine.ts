@@ -39,8 +39,12 @@ export function useSyncEngine() {
     : useAuth()
   const session = _sessionData ?? ref(null)
 
+  const currentUserId = computed(() => {
+    return (session.value?.user as { id?: string })?.id || null
+  })
+
   const isSyncEnabled = computed(() => {
-    return !!session.value?.user && (session.value.user as { id?: string }).id !== undefined
+    return !!currentUserId.value
   })
 
   // Online state
@@ -95,7 +99,11 @@ export function useSyncEngine() {
     } catch (err: any) {
       const statusCode = err?.statusCode || err?.response?.status
 
-      if (statusCode === 423) {
+      if (statusCode === 401) {
+        // Session expired — don't queue, don't retry, just stop syncing
+        state.syncStatus = 'error'
+        disconnectSSE()
+      } else if (statusCode === 423) {
         setTimeout(() => pushMap(mapId), 2000)
       } else if (statusCode === 429) {
         state.syncStatus = 'error'
@@ -133,7 +141,7 @@ export function useSyncEngine() {
         params: { since }
       })
 
-      // Merge server maps into IndexedDB
+      // Merge server maps into IndexedDB — tagged with current userId
       for (const serverMap of response.maps) {
         const localMap = await db.getMap(serverMap.id)
 
@@ -152,7 +160,8 @@ export function useSyncEngine() {
             createdAt: new Date(serverMap.createdAt).getTime(),
             updatedAt: new Date(serverMap.updatedAt).getTime(),
             syncVersion: serverMap.syncVersion,
-            checksum: serverMap.checksum
+            checksum: serverMap.checksum,
+            userId: currentUserId.value || undefined
           } as DBMapDocument)
         }
       }
@@ -196,7 +205,8 @@ export function useSyncEngine() {
             createdAt: new Date(serverMap.createdAt).getTime(),
             updatedAt: new Date(serverMap.updatedAt).getTime(),
             syncVersion: serverMap.syncVersion,
-            checksum: serverMap.checksum
+            checksum: serverMap.checksum,
+            userId: currentUserId.value || undefined
           } as DBMapDocument)
 
           // If this map is currently open, reload it in the store
@@ -242,6 +252,19 @@ export function useSyncEngine() {
 
     eventSource.onerror = () => {
       disconnectSSE()
+
+      // Stop reconnecting after too many attempts (likely auth failure, not transient)
+      if (reconnectAttempts >= 5) {
+        state.syncStatus = 'error'
+        return
+      }
+
+      // Only reconnect if we still have an active session
+      if (!isSyncEnabled.value) {
+        state.syncStatus = 'disabled'
+        return
+      }
+
       // Exponential backoff reconnect
       const delay = Math.min(1000 * 2 ** reconnectAttempts, 30000)
       reconnectAttempts++
@@ -313,8 +336,12 @@ export function useSyncEngine() {
 
     try {
       // Push all local maps that have no syncVersion (never synced)
+      // Only push maps belonging to the current user to prevent cross-account leakage
       const allMaps = await db.getAllMaps()
-      const unsyncedMaps = allMaps.filter(m => !m.syncVersion)
+      const unsyncedMaps = allMaps.filter(m =>
+        !m.syncVersion &&
+        (!m.userId || m.userId === currentUserId.value)
+      )
 
       if (unsyncedMaps.length > 0) {
         // Bulk push
@@ -361,6 +388,11 @@ export function useSyncEngine() {
       state.syncStatus = 'disabled'
       state.isInitialized = true
       return
+    }
+
+    // Set current user for IndexedDB scoping
+    if (currentUserId.value) {
+      await db.setCurrentUserId(currentUserId.value)
     }
 
     state.pendingChanges = await db.countPendingSyncOps()

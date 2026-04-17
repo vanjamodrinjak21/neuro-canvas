@@ -48,6 +48,7 @@ function toggleTheme() {
   overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
   overlay.style.display = 'block'
   overlay.style.opacity = '1'
+
   overlay.offsetHeight
 
   overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'

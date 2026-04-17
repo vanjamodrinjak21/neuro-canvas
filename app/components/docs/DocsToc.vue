@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
   color: var(--nc-text-muted);
   text-decoration: none;
   padding: 5px 12px;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast) ease;
   line-height: 1.5;
 }
 

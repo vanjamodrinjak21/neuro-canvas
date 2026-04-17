@@ -14,9 +14,9 @@ export interface ConnectionResult {
 }
 
 interface ConnectionToolDeps {
-  nodes: Map<string, Node>
-  edges: Map<string, Edge>
-  rootNodeId: string | null
+  nodes: () => Map<string, Node>
+  edges: () => Map<string, Edge>
+  rootNodeId: () => string | null
   hoveredNodeId: Ref<string | null>
   tool: Ref<string>
 }
@@ -41,18 +41,18 @@ export function useConnectionTool(deps: ConnectionToolDeps) {
 
     if (isConnecting.value) {
       // Show anchors on all potential target nodes (skip the source)
-      for (const node of deps.nodes.values()) {
+      for (const node of deps.nodes().values()) {
         if (node.id !== connectionSourceNode.value?.id) {
-          const isRoot = node.isRoot || node.id === deps.rootNodeId
-          visibleAnchors.value.set(node.id, getVisibleAnchors(node, isRoot, deps.edges))
+          const isRoot = node.isRoot || node.id === deps.rootNodeId()
+          visibleAnchors.value.set(node.id, getVisibleAnchors(node, isRoot, deps.edges()))
         }
       }
     } else if (deps.hoveredNodeId.value) {
       // Show only on the currently hovered node
-      const node = deps.nodes.get(deps.hoveredNodeId.value)
+      const node = deps.nodes().get(deps.hoveredNodeId.value)
       if (node) {
-        const isRoot = node.isRoot || node.id === deps.rootNodeId
-        visibleAnchors.value.set(node.id, getVisibleAnchors(node, isRoot, deps.edges))
+        const isRoot = node.isRoot || node.id === deps.rootNodeId()
+        visibleAnchors.value.set(node.id, getVisibleAnchors(node, isRoot, deps.edges()))
       }
     }
   }
@@ -86,7 +86,7 @@ export function useConnectionTool(deps: ConnectionToolDeps) {
     connectionPreviewEnd.value = worldPos
     connectionSnapTarget.value = null
 
-    for (const node of deps.nodes.values()) {
+    for (const node of deps.nodes().values()) {
       if (node.id === connectionSourceNode.value?.id) continue
 
       const nodeAnchors = visibleAnchors.value.get(node.id)

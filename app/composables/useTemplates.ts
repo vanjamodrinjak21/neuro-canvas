@@ -38,6 +38,12 @@ export function useTemplates() {
       templates.value = data.templates
       total.value = data.total
     } catch (e: any) {
+      // On Tauri/desktop, server APIs aren't available — show empty state
+      if (typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)) {
+        templates.value = []
+        total.value = 0
+        return
+      }
       error.value = e.data?.statusMessage || 'Failed to load templates'
     } finally {
       loading.value = false

@@ -16,7 +16,7 @@ const showZoomPresets = ref(false)
 
 function handleSlider(event: Event) {
   const target = event.target as HTMLInputElement
-  emit('zoom-change', parseFloat(target.value))
+  emit('zoom-change', Number.parseFloat(target.value))
 }
 
 function setZoom(value: number) {
@@ -85,8 +85,8 @@ onUnmounted(() => {
       </button>
 
       <Transition
-        enter-active-class="transition-all duration-150 ease-out"
-        leave-active-class="transition-all duration-100 ease-in"
+        enter-active-class="nc-zoom-presets-enter"
+        leave-active-class="nc-zoom-presets-leave"
         enter-from-class="opacity-0 translate-y-2"
         leave-to-class="opacity-0 translate-y-2"
       >
@@ -165,5 +165,16 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Presets panel: 150ms enter ease-out, 80ms exit */
+.nc-zoom-presets-enter {
+  transition: opacity 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+.nc-zoom-presets-leave {
+  transition: opacity 80ms cubic-bezier(0.4, 0, 1, 1),
+              transform 80ms cubic-bezier(0.4, 0, 1, 1);
 }
 </style>

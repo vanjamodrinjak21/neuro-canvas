@@ -2,6 +2,8 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { Camera, MapSettings, Node, Edge, Anchor } from '~/types'
 import type { AISettings } from '~/types/ai-settings'
 import { DEFAULT_AI_SETTINGS } from '~/types/ai-settings'
+// SQLite driver available for native-only advanced queries via useSQLiteDatabase()
+// Primary storage uses Dexie (IndexedDB) on all platforms including Tauri webview
 
 // Serializable versions of Node and Edge (without Map types)
 export interface DBNode {
@@ -47,6 +49,7 @@ export interface DBMapDocument {
   tags: string[]
   syncVersion?: number
   checksum?: string
+  userId?: string // Owner user ID for multi-account isolation
 }
 
 export interface DBSyncQueueEntry {
@@ -153,12 +156,27 @@ class NeuroCanvasDB extends Dexie {
       syncQueue: '++id, mapId, status, createdAt',
       syncMeta: 'id'
     })
+
+    // Version 5: Add userId index for multi-account isolation
+    this.version(5).stores({
+      maps: 'id, title, updatedAt, createdAt, *tags, userId',
+      preferences: 'id',
+      secrets: 'id, updatedAt',
+      aiSettings: 'id',
+      aiCache: 'key, createdAt, lastAccessed',
+      userMemory: 'id',
+      syncQueue: '++id, mapId, status, createdAt',
+      syncMeta: 'id'
+    })
   }
 }
 
 // Singleton database instance
 let db: NeuroCanvasDB | null = null
 let dbReadyPromise: Promise<NeuroCanvasDB> | null = null
+
+// Current user ID for multi-account isolation
+let _currentUserId: string | null = null
 
 function getDB(): NeuroCanvasDB {
   if (!db) {
@@ -176,6 +194,9 @@ async function ensureDBReady(): Promise<NeuroCanvasDB> {
 }
 
 // Database operations
+// SQLite integration is available via useSQLiteDatabase() for native-only queries,
+// but the primary database uses Dexie (IndexedDB) on all platforms including Tauri/Capacitor
+// since the webview has full IndexedDB support and it avoids IPC serialization overhead.
 export function useDatabase() {
   const isReady = ref(false)
   const error = ref<Error | null>(null)
@@ -192,19 +213,66 @@ export function useDatabase() {
     }
   }
 
-  // Map operations
+  // ─── User Scoping ─────────────────────────────────────────────
+
+  /** Set the current user ID — all map queries will be scoped to this user.
+   *  Also migrates any untagged maps to this user (handles upgrade from v4→v5). */
+  async function setCurrentUserId(userId: string | null): Promise<void> {
+    _currentUserId = userId
+
+    // Migrate untagged maps: existing maps without a userId belong to whoever is logged in now
+    if (userId) {
+      const database = await ensureDBReady()
+      const untagged = await database.maps
+        .filter(m => !m.userId)
+        .toArray()
+      if (untagged.length > 0) {
+        await database.maps.bulkPut(
+          untagged.map(m => ({ ...m, userId }))
+        )
+      }
+    }
+  }
+
+  function getCurrentUserId(): string | null {
+    return _currentUserId
+  }
+
+  /** Clear all user-specific data (maps, sync state). Call on sign-out. */
+  async function clearUserData(): Promise<void> {
+    const database = await ensureDBReady()
+    await database.maps.clear()
+    await database.syncQueue.clear()
+    await database.syncMeta.clear()
+  }
+
+  // Map operations — all list queries scoped to current userId
   async function getAllMaps(): Promise<DBMapDocument[]> {
     const database = await ensureDBReady()
+    if (_currentUserId) {
+      return database.maps
+        .where('userId').equals(_currentUserId)
+        .reverse().sortBy('updatedAt')
+    }
     return database.maps.orderBy('updatedAt').reverse().toArray()
   }
 
   async function getMap(id: string): Promise<DBMapDocument | undefined> {
     const database = await ensureDBReady()
-    return database.maps.get(id)
+    const map = await database.maps.get(id)
+    // Verify ownership if userId is set
+    if (map && _currentUserId && map.userId && map.userId !== _currentUserId) {
+      return undefined
+    }
+    return map
   }
 
   async function saveMap(map: DBMapDocument): Promise<void> {
     const database = await ensureDBReady()
+    // Tag with current user if not already tagged
+    if (_currentUserId && !map.userId) {
+      map.userId = _currentUserId
+    }
     await database.maps.put(map)
   }
 
@@ -215,6 +283,12 @@ export function useDatabase() {
 
   async function getRecentMaps(limit: number = 20): Promise<DBMapDocument[]> {
     const database = await ensureDBReady()
+    if (_currentUserId) {
+      const maps = await database.maps
+        .where('userId').equals(_currentUserId)
+        .reverse().sortBy('updatedAt')
+      return maps.slice(0, limit)
+    }
     return database.maps.orderBy('updatedAt').reverse().limit(limit).toArray()
   }
 
@@ -222,7 +296,10 @@ export function useDatabase() {
     const database = await ensureDBReady()
     const lowerQuery = query.toLowerCase()
     return database.maps
-      .filter(map => map.title.toLowerCase().includes(lowerQuery))
+      .filter(map =>
+        map.title.toLowerCase().includes(lowerQuery) &&
+        (!_currentUserId || !map.userId || map.userId === _currentUserId)
+      )
       .toArray()
   }
 
@@ -377,6 +454,11 @@ export function useDatabase() {
     isReady: readonly(isReady),
     error: readonly(error),
     init,
+    // User scoping
+    setCurrentUserId,
+    getCurrentUserId,
+    clearUserData,
+    // Map operations
     getAllMaps,
     getMap,
     saveMap,

@@ -7,6 +7,8 @@ const emit = defineEmits<{
 
 const guest = useGuestMode()
 const currentStep = ref(0)
+const direction = ref<'forward' | 'backward'>('forward')
+const isVisible = ref(false)
 
 const steps = [
   {
@@ -33,196 +35,282 @@ const steps = [
 
 function next() {
   if (currentStep.value < steps.length - 1) {
+    direction.value = 'forward'
     currentStep.value++
-  } else {
+  }
+  else {
     finish()
   }
 }
 
+function prev() {
+  if (currentStep.value > 0) {
+    direction.value = 'backward'
+    currentStep.value--
+  }
+}
+
 function finish() {
-  guest.completeOnboarding()
-  emit('complete')
+  isVisible.value = false
+  setTimeout(() => {
+    guest.completeOnboarding()
+    emit('complete')
+  }, 300)
 }
 
 const step = computed(() => steps[currentStep.value])
 const isLast = computed(() => currentStep.value === steps.length - 1)
+const isFirst = computed(() => currentStep.value === 0)
+onMounted(() => {
+  requestAnimationFrame(() => {
+    isVisible.value = true
+  })
+})
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="walkthrough-overlay">
-      <div class="walkthrough-card">
-        <div class="walkthrough-progress">
-          <div
-            v-for="(_, i) in steps"
-            :key="i"
-            :class="['progress-dot', { active: i === currentStep, done: i < currentStep }]"
-          />
+    <Transition name="wt-overlay">
+      <div v-if="isVisible" class="wt-overlay" @click.self="finish">
+        <div class="wt-card">
+          <!-- Progress bar -->
+          <div class="wt-progress">
+            <div
+              v-for="(_, i) in steps"
+              :key="i"
+              :class="['wt-segment', {
+                'wt-segment--done': i < currentStep,
+                'wt-segment--active': i === currentStep,
+              }]"
+            />
+          </div>
+
+          <!-- Step content with transition -->
+          <Transition :name="direction === 'forward' ? 'wt-step-fwd' : 'wt-step-bwd'" mode="out-in">
+            <div :key="currentStep" class="wt-content">
+              <div class="wt-icon-wrap">
+                <span :class="['wt-icon', step?.icon]" />
+              </div>
+              <h3 class="wt-title">{{ step?.title }}</h3>
+              <p class="wt-desc">{{ step?.description }}</p>
+            </div>
+          </Transition>
+
+          <!-- Actions -->
+          <div class="wt-actions">
+            <button v-if="isFirst" class="wt-skip" @click="finish">
+              Skip
+            </button>
+            <button v-else class="wt-back" @click="prev">
+              Back
+            </button>
+            <button class="wt-next" @click="next">
+              {{ isLast ? 'Get started' : 'Next' }}
+            </button>
+          </div>
         </div>
-
-        <div class="walkthrough-icon">
-          <span :class="step?.icon" />
-        </div>
-
-        <h3 class="walkthrough-title">{{ step?.title }}</h3>
-        <p class="walkthrough-desc">{{ step?.description }}</p>
-
-        <div class="walkthrough-actions">
-          <button class="walkthrough-skip" @click="finish">
-            Skip
-          </button>
-          <button class="walkthrough-next" @click="next">
-            {{ isLast ? 'Get started' : 'Next' }}
-          </button>
-        </div>
-
-        <p class="walkthrough-step-count">
-          {{ currentStep + 1 }} / {{ steps.length }}
-        </p>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.walkthrough-overlay {
+/* Overlay */
+.wt-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.wt-overlay-enter-active {
+  transition: opacity var(--nc-duration-slow, 400ms) ease;
+}
+.wt-overlay-leave-active {
+  transition: opacity var(--nc-duration-normal, 250ms) ease;
+}
+.wt-overlay-enter-from,
+.wt-overlay-leave-to {
+  opacity: 0;
 }
 
-.walkthrough-card {
+/* Card */
+.wt-card {
   background: var(--nc-surface-2, #121216);
   border: 1px solid var(--nc-border, #252529);
-  border-radius: 20px;
-  padding: 2.5rem 2rem 2rem;
+  border-radius: 16px;
+  padding: 28px 24px 24px;
   max-width: 380px;
   width: 90%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 0.75rem;
-  animation: slideUp 0.3s ease;
+  gap: 20px;
+  animation: wt-card-enter 500ms var(--nc-ease, cubic-bezier(0.16, 1, 0.3, 1)) both;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes wt-card-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
-.walkthrough-progress {
+/* Progress bar */
+.wt-progress {
   display: flex;
-  gap: 6px;
-  margin-bottom: 0.5rem;
+  gap: 4px;
+  width: 100%;
 }
 
-.progress-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.wt-segment {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
   background: var(--nc-border, #252529);
-  transition: all 0.3s ease;
+  transition: background var(--nc-duration-slow, 400ms) var(--nc-ease, ease);
 }
 
-.progress-dot.active {
-  background: var(--nc-teal, #00D2BE);
-  transform: scale(1.3);
+.wt-segment--active {
+  background: var(--nc-accent, #00D2BE);
 }
 
-.progress-dot.done {
-  background: rgba(0, 210, 190, 0.4);
+.wt-segment--done {
+  background: rgba(0, 210, 190, 0.35);
 }
 
-.walkthrough-icon {
-  width: 64px;
-  height: 64px;
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.2);
-  border-radius: 18px;
+/* Step content */
+.wt-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 8px 0;
+  min-height: 140px;
+}
+
+.wt-icon-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
-  color: var(--nc-teal, #00D2BE);
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
 }
 
-.walkthrough-title {
+.wt-icon {
+  font-size: 28px;
+  color: var(--nc-accent, #00D2BE);
+}
+
+.wt-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 1.25rem;
+  font-size: 18px;
   font-weight: 700;
   color: var(--nc-ink, #FAFAFA);
-  margin: 0;
   letter-spacing: -0.02em;
-}
-
-.walkthrough-desc {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.875rem;
-  color: var(--nc-ink-muted, #A1A1AA);
   margin: 0;
-  line-height: 1.6;
 }
 
-.walkthrough-actions {
-  display: flex;
-  gap: 0.75rem;
-  width: 100%;
-  margin-top: 0.5rem;
-}
-
-.walkthrough-skip {
-  flex: 1;
-  padding: 0.75rem;
-  background: transparent;
-  border: 1px solid var(--nc-border, #252529);
-  border-radius: 10px;
-  color: var(--nc-ink-muted, #A1A1AA);
+.wt-desc {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--nc-ink-muted, #A1A1AA);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 280px;
+}
+
+/* Step transitions — forward */
+.wt-step-fwd-enter-active {
+  transition: all var(--nc-duration-normal, 250ms) var(--nc-ease, ease);
+}
+.wt-step-fwd-leave-active {
+  transition: all var(--nc-duration-fast, 150ms) ease;
+}
+.wt-step-fwd-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+.wt-step-fwd-leave-to {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+/* Step transitions — backward */
+.wt-step-bwd-enter-active {
+  transition: all var(--nc-duration-normal, 250ms) var(--nc-ease, ease);
+}
+.wt-step-bwd-leave-active {
+  transition: all var(--nc-duration-fast, 150ms) ease;
+}
+.wt-step-bwd-enter-from {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+.wt-step-bwd-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+/* Actions */
+.wt-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.wt-skip,
+.wt-back {
+  background: none;
+  border: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 8px 0;
+  transition: color var(--nc-duration-fast, 150ms) ease;
 }
 
-.walkthrough-skip:hover {
-  border-color: var(--nc-ink-muted, #A1A1AA);
-  color: var(--nc-ink, #FAFAFA);
+.wt-skip:hover,
+.wt-back:hover {
+  color: var(--nc-ink-muted, #A1A1AA);
 }
 
-.walkthrough-next {
-  flex: 1;
-  padding: 0.75rem;
-  background: var(--nc-teal, #00D2BE);
+.wt-next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 28px;
+  background: var(--nc-accent, #00D2BE);
   border: none;
   border-radius: 10px;
   color: #09090B;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--nc-duration-fast, 150ms) ease;
 }
 
-.walkthrough-next:hover {
+.wt-next:hover {
   opacity: 0.9;
 }
 
-.walkthrough-step-count {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.75rem;
-  color: var(--nc-ink-faint, #71717A);
-  margin: 0;
+.wt-next:active {
+  transform: scale(0.97);
 }
 </style>

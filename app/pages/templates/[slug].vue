@@ -3,6 +3,7 @@ import type { GenerationDepth, GenerationStyle, TemplatePreviewData } from '~/ty
 
 definePageMeta({
   layout: false,
+  middleware: 'auth',
 })
 
 const route = useRoute()

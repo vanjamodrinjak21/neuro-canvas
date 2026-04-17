@@ -16,6 +16,38 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Map ID required' })
   }
 
+  // Check if map has a public share link (for OG images on shared links)
+  const share = await prisma.mapShare.findFirst({
+    where: {
+      mapId,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+    },
+    select: { id: true }
+  })
+
+  // If no share link, require authentication and ownership
+  if (!share) {
+    const { getServerSession } = await import('#auth')
+    const session = await getServerSession(event)
+    if (!session?.user) {
+      throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+    }
+    const userId = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      select: { id: true }
+    })
+    if (!userId) {
+      throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+    }
+    const owned = await prisma.map.findFirst({
+      where: { id: mapId, userId: userId.id, deletedAt: null },
+      select: { id: true }
+    })
+    if (!owned) {
+      throw createError({ statusCode: 404, statusMessage: 'Map not found' })
+    }
+  }
+
   const map = await prisma.map.findFirst({
     where: { id: mapId, deletedAt: null },
     select: { preview: true, title: true },

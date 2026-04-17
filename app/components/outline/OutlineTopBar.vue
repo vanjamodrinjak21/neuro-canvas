@@ -41,7 +41,7 @@ function commitTitle() {
 
 <template>
   <div class="nc-outline-topbar">
-    <button class="nc-outline-back" @click="handleBack" aria-label="Back">
+    <button class="nc-outline-back" aria-label="Back" @click="handleBack">
       <span class="i-lucide-chevron-left" />
     </button>
 
@@ -60,7 +60,7 @@ function commitTitle() {
       <span class="nc-outline-save-status">{{ saveStatusText }}</span>
     </div>
 
-    <button class="nc-outline-export-btn" @click="$emit('export')" aria-label="Export">
+    <button class="nc-outline-export-btn" aria-label="Export" @click="$emit('export')">
       <span class="i-lucide-share-2" />
     </button>
   </div>

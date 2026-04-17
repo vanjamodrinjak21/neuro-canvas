@@ -3,7 +3,7 @@ export function lerpColor(a: string, b: string, t: number): string {
   const parseHex = (hex: string) => {
     hex = hex.replace('#', '')
     if (hex.length === 3) hex = hex[0]! + hex[0]! + hex[1]! + hex[1]! + hex[2]! + hex[2]!
-    return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)]
+    return [Number.parseInt(hex.slice(0, 2), 16), Number.parseInt(hex.slice(2, 4), 16), Number.parseInt(hex.slice(4, 6), 16)]
   }
   try {
     const [r1, g1, b1] = parseHex(a)

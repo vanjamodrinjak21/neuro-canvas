@@ -38,11 +38,19 @@ export default defineEventHandler(async (event) => {
     data.encryptionVersion = body.encryptionVersion
   }
 
-  const updated = await prisma.credential.update({
-    where: { id: credentialId },
+  const updated = await prisma.credential.updateMany({
+    where: { id: credentialId, userId },
     data,
+  })
+
+  if (updated.count === 0) {
+    throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
+  }
+
+  const credential = await prisma.credential.findFirst({
+    where: { id: credentialId, userId },
     select: { id: true, provider: true, label: true, encryptionVersion: true, updatedAt: true }
   })
 
-  return { ok: true, credential: updated }
+  return { ok: true, credential }
 })

@@ -17,8 +17,10 @@ export default defineEventHandler(async (event) => {
       id: true,
       email: true,
       name: true,
+      bio: true,
       image: true,
       emailVerified: true,
+      totpEnabled: true,
       createdAt: true,
       updatedAt: true,
       accounts: {

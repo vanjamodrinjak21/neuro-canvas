@@ -78,9 +78,11 @@ const currentVariant = computed(() => variantStyles[props.variant])
       'flex items-start gap-3',
       'border-l-4',
       currentVariant.borderClass,
+      // Enter 300ms snappy from right, exit 200ms faster — asymmetric
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
-      'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-      'data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-right-full',
+      'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+      'data-[state=open]:slide-in-from-right-full data-[state=closed]:slide-out-to-right-full',
+      'data-[state=open]:duration-[300ms] data-[state=closed]:duration-[200ms]',
       'data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)]',
       'data-[swipe=cancel]:translate-x-0',
       'data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)]',
@@ -105,7 +107,9 @@ const currentVariant = computed(() => variantStyles[props.variant])
         :alt-text="action.label"
         class="mt-2 inline-flex items-center px-3 py-1.5 rounded-nc-md text-sm font-medium
                bg-nc-graphite text-nc-ink hover:bg-nc-pencil
-               transition-colors focus:outline-none focus:ring-2 focus:ring-nc-teal"
+               transition-[color,background-color] duration-100
+               active:scale-97
+               focus:outline-none focus:ring-2 focus:ring-nc-teal"
         @click="action.onClick"
       >
         {{ action.label }}
@@ -115,7 +119,8 @@ const currentVariant = computed(() => variantStyles[props.variant])
     <!-- Close button -->
     <ToastClose
       class="p-1 rounded-nc-md text-nc-ink-muted hover:text-nc-ink
-             hover:bg-nc-graphite transition-colors
+             hover:bg-nc-graphite transition-[color,background-color] duration-100
+             active:scale-97
              opacity-0 group-hover:opacity-100
              focus:outline-none focus:ring-2 focus:ring-nc-teal"
     >

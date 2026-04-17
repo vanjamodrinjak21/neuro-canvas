@@ -14,7 +14,7 @@ const checks: StrengthCheck[] = [
   { label: '8+ characters', test: (p) => p.length >= 8 },
   { label: 'Uppercase letter', test: (p) => /[A-Z]/.test(p) },
   { label: 'Lowercase letter', test: (p) => /[a-z]/.test(p) },
-  { label: 'Number', test: (p) => /[0-9]/.test(p) }
+  { label: 'Number', test: (p) => /\d/.test(p) }
 ]
 
 const passedChecks = computed(() =>
@@ -81,7 +81,7 @@ const allChecksPassed = computed(() => passedChecks.value.length === checks.leng
 .strength-bar {
   height: 100%;
   border-radius: 2px;
-  transition: width 0.3s ease, background-color 0.3s ease;
+  transition: width 200ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 200ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .strength-label {
@@ -105,7 +105,7 @@ const allChecksPassed = computed(() => passedChecks.value.length === checks.leng
   gap: 0.375rem;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.4);
-  transition: color 0.2s ease;
+  transition: color 120ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .requirement.passed {

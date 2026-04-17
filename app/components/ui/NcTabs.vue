@@ -59,7 +59,7 @@ const activeTab = computed({
         :disabled="tab.disabled"
         :class="[
           'relative flex items-center justify-center gap-2 px-4 py-2 rounded-nc-md',
-          'text-sm font-medium transition-all duration-200',
+          'text-sm font-medium transition-[color,background-color,box-shadow] duration-150',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
           'data-[state=active]:bg-nc-teal data-[state=active]:text-nc-charcoal data-[state=active]:shadow-nc-glow',
           'data-[state=inactive]:text-nc-ink-soft data-[state=inactive]:hover:text-nc-ink data-[state=inactive]:hover:bg-nc-graphite',

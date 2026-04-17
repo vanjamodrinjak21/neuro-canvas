@@ -1,10 +1,19 @@
 import { prisma } from '../../utils/prisma'
+import { checkRateLimit } from '../../utils/redis'
 
 /**
  * Public endpoint — no auth required.
  * Returns map data for a valid share token.
+ * Rate-limited by IP to prevent token enumeration.
  */
 export default defineEventHandler(async (event) => {
+  // Rate limit by IP: 30 requests per minute
+  const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+  const { allowed } = await checkRateLimit(`share:${ip}`, 30, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many requests. Try again later.' })
+  }
+
   const token = getRouterParam(event, 'token')
 
   if (!token || token.length > 128) {

@@ -1,9 +1,8 @@
 // Enhanced expand prompts with persona + context + ontology
 
-import type { RichContext } from '../types/context'
+import type { RichContext, UserHistory  } from '../types/context'
 import type { AIBehaviorConfig } from '../types/cognitive'
 import type { PersonaDefinition } from './SystemPersonas'
-import type { UserHistory } from '../types/context'
 
 export function buildSmartExpandV2(
   nodeContent: string,

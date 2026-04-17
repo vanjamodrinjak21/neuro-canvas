@@ -31,14 +31,12 @@ const cardClass = computed(() => [
   // Shadow
   props.elevated ? 'shadow-nc-lg' : 'shadow-nc-md',
 
-  // Interactive hover effect
+  // Interactive hover effect — specific properties only, hover gated to pointer devices via style block
   props.interactive && [
     'cursor-pointer',
-    'transition-all duration-200',
-    'hover:border-[rgba(0,210,190,0.3)]',
-    'hover:shadow-nc-glow',
-    'hover:-translate-y-0.5',
-    'active:translate-y-0'
+    'transition-[border-color,box-shadow,transform] duration-150',
+    'nc-card-interactive',
+    'active:translate-y-0 active:scale-97'
   ]
 ])
 </script>
@@ -48,3 +46,13 @@ const cardClass = computed(() => [
     <slot />
   </div>
 </template>
+
+<style scoped>
+@media (hover: hover) and (pointer: fine) {
+  .nc-card-interactive:hover {
+    border-color: rgba(0, 210, 190, 0.3);
+    box-shadow: 0 0 32px rgba(0, 210, 190, 0.25);
+    transform: translateY(-2px);
+  }
+}
+</style>

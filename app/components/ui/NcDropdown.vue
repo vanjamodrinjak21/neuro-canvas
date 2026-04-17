@@ -60,14 +60,15 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
     </DropdownMenuTrigger>
 
     <DropdownMenuPortal>
+      <!-- Enter 150ms ease-out, exit 100ms — asymmetric timing. Scale min 0.97. -->
       <DropdownMenuContent
         v-if="hasItems"
         :side="side"
         :align="align"
         :side-offset="sideOffset"
         class="z-dropdown min-w-[180px] nc-glass-elevated rounded-nc-lg p-1.5 shadow-nc-xl
-               animate-in fade-in-0 zoom-in-95
-               data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95
+               animate-in fade-in-0 zoom-in-97 duration-[150ms]
+               data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-97 data-[state=closed]:duration-[100ms]
                data-[side=bottom]:slide-in-from-top-2
                data-[side=left]:slide-in-from-right-2
                data-[side=right]:slide-in-from-left-2
@@ -80,7 +81,7 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
             :key="index"
             :disabled="item.disabled"
             :class="[
-              'relative flex items-center gap-2 px-2.5 py-2 rounded-nc-md cursor-pointer select-none outline-none transition-colors',
+              'relative flex items-center gap-2 px-2.5 py-2 rounded-nc-md cursor-pointer select-none outline-none transition-[color,background-color] duration-100 active:scale-98',
               item.disabled
                 ? 'opacity-50 cursor-not-allowed'
                 : item.danger
@@ -118,7 +119,7 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
                 :key="itemIndex"
                 :disabled="item.disabled"
                 :class="[
-                  'relative flex items-center gap-2 px-2.5 py-2 rounded-nc-md cursor-pointer select-none outline-none transition-colors',
+                  'relative flex items-center gap-2 px-2.5 py-2 rounded-nc-md cursor-pointer select-none outline-none transition-[color,background-color] duration-100 active:scale-98',
                   item.disabled
                     ? 'opacity-50 cursor-not-allowed'
                     : item.danger

@@ -75,6 +75,7 @@ export function validateOutboundUrl(
     return { safe: true, resolvedUrl: parsed.toString() }
   }
 
+  // For custom providers: block private/local addresses
   for (const prefix of PRIVATE_PREFIXES) {
     if (hostname.startsWith(prefix) || hostname === 'localhost') {
       return {
@@ -82,6 +83,26 @@ export function validateOutboundUrl(
         resolvedUrl: url,
         error: 'Custom providers cannot target private/local addresses'
       }
+    }
+  }
+
+  // Block numeric IP addresses entirely for custom providers
+  // Prevents decimal (2130706433), octal (0177.0.0.1), and hex (0x7f000001) bypasses
+  const stripped = hostname.replace(/[[\]]/g, '')
+  if (/^[\d.]+$/.test(stripped) || /^0[xo]/i.test(stripped) || /^\d+$/.test(stripped)) {
+    return {
+      safe: false,
+      resolvedUrl: url,
+      error: 'Custom providers must use domain names, not IP addresses'
+    }
+  }
+
+  // Block IPv6 zone IDs (e.g., fe80::1%eth0) which can bypass prefix checks
+  if (hostname.includes('%')) {
+    return {
+      safe: false,
+      resolvedUrl: url,
+      error: 'IPv6 zone IDs are not allowed'
     }
   }
 

@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     return {
       lastSyncAt: cached.lastSyncAt || null,
       lastDeviceId: cached.lastDeviceId || null,
-      totalMaps: parseInt(cached.totalMaps || '0', 10),
+      totalMaps: Number.parseInt(cached.totalMaps || '0', 10),
       pendingSyncs: 0
     }
   }

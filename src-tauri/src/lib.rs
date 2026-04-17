@@ -28,6 +28,22 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_http::init())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations(
+                    "sqlite:neurocanvas.db",
+                    vec![tauri_plugin_sql::Migration {
+                        version: 1,
+                        description: "create_initial_tables",
+                        sql: include_str!("../migrations/001_initial.sql"),
+                        kind: tauri_plugin_sql::MigrationKind::Up,
+                    }],
+                )
+                .build(),
+        )
+        .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_deep_link::init())
         .manage(ml::state::MLState::new())
         .setup(|_app| {
             #[cfg(debug_assertions)]
@@ -40,7 +56,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::greet,
             commands::get_system_info,
             commands::get_hardware_capabilities,
             commands::ml::ml_init,

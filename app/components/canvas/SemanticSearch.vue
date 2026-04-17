@@ -90,10 +90,10 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="transition-all duration-150 ease-out"
-      leave-active-class="transition-all duration-100 ease-in"
-      enter-from-class="opacity-0 scale-95"
-      leave-to-class="opacity-0 scale-95"
+      enter-active-class="nc-search-enter"
+      leave-active-class="nc-search-leave"
+      enter-from-class="opacity-0 scale-97"
+      leave-to-class="opacity-0 scale-97"
     >
       <div
         v-if="visible"
@@ -335,5 +335,20 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
     animation: none;
     border-color: var(--nc-accent, #00D2BE);
   }
+}
+
+/* Search panel: 150ms ease-out enter, 80ms exit */
+.nc-search-enter {
+  transition: opacity 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+.nc-search-leave {
+  transition: opacity 80ms cubic-bezier(0.4, 0, 1, 1),
+              transform 80ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.scale-97 {
+  transform: scale(0.97);
 }
 </style>

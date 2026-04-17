@@ -76,7 +76,7 @@ watch(() => props.open, (val) => {
                 class="field-input"
                 placeholder='e.g. "Launching a mobile fitness app"'
                 autofocus
-              />
+              >
             </div>
 
             <!-- Depth + Style -->
@@ -120,7 +120,7 @@ watch(() => props.open, (val) => {
                 type="text"
                 class="field-input"
                 placeholder='e.g. "Health & Fitness"'
-              />
+              >
             </div>
           </div>
 

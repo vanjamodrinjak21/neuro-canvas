@@ -1,6 +1,5 @@
 import { prisma } from '../../../utils/prisma'
-import { requireAuthSession } from '../../../utils/syncHelpers'
-import { generateChecksum, computeByteSize } from '../../../utils/syncHelpers'
+import { requireAuthSession, generateChecksum, computeByteSize  } from '../../../utils/syncHelpers'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)

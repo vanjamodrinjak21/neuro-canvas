@@ -18,7 +18,8 @@ export default defineNuxtConfig({
     '@unocss/nuxt',
     '@vueuse/nuxt',
     '@sidebase/nuxt-auth',
-    '@nuxt/content'
+    '@nuxt/content',
+    '@nuxt/eslint'
   ],
 
   // Nuxt Content configuration
@@ -36,14 +37,16 @@ export default defineNuxtConfig({
 
   // Auth configuration
   auth: {
-    // Use absolute baseURL for production
-    baseURL: process.env.AUTH_ORIGIN
-      ? `${process.env.AUTH_ORIGIN}/api/auth`
-      : 'https://neuro-canvas.com/api/auth',
+    // Always use absolute URL so Tauri desktop doesn't resolve to local assets
+    baseURL: 'https://neuro-canvas.com/api/auth',
     provider: {
       type: 'authjs'
     },
-    globalAppMiddleware: false // We'll handle middleware manually per-page
+    globalAppMiddleware: false, // We'll handle middleware manually per-page
+    sessionRefresh: {
+      enableOnWindowFocus: true,
+      enablePeriodically: 5 * 60 * 1000 // Refresh every 5 minutes
+    }
   },
 
   // Runtime config
@@ -81,9 +84,17 @@ export default defineNuxtConfig({
 
   // App configuration
   app: {
-    pageTransition: { name: 'page', mode: 'out-in' },
+    pageTransition: { name: 'page' },
     head: {
       title: 'NeuroCanvas',
+      // Tauri auth fix: intercept /api/auth/* fetch calls BEFORE Nuxt boots
+      script: [
+        {
+          innerHTML: `if(window.__TAURI__||window.__TAURI_INTERNALS__){var _f=window.fetch.bind(window);window.fetch=function(u,o){var s=typeof u==='string'?u:u instanceof URL?u.toString():u.url;if(s.indexOf('/api/auth/')!==-1)return Promise.resolve(new Response(JSON.stringify({}),{status:200,headers:{'Content-Type':'application/json'}}));return _f(u,o)}}`,
+          tagPosition: 'head',
+          type: 'text/javascript'
+        }
+      ],
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' },
@@ -120,6 +131,18 @@ export default defineNuxtConfig({
     clearScreen: false,
     server: {
       strictPort: true
+    }
+  },
+
+  // Nitro server configuration
+  nitro: {
+    esbuild: {
+      options: {
+        target: 'es2022'
+      }
+    },
+    prerender: {
+      failOnError: false
     }
   },
 

@@ -3,34 +3,48 @@ import { useGuestMode } from '~/composables/useGuestMode'
 
 /**
  * Mind map export & share utilities.
- * Pure functions — no UI, no side effects beyond download / clipboard.
+ * Platform-aware: uses native file save dialog on Tauri, browser download on web.
  */
 export function useExport() {
   const guest = useGuestMode()
 
+  // ── Platform detection ──────────────────────────────────────────────
+  function _isTauri(): boolean {
+    return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+  }
+
   // ── PNG export ──────────────────────────────────────────────────────
   function exportAsPng(canvasEl: HTMLCanvasElement, title: string) {
     if (!guest.requireFeature('export')) return
-    canvasEl.toBlob((blob) => {
-      if (blob) downloadBlob(blob, sanitizeFilename(title) + '.png')
+    canvasEl.toBlob(async (blob) => {
+      if (blob) {
+        const bytes = new Uint8Array(await blob.arrayBuffer())
+        await saveFile(bytes, sanitizeFilename(title) + '.png', [
+          { name: 'PNG Image', extensions: ['png'] }
+        ])
+      }
     }, 'image/png')
   }
 
   // ── JSON export ─────────────────────────────────────────────────────
-  function exportAsJson(mapStore: MapStore, title: string) {
+  async function exportAsJson(mapStore: MapStore, title: string) {
     if (!guest.requireFeature('export')) return
     const data = mapStore.toSerializable()
     const json = JSON.stringify(data, null, 2)
-    const blob = new Blob([json], { type: 'application/json' })
-    downloadBlob(blob, sanitizeFilename(title) + '.json')
+    const bytes = new TextEncoder().encode(json)
+    await saveFile(bytes, sanitizeFilename(title) + '.json', [
+      { name: 'JSON File', extensions: ['json'] }
+    ])
   }
 
   // ── Markdown export ─────────────────────────────────────────────────
-  function exportAsMarkdown(mapStore: MapStore, title: string) {
+  async function exportAsMarkdown(mapStore: MapStore, title: string) {
     if (!guest.requireFeature('export')) return
     const md = mapToMarkdown(mapStore)
-    const blob = new Blob([md], { type: 'text/markdown' })
-    downloadBlob(blob, sanitizeFilename(title) + '.md')
+    const bytes = new TextEncoder().encode(md)
+    await saveFile(bytes, sanitizeFilename(title) + '.md', [
+      { name: 'Markdown', extensions: ['md'] }
+    ])
   }
 
   // ── Share (clipboard / native share sheet) ──────────────────────────
@@ -57,12 +71,32 @@ export function useExport() {
 
   // ── Helpers ─────────────────────────────────────────────────────────
 
-  /** Download a Blob as a file via a temporary <a> element. */
-  function downloadBlob(blob: Blob, filename: string) {
+  /** Save file: Tauri uses native dialog + fs, web uses blob download. */
+  async function saveFile(
+    data: Uint8Array,
+    defaultFilename: string,
+    filters: Array<{ name: string; extensions: string[] }>
+  ) {
+    if (_isTauri()) {
+      try {
+        const { save } = await import('@tauri-apps/plugin-dialog')
+        const { writeFile } = await import('@tauri-apps/plugin-fs')
+        const filePath = await save({ defaultPath: defaultFilename, filters })
+        if (filePath) {
+          await writeFile(filePath, data)
+        }
+        return
+      } catch (e) {
+        console.error('[Export] Tauri save failed, falling back to browser download:', e)
+      }
+    }
+
+    // Web fallback: blob download via <a> element
+    const blob = new Blob([data.buffer])
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = filename
+    a.download = defaultFilename
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)

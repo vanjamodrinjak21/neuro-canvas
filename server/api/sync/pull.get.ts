@@ -21,9 +21,9 @@ export default defineEventHandler(async (event) => {
 
   // Single map pull
   if (mapId) {
-    // Try Redis cache first
-    const cached = await cache.get<{ data: unknown; title: string; tags: string[] }>(cacheKeys.mapData(mapId))
-    const cachedMeta = await cache.get<{ syncVersion: number; checksum: string }>(cacheKeys.mapMeta(mapId))
+    // Try Redis cache first — keys are scoped by userId to prevent cross-account leakage
+    const cached = await cache.get<{ data: unknown; title: string; tags: string[] }>(cacheKeys.mapData(mapId, userId))
+    const cachedMeta = await cache.get<{ syncVersion: number; checksum: string }>(cacheKeys.mapMeta(mapId, userId))
 
     if (cached && cachedMeta) {
       return {
@@ -58,9 +58,9 @@ export default defineEventHandler(async (event) => {
       return { maps: [], deleted: [map.id] }
     }
 
-    // Warm cache
-    await cache.set(cacheKeys.mapMeta(map.id), { syncVersion: map.syncVersion, checksum: map.checksum }, 3600)
-    await cache.set(cacheKeys.mapData(map.id), { data: map.data, title: map.title, tags: map.tags }, 3600)
+    // Warm cache — scoped by userId
+    await cache.set(cacheKeys.mapMeta(map.id, userId), { syncVersion: map.syncVersion, checksum: map.checksum }, 3600)
+    await cache.set(cacheKeys.mapData(map.id, userId), { data: map.data, title: map.title, tags: map.tags }, 3600)
 
     return {
       maps: [{

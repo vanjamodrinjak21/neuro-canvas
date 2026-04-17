@@ -1,13 +1,20 @@
 import { cache, cacheKeys } from '../../utils/redis'
 import { requireAuthSession } from '../../utils/syncHelpers'
+import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  await requireAuthSession(event)
+  const { userId } = await requireAuthSession(event)
 
   const mapId = getRouterParam(event, 'mapId')
 
   if (!mapId || mapId.length > 128) {
     throw createError({ statusCode: 400, statusMessage: 'Missing or invalid mapId' })
+  }
+
+  // Verify map ownership to prevent IDOR
+  const map = await prisma.map.findFirst({ where: { id: mapId, userId, deletedAt: null }, select: { id: true } })
+  if (!map) {
+    throw createError({ statusCode: 404, statusMessage: 'Map not found' })
   }
 
   await cache.delPattern(cacheKeys.embeddingsByMap(mapId))

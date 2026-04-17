@@ -53,11 +53,14 @@ impl EmbeddingEngine {
         #[cfg(target_os = "macos")]
         if hw.is_apple_silicon {
             tracing::info!("Apple Silicon detected — attempting CoreML EP");
-            // CoreML EP requires the `coreml` feature on ort.
-            // If not available, fall through to CPU gracefully.
-            match builder.with_execution_providers([
-                ort::execution_providers::CoreMLExecutionProvider::default().build(),
-            ]) {
+            // Rebuild the builder to avoid ownership issues with the match
+            let coreml_result = Session::builder()
+                .and_then(|b| {
+                    b.with_execution_providers([
+                        ort::execution_providers::CoreMLExecutionProvider::default().build(),
+                    ])
+                });
+            match coreml_result {
                 Ok(b) => {
                     builder = b;
                     tracing::info!("CoreML EP registered");

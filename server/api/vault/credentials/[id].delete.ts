@@ -24,8 +24,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Credential not found' })
   }
 
-  await prisma.credential.delete({
-    where: { id: credentialId }
+  await prisma.credential.deleteMany({
+    where: { id: credentialId, userId }
   })
 
   return { ok: true }

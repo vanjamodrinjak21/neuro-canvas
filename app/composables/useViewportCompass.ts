@@ -16,9 +16,9 @@ export function useViewportCompass() {
   const VIEWPORT_DELTA_THRESHOLD = 10 // px — skip if viewport moved less than this
   let lastComputeTime = 0
   let cachedIndicators: CompassIndicator[] = []
-  let lastCameraX = NaN
-  let lastCameraY = NaN
-  let lastCameraZoom = NaN
+  let lastCameraX = Number.NaN
+  let lastCameraY = Number.NaN
+  let lastCameraZoom = Number.NaN
 
   /**
    * Compute off-screen node indicators for each viewport edge.

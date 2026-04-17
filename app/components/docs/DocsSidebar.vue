@@ -144,7 +144,7 @@ function isActive(path: string): boolean {
   background: var(--nc-surface);
   border-right: 1px solid var(--nc-border);
   flex-shrink: 0;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: background var(--nc-duration-slow) ease, border-color var(--nc-duration-slow) ease;
 }
 
 :root.light .docs-sidebar {
@@ -242,8 +242,8 @@ function isActive(path: string): boolean {
     width: 280px;
     box-shadow: var(--nc-shadow-lg);
     transform: translateX(-100%);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                background 0.3s ease, border-color 0.3s ease;
+    transition: transform var(--nc-duration-normal) var(--nc-ease),
+                background var(--nc-duration-slow) ease, border-color var(--nc-duration-slow) ease;
   }
   .docs-sidebar.is-open {
     transform: translateX(0);

@@ -52,8 +52,8 @@ export default defineEventHandler(async (event) => {
         send('ping', { time: Date.now() })
       }, 30000)
 
-      // Send initial connected event
-      send('connected', { userId, channel })
+      // Send initial connected event (no internal details)
+      send('connected', { status: 'ok' })
 
       // Cleanup on disconnect
       event.node.req.on('close', () => {

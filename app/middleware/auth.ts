@@ -1,12 +1,12 @@
 /**
  * Auth middleware - Protects routes that require authentication
  * Allows guest mode users to access their single map
- * Bypassed entirely in Tauri (desktop) mode
+ * On Tauri (desktop): all pages accessible without auth (sign-in is optional)
  */
 import { useGuestMode } from '~/composables/useGuestMode'
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  // Skip auth entirely in Tauri desktop mode
+  // Tauri desktop: all pages accessible without auth — sign-in is optional
   if (typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)) {
     return
   }

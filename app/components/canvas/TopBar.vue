@@ -128,7 +128,7 @@ defineExpose({ focusTitleInput })
             @keydown.escape="emit('cancel-edit')"
             @blur="emit('save-title')"
             @input="emit('title-input', ($event.target as HTMLInputElement).value)"
-          />
+          >
           <button
             v-else
             key="display"
@@ -224,11 +224,13 @@ defineExpose({ focusTitleInput })
   align-items: center;
   justify-content: center;
   color: var(--nc-ink-soft);
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease-out);
 }
 
-.topbar-icon-btn:hover {
-  color: var(--nc-ink);
+@media (hover: hover) and (pointer: fine) {
+  .topbar-icon-btn:hover {
+    color: var(--nc-ink);
+  }
 }
 
 .topbar-title-edit {
@@ -255,11 +257,13 @@ defineExpose({ focusTitleInput })
   background: none;
   border: none;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease-out);
 }
 
-.topbar-title-btn:hover {
-  color: var(--nc-accent);
+@media (hover: hover) and (pointer: fine) {
+  .topbar-title-btn:hover {
+    color: var(--nc-accent);
+  }
 }
 
 .topbar-breadcrumbs {
@@ -277,17 +281,21 @@ defineExpose({ focusTitleInput })
   border-radius: 10px;
   padding: 2px 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease-out),
+              border-color var(--nc-duration-fast) var(--nc-ease-out),
+              background var(--nc-duration-fast) var(--nc-ease-out);
   max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.topbar-crumb:hover {
-  color: var(--nc-accent, #00D2BE);
-  border-color: rgba(0, 210, 190, 0.3);
-  background: rgba(0, 210, 190, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .topbar-crumb:hover {
+    color: var(--nc-accent, #00D2BE);
+    border-color: rgba(0, 210, 190, 0.3);
+    background: rgba(0, 210, 190, 0.06);
+  }
 }
 
 .topbar-crumb-current {

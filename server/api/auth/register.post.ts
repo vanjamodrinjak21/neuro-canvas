@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
 import { checkRateLimit } from '../../utils/redis'
 import { validateBody } from '../../utils/validation'
+import { checkBreachedPassword } from '../../utils/hibp'
 
 const registerSchema = z.object({
   email: z.string().email().max(255).transform(v => v.toLowerCase()),
@@ -11,7 +12,7 @@ const registerSchema = z.object({
     .max(128, 'Password must be at most 128 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .regex(/\d/, 'Password must contain at least one number'),
   name: z.string().max(100).trim().optional(),
 })
 
@@ -25,7 +26,17 @@ export default defineEventHandler(async (event) => {
 
   const body = validateBody(registerSchema, await readBody(event))
 
-  // Hash password
+  // Check against known breached passwords
+  const breachCount = await checkBreachedPassword(body.password)
+  if (breachCount > 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`
+    })
+  }
+
+  // Hash password BEFORE checking for duplicates to prevent timing side-channel
+  // (bcrypt takes ~250ms; without this, duplicate email returns instantly, leaking existence)
   const hashedPassword = await bcrypt.hash(body.password, 12)
 
   try {

@@ -5,13 +5,13 @@ import { validateBody, aiCachePostSchema } from '../../utils/validation'
 const DEFAULT_TTL = 3600
 
 export default defineEventHandler(async (event) => {
-  await requireAuthSession(event)
+  const { userId } = await requireAuthSession(event)
 
   const body = validateBody(aiCachePostSchema, await readBody(event))
   const ttl = body.ttlSeconds || DEFAULT_TTL
 
   await cache.set(
-    cacheKeys.aiResponse(body.hash),
+    cacheKeys.aiResponse(`${userId}:${body.hash}`),
     {
       response: body.response,
       usage: body.usage || null,

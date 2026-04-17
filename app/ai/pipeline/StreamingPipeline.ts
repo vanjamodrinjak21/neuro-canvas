@@ -62,6 +62,9 @@ export async function streamCompletion(
     })
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Session expired. Please sign in again to use AI features.')
+      }
       const errorText = await response.text()
       throw new Error(errorText || `Stream request failed: ${response.status}`)
     }
@@ -120,7 +123,7 @@ export async function streamCompletion(
 async function streamViaTauri(
   params: {
     provider: string
-    apiKey: string
+    apiKey?: string
     credentialId?: string
     baseUrl?: string
     model?: string
@@ -135,7 +138,7 @@ async function streamViaTauri(
   // Real streaming via Tauri requires plugin-http streaming support
   const response = await aiComplete({
     provider: params.provider,
-    apiKey: params.apiKey,
+    apiKey: params.apiKey || '',
     baseUrl: params.baseUrl,
     model: params.model,
     systemPrompt: params.systemPrompt,

@@ -11,7 +11,10 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   autoSave: true,
   autoSaveInterval: 30000, // 30 seconds
   showMinimap: true,
-  showGrid: true
+  showGrid: true,
+  language: 'en',
+  emailNotifications: true,
+  usageAnalytics: false
 }
 
 /**

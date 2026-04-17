@@ -59,13 +59,18 @@ export function useTauriML() {
     modelVariant: 'quantized' | 'full' = 'quantized'
   ): Promise<{ initialized: boolean; modelLoaded: boolean }> {
     onProgress?.(0.5)
-    const result = await invoke<InitResult>('ml_init', {
-      modelVariant
-    })
-    onProgress?.(1.0)
-    return {
-      initialized: result.initialized,
-      modelLoaded: result.model_loaded
+    try {
+      const result = await invoke<InitResult>('ml_init', {
+        modelVariant
+      })
+      onProgress?.(1.0)
+      return {
+        initialized: result.initialized,
+        modelLoaded: result.model_loaded
+      }
+    } catch (e) {
+      console.error('[TauriML] ml_init failed:', e)
+      return { initialized: false, modelLoaded: false }
     }
   }
 

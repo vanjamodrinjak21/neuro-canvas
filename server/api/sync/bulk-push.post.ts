@@ -76,7 +76,7 @@ export default defineEventHandler(async (event) => {
         }
       })
 
-      await cache.set(cacheKeys.mapMeta(map.mapId), { syncVersion: newVersion, checksum: serverChecksum }, 3600)
+      await cache.set(cacheKeys.mapMeta(map.mapId, userId), { syncVersion: newVersion, checksum: serverChecksum }, 3600)
       results.push({ mapId: map.mapId, action: existing ? 'updated' : 'created', syncVersion: newVersion })
     } catch (err) {
       console.error(`Bulk push error for map ${map.mapId}:`, err)

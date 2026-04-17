@@ -1,8 +1,8 @@
 /**
  * Tauri Router Plugin
  *
- * In Tauri (desktop) mode, redirect landing page and auth pages to dashboard.
- * The desktop app is fully local with no login — go straight to the app.
+ * In Tauri (desktop) mode, redirect landing page to dashboard.
+ * Auth pages are allowed — users can optionally sign in to sync API keys.
  */
 export default defineNuxtPlugin(() => {
   const isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
@@ -12,8 +12,8 @@ export default defineNuxtPlugin(() => {
   const router = useRouter()
 
   router.beforeEach((to) => {
-    // Redirect landing page and auth routes to dashboard
-    if (to.path === '/' || to.path.startsWith('/auth')) {
+    // Only redirect the landing page — allow auth pages for optional sign-in
+    if (to.path === '/') {
       return '/dashboard'
     }
   })

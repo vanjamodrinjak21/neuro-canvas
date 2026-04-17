@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
+const { haptics, isMobile } = usePlatform()
 
 const tabs = [
   { name: 'Home', path: '/dashboard', icon: 'home' },
@@ -15,6 +16,12 @@ function isActive(tab: typeof tabs[number]): boolean {
   if (tab.icon === 'settings') return route.path === '/settings'
   return false
 }
+
+function onTabTap() {
+  if (isMobile.value) {
+    haptics.selection()
+  }
+}
 </script>
 
 <template>
@@ -25,6 +32,7 @@ function isActive(tab: typeof tabs[number]): boolean {
       :to="tab.path"
       class="tab-item"
       :class="{ active: isActive(tab) }"
+      @click="onTabTap"
     >
       <!-- Home -->
       <svg v-if="tab.icon === 'home'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">

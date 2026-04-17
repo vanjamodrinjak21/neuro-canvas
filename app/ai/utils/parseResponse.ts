@@ -30,10 +30,10 @@ export function parseJsonResponse<T>(content: string): T {
   // Attempt 2: fix common LLM JSON issues
   let cleaned = jsonStr
     // Remove trailing commas before } or ]
-    .replace(/,\s*}/g, '}')
-    .replace(/,\s*]/g, ']')
+    .replace(/,\s*\}/g, '}')
+    .replace(/,\s*\]/g, ']')
     // Replace single quotes used as string delimiters (but not apostrophes inside words)
-    .replace(/(?<=[\[{,:])\s*'/g, ' "')
+    .replace(/(?<=[[{,:])\s*'/g, ' "')
     .replace(/'\s*(?=[,\]}])/g, '"')
     // Remove JS-style comments
     .replace(/\/\/[^\n]*/g, '')

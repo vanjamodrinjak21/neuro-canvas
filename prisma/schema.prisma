@@ -3,11 +3,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../server/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Auth.js required models
@@ -17,7 +17,17 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  bio           String?   @db.VarChar(280)
   password      String?   // For credentials auth (hashed)
+
+  // Security
+  passwordChangedAt    DateTime?
+  totpSecret           String?   // Encrypted TOTP secret
+  totpEnabled          Boolean   @default(false)
+  backupCodes          String[]  @default([]) // Hashed backup codes
+  lastTotpDelta        Int?      // Replay protection: last accepted TOTP delta
+  failedLoginAttempts  Int       @default(0)
+  lockedUntil          DateTime?
 
   accounts      Account[]
   sessions      Session[]

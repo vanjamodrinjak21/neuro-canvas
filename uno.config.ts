@@ -145,14 +145,22 @@ export default defineConfig({
         'nc-node-appear': '{from { opacity: 0; transform: scale(0.8) } to { opacity: 1; transform: scale(1) }}'
       },
       durations: {
+        'nc-press': '120ms',
+        'nc-instant': '100ms',
         'nc-fast': '150ms',
         'nc-normal': '200ms',
-        'nc-slow': '300ms'
+        'nc-slow': '300ms',
+        'nc-slower': '500ms',
+        'nc-reveal': '700ms'
       },
       timingFns: {
-        'nc-ease': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'nc-ease': 'cubic-bezier(0.23, 1, 0.32, 1)',
+        'nc-ease-out': 'cubic-bezier(0.23, 1, 0.32, 1)',
+        'nc-ease-in-out': 'cubic-bezier(0.77, 0, 0.175, 1)',
+        'nc-ease-entrance': 'cubic-bezier(0.22, 1, 0.36, 1)',
         'nc-ease-bounce': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-        'nc-ease-smooth': 'cubic-bezier(0.4, 0, 0.2, 1)'
+        'nc-ease-smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'nc-ease-drawer': 'cubic-bezier(0.32, 0.72, 0, 1)'
       }
     }
   },

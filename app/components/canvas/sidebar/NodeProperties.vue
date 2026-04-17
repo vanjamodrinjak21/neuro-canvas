@@ -177,7 +177,7 @@ const categoryChips = computed(() => [
             :maxlength="labelMaxLength"
             @blur="updateContent"
             @keydown.enter="updateContent"
-          />
+          >
         </div>
 
         <!-- Notes -->

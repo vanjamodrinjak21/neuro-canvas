@@ -22,24 +22,19 @@ const emit = defineEmits<{
 }>()
 
 const variantClasses: Record<string, string> = {
-  primary: 'bg-nc-teal text-nc-charcoal hover:bg-nc-teal-hover hover:shadow-nc-glow hover:-translate-y-px active:scale-98',
-  secondary: 'nc-glass text-nc-ink hover:border-nc-teal hover:text-nc-teal hover:shadow-nc-md active:scale-98',
-  ghost: 'text-nc-ink-soft hover:text-nc-ink hover:bg-nc-graphite bg-transparent border-transparent',
-  danger: 'bg-nc-error/10 text-nc-error border-nc-error/20 hover:bg-nc-error/20 hover:border-nc-error/40',
-  ai: 'ai-gradient text-nc-charcoal font-semibold hover:brightness-110 hover:scale-102 active:scale-98 shadow-nc-glow',
+  primary: 'bg-nc-teal text-nc-charcoal active:scale-97 nc-btn-primary-hover',
+  secondary: 'nc-glass text-nc-ink active:scale-97 nc-btn-secondary-hover',
+  ghost: 'text-nc-ink-soft bg-transparent border-transparent nc-btn-ghost-hover',
+  danger: 'bg-nc-error/10 text-nc-error border-nc-error/20 nc-btn-danger-hover',
+  ai: 'ai-gradient text-nc-charcoal font-semibold shadow-nc-glow active:scale-97 nc-btn-ai-hover',
   tool: `
     bg-gradient-to-b from-white/[0.02] to-transparent
     border border-nc-border
     text-nc-ink-muted
     shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]
-    hover:bg-nc-surface-2
-    hover:text-nc-ink
-    hover:border-nc-border-active
-    hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.3),0_0_24px_var(--nc-accent-glow)]
-    hover:-translate-y-px
-    active:scale-96 active:translate-y-0
+    active:scale-97 active:translate-y-0
     active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]
-    relative overflow-hidden
+    relative overflow-hidden nc-btn-tool-hover
   `
 }
 
@@ -55,7 +50,8 @@ const buttonClass = computed(() => [
   'inline-flex items-center justify-center',
   'font-medium rounded-nc-md',
   'border border-transparent',
-  'transition-all duration-250',
+  // Explicit properties only — never transition:all
+  'transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-150',
   'cursor-pointer select-none',
   'font-sans',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
@@ -91,3 +87,46 @@ function handleClick(event: MouseEvent) {
     <slot />
   </Primitive>
 </template>
+
+<style scoped>
+/* Hover animations gated to pointer devices only */
+@media (hover: hover) and (pointer: fine) {
+  .nc-btn-primary-hover:hover {
+    background-color: var(--nc-teal-dark);
+    box-shadow: 0 0 32px rgba(0, 210, 190, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .nc-btn-secondary-hover:hover {
+    border-color: var(--nc-teal);
+    color: var(--nc-teal);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .nc-btn-ghost-hover:hover {
+    color: var(--nc-ink);
+    background-color: var(--nc-graphite);
+  }
+
+  .nc-btn-danger-hover:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  .nc-btn-ai-hover:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+  }
+
+  .nc-btn-tool-hover:hover {
+    background-color: var(--nc-surface-2);
+    color: var(--nc-ink);
+    border-color: var(--nc-border-active);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      0 0 24px var(--nc-accent-glow);
+    transform: translateY(-1px);
+  }
+}
+</style>

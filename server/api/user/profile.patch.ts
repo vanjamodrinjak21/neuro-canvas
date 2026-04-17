@@ -1,10 +1,30 @@
 import { getServerSession } from '#auth'
+import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
 
-interface UpdateProfileBody {
-  name?: string
-  image?: string
-}
+const updateProfileSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name cannot be empty')
+    .max(100, 'Name must be 100 characters or less')
+    .trim()
+    .optional(),
+  bio: z
+    .string()
+    .max(280, 'Bio must be 280 characters or less')
+    .trim()
+    .optional()
+    .nullable(),
+  image: z
+    .string()
+    .url('Invalid image URL')
+    .refine(
+      (url) => url.startsWith('https://'),
+      'Image URL must use HTTPS'
+    )
+    .optional()
+    .nullable()
+}).strict() // Reject unknown fields (mass assignment protection)
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -16,40 +36,30 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = await readBody<UpdateProfileBody>(event)
+  const body = await readBody(event)
+  const parsed = updateProfileSchema.safeParse(body)
 
-  // Validate name length if provided
-  if (body.name !== undefined) {
-    if (body.name.length > 100) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Name must be 100 characters or less'
-      })
-    }
+  if (!parsed.success) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: parsed.error.errors[0]?.message || 'Invalid input'
+    })
   }
 
-  // Validate image URL if provided
-  if (body.image !== undefined && body.image !== null && body.image !== '') {
-    try {
-      new URL(body.image)
-    } catch {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid image URL'
-      })
-    }
-  }
+  const { name, bio, image } = parsed.data
 
   const user = await prisma.user.update({
     where: { email: session.user.email },
     data: {
-      ...(body.name !== undefined && { name: body.name || null }),
-      ...(body.image !== undefined && { image: body.image || null })
+      ...(name !== undefined && { name }),
+      ...(bio !== undefined && { bio: bio || null }),
+      ...(image !== undefined && { image: image || null })
     },
     select: {
       id: true,
       email: true,
       name: true,
+      bio: true,
       image: true,
       updatedAt: true
     }

@@ -116,7 +116,7 @@ watch(() => props.open, (val) => {
             <!-- Template Name -->
             <div class="field">
               <label class="field-label">Template Name</label>
-              <input v-model="title" type="text" class="field-input" placeholder="Template name" />
+              <input v-model="title" type="text" class="field-input" placeholder="Template name" >
             </div>
 
             <!-- Description -->
@@ -168,7 +168,7 @@ watch(() => props.open, (val) => {
                   placeholder="+ Add tag"
                   @keydown="handleTagKeydown"
                   @blur="addTag"
-                />
+                >
               </div>
             </div>
           </div>

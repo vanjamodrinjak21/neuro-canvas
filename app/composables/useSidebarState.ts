@@ -1,10 +1,7 @@
-import type { Node } from '~/types'
 import {
   NODE_CATEGORIES,
   getCategoryColor,
   getCategoryInfo,
-  type CategoryId,
-  type CategoryDefinition
 } from '~/constants/categories'
 
 // Re-export for backward compatibility — consumers that import from here

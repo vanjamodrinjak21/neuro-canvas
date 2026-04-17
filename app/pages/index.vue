@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { useGuestMode } from '~/composables/useGuestMode'
+
 definePageMeta({ layout: false })
 
 const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 const { status } = _isTauri ? { status: ref('authenticated') } : useAuth()
 const isAuthenticated = computed(() => _isTauri || status.value === 'authenticated')
-
-import { useGuestMode } from '~/composables/useGuestMode'
 const guest = useGuestMode()
 
 function handleTryFree() {
@@ -26,13 +26,14 @@ onMounted(() => {
         if (entry.isIntersecting) {
           const items = entry.target.querySelectorAll('.s')
           items.forEach((el, i) => {
-            ;(el as HTMLElement).style.transitionDelay = `${i * 120}ms`
+            const delay = i * 50
+            ;(el as HTMLElement).style.transitionDelay = `${delay}ms`
           })
           entry.target.classList.add('in')
         }
       })
     },
-    { threshold: 0.1, rootMargin: '-40px' }
+    { threshold: 0.1, rootMargin: '-60px' }
   )
   document.querySelectorAll('.r').forEach((el) => observer.observe(el))
 
@@ -90,7 +91,7 @@ function scrollTo(id: string) {
         <h1 class="hero-serif">Learn infinitely.</h1>
       </div>
       <p class="hero-sub s">
-        AI-powered mind mapping that understands your ideas,<br />
+        AI-powered mind mapping that understands your ideas,<br >
         suggests connections, and helps you learn faster.
       </p>
       <div class="hero-cta s">
@@ -242,7 +243,7 @@ function scrollTo(id: string) {
       <div class="features-head r">
         <span class="label-teal s">Features</span>
         <h2 class="features-title s">
-          Everything you need to<br />organize knowledge
+          Everything you need to<br >organize knowledge
         </h2>
       </div>
 
@@ -313,7 +314,7 @@ function scrollTo(id: string) {
     <section class="cta r">
       <h2 class="cta-heading s">Ready to think differently?</h2>
       <p class="cta-sub s">
-        Free, open-source, and built for students. Available on<br />
+        Free, open-source, and built for students. Available on<br >
         every platform you use.
       </p>
       <div class="cta-buttons s">
@@ -381,7 +382,7 @@ function scrollTo(id: string) {
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --serif: 'Instrument Serif', Georgia, serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --lp-ease: var(--nc-ease-entrance, cubic-bezier(0.23, 1, 0.32, 1));
 
   font-family: var(--sans);
   background: var(--bg);
@@ -412,8 +413,9 @@ function scrollTo(id: string) {
 /* ── Reveal system ── */
 .r {
   opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+  transform: translateY(16px);
+  transition: opacity 700ms var(--lp-ease),
+              transform 700ms var(--lp-ease);
 }
 
 .r.in {
@@ -423,8 +425,9 @@ function scrollTo(id: string) {
 
 .s {
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+  transform: translateY(8px);
+  transition: opacity 500ms var(--lp-ease),
+              transform 500ms var(--lp-ease);
 }
 
 .s.in,
@@ -435,9 +438,9 @@ function scrollTo(id: string) {
 }
 
 .hero .s:nth-child(1) { transition-delay: 0ms; }
-.hero .s:nth-child(2) { transition-delay: 100ms; }
-.hero .s:nth-child(3) { transition-delay: 200ms; }
-.hero .s:nth-child(4) { transition-delay: 300ms; }
+.hero .s:nth-child(2) { transition-delay: 60ms; }
+.hero .s:nth-child(3) { transition-delay: 120ms; }
+.hero .s:nth-child(4) { transition-delay: 200ms; }
 
 /* ═══════════════════════
    NAV
@@ -452,7 +455,9 @@ nav {
   justify-content: space-between;
   align-items: center;
   padding: 20px 80px;
-  transition: all 0.3s ease;
+  transition: background var(--nc-duration-normal, 250ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              padding var(--nc-duration-normal, 250ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              border-color var(--nc-duration-normal, 250ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 nav.scrolled {
@@ -491,7 +496,7 @@ nav.scrolled {
   text-decoration: none;
   font-size: 14px;
   font-weight: 400;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
   position: relative;
 }
 
@@ -503,7 +508,7 @@ nav.scrolled {
   width: 0;
   height: 1.5px;
   background: var(--accent);
-  transition: width 200ms var(--nc-ease), transform 200ms var(--nc-ease);
+  transition: width 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
   transform: translateX(-50%);
 }
 
@@ -526,7 +531,7 @@ nav.scrolled {
   text-decoration: none;
   font-size: 14px;
   font-weight: 400;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .nav-link:hover {
@@ -543,7 +548,10 @@ nav.scrolled {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              border-color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform var(--nc-duration-press, 80ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .try-free-btn:hover {
@@ -568,7 +576,10 @@ nav.scrolled {
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              border-color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform var(--nc-duration-press, 80ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .btn-primary:hover {
@@ -594,7 +605,10 @@ nav.scrolled {
   border-radius: 8px;
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              border-color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform var(--nc-duration-press, 80ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .btn-outline:hover {
@@ -609,7 +623,7 @@ nav.scrolled {
 .btn-lg {
   padding: 14px 32px;
   font-size: 15px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 /* ═══════════════════════
@@ -620,7 +634,7 @@ nav.scrolled {
   flex-direction: column;
   align-items: center;
   padding: 160px 120px 80px;
-  gap: 48px;
+  gap: 40px;
 }
 
 .hero-badge {
@@ -668,7 +682,7 @@ nav.scrolled {
 }
 
 :root.light .hero-serif {
-  color: var(--text);
+  color: var(--accent-dark);
 }
 
 :root.light .cta-heading {
@@ -676,12 +690,12 @@ nav.scrolled {
 }
 
 .hero-sub {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 400;
   line-height: 28px;
   color: var(--text-3);
   text-align: center;
-  max-width: 480px;
+  max-width: 440px;
   margin: 0;
 }
 
@@ -919,6 +933,7 @@ nav.scrolled {
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 48px;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
@@ -983,20 +998,24 @@ nav.scrolled {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
+  transition: border-color var(--nc-duration-normal, 250ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform var(--nc-duration-normal, 250ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+.feature-card:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-2px);
 }
 
 .feature-icon {
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
   margin-bottom: 24px;
   color: var(--accent);
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .feature-card h3 {
@@ -1089,7 +1108,7 @@ footer {
   font-size: 13px;
   color: var(--text-2);
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .footer-nav a:hover {

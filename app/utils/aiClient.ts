@@ -64,6 +64,31 @@ async function getTauriFetch(): Promise<typeof globalThis.fetch> {
   return globalThis.fetch
 }
 
+// ─── Ollama model detection ─────────────────────────────────────────
+
+/** Pick the first available Ollama model from the local server. */
+let _cachedOllamaModel: string | null = null
+async function detectOllamaModel(fetchFn: typeof globalThis.fetch, baseUrl: string): Promise<string> {
+  if (_cachedOllamaModel) return _cachedOllamaModel
+
+  try {
+    const res = await fetchFn(`${baseUrl}/api/tags`)
+    if (res.ok) {
+      const data = await res.json()
+      const models: string[] = (data.models || []).map((m: { name: string }) => m.name)
+      if (models.length > 0) {
+        // Use the first installed model — the user knows what they pulled
+        _cachedOllamaModel = models[0]!
+        return _cachedOllamaModel
+      }
+    }
+  } catch {
+    // Ollama not running or unreachable
+  }
+
+  return 'llama3.2'
+}
+
 // ─── Direct provider calls (Tauri desktop mode) ──────────────────────
 
 async function directComplete(req: AICompletionRequest): Promise<AICompletionResponse> {
@@ -116,7 +141,7 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
+          'x-api-key': apiKey || '',
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
@@ -141,12 +166,14 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
 
     case 'ollama': {
       const baseUrl = req.baseUrl || 'http://localhost:11434'
+      // Always auto-detect from local Ollama — ignore stale saved model
+      const ollamaModel = await detectOllamaModel(fetch, baseUrl)
 
       const response = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: model || 'llama3.2',
+          model: ollamaModel,
           messages: systemPrompt
             ? [{ role: 'system', content: systemPrompt }, ...messages]
             : messages,
@@ -155,7 +182,28 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
       })
 
       if (!response.ok) {
-        throw new Error(`Ollama error: ${response.status}`)
+        // Model not found — clear cache and retry once with fresh detection
+        if (response.status === 404 && _cachedOllamaModel) {
+          _cachedOllamaModel = null
+          const retryModel = await detectOllamaModel(fetch, baseUrl)
+          const retryResponse = await fetch(`${baseUrl}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: retryModel,
+              messages: systemPrompt
+                ? [{ role: 'system', content: systemPrompt }, ...messages]
+                : messages,
+              stream: false
+            })
+          })
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json()
+            return { content: retryData.message?.content || '', usage: null }
+          }
+        }
+        const errText = await response.text().catch(() => '')
+        throw new Error(`Ollama error (${response.status}): ${errText || 'No models found'} — Run: ollama list`)
       }
 
       const data = await response.json()
@@ -319,6 +367,11 @@ export async function aiComplete(req: AICompletionRequest): Promise<AICompletion
     })
   } catch (e: unknown) {
     const fetchError = e as { data?: { data?: { code?: string } }; statusCode?: number }
+    if (fetchError.statusCode === 401) {
+      // Convert 401 to plain Error so it shows in the UI instead of
+      // triggering the global auth interceptor redirect
+      throw new Error('Session expired. Please sign in again to use AI features.')
+    }
     if (fetchError.data?.data?.code === 'CREDENTIAL_DECRYPT_FAILED') {
       throw new Error('Failed to decrypt API key. Please re-enter your key in Settings.')
     }
@@ -352,8 +405,16 @@ export async function aiTestConnection(req: AITestConnectionRequest): Promise<AI
   if (rawApiKey) body.rawApiKey = rawApiKey
   // Never send apiKey to server
 
-  return $fetch<AITestConnectionResponse>('/api/ai/test-connection', {
-    method: 'POST',
-    body
-  })
+  try {
+    return await $fetch<AITestConnectionResponse>('/api/ai/test-connection', {
+      method: 'POST',
+      body
+    })
+  } catch (e: unknown) {
+    const fetchError = e as { statusCode?: number }
+    if (fetchError.statusCode === 401) {
+      throw new Error('Session expired. Please sign in again to test connections.')
+    }
+    throw e
+  }
 }

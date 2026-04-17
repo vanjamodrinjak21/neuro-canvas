@@ -3,10 +3,10 @@ import { prisma } from '../../utils/prisma'
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const category = query.category as string | undefined
-  const search = query.search as string | undefined
+  const search = (query.search as string | undefined)?.slice(0, 200)
   const sortBy = (query.sortBy as string) || 'popular'
-  const page = parseInt(query.page as string) || 1
-  const limit = Math.min(parseInt(query.limit as string) || 20, 50)
+  const page = Number.parseInt(query.page as string) || 1
+  const limit = Math.min(Number.parseInt(query.limit as string) || 20, 50)
 
   const where: any = { isPublic: true }
 

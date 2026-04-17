@@ -185,6 +185,7 @@ const showGenerateMapDialog = ref(false)
 // Sidebar visibility (desktop always visible, mobile as sheet)
 const isMobile = ref(false)
 const showSidebarSheet = ref(false)
+const showMobileAISheet = ref(false)
 const sidebarCollapsed = ref(false)
 
 // Zoom presets (managed by ZoomControls component internally)
@@ -316,7 +317,14 @@ onMounted(async () => {
       return
     }
 
-    const map = await db.getMap(mapId.value)
+    let map = await db.getMap(mapId.value)
+
+    // If not in IndexedDB, try pulling from server (e.g., template-created maps)
+    if (!map && syncEngine.isSyncEnabled.value) {
+      await syncEngine.pullMap(mapId.value)
+      map = await db.getMap(mapId.value)
+    }
+
     if (map) {
       mapStore.fromSerializable(map)
       springCamera.setCurrent(map.camera)
@@ -628,6 +636,7 @@ function deleteSelectedWithAnimations() {
     }
   }
   mapStore.deleteSelected()
+  if (platform.isMobile.value) platform.haptics.impact('heavy')
   // Focus canvas after delete
   canvasRef.value?.containerRef?.focus()
 }
@@ -768,6 +777,7 @@ function handleNavigateToNode(nodeId: string) {
 function handleAddNode() {
   mapStore.addNode({ position: { x: 100, y: 100 }, content: 'New Node' })
   contextMenuVisible.value = false
+  if (platform.isMobile.value) platform.haptics.impact('medium')
 }
 
 async function handleSmartExpand() {
@@ -889,7 +899,7 @@ function resetZoom() {
 // Handle zoom slider — instant for direct manipulation
 function handleZoomSlider(event: Event) {
   const target = event.target as HTMLInputElement
-  springCamera.setCurrent({ ...camera.value, zoom: parseFloat(target.value) })
+  springCamera.setCurrent({ ...camera.value, zoom: Number.parseFloat(target.value) })
 }
 
 // Sidebar actions
@@ -1070,8 +1080,13 @@ async function handleGenerateSuggestions() {
     }
   } catch (error) {
     console.error('Failed to generate suggestions:', error)
+    if (platform.isMobile.value) platform.haptics.notification('error')
   } finally {
     isAILoading.value = false
+    // Haptic feedback on AI completion
+    if (platform.isMobile.value && (aiSuggestions.value.length > 0 || richSuggestions.value.length > 0)) {
+      platform.haptics.notification('success')
+    }
   }
 }
 
@@ -1387,6 +1402,7 @@ const saveStatusText = computed(() => {
 // Page meta
 definePageMeta({
   layout: 'canvas',
+  middleware: 'auth',
   ssr: false
 })
 
@@ -1412,10 +1428,19 @@ useHead({
     </div>
 
     <!-- ═══════════════ MOBILE OUTLINE EDITOR (< 768px) ═══════════════ -->
-    <OutlineEditor
-      v-if="isMobile && !isLoading && !loadError"
-      class="flex-1"
-    />
+    <!-- Obsidian-style: markdown/typing area only, no infinite canvas on mobile -->
+    <template v-if="isMobile && !isLoading && !loadError">
+      <!-- AI Suggestions FAB -->
+      <button
+        class="fixed top-16 right-3 z-40 w-10 h-10 rounded-xl flex items-center justify-center bg-nc-surface-3 text-nc-ink border border-nc-surface-3 shadow-lg active:scale-95 transition-all"
+        title="AI Suggestions"
+        @click="showMobileAISheet = true"
+      >
+        <span class="i-lucide-sparkles text-lg" />
+      </button>
+
+      <OutlineEditor class="flex-1" />
+    </template>
 
     <!-- ═══════════════ LEFT SIDEBAR (Desktop — UNTOUCHED) ═══════════════ -->
     <template v-if="!isMobile">
@@ -1613,6 +1638,26 @@ useHead({
       :ai-suggestions="aiSuggestions"
       :rich-suggestions="richSuggestions"
       @action="handleSidebarAction"
+      @close="showSidebarSheet = false"
+    />
+
+    <!-- Mobile Node Properties Sheet -->
+    <CanvasMobileNodePropertiesSheet
+      :visible="isMobile && !!selectedNode && !showSidebarSheet"
+      :selected-node="selectedNode"
+      @action="handleSidebarAction"
+      @close="mapStore.clearSelection()"
+    />
+
+    <!-- Mobile AI Suggestions Sheet -->
+    <CanvasMobileAISuggestionsSheet
+      :visible="isMobile && showMobileAISheet"
+      :selected-node="selectedNode"
+      :is-a-i-loading="isAILoading"
+      :ai-suggestions="aiSuggestions"
+      :rich-suggestions="richSuggestions"
+      @action="handleSidebarAction"
+      @close="showMobileAISheet = false"
     />
 
     <!-- Panels (UNTOUCHED) -->
@@ -1658,11 +1703,20 @@ useHead({
       @close="showSemanticSettings = false"
     />
 
-    <!-- Context Menu -->
+    <!-- Context Menu (desktop: positioned, mobile: bottom sheet) -->
     <CanvasCanvasContextMenu
+      v-if="!isMobile"
       :visible="contextMenuVisible"
       :position="contextMenuPosition"
       :items="contextMenuItems"
+      @close="contextMenuVisible = false"
+    />
+    <CanvasMobileContextMenu
+      v-else
+      :visible="contextMenuVisible"
+      :items="contextMenuItems"
+      :node-name="contextMenuTargetNode?.content"
+      :node-color="contextMenuTargetNode?.style?.borderColor"
       @close="contextMenuVisible = false"
     />
 

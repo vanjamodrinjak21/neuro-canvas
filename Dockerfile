@@ -1,14 +1,16 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Install dependencies for native modules (bcrypt) and OpenSSL for Prisma
 RUN apk add --no-cache python3 make g++ openssl openssl-dev libc6-compat
 
-# Copy package files
+# Copy package files and prisma config
 COPY package*.json ./
+COPY .npmrc ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 # Install dependencies
 RUN npm ci --legacy-peer-deps
@@ -23,16 +25,18 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
 # Install OpenSSL and dependencies for native modules
 RUN apk add --no-cache python3 make g++ openssl openssl-dev libc6-compat
 
-# Copy package files
+# Copy package files and prisma config
 COPY package*.json ./
+COPY .npmrc ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 # Install production dependencies only
 RUN npm ci --legacy-peer-deps --omit=dev
@@ -62,5 +66,9 @@ RUN chmod +x /app/docker-entrypoint.sh
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start the application
+# Run as non-root user for security
+RUN chown -R node:node /app
+USER node
+
+# Start the application (runs migrations then starts server)
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

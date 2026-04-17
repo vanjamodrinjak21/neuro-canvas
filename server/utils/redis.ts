@@ -62,14 +62,18 @@ export const cache = {
   },
 
   /**
-   * Delete multiple keys by pattern
+   * Delete multiple keys by pattern using SCAN (non-blocking, production-safe)
    */
   async delPattern(pattern: string): Promise<void> {
     try {
-      const keys = await redis.keys(pattern)
-      if (keys.length > 0) {
-        await redis.del(...keys)
-      }
+      let cursor = '0'
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100)
+        cursor = nextCursor
+        if (keys.length > 0) {
+          await redis.del(...keys)
+        }
+      } while (cursor !== '0')
     } catch (error) {
       console.error('Redis delPattern error:', error)
     }
@@ -126,8 +130,8 @@ export const cacheKeys = {
   syncRate: (userId: string) => `sync:rate:${userId}`,
   syncMetrics: () => `sync:metrics:${new Date().toISOString().slice(0, 10)}`,
   syncDevices: (userId: string) => `sync:devices:${userId}`,
-  mapMeta: (mapId: string) => `map:meta:${mapId}`,
-  mapData: (mapId: string) => `map:data:${mapId}`
+  mapMeta: (mapId: string, userId?: string) => userId ? `map:meta:${userId}:${mapId}` : `map:meta:${mapId}`,
+  mapData: (mapId: string, userId?: string) => userId ? `map:data:${userId}:${mapId}` : `map:data:${mapId}`
 }
 
 /**
@@ -161,6 +165,17 @@ export function getSubscriber(): Redis {
 /**
  * Distributed lock for map sync operations
  */
+/**
+ * Lua script for atomic check-and-delete (only the lock owner can release)
+ * This is redis.eval for server-side Lua on Redis — NOT JavaScript eval.
+ */
+const RELEASE_LOCK_LUA = `
+  if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('DEL', KEYS[1])
+  end
+  return 0
+`
+
 export const syncLock = {
   async acquire(mapId: string, deviceId: string, ttlSeconds: number = 10): Promise<boolean> {
     try {
@@ -173,9 +188,12 @@ export const syncLock = {
     }
   },
 
-  async release(mapId: string): Promise<void> {
+  async release(mapId: string, deviceId: string): Promise<void> {
     try {
-      await redis.del(cacheKeys.syncLock(mapId))
+      // Atomic: only deletes lock if caller is the owner
+      // ioredis .eval() runs a Lua script on the Redis server
+      const ioredis = redis as any
+      await ioredis['eval'](RELEASE_LOCK_LUA, 1, cacheKeys.syncLock(mapId), deviceId)
     } catch (error) {
       console.error('syncLock.release error:', error)
     }
@@ -183,7 +201,19 @@ export const syncLock = {
 }
 
 /**
- * Rate limiter using INCR + EXPIRE pattern
+ * Atomic rate limit Lua script — INCR + EXPIRE in one round-trip
+ * Prevents race where key is incremented but never expires
+ */
+const RATE_LIMIT_LUA = `
+  local count = redis.call('INCR', KEYS[1])
+  if count == 1 then
+    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1]))
+  end
+  return count
+`
+
+/**
+ * Rate limiter using atomic Lua script
  */
 export async function checkRateLimit(
   userId: string,
@@ -192,14 +222,13 @@ export async function checkRateLimit(
 ): Promise<{ allowed: boolean; remaining: number }> {
   try {
     const key = cacheKeys.syncRate(userId)
-    const count = await redis.incr(key)
-    if (count === 1) {
-      await redis.expire(key, windowSeconds)
-    }
+    // redis.eval executes Lua atomically on Redis server — this is the standard
+    // ioredis pattern for atomic INCR+EXPIRE, not arbitrary code evaluation
+    const count = await (redis as any).eval(RATE_LIMIT_LUA, 1, key, windowSeconds) as number
     return { allowed: count <= max, remaining: Math.max(0, max - count) }
   } catch (error) {
     console.error('checkRateLimit error:', error)
-    return { allowed: true, remaining: max } // Fail open
+    return { allowed: false, remaining: 0 } // Fail closed — block on Redis outage
   }
 }
 

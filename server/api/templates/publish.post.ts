@@ -1,5 +1,7 @@
 import { prisma } from '../../utils/prisma'
 import { requireAuthSession } from '../../utils/syncHelpers'
+import { checkRateLimit } from '../../utils/redis'
+import { validateBody, templatePublishSchema } from '../../utils/validation'
 
 function slugify(text: string): string {
   return text
@@ -84,24 +86,41 @@ function generatePreviewData(nodes: Record<string, any>): any {
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
-  const body = await readBody(event)
 
-  if (!body.sourceMapId || !body.title || !body.category) {
-    throw createError({ statusCode: 400, statusMessage: 'sourceMapId, title, and category are required' })
+  // Rate limit: 10 template publishes per hour per user
+  const { allowed } = await checkRateLimit(`template:publish:${userId}`, 10, 3600)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many template publishes. Try again later.' })
   }
 
-  // Fetch the source map
-  const map = await prisma.map.findFirst({
-    where: { id: body.sourceMapId, userId, deletedAt: null },
-  })
+  const body = validateBody(templatePublishSchema, await readBody(event))
 
-  if (!map) {
-    throw createError({ statusCode: 404, statusMessage: 'Source map not found' })
+  let nodes: Record<string, any> = {}
+  let edges: Record<string, any> = {}
+  let settings: any = null
+
+  if (body.nodes && body.edges) {
+    // Inline data — used by AI generate flow (map only exists in client IndexedDB)
+    nodes = body.nodes
+    edges = body.edges
+    settings = body.settings || null
+  } else if (body.sourceMapId) {
+    // Source map reference — used when publishing an existing synced map
+    const map = await prisma.map.findFirst({
+      where: { id: body.sourceMapId, userId, deletedAt: null },
+    })
+
+    if (!map) {
+      throw createError({ statusCode: 404, statusMessage: 'Source map not found' })
+    }
+
+    const mapData = map.data as any
+    nodes = mapData.nodes || {}
+    edges = mapData.edges || {}
+    settings = mapData.settings || null
+  } else {
+    throw createError({ statusCode: 400, statusMessage: 'Either sourceMapId or nodes/edges data is required' })
   }
-
-  const mapData = map.data as any
-  const nodes = mapData.nodes || {}
-  const edges = mapData.edges || {}
 
   // Strip positions to make template layout-agnostic? No — keep positions for preview
   const baseSlug = slugify(body.title)
@@ -120,7 +139,7 @@ export default defineEventHandler(async (event) => {
       tags: body.tags || [],
       nodes,
       edges,
-      settings: mapData.settings || null,
+      settings,
       nodeCount: Object.keys(nodes).length,
       levelCount: computeLevelCount(nodes, edges),
       previewData: generatePreviewData(nodes),

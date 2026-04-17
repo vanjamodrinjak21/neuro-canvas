@@ -173,7 +173,7 @@ function formatSegment(segment: string): string {
   font-weight: 500;
   color: var(--nc-ink-soft, var(--nc-text-secondary));
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast) ease;
   line-height: 1;
 }
 

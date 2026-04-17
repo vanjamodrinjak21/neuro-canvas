@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { CanvasTool } from '~/types/canvas'
 
+const { haptics, isMobile } = usePlatform()
+
 const props = defineProps<{
   activeTool: CanvasTool
   zoom: number
@@ -35,6 +37,13 @@ const tools: { id: CanvasTool; icon: string; label: string; shortcut: string }[]
 
 const isProcessing = computed(() => (props.processingQueueSize ?? 0) > 0)
 const isFieldReady = computed(() => props.semanticFieldEnabled && !isProcessing.value)
+
+function selectTool(tool: CanvasTool) {
+  if (isMobile.value) {
+    haptics.impact('light')
+  }
+  emit('update:activeTool', tool)
+}
 </script>
 
 <template>
@@ -49,7 +58,7 @@ const isFieldReady = computed(() => props.semanticFieldEnabled && !isProcessing.
         :aria-label="`${tool.label} tool (${tool.shortcut})`"
         :aria-pressed="activeTool === tool.id"
         role="radio"
-        @click="emit('update:activeTool', tool.id)"
+        @click="selectTool(tool.id)"
       >
         <span :class="[tool.icon, 'text-base']" />
         <span v-if="activeTool === tool.id" class="nc-tool-indicator" />
@@ -158,7 +167,7 @@ const isFieldReady = computed(() => props.semanticFieldEnabled && !isProcessing.
 
 @keyframes indicator-pop {
   from {
-    transform: scaleX(0);
+    transform: scaleX(0.3);
     opacity: 0;
   }
   to {
@@ -206,7 +215,7 @@ const isFieldReady = computed(() => props.semanticFieldEnabled && !isProcessing.
   min-width: 24px !important;
   padding: 0 !important;
   opacity: 0.5;
-  transition: opacity 0.15s;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease-out);
 }
 
 .nc-settings-gear:hover {

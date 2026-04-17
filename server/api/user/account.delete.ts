@@ -1,9 +1,13 @@
 import { getServerSession } from '#auth'
+import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
+import { checkRateLimit } from '../../utils/redis'
 
-interface DeleteAccountBody {
-  confirmation: string
-}
+const deleteAccountSchema = z.object({
+  confirmation: z.literal('DELETE MY ACCOUNT', {
+    errorMap: () => ({ message: 'Please type "DELETE MY ACCOUNT" to confirm' })
+  })
+}).strict()
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -15,13 +19,26 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = await readBody<DeleteAccountBody>(event)
+  // Rate limit: 3 attempts per hour
+  const { allowed } = await checkRateLimit(
+    `delete-account:${session.user.email}`,
+    3,
+    3600
+  )
+  if (!allowed) {
+    throw createError({
+      statusCode: 429,
+      statusMessage: 'Too many attempts. Please try again later.'
+    })
+  }
 
-  // Require explicit confirmation
-  if (body.confirmation !== 'DELETE MY ACCOUNT') {
+  const body = await readBody(event)
+  const parsed = deleteAccountSchema.safeParse(body)
+
+  if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Please type "DELETE MY ACCOUNT" to confirm'
+      statusMessage: parsed.error.errors[0]?.message || 'Invalid confirmation'
     })
   }
 

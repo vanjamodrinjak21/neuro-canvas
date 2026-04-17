@@ -1,6 +1,7 @@
 /**
  * Auth Store - Composable for auth state management
  */
+import { useDatabase } from '~/composables/useDatabase'
 
 interface AuthState {
   isRegistering: boolean
@@ -29,9 +30,17 @@ export function useAuthStore() {
   const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 
   // In Tauri mode, provide no-op stubs (no auth server available)
-  const { signIn, signOut } = _isTauri
-    ? { signIn: async () => ({} as any), signOut: async () => {} }
-    : useAuth()
+  let signIn: any = async () => ({})
+  let signOut: any = async () => {}
+  if (!_isTauri) {
+    try {
+      const auth = useAuth()
+      signIn = auth.signIn
+      signOut = auth.signOut
+    } catch {
+      // Auth module not available
+    }
+  }
 
   const actions = {
     async register(email: string, password: string, name?: string): Promise<boolean> {
@@ -56,7 +65,7 @@ export function useAuthStore() {
       }
     },
 
-    async signInWithCredentials(email: string, password: string): Promise<boolean> {
+    async signInWithCredentials(email: string, password: string, totpCode?: string): Promise<boolean | 'TOTP_REQUIRED'> {
       state.isSigningIn = true
       state.signInError = null
 
@@ -64,10 +73,15 @@ export function useAuthStore() {
         const result = await signIn('credentials', {
           email,
           password,
+          totpCode: totpCode || '',
           redirect: false
         })
 
         if (result?.error) {
+          // Check if 2FA is required
+          if (result.error.includes('TOTP_REQUIRED')) {
+            return 'TOTP_REQUIRED'
+          }
           state.signInError = result.error === 'CredentialsSignin'
             ? 'Invalid email or password'
             : result.error
@@ -126,6 +140,12 @@ export function useAuthStore() {
       state.isLoading = true
 
       try {
+        // Clear all user-scoped local data before signing out
+        // This prevents the next user from seeing stale maps/sync state
+        const { clearUserData, setCurrentUserId } = useDatabase()
+        await clearUserData()
+        await setCurrentUserId(null)
+
         await signOut({ callbackUrl: '/' })
       } catch (error) {
         console.error('Sign out failed:', error)

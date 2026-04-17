@@ -120,12 +120,14 @@ const tooltipText = computed(() => {
   border-radius: 6px;
   font-size: 11px;
   color: var(--status-color);
-  transition: all 0.2s ease;
+  transition: border-color var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
   cursor: default;
 }
 
-.nc-ai-status:hover {
-  border-color: var(--status-color);
+@media (hover: hover) and (pointer: fine) {
+  .nc-ai-status:hover {
+    border-color: var(--status-color);
+  }
 }
 
 .nc-ai-status-icon {

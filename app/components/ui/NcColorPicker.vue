@@ -51,7 +51,8 @@ function handleCustomChange(event: Event) {
       <button
         type="button"
         class="w-8 h-8 rounded-nc-md border-2 border-nc-pencil
-               hover:border-nc-teal transition-colors
+               hover:border-nc-teal transition-[border-color] duration-150
+               active:scale-97
                focus:outline-none focus:ring-2 focus:ring-nc-teal focus:ring-offset-2 focus:ring-offset-nc-charcoal"
         :style="{ backgroundColor: modelValue }"
       >
@@ -60,11 +61,12 @@ function handleCustomChange(event: Event) {
     </PopoverTrigger>
 
     <PopoverPortal>
+      <!-- Enter 150ms ease-out, exit 100ms — scale from 0.97 minimum -->
       <PopoverContent
         :side-offset="8"
         class="z-dropdown nc-glass-elevated rounded-nc-xl p-4 shadow-nc-xl w-[220px]
-               animate-in fade-in-0 zoom-in-95
-               data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+               animate-in fade-in-0 zoom-in-97 duration-[150ms]
+               data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-97 data-[state=closed]:duration-[100ms]"
       >
         <!-- Preset colors -->
         <div class="grid grid-cols-4 gap-2 mb-4">
@@ -72,8 +74,8 @@ function handleCustomChange(event: Event) {
             v-for="color in presets"
             :key="color"
             type="button"
-            class="w-10 h-10 rounded-nc-md border-2 transition-all
-                   hover:scale-110 hover:shadow-nc-glow
+            class="w-10 h-10 rounded-nc-md border-2 transition-[transform,box-shadow] duration-150
+                   nc-swatch-btn active:scale-97
                    focus:outline-none focus:ring-2 focus:ring-nc-teal"
             :class="modelValue === color ? 'border-nc-ink ring-2 ring-nc-teal' : 'border-transparent'"
             :style="{ backgroundColor: color }"
@@ -116,3 +118,12 @@ function handleCustomChange(event: Event) {
     </PopoverPortal>
   </PopoverRoot>
 </template>
+
+<style scoped>
+@media (hover: hover) and (pointer: fine) {
+  .nc-swatch-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 32px rgba(0, 210, 190, 0.25);
+  }
+}
+</style>

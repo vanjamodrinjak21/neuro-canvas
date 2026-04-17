@@ -23,10 +23,14 @@ export default defineEventHandler(async (event) => {
   try {
     // Handle soft-delete
     if (body.action === 'delete') {
-      await prisma.map.update({
+      const deleted = await prisma.map.updateMany({
         where: { id: body.mapId, userId },
         data: { deletedAt: new Date() }
-      }).catch(() => {})
+      })
+
+      if (deleted.count === 0) {
+        throw createError({ statusCode: 404, statusMessage: 'Map not found' })
+      }
 
       await redis.publish(cacheKeys.syncChannel(userId), JSON.stringify({
         mapId: body.mapId,
@@ -41,7 +45,7 @@ export default defineEventHandler(async (event) => {
     // 3. Read current state for checksum comparison only
     let currentChecksum: string | null = null
 
-    const cachedMeta = await cache.get<{ syncVersion: number; checksum: string }>(cacheKeys.mapMeta(body.mapId))
+    const cachedMeta = await cache.get<{ syncVersion: number; checksum: string }>(cacheKeys.mapMeta(body.mapId, userId))
     if (cachedMeta) {
       currentChecksum = cachedMeta.checksum
     } else {
@@ -64,8 +68,32 @@ export default defineEventHandler(async (event) => {
       return { ok: true, syncVersion: existingVersion, noChange: true }
     }
 
-    // 5. LAST-WRITE-WINS: Always accept the push regardless of version
+    // 5. Conflict detection — reject stale pushes
     const byteSize = computeByteSize(body.data)
+
+    const existing = await prisma.map.findFirst({
+      where: { id: body.mapId, userId },
+      select: { syncVersion: true }
+    })
+
+    if (existing && body.syncVersion && body.syncVersion < existing.syncVersion) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Conflict: server has a newer version. Pull first.'
+      })
+    }
+
+    // Ownership guard: check if map exists and belongs to a different user
+    const anyExisting = await prisma.map.findUnique({
+      where: { id: body.mapId },
+      select: { userId: true }
+    })
+    if (anyExisting && anyExisting.userId !== userId) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Map belongs to another user'
+      })
+    }
 
     const maxVersion = await prisma.mapVersion.aggregate({
       where: { mapId: body.mapId },
@@ -133,9 +161,9 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 7. Cache
-    await cache.set(cacheKeys.mapMeta(body.mapId), { syncVersion: newVersion, checksum: serverChecksum }, 3600)
-    await cache.set(cacheKeys.mapData(body.mapId), { data: body.data, title: body.title, tags: body.tags || [] }, 3600)
+    // 7. Cache — scoped by userId
+    await cache.set(cacheKeys.mapMeta(body.mapId, userId), { syncVersion: newVersion, checksum: serverChecksum }, 3600)
+    await cache.set(cacheKeys.mapData(body.mapId, userId), { data: body.data, title: body.title, tags: body.tags || [] }, 3600)
 
     // 8. Publish
     await redis.publish(cacheKeys.syncChannel(userId), JSON.stringify({
@@ -172,6 +200,6 @@ export default defineEventHandler(async (event) => {
 
     return { ok: true, syncVersion: newVersion }
   } finally {
-    await syncLock.release(body.mapId)
+    await syncLock.release(body.mapId, body.deviceId || 'unknown')
   }
 })

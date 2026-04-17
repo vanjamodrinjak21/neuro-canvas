@@ -113,16 +113,16 @@ const boxSelection = useBoxSelection()
 const hoveredNodeId = ref<string | null>(null)
 
 const connection = useConnectionTool({
-  nodes: mapStore.nodes,
-  edges: mapStore.edges,
-  rootNodeId: mapStore.rootNodeId,
+  nodes: () => mapStore.nodes,
+  edges: () => mapStore.edges,
+  rootNodeId: () => mapStore.rootNodeId,
   hoveredNodeId,
   tool: computed(() => props.tool),
 })
 
 const drag = useDragInteraction({
-  nodes: mapStore.nodes,
-  selectedNodeIds: mapStore.selection.nodeIds,
+  nodes: () => mapStore.nodes,
+  selectedNodeIds: () => mapStore.selection.nodeIds,
   moveNode: mapStore.moveNode,
   beginMoveNodes: mapStore.beginMoveNodes,
   commitMoveNodes: mapStore.commitMoveNodes,

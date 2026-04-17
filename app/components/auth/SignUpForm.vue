@@ -27,7 +27,7 @@ const isValidPassword = computed(() => {
     p.length >= 8 &&
     /[A-Z]/.test(p) &&
     /[a-z]/.test(p) &&
-    /[0-9]/.test(p)
+    /\d/.test(p)
   )
 })
 

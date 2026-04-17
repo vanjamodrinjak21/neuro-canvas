@@ -39,6 +39,8 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     type: defaultProvider.type,
     credentialId: defaultProvider.credentialId || undefined,
     baseUrl: defaultProvider.baseUrl,
-    selectedModelId: defaultProvider.selectedModelId
+    // For Ollama: don't pass saved model — let the client auto-detect from local server
+    // This prevents stale model names (e.g. user pulled different models since last config)
+    selectedModelId: defaultProvider.type === 'ollama' ? undefined : defaultProvider.selectedModelId
   }
 }

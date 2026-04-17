@@ -48,6 +48,9 @@ export interface UserPreferences {
   autoSaveInterval: number
   showMinimap: boolean
   showGrid: boolean
+  language: string
+  emailNotifications: boolean
+  usageAnalytics: boolean
 }
 
 // Storage

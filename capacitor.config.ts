@@ -10,6 +10,12 @@ const config: CapacitorConfig = {
     // cleartext: true
   },
   plugins: {
+    CapacitorSQLite: {
+      iosDatabaseLocation: 'Library/CapacitorDatabase',
+      iosIsEncryption: false,
+      androidIsEncryption: false,
+      electronIsEncryption: false
+    },
     Filesystem: {
       requestLegacyExternalStorage: true
     },

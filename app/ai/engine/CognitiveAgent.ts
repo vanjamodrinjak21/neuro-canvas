@@ -23,7 +23,7 @@ function generateId(): string {
  */
 function parseAgentResponse(response: string): { text: string; actions: AgentAction[] } {
   const actionsMatch = response.match(/```actions\s*([\s\S]*?)```/)
-  const text = response.replace(/```actions\s*[\s\S]*?```/, '').trim()
+  const text = response.replace(/```actions[\s\S]*?```/, '').trim()
 
   let actions: AgentAction[] = []
   if (actionsMatch && actionsMatch[1]) {

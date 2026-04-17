@@ -143,12 +143,20 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.04);
   color: var(--nc-ink, #FAFAFA);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              border-color var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform var(--nc-duration-press, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
-.nc-empty-action:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
+@media (hover: hover) and (pointer: fine) {
+  .nc-empty-action:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.nc-empty-action:active {
+  transform: scale(0.97);
 }
 
 .nc-empty-action:focus-visible {
@@ -162,9 +170,11 @@ onMounted(() => {
   color: var(--nc-accent, #00D2BE);
 }
 
-.nc-empty-action.ai:hover {
-  background: rgba(0, 210, 190, 0.15);
-  border-color: rgba(0, 210, 190, 0.3);
+@media (hover: hover) and (pointer: fine) {
+  .nc-empty-action.ai:hover {
+    background: rgba(0, 210, 190, 0.15);
+    border-color: rgba(0, 210, 190, 0.3);
+  }
 }
 
 .nc-empty-kbd {

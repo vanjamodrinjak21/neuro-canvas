@@ -8,7 +8,7 @@ interface CachedResponse {
 }
 
 export default defineEventHandler(async (event) => {
-  await requireAuthSession(event)
+  const { userId } = await requireAuthSession(event)
 
   const query = getQuery(event)
   const hash = query.hash as string
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Missing or invalid hash parameter' })
   }
 
-  const cached = await cache.get<CachedResponse>(cacheKeys.aiResponse(hash))
+  const cached = await cache.get<CachedResponse>(cacheKeys.aiResponse(`${userId}:${hash}`))
 
   if (!cached) {
     return { hit: false, response: null, usage: null }

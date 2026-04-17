@@ -7,7 +7,8 @@ import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 
 definePageMeta({
-  layout: false
+  layout: false,
+  middleware: 'auth'
 })
 
 // Tauri detection
@@ -41,6 +42,11 @@ onMounted(async () => {
       return
     }
   }
+  // Set current user for IndexedDB multi-account isolation
+  const userId = (session.value?.user as { id?: string })?.id
+  if (userId) {
+    await db.setCurrentUserId(userId)
+  }
   await aiSettings.initialize()
   await syncEngine.initialize()
 })
@@ -67,6 +73,7 @@ const deleteTargetId = ref<string | null>(null)
 const showAIModal = ref(false)
 const aiTopic = ref('')
 const aiLoading = ref(false)
+const aiError = ref<string | null>(null)
 
 // Templates
 const showTemplatesModal = ref(false)
@@ -212,27 +219,27 @@ function onCardBeforeEnter(el: Element) {
 function onCardEnter(el: Element, done: () => void) {
   const htmlEl = el as HTMLElement
   const index = Number(htmlEl.dataset.index) || 0
-  const delay = Math.max(0, (index - visibleLimit.value) * 60)
+  const delay = Math.max(0, (index - visibleLimit.value) * 50)
 
   requestAnimationFrame(() => {
-    htmlEl.style.transition = `opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`
+    htmlEl.style.transition = `opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms, transform 0.25s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms`
     htmlEl.style.opacity = '1'
     htmlEl.style.transform = 'translateY(0) scale(1)'
   })
 
-  setTimeout(done, 350 + delay)
+  setTimeout(done, 250 + delay)
 }
 
 function onCardLeave(el: Element, done: () => void) {
   const htmlEl = el as HTMLElement
   const index = Number(htmlEl.dataset.index) || 0
-  const reverseDelay = Math.max(0, (index - visibleLimit.value)) * 30
+  const reverseDelay = Math.max(0, (index - visibleLimit.value)) * 20
 
-  htmlEl.style.transition = `opacity 0.2s ease ${reverseDelay}ms, transform 0.2s ease ${reverseDelay}ms`
+  htmlEl.style.transition = `opacity 0.12s ease ${reverseDelay}ms, transform 0.12s ease ${reverseDelay}ms`
   htmlEl.style.opacity = '0'
   htmlEl.style.transform = 'translateY(-8px) scale(0.96)'
 
-  setTimeout(done, 200 + reverseDelay)
+  setTimeout(done, 120 + reverseDelay)
 }
 
 // Node category colors for thumbnail rendering
@@ -259,15 +266,44 @@ if (route.query.templates === 'true') {
   router.replace({ path: '/dashboard' })
 }
 
-// Load maps
+// Load maps from server (PostgreSQL → Redis → client), fallback to IndexedDB for offline/Tauri
+async function loadMaps() {
+  try {
+    if (!_isTauri && session.value?.user) {
+      // Fetch from server — properly scoped by userId in PostgreSQL
+      const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
+      recentMaps.value = response.maps.map((m: any) => ({
+        id: m.id,
+        title: m.title,
+        nodes: m.data?.nodes || [],
+        edges: m.data?.edges || [],
+        camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
+        settings: m.data?.settings || {},
+        rootNodeId: m.data?.rootNodeId,
+        preview: m.preview,
+        tags: m.tags || [],
+        createdAt: new Date(m.createdAt).getTime(),
+        updatedAt: new Date(m.updatedAt).getTime(),
+        syncVersion: m.syncVersion,
+        checksum: m.checksum
+      })) as DBMapDocument[]
+    } else {
+      // Offline or Tauri — read from local IndexedDB
+      recentMaps.value = await db.getRecentMaps(20)
+    }
+  } catch (error) {
+    console.error('Failed to load maps from server, falling back to local:', error)
+    // Fallback to IndexedDB on network error
+    recentMaps.value = await db.getRecentMaps(20)
+  }
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', updateVisibleLimit)
   nextTick(() => updateVisibleLimit())
   try {
-    recentMaps.value = await db.getRecentMaps(20)
-  } catch (error) {
-    console.error('Failed to load maps:', error)
+    await loadMaps()
   } finally {
     isLoading.value = false
     nextTick(() => updateVisibleLimit())
@@ -311,6 +347,14 @@ async function confirmDeleteMap() {
   deleteConfirmVisible.value = false
   deleteTargetId.value = null
   try {
+    // Delete from server (soft-delete in PostgreSQL)
+    if (!_isTauri && syncEngine.isSyncEnabled.value) {
+      await $fetch('/api/sync/push', {
+        method: 'POST',
+        body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
+      })
+    }
+    // Also remove from local IndexedDB
     await db.deleteMap(mapId)
     recentMaps.value = recentMaps.value.filter(m => m.id !== mapId)
   } catch (error) {
@@ -341,6 +385,7 @@ function formatDate(timestamp: number): string {
 async function handleAIQuickStart() {
   if (!aiTopic.value.trim()) return
   aiLoading.value = true
+  aiError.value = null
   try {
     const structure = await ai.generateMapStructure(aiTopic.value, {
       branchCount: 5,
@@ -355,15 +400,17 @@ async function handleAIQuickStart() {
     await db.saveMap(doc)
     showAIModal.value = false
     aiTopic.value = ''
+    aiError.value = null
     await navigateTo(`/map/${doc.id}`)
   } catch (error: any) {
     console.error('AI generation failed:', error)
-    const message = error?.message?.includes('No AI provider configured')
-      ? 'Please configure an AI provider with an API key in Settings first.'
-      : error?.message?.includes('No API key')
-        ? 'Please add an API key for your AI provider in Settings.'
-        : 'Failed to generate map. Please check your AI settings and try again.'
-    alert(message)
+    aiError.value = error?.message?.includes('Session expired')
+      ? error.message
+      : error?.message?.includes('No AI provider configured')
+        ? 'Please configure an AI provider with an API key in Settings first.'
+        : error?.message?.includes('No API key')
+          ? 'Please add an API key for your AI provider in Settings.'
+          : 'Failed to generate map. Please check your AI settings and try again.'
   } finally {
     aiLoading.value = false
   }
@@ -656,7 +703,7 @@ async function createFromTemplate(template: typeof templates[0]) {
                 <h3 class="map-title">{{ map.title }}</h3>
                 <p class="map-date">{{ formatDate(map.updatedAt) }}</p>
               </div>
-              <button class="map-menu" @click="deleteMap(map.id, $event)" title="Delete map">
+              <button class="map-menu" title="Delete map" @click="deleteMap(map.id, $event)">
                 <span class="i-lucide-more-vertical" />
               </button>
             </div>
@@ -766,6 +813,13 @@ async function createFromTemplate(template: typeof templates[0]) {
               :disabled="aiLoading"
               @keyup.enter="handleAIQuickStart"
             >
+            <div v-if="aiError" class="ai-error-banner">
+              <span class="i-lucide-alert-triangle ai-error-icon" />
+              <span class="ai-error-text">{{ aiError }}</span>
+              <button class="ai-error-dismiss" @click="aiError = null">
+                <span class="i-lucide-x" />
+              </button>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-ghost" :disabled="aiLoading" @click="showAIModal = false">Cancel</button>
@@ -887,7 +941,7 @@ async function createFromTemplate(template: typeof templates[0]) {
   border: 2px solid var(--nc-border, #1A1A1E);
   border-top-color: var(--nc-accent, #00D2BE);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 600ms linear infinite;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -971,8 +1025,12 @@ async function createFromTemplate(template: typeof templates[0]) {
   line-height: 16px;
   cursor: pointer;
   border: none;
-  transition: opacity 0.15s, background 0.15s;
+  transition: opacity 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out), transform 100ms var(--nc-ease-out);
   white-space: nowrap;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .btn:disabled {
@@ -1205,18 +1263,21 @@ async function createFromTemplate(template: typeof templates[0]) {
   overflow: hidden;
   border: 1px solid var(--d-border);
   cursor: pointer;
-  transition: border-color 0.15s, transform 200ms var(--nc-ease), box-shadow 200ms var(--nc-ease);
 }
 
-.map-card:hover {
-  border-color: var(--d-border-2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
+@media (hover: hover) and (pointer: fine) {
+  .map-card {
+    transition: border-color 150ms var(--nc-ease-out), transform 200ms var(--nc-ease-out), box-shadow 200ms var(--nc-ease-out);
+  }
 
-@media (hover: none) {
   .map-card:hover {
-    transform: none;
+    border-color: var(--d-border-2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .map-card:active {
+    transform: scale(0.97);
     box-shadow: none;
   }
 }
@@ -1350,7 +1411,7 @@ async function createFromTemplate(template: typeof templates[0]) {
 
 .show-more-icon {
   font-size: 14px;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 200ms var(--nc-ease-out);
 }
 
 .show-more-icon.flipped {
@@ -1359,7 +1420,7 @@ async function createFromTemplate(template: typeof templates[0]) {
 
 /* ── Card transition ── */
 .card-move {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 250ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* ── Second Row ── */
@@ -1581,7 +1642,7 @@ async function createFromTemplate(template: typeof templates[0]) {
   justify-content: center;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
-  animation: fadeIn 0.15s ease-out;
+  animation: fadeIn 150ms ease-out;
 }
 
 @keyframes fadeIn {
@@ -1596,7 +1657,7 @@ async function createFromTemplate(template: typeof templates[0]) {
   border: 1px solid var(--d-border-2);
   border-radius: 12px;
   overflow: hidden;
-  animation: slideUp 0.2s ease-out;
+  animation: slideUp 200ms ease-out;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
@@ -1692,6 +1753,46 @@ async function createFromTemplate(template: typeof templates[0]) {
   opacity: 0.5;
 }
 
+.ai-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ai-error-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+
+.ai-error-text {
+  flex: 1;
+}
+
+.ai-error-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.ai-error-dismiss:hover {
+  opacity: 1;
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -1774,7 +1875,7 @@ async function createFromTemplate(template: typeof templates[0]) {
 }
 
 .animate-spin {
-  animation: spin 1s linear infinite;
+  animation: spin 600ms linear infinite;
 }
 
 /* ── Light theme ── */

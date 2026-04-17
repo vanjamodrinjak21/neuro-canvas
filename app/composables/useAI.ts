@@ -405,7 +405,7 @@ export function useAI() {
 
       const parsed = parseJson<unknown[]>(content)
       if (!Array.isArray(parsed)) {
-        throw new Error('Invalid response format: expected array')
+        throw new TypeError('Invalid response format: expected array')
       }
 
       return validateRichNodeSuggestions(parsed, maxSuggestions)
@@ -577,7 +577,7 @@ export function useAI() {
 
       const parsed = parseJson<unknown[]>(content)
       if (!Array.isArray(parsed)) {
-        throw new Error('Invalid response format: expected array')
+        throw new TypeError('Invalid response format: expected array')
       }
 
       return validateRichNodeSuggestions(parsed)
@@ -639,7 +639,7 @@ export function useAI() {
 
       const parsed = parseJson<unknown[]>(content)
       if (!Array.isArray(parsed)) {
-        throw new Error('Invalid response format: expected array')
+        throw new TypeError('Invalid response format: expected array')
       }
 
       const nodeIds = new Set(nodes.map(n => n.id))

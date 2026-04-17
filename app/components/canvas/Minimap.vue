@@ -501,7 +501,7 @@ function toggleCollapse() {
 }
 
 @keyframes minimap-appear {
-  from { opacity: 0; transform: translateY(8px) scale(0.95); }
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -578,7 +578,8 @@ function toggleCollapse() {
   border: 1px solid #1A1A1E;
   color: var(--nc-ink-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease-out),
+              border-color var(--nc-duration-fast) var(--nc-ease-out);
   backdrop-filter: blur(8px);
 }
 

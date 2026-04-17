@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app'
 
-defineProps<{
+const props = defineProps<{
   error: NuxtError
 }>()
+
+// On Tauri: auto-recover from startup errors (e.g. auth module failing)
+if (typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)) {
+  // Don't show error page on Tauri — just go to dashboard
+  clearError({ redirect: '/dashboard' })
+}
 
 const handleClearError = () => clearError({ redirect: '/dashboard' })
 </script>
