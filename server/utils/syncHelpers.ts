@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
-import { getServerSession } from '#auth'
+import { getToken } from '#auth'
 import type { H3Event } from 'h3'
-import { parseCookies } from 'h3'
 import { prisma } from './prisma'
 
 /**
@@ -22,40 +21,29 @@ export function computeByteSize(data: unknown): number {
 
 /**
  * Require authenticated session — returns userId + email or throws 401
+ *
+ * Uses getToken() instead of getServerSession() because sidebase/nuxt-auth's
+ * getServerSession has a bug where it returns null despite valid JWE cookies.
+ * getToken() directly decrypts the JWT from the cookie and works reliably.
  */
 export async function requireAuthSession(event: H3Event): Promise<{ userId: string; email: string }> {
-  let session: Awaited<ReturnType<typeof getServerSession>>
-  try {
-    session = await getServerSession(event)
-  } catch (e) {
-    console.error(`[Auth] getServerSession threw:`, e instanceof Error ? e.message : e)
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  }
-  console.log(`[Auth] getServerSession returned: ${session === null ? 'null' : typeof session}, user=${JSON.stringify(session?.user || null)}`)
+  const token = await getToken({ event })
 
-  // Prefer ID-based lookup (from JWT token.id) over email to prevent TOCTOU issues
-  const sessionUser = session?.user as { id?: string; email?: string } | undefined
-  if (!sessionUser?.id && !sessionUser?.email) {
-    // Diagnostic: log session state for debugging (no PII)
-    const path = getRequestURL(event).pathname
-    const cookies = parseCookies(event)
-    const hasSecureCookie = !!cookies['__Secure-next-auth.session-token']
-    const hasDevCookie = !!cookies['next-auth.session-token']
-    const hasAnyAuthCookie = Object.keys(cookies).some(n => n.includes('auth') || n.includes('session'))
-    const sessionKeys = session ? Object.keys(session) : []
-    const userKeys = session?.user ? Object.keys(session.user as object) : []
-    console.warn(`[Auth] 401 on ${path}: session=${session ? 'obj(' + sessionKeys.join(',') + ')' : 'null'}, user=${sessionUser ? 'obj(' + userKeys.join(',') + ')' : 'null'}, secureCookie=${hasSecureCookie}, devCookie=${hasDevCookie}, anyAuthCookie=${hasAnyAuthCookie}, secretSet=${!!process.env.AUTH_SECRET}`)
+  const id = token?.id as string | undefined
+  const email = token?.email as string | undefined
+
+  if (!id && !email) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const user = sessionUser.id
+  const user = id
     ? await prisma.user.findUnique({
-        where: { id: sessionUser.id },
-        select: { id: true, email: true }
+        where: { id },
+        select: { id: true, email: true },
       })
     : await prisma.user.findUnique({
-        where: { email: sessionUser.email! },
-        select: { id: true, email: true }
+        where: { email: email! },
+        select: { id: true, email: true },
       })
 
   if (!user || !user.email) {
