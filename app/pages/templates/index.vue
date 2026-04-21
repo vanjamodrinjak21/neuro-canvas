@@ -10,6 +10,12 @@ definePageMeta({
 })
 
 const router = useRouter()
+
+// Tauri detection
+const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+const desktopAuth = _isTauri ? useDesktopAuth() : null
+const isDesktopSignedIn = computed(() => !!desktopAuth?.isSignedIn.value)
+
 const {
   templates,
   myTemplates,
@@ -51,8 +57,8 @@ const sortOptions = [
 ]
 
 const displayedTemplates = computed(() => {
-  if (activeCategory.value === 'my') return myTemplates.value
-  return templates.value
+  if (activeCategory.value === 'my') return myTemplates.value ?? []
+  return templates.value ?? []
 })
 
 function handleCategoryChange(cat: string) {
@@ -134,8 +140,19 @@ async function handleAIGenerate() {
   }
 }
 
-onMounted(() => {
-  fetchTemplates()
+onMounted(async () => {
+  if (_isTauri && isDesktopSignedIn.value) {
+    // Fetch from remote server using Tauri HTTP plugin (has auth cookies)
+    try {
+      const data = await desktopAuth!.remoteFetch<{ templates: Template[]; total: number }>('/api/templates?sortBy=popular')
+      templates.value = data.templates
+    } catch {
+      // Fall back to empty state — server unreachable
+      templates.value = []
+    }
+  } else {
+    fetchTemplates()
+  }
 })
 </script>
 
@@ -150,7 +167,7 @@ onMounted(() => {
           <h1 class="page-title">Templates</h1>
           <p class="page-subtitle">Browse, create, and share mind map templates</p>
         </div>
-        <button class="publish-btn" @click="showPublishModal = true">
+        <button v-if="!_isTauri" class="publish-btn" @click="showPublishModal = true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
@@ -158,8 +175,22 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- AI Generate Bar -->
-      <div class="ai-bar">
+      <!-- Desktop sign-in prompt (Tauri, not signed in) -->
+      <div v-if="_isTauri && !isDesktopSignedIn" class="desktop-signin-prompt">
+        <div class="prompt-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+        </div>
+        <div class="prompt-text">
+          <span class="prompt-title">Sign in for community templates</span>
+          <span class="prompt-desc">Browse and use templates shared by the NeuroCanvas community.</span>
+        </div>
+        <button class="prompt-signin-btn" @click="desktopAuth?.signIn()">
+          Sign In
+        </button>
+      </div>
+
+      <!-- AI Generate Bar (hide on Tauri — requires server) -->
+      <div v-if="!_isTauri" class="ai-bar">
         <div class="ai-bar-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
@@ -190,7 +221,7 @@ onMounted(() => {
           {{ aiGenerating ? 'Generating...' : 'Generate' }}
         </button>
       </div>
-      <div v-if="aiError" class="ai-error-banner">
+      <div v-if="aiError && !_isTauri" class="ai-error-banner">
         <span class="i-lucide-alert-triangle ai-error-icon" />
         <span class="ai-error-text">{{ aiError }}</span>
         <button class="ai-error-dismiss" @click="aiError = null">
@@ -258,8 +289,9 @@ onMounted(() => {
       </div>
     </main>
 
-    <!-- Publish Modal -->
+    <!-- Publish Modal (web only) -->
     <TemplatesPublishTemplateModal
+      v-if="!_isTauri"
       :open="showPublishModal"
       @close="showPublishModal = false"
       @publish="handlePublish"
@@ -616,6 +648,68 @@ onMounted(() => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Desktop sign-in prompt */
+.desktop-signin-prompt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: rgba(0, 210, 190, 0.04);
+  border: 1px solid rgba(0, 210, 190, 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.prompt-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(0, 210, 190, 0.1);
+  color: #00D2BE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prompt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.prompt-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tpl-text, #E8E8EC);
+}
+
+.prompt-desc {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--tpl-muted, #71717A);
+}
+
+.prompt-signin-btn {
+  padding: 8px 20px;
+  background: #00D2BE;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #09090B;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.prompt-signin-btn:hover {
+  opacity: 0.9;
 }
 
 /* Light theme */

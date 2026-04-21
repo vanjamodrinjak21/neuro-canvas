@@ -8,6 +8,41 @@ useUserStore()
 const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 const desktopAuth = _isTauri ? useDesktopAuth() : null
 
+// --- App loading screen ---
+const appLoading = ref(true)
+const loadingStatus = ref('Initializing...')
+const loadingProgress = ref(0)
+const loadingRef = ref<InstanceType<typeof AppLoadingScreen> | null>(null)
+
+async function step(progress: number, status: string, ms: number) {
+  loadingProgress.value = progress
+  loadingStatus.value = status
+  await new Promise(resolve => setTimeout(resolve, ms))
+}
+
+onMounted(async () => {
+  await step(15, 'Loading assets...', 300)
+  await step(35, 'Preparing workspace...', 400)
+  await step(60, 'Setting up environment...', 350)
+  await step(85, 'Almost ready...', 300)
+  await step(100, 'Ready', 200)
+
+  // Smooth exit animation, then remove
+  if (loadingRef.value) {
+    await loadingRef.value.leave()
+  }
+  appLoading.value = false
+
+  // Dismiss Capacitor native splash if present
+  if (typeof window !== 'undefined' && 'Capacitor' in window) {
+    try {
+      const { SplashScreen } = await import('@capacitor/splash-screen')
+      await SplashScreen.hide({ fadeOutDuration: 250 })
+    }
+    catch {}
+  }
+})
+
 useHead({
   htmlAttrs: {
     lang: 'en'
@@ -17,6 +52,14 @@ useHead({
 
 <template>
   <div id="neurocanvas-app" class="min-h-screen">
+    <!-- App loading screen -->
+    <AppLoadingScreen
+      v-if="appLoading"
+      ref="loadingRef"
+      :status="loadingStatus"
+      :progress="loadingProgress"
+    />
+
     <NuxtRouteAnnouncer />
     <OfflineIndicator />
     <div class="page-wrapper">
@@ -27,7 +70,6 @@ useHead({
     <DesktopAuthModal
       v-if="desktopAuth"
       :visible="desktopAuth.showAuthModal.value"
-      :url="desktopAuth.authUrl"
       @close="desktopAuth.closeAuthModal()"
       @authenticated="desktopAuth.completeSignIn()"
     />

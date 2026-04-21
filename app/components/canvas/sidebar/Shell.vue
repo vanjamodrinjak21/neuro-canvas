@@ -28,6 +28,11 @@ const {
   startExplorerResize,
 } = useSidebarState()
 
+// Auto-switch to properties tab when a node is selected
+watch(() => props.selectedNode, (node) => {
+  if (node) setActiveTab('properties')
+})
+
 const tabs: { id: SidebarTab; label: string; icon: string }[] = [
   { id: 'explorer', label: 'Explorer', icon: 'i-lucide-search' },
   { id: 'properties', label: 'Properties', icon: 'i-lucide-layout-dashboard' },

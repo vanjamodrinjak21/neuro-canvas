@@ -134,8 +134,12 @@ export function useAISettings() {
     }
 
     if (apiKey) {
-      // Send raw key to server vault (server-only encryption v4)
-      if (vault.isVaultAvailable.value) {
+      if (_isTauri()) {
+        // Tauri desktop: store API key locally in IndexedDB (no server vault)
+        provider.localApiKey = apiKey
+        provider.credentialId = `local-${id}`
+      } else if (vault.isVaultAvailable.value) {
+        // Web: send raw key to server vault (server-only encryption v4)
         try {
           const result: { ok: boolean; credential?: { id: string } } = await ($fetch as any)('/api/vault/credentials', {
             method: 'POST',
@@ -199,8 +203,12 @@ export function useAISettings() {
     const provider = state.settings.providers.find(p => p.id === id)
     if (!provider) throw new Error('Provider not found')
 
-    // Send raw key to server vault (server-only encryption v4)
-    if (vault.isVaultAvailable.value) {
+    if (_isTauri()) {
+      // Tauri desktop: store API key locally in IndexedDB
+      provider.localApiKey = apiKey
+      provider.credentialId = `local-${id}`
+    } else if (vault.isVaultAvailable.value) {
+      // Web: send raw key to server vault (server-only encryption v4)
       try {
         const result: { ok: boolean; credential?: { id: string } } = await ($fetch as any)('/api/vault/credentials', {
           method: 'POST',
@@ -236,7 +244,7 @@ export function useAISettings() {
    */
   async function hasProviderApiKey(id: string): Promise<boolean> {
     const provider = state.settings.providers.find(p => p.id === id)
-    return !!provider?.credentialId
+    return !!provider?.credentialId || !!provider?.localApiKey
   }
 
   /**
@@ -430,10 +438,16 @@ export function useAISettings() {
         ? getProviderCredentialId(providerIdOrConfig)
         : null
 
+      // In Tauri: use localApiKey or the test key directly
+      const effectiveApiKey = _isTauri()
+        ? (apiKey || provider.localApiKey || undefined)
+        : undefined
+
       const result = await aiTestConnection({
         provider: provider.type,
+        apiKey: effectiveApiKey,
         credentialId: credentialId || undefined,
-        rawApiKey: apiKey || undefined,  // For testing new keys before saving
+        rawApiKey: apiKey || undefined,  // For testing new keys before saving (web)
         baseUrl: provider.baseUrl,
       })
 

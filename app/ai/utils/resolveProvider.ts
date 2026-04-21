@@ -4,13 +4,19 @@ import { useGuestMode } from '~/composables/useGuestMode'
 export interface ResolvedProvider {
   type: string
   credentialId?: string
+  apiKey?: string // Tauri desktop: raw API key from local storage
   baseUrl?: string
   selectedModelId?: string
 }
 
+function _isTauri(): boolean {
+  return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+}
+
 /**
  * Resolve the default AI provider config.
- * Server handles all key decryption — client just passes credentialId.
+ * Web: returns credentialId for server-side vault decryption.
+ * Tauri: returns raw apiKey from local IndexedDB storage.
  */
 export async function resolveProvider(): Promise<ResolvedProvider> {
   const guest = useGuestMode()
@@ -31,6 +37,22 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     throw new Error('No AI provider configured. Please configure an AI provider in settings.')
   }
 
+  // Tauri desktop: use locally stored API key
+  if (_isTauri()) {
+    if (!defaultProvider.localApiKey && defaultProvider.type !== 'ollama') {
+      // Provider exists but key was stored in server vault (pre-desktop fix).
+      // User needs to re-enter their key so it's stored locally.
+      throw new Error('API key needs to be re-entered for desktop use. Go to Settings > AI Providers and update your API key.')
+    }
+    return {
+      type: defaultProvider.type,
+      apiKey: defaultProvider.localApiKey || undefined,
+      baseUrl: defaultProvider.baseUrl,
+      selectedModelId: defaultProvider.type === 'ollama' ? undefined : defaultProvider.selectedModelId
+    }
+  }
+
+  // Web: use server vault credential ID
   if (!defaultProvider.credentialId && defaultProvider.type !== 'ollama') {
     throw new Error('No API key configured for the selected provider. Please add one in Settings.')
   }
@@ -39,8 +61,6 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     type: defaultProvider.type,
     credentialId: defaultProvider.credentialId || undefined,
     baseUrl: defaultProvider.baseUrl,
-    // For Ollama: don't pass saved model — let the client auto-detect from local server
-    // This prevents stale model names (e.g. user pulled different models since last config)
     selectedModelId: defaultProvider.type === 'ollama' ? undefined : defaultProvider.selectedModelId
   }
 }

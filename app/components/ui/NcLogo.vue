@@ -38,14 +38,7 @@ const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.
       viewBox="0 0 72 72"
       fill="none"
     >
-      <!-- Outer ring connections (thinner) -->
-      <line x1="36" y1="14" x2="55" y2="24" stroke="#09090B" stroke-width="1.5" opacity="0.3" />
-      <line x1="55" y1="24" x2="55" y2="48" stroke="#09090B" stroke-width="1.5" opacity="0.3" />
-      <line x1="55" y1="48" x2="36" y2="58" stroke="#09090B" stroke-width="1.5" opacity="0.3" />
-      <line x1="36" y1="58" x2="17" y2="48" stroke="#09090B" stroke-width="1.5" opacity="0.3" />
-      <line x1="17" y1="48" x2="17" y2="24" stroke="#09090B" stroke-width="1.5" opacity="0.3" />
-      <line x1="17" y1="24" x2="36" y2="14" stroke="#09090B" stroke-width="1.5" opacity="0.3" />
-      <!-- Center-to-outer spokes -->
+      <!-- Spokes -->
       <line x1="36" y1="28" x2="36" y2="19" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
       <line x1="43" y1="32" x2="50" y2="27" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
       <line x1="43" y1="40" x2="50" y2="45" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
@@ -53,12 +46,12 @@ const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.
       <line x1="29" y1="40" x2="22" y2="45" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
       <line x1="29" y1="32" x2="22" y2="27" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
       <!-- Nodes -->
-      <circle cx="36" cy="14" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="55" cy="24" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="55" cy="48" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="36" cy="58" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="17" cy="48" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="17" cy="24" r="5" fill="#09090B" opacity="0.7" />
+      <circle cx="36" cy="16" r="5" fill="#09090B" opacity="0.7" />
+      <circle cx="52" cy="26" r="5" fill="#09090B" opacity="0.7" />
+      <circle cx="52" cy="46" r="5" fill="#09090B" opacity="0.7" />
+      <circle cx="36" cy="56" r="5" fill="#09090B" opacity="0.7" />
+      <circle cx="20" cy="46" r="5" fill="#09090B" opacity="0.7" />
+      <circle cx="20" cy="26" r="5" fill="#09090B" opacity="0.7" />
       <circle cx="36" cy="36" r="8" fill="#09090B" />
     </svg>
   </div>
@@ -69,14 +62,7 @@ const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.
     viewBox="0 0 72 72"
     fill="none"
   >
-    <!-- Outer ring connections (thinner) -->
-    <line x1="36" y1="14" x2="55" y2="24" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
-    <line x1="55" y1="24" x2="55" y2="48" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
-    <line x1="55" y1="48" x2="36" y2="58" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
-    <line x1="36" y1="58" x2="17" y2="48" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
-    <line x1="17" y1="48" x2="17" y2="24" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
-    <line x1="17" y1="24" x2="36" y2="14" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
-    <!-- Center-to-outer spokes -->
+    <!-- Spokes -->
     <line x1="36" y1="28" x2="36" y2="19" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
     <line x1="43" y1="32" x2="50" y2="27" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
     <line x1="43" y1="40" x2="50" y2="45" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
@@ -84,12 +70,12 @@ const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.
     <line x1="29" y1="40" x2="22" y2="45" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
     <line x1="29" y1="32" x2="22" y2="27" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
     <!-- Nodes -->
-    <circle cx="36" cy="14" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="55" cy="24" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="55" cy="48" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="36" cy="58" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="17" cy="48" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="17" cy="24" r="5" fill="currentColor" opacity="0.7" />
+    <circle cx="36" cy="16" r="5" fill="currentColor" opacity="0.7" />
+    <circle cx="52" cy="26" r="5" fill="currentColor" opacity="0.7" />
+    <circle cx="52" cy="46" r="5" fill="currentColor" opacity="0.7" />
+    <circle cx="36" cy="56" r="5" fill="currentColor" opacity="0.7" />
+    <circle cx="20" cy="46" r="5" fill="currentColor" opacity="0.7" />
+    <circle cx="20" cy="26" r="5" fill="currentColor" opacity="0.7" />
     <circle cx="36" cy="36" r="8" fill="currentColor" />
   </svg>
 </template>

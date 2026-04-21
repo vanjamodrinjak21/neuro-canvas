@@ -10,6 +10,7 @@ const props = defineProps<{
   hasSelection: boolean
   breadcrumbs?: NavigationBreadcrumb[]
   regions?: MapRegion[]
+  viewMode?: 'canvas' | 'graph' | 'editor'
 }>()
 
 const emit = defineEmits<{
@@ -28,6 +29,7 @@ const emit = defineEmits<{
   'export-markdown': []
   'settings': []
   'navigate-breadcrumb': [crumb: NavigationBreadcrumb]
+  'set-view': [mode: 'canvas' | 'graph' | 'editor']
 }>()
 
 const mapStore = useMapStore()
@@ -183,6 +185,34 @@ defineExpose({ focusTitleInput })
           <span class="i-lucide-sparkles" :class="isAILoading ? 'animate-spin' : ''" />
           AI Expand
         </button>
+
+        <!-- View toggle: Canvas / Graph / Editor -->
+        <div class="topbar-view-tabs mobile-hide">
+          <button
+            :class="['topbar-view-tab', { active: viewMode === 'canvas' }]"
+            title="Canvas view"
+            @click="emit('set-view', 'canvas')"
+          >
+            <span class="i-lucide-layout-dashboard" />
+            <span class="topbar-view-label">Canvas</span>
+          </button>
+          <button
+            :class="['topbar-view-tab', { active: viewMode === 'graph' }]"
+            title="Graph view"
+            @click="emit('set-view', 'graph')"
+          >
+            <span class="i-lucide-git-fork" />
+            <span class="topbar-view-label">Graph</span>
+          </button>
+          <button
+            :class="['topbar-view-tab', { active: viewMode === 'editor' }]"
+            title="Markdown editor"
+            @click="emit('set-view', 'editor')"
+          >
+            <span class="i-lucide-file-text" />
+            <span class="topbar-view-label">Editor</span>
+          </button>
+        </div>
 
         <CanvasThemeToggle class="mobile-hide" />
 
@@ -386,5 +416,51 @@ defineExpose({ focusTitleInput })
   .topbar-divider {
     height: 24px;
   }
+}
+
+/* View tabs (Canvas / Graph / Editor) */
+.topbar-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--nc-border, #1E1E22);
+  border-radius: 8px;
+}
+
+.topbar-view-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--nc-ink-faint, #52525B);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 150ms var(--nc-ease-out, ease), background 150ms var(--nc-ease-out, ease);
+}
+
+.topbar-view-tab:hover {
+  color: var(--nc-ink-muted, #A1A1AA);
+}
+
+.topbar-view-tab.active {
+  background: rgba(0, 210, 190, 0.08);
+  border-color: rgba(0, 210, 190, 0.2);
+  color: var(--nc-accent, #00D2BE);
+}
+
+.topbar-view-tab:active {
+  transform: scale(0.97);
+}
+
+.topbar-view-label {
+  line-height: 1;
 }
 </style>

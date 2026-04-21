@@ -5,6 +5,16 @@ import { useMapStore } from '~/stores/mapStore'
 
 export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'error' | 'disabled'
 
+export interface SyncConflict {
+  mapId: string
+  localTitle: string
+  remoteTitle: string
+  localNodeCount: number
+  remoteNodeCount: number
+  localUpdatedAt: number
+  remoteUpdatedAt: number
+}
+
 // Singleton state
 const state = reactive<{
   syncStatus: SyncStatus
@@ -28,11 +38,51 @@ function _isTauri(): boolean {
   return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 }
 
+const REMOTE_BASE = 'https://neuro-canvas.com'
+
+/**
+ * Fetch wrapper that uses Tauri HTTP plugin for remote API calls (has auth cookies),
+ * or $fetch for web mode (same-origin, session cookie in browser).
+ */
+async function syncFetch<T>(path: string, options?: { method?: string; body?: unknown; params?: Record<string, string | undefined> }): Promise<T> {
+  if (_isTauri()) {
+    const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
+    let url = `${REMOTE_BASE}${path}`
+    if (options?.params) {
+      const qs = new URLSearchParams()
+      for (const [k, v] of Object.entries(options.params)) {
+        if (v !== undefined) qs.set(k, v)
+      }
+      const qsStr = qs.toString()
+      if (qsStr) url += `?${qsStr}`
+    }
+    const res = await tauriFetch(url, {
+      method: options?.method || 'GET',
+      headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+    })
+    if (!res.ok) {
+      const err: any = new Error(`Sync fetch failed: ${res.status}`)
+      err.statusCode = res.status
+      throw err
+    }
+    return res.json() as Promise<T>
+  }
+  // Web mode: use $fetch (same-origin)
+  return ($fetch as any)(path, {
+    method: options?.method || 'GET',
+    body: options?.body,
+    params: options?.params,
+  })
+}
+
 export function useSyncEngine() {
   const db = useDatabase()
   const { deviceId } = useDeviceId()
 
   // Auth gate: sync only when logged in
+  // In Tauri: check desktop auth state (user signed in via HTTP plugin)
+  const desktopAuth = _isTauri() ? useDesktopAuth() : null
   const _tauriSession = _isTauri() ? { user: null } : null
   const { data: _sessionData } = _tauriSession
     ? { data: ref(_tauriSession) }
@@ -40,6 +90,10 @@ export function useSyncEngine() {
   const session = _sessionData ?? ref(null)
 
   const currentUserId = computed(() => {
+    // Tauri: use desktop auth user id
+    if (desktopAuth?.isSignedIn.value && desktopAuth.user.value?.id) {
+      return desktopAuth.user.value.id
+    }
     return (session.value?.user as { id?: string })?.id || null
   })
 
@@ -68,7 +122,7 @@ export function useSyncEngine() {
     state.syncStatus = 'syncing'
 
     try {
-      const response: { ok: boolean; syncVersion?: number; noChange?: boolean } = await ($fetch as any)('/api/sync/push', {
+      const response = await syncFetch<{ ok: boolean; syncVersion?: number; noChange?: boolean }>('/api/sync/push', {
         method: 'POST',
         body: {
           mapId: doc.id,
@@ -137,7 +191,7 @@ export function useSyncEngine() {
       const meta = await db.getSyncMeta()
       const since = meta?.lastSyncAt ? new Date(meta.lastSyncAt).toISOString() : undefined
 
-      const response: { maps: any[]; deleted: string[] } = await ($fetch as any)('/api/sync/pull', {
+      const response = await syncFetch<{ maps: any[]; deleted: string[] }>('/api/sync/pull', {
         params: { since }
       })
 
@@ -183,7 +237,7 @@ export function useSyncEngine() {
     if (!isSyncEnabled.value) return
 
     try {
-      const response: { maps: any[]; deleted: string[] } = await ($fetch as any)('/api/sync/pull', {
+      const response = await syncFetch<{ maps: any[]; deleted: string[] }>('/api/sync/pull', {
         params: { mapId }
       })
 
@@ -232,6 +286,12 @@ export function useSyncEngine() {
     if (!isSyncEnabled.value || typeof EventSource === 'undefined') return
     disconnectSSE()
 
+    // Tauri: SSE won't work (no same-origin server). Use periodic polling instead.
+    if (_isTauri()) {
+      startTauriPolling()
+      return
+    }
+
     const url = `/api/sync/stream?deviceId=${encodeURIComponent(deviceId)}`
     eventSource = new EventSource(url)
 
@@ -272,7 +332,25 @@ export function useSyncEngine() {
     }
   }
 
+  // Tauri: periodic pull instead of SSE
+  let tauriPollTimer: ReturnType<typeof setInterval> | null = null
+  function startTauriPolling(): void {
+    if (tauriPollTimer) return
+    tauriPollTimer = setInterval(() => {
+      if (isSyncEnabled.value && isOnline.value) {
+        pullChanges().catch(() => {})
+      }
+    }, 30000) // Poll every 30s
+  }
+  function stopTauriPolling(): void {
+    if (tauriPollTimer) {
+      clearInterval(tauriPollTimer)
+      tauriPollTimer = null
+    }
+  }
+
   function disconnectSSE(): void {
+    stopTauriPolling()
     if (eventSource) {
       eventSource.close()
       eventSource = null
@@ -307,7 +385,7 @@ export function useSyncEngine() {
         if (op.action === 'push') {
           await pushMap(op.mapId)
         } else if (op.action === 'delete') {
-          await ($fetch as any)('/api/sync/push', {
+          await syncFetch('/api/sync/push', {
             method: 'POST',
             body: { mapId: op.mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId }
           })
@@ -360,7 +438,7 @@ export function useSyncEngine() {
         })))
 
         try {
-          await ($fetch as any)('/api/sync/bulk-push', {
+          await syncFetch('/api/sync/bulk-push', {
             method: 'POST',
             body: { maps, deviceId }
           })
@@ -398,11 +476,15 @@ export function useSyncEngine() {
     state.pendingChanges = await db.countPendingSyncOps()
     state.syncStatus = isOnline.value ? 'idle' : 'offline'
 
-    // Connect SSE for real-time
+    // Connect SSE for real-time (or polling in Tauri)
     connectSSE()
 
-    // Pull latest changes
-    await pullChanges()
+    // Full sync: push local unsynced maps, then pull remote changes
+    if (_isTauri()) {
+      await fullSync()
+    } else {
+      await pullChanges()
+    }
 
     // Replay any offline queue
     await replayQueue()
@@ -432,12 +514,25 @@ export function useSyncEngine() {
     }
   })
 
+  // Conflict resolution (stub — conflicts are resolved server-side via LWW)
+  const conflicts = ref<SyncConflict[]>([])
+
+  async function resolveConflict(mapId: string, resolution: 'local' | 'remote'): Promise<void> {
+    if (resolution === 'local') {
+      await pushMap(mapId)
+    } else {
+      await pullMap(mapId)
+    }
+    conflicts.value = conflicts.value.filter(c => c.mapId !== mapId)
+  }
+
   return {
     // State
     syncStatus: computed(() => state.syncStatus),
     lastSyncAt: computed(() => state.lastSyncAt),
     pendingChanges: computed(() => state.pendingChanges),
     isSyncEnabled,
+    conflicts,
 
     // Actions
     pushMap,
@@ -447,6 +542,7 @@ export function useSyncEngine() {
     fullSync,
     queueForLater,
     replayQueue,
+    resolveConflict,
     connectSSE,
     disconnectSSE,
     initialize

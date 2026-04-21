@@ -183,7 +183,15 @@ export function useAI() {
         }, modelVariant)
         isInitialized.value = result.initialized
         backendType.value = 'native'
-        semanticStore.setModelLoaded(result.modelLoaded)
+        if (result.modelLoaded) {
+          semanticStore.setModelLoaded(true)
+        } else {
+          // Model failed to load — reset status so UI doesn't stay stuck on "Loading AI"
+          semanticStore.setAIStatus(result.initialized ? 'idle' : 'error')
+          if (!result.initialized) {
+            semanticStore.setAIError('ONNX model failed to load')
+          }
+        }
         return result.initialized
       }
 
@@ -249,9 +257,9 @@ export function useAI() {
     // Try to use BYOK provider first
     const aiSettings = useAISettings()
 
-    // Check if we have a configured and enabled provider with a credential
+    // Check if we have a configured and enabled provider with a credential or local key
     const defaultProvider = aiSettings.defaultProvider.value
-    if (defaultProvider?.isEnabled && (defaultProvider.credentialId || defaultProvider.type === 'ollama')) {
+    if (defaultProvider?.isEnabled && (defaultProvider.credentialId || defaultProvider.localApiKey || defaultProvider.type === 'ollama')) {
       try {
         return await smartExpandWithProvider(
           nodeContent,
@@ -299,7 +307,7 @@ export function useAI() {
     nodeContent: string,
     context: string[],
     maxSuggestions: number,
-    provider: { type: string; credentialId?: string; baseUrl?: string; selectedModelId?: string }
+    provider: { type: string; apiKey?: string; credentialId?: string; baseUrl?: string; selectedModelId?: string }
   ): Promise<string[]> {
     isLoading.value = true
     error.value = null
@@ -313,7 +321,8 @@ export function useAI() {
     try {
       const response = await aiComplete({
         provider: provider.type,
-        credentialId: provider.credentialId,
+        apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
         baseUrl: provider.baseUrl,
         model: provider.selectedModelId,
         systemPrompt,
@@ -370,7 +379,8 @@ export function useAI() {
             return streamCompletion(
               {
                 provider: provider.type,
-                credentialId: provider.credentialId,
+                apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
                 baseUrl: provider.baseUrl,
                 model: provider.selectedModelId,
                 systemPrompt: system,
@@ -384,7 +394,8 @@ export function useAI() {
 
           const response = await aiComplete({
             provider: provider.type,
-            credentialId: provider.credentialId,
+            apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
             baseUrl: provider.baseUrl,
             model: provider.selectedModelId,
             systemPrompt: system,
@@ -445,6 +456,7 @@ export function useAI() {
       const content = await executeWithRetry(async () => {
         const response = await aiComplete({
           provider: provider.type,
+          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
@@ -483,7 +495,13 @@ export function useAI() {
     error.value = null
 
     try {
-      const { system, user } = buildMapStructurePrompt(topic, options)
+      // Use simpler prompt for local models (Ollama) — they struggle with complex nested JSON
+      const isLocalModel = provider.type === 'ollama'
+      const effectiveOptions = isLocalModel
+        ? { ...options, branchCount: Math.min(options.branchCount || 4, 4), maxDepth: 1, includeCrossConnections: false }
+        : options
+
+      const { system, user } = buildMapStructurePrompt(topic, effectiveOptions)
 
       // Check Redis cache
       const cache = getSemanticCache()
@@ -498,7 +516,8 @@ export function useAI() {
           return streamCompletion(
             {
               provider: provider.type,
-              credentialId: provider.credentialId,
+              apiKey: provider.apiKey,
+          credentialId: provider.credentialId,
               baseUrl: provider.baseUrl,
               model: provider.selectedModelId,
               systemPrompt: system,
@@ -512,6 +531,7 @@ export function useAI() {
 
         const response = await aiComplete({
           provider: provider.type,
+          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
@@ -562,6 +582,7 @@ export function useAI() {
       const content = await executeWithRetry(async () => {
         const response = await aiComplete({
           provider: provider.type,
+          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,
@@ -624,6 +645,7 @@ export function useAI() {
       const content = await executeWithRetry(async () => {
         const response = await aiComplete({
           provider: provider.type,
+          apiKey: provider.apiKey,
           credentialId: provider.credentialId,
           baseUrl: provider.baseUrl,
           model: provider.selectedModelId,

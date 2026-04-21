@@ -58,11 +58,15 @@ export function useTauriML() {
     onProgress?: (progress: number) => void,
     modelVariant: 'quantized' | 'full' = 'quantized'
   ): Promise<{ initialized: boolean; modelLoaded: boolean }> {
-    onProgress?.(0.5)
+    onProgress?.(0.1)
     try {
-      const result = await invoke<InitResult>('ml_init', {
-        modelVariant
-      })
+      // Add a timeout — ONNX model loading can hang with certain execution providers
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('ONNX model loading timed out after 30s')), 30000)
+      )
+      const init = invoke<InitResult>('ml_init', { modelVariant })
+
+      const result = await Promise.race([init, timeout])
       onProgress?.(1.0)
       return {
         initialized: result.initialized,

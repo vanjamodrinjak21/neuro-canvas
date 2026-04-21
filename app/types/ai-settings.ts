@@ -17,6 +17,7 @@ export interface AIProviderConfig {
   type: AIProviderType
   name: string
   credentialId?: string // Server vault credential ID
+  localApiKey?: string  // Tauri desktop: API key stored locally in IndexedDB
   baseUrl?: string // For custom/Ollama providers
   models: AIModel[]
   selectedModelId?: string

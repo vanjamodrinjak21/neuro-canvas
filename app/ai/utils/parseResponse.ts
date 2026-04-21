@@ -54,9 +54,17 @@ export function parseJsonResponse<T>(content: string): T {
 
   try {
     return JSON.parse(cleaned)
-  } catch (e) {
-    throw new Error(`Failed to parse LLM JSON response: ${(e as Error).message}`)
+  } catch {
+    // continue to progressive extraction
   }
+
+  // Attempt 4: progressive extraction — try salvaging partial JSON
+  const partial = extractPartialJson<T>(content)
+  if (partial !== null) {
+    return partial
+  }
+
+  throw new Error('Failed to parse AI response. The model returned malformed output — try again or use a larger model.')
 }
 
 /**
@@ -79,7 +87,20 @@ function repairTruncatedJson(json: string): string {
     result += '"'
   }
 
-  // Remove any trailing comma
+  // Remove trailing comma, incomplete key-value pairs like `"key":` or `"key"`
+  result = result.replace(/,\s*$/, '')
+  // Remove dangling key without value: `"someKey":` at end
+  result = result.replace(/,?\s*"[^"]*"\s*:\s*$/, '')
+  // Remove dangling key without colon: `"someKey"` at end of object (not a value)
+  result = result.replace(/,?\s*"[^"]*"\s*$/, (match) => {
+    // Only strip if we're inside an object context (last open bracket was {)
+    const lastBrace = result.lastIndexOf('{')
+    const lastBracket = result.lastIndexOf('[')
+    if (lastBrace > lastBracket) return '' // inside object — strip dangling key
+    return match // inside array — keep as array element
+  })
+
+  // Remove trailing commas again after cleanup
   result = result.replace(/,\s*$/, '')
 
   // Count unclosed brackets and close them
@@ -103,6 +124,41 @@ function repairTruncatedJson(json: string): string {
   }
 
   return result
+}
+
+/**
+ * Attempt progressive JSON extraction — try parsing increasingly
+ * truncated versions of the response to salvage as much as possible.
+ */
+function extractPartialJson<T>(content: string): T | null {
+  // Find the outermost { or [
+  const objStart = content.indexOf('{')
+  const arrStart = content.indexOf('[')
+  if (objStart === -1 && arrStart === -1) return null
+
+  const start = (objStart === -1) ? arrStart
+    : (arrStart === -1) ? objStart
+    : Math.min(objStart, arrStart)
+  let json = content.slice(start)
+
+  // Try progressively shorter versions (trim from the end)
+  for (let trim = 0; trim < 5; trim++) {
+    if (trim > 0) {
+      // Remove the last incomplete element (after last complete comma)
+      const lastComma = json.lastIndexOf(',')
+      if (lastComma === -1) break
+      json = json.slice(0, lastComma)
+    }
+
+    const repaired = repairTruncatedJson(json)
+    try {
+      return JSON.parse(repaired)
+    } catch {
+      continue
+    }
+  }
+
+  return null
 }
 
 /**

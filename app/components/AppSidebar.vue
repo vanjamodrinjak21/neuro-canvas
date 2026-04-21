@@ -87,26 +87,29 @@ const { data: _sessionData } = _isTauri
   : useAuth()
 const session = _sessionData ?? ref(null)
 
-// Unified state
-const hasWebSession = computed(() => !!session.value?.user)
+// Unified state — web session only counts if it has a real email (not the Tauri local-only user)
+const hasWebSession = computed(() => !!session.value?.user?.email)
 const hasDesktopSession = computed(() => !!desktopAuth?.isSignedIn.value)
 const isSignedIn = computed(() => hasWebSession.value || hasDesktopSession.value)
 const isDesktopLocal = computed(() => _isTauri && !isSignedIn.value)
 
 const user = computed(() => session.value?.user)
+const desktopUser = computed(() => desktopAuth?.user?.value)
 const userName = computed(() => {
   if (user.value?.name) return user.value.name
   if (user.value?.email) return user.value.email.split('@')[0]
-  if (hasDesktopSession.value) return 'Signed In'
+  if (desktopUser.value?.name) return desktopUser.value.name
+  if (desktopUser.value?.email) return desktopUser.value.email.split('@')[0]
+  if (hasDesktopSession.value) return 'Desktop User'
   return 'User'
 })
 const userEmail = computed(() => {
   if (user.value?.email) return user.value.email
-  if (hasDesktopSession.value) return 'neuro-canvas.com'
+  if (desktopUser.value?.email) return desktopUser.value.email
   return ''
 })
 const userInitials = computed(() => {
-  if (hasDesktopSession.value && !user.value) return 'NC'
+  if (hasDesktopSession.value && !user.value && !desktopUser.value) return 'NC'
   const name = userName.value
   const parts = name.split(' ')
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
@@ -257,11 +260,11 @@ onMounted(() => {
       <div v-if="isDesktopLocal && !guest.isGuest.value" class="user-section">
         <button
           class="signin-btn"
-          :disabled="desktopAuth?.isAuthWindowOpen.value"
+          :disabled="desktopAuth?.showAuthModal.value"
           @click="desktopAuth?.signIn()"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
-          <span v-if="!collapsed">{{ desktopAuth?.isAuthWindowOpen.value ? 'Signing in...' : 'Sign In' }}</span>
+          <span v-if="!collapsed">{{ desktopAuth?.showAuthModal.value ? 'Signing in...' : 'Sign In' }}</span>
         </button>
       </div>
 

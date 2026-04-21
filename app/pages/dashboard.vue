@@ -11,21 +11,27 @@ definePageMeta({
   middleware: 'auth'
 })
 
-// Tauri detection
-const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+// Tauri detection — only true on client, never during SSR/generate
+const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 
 // Auth
-const _tauriSession = { user: { id: 'desktop-user', email: 'desktop@neurocanvas.local', name: 'Desktop User' } }
+// Minimal local-only user so the page renders — NOT a real session.
+// The sidebar checks desktopAuth.isSignedIn for real auth state.
+const _tauriSession = { user: { id: 'desktop-local', name: null, email: null } }
 const { data: _sessionData, status, getSession } = _isTauri
   ? { data: ref(_tauriSession), status: ref('authenticated'), getSession: async () => _tauriSession }
   : useAuth()
 const session = _sessionData ?? ref(null)
 const user = computed(() => session.value?.user)
-// Skip loading screen if session is already cached (e.g. navigating back from settings)
-const authChecked = ref(_isTauri || !!session.value?.user)
+// Always start false so SSR and client initial render match (loading spinner).
+// Set to true in onMounted to avoid hydration mismatch in Tauri.
+const authChecked = ref(!!session.value?.user)
 
 onMounted(async () => {
-  if (!_isTauri) {
+  if (_isTauri) {
+    // In Tauri, session is already set — just mark as checked
+    authChecked.value = true
+  } else {
     // Only force-fetch when no cached session (e.g. direct navigation).
     // Skip when session is already available (e.g. navigating back from settings)
     // to avoid getSession temporarily clearing data and causing a black flash.
@@ -301,34 +307,75 @@ if (route.query.templates === 'true') {
   router.replace({ path: '/dashboard' })
 }
 
-// Load maps from server (PostgreSQL → Redis → client), fallback to IndexedDB for offline/Tauri
+// Desktop auth for Tauri sync
+const desktopAuth = _isTauri ? useDesktopAuth() : null
+
+function mapServerResponse(m: any): DBMapDocument {
+  return {
+    id: m.id,
+    title: m.title,
+    nodes: m.data?.nodes || [],
+    edges: m.data?.edges || [],
+    camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
+    settings: m.data?.settings || {},
+    rootNodeId: m.data?.rootNodeId,
+    preview: m.preview,
+    tags: m.tags || [],
+    createdAt: new Date(m.createdAt).getTime(),
+    updatedAt: new Date(m.updatedAt).getTime(),
+    syncVersion: m.syncVersion,
+    checksum: m.checksum,
+  } as DBMapDocument
+}
+
+// Load maps: merge local IndexedDB + remote server maps
+// Local maps that haven't synced yet are preserved and pushed to server
 async function loadMaps() {
   try {
+    // Always load local maps first
+    const localMaps = await db.getRecentMaps(50)
+
+    if (_isTauri && desktopAuth?.isSignedIn.value) {
+      // Tauri + signed in: merge local + remote
+      try {
+        const response = await desktopAuth.remoteFetch<{ maps: any[] }>('/api/sync/pull')
+        const remoteMaps = response.maps.map(mapServerResponse)
+
+        // Merge: remote wins for maps that exist on both sides (by id),
+        // local-only maps (no syncVersion) are preserved
+        const remoteById = new Map(remoteMaps.map(m => [m.id, m]))
+        const merged: DBMapDocument[] = [...remoteMaps]
+
+        for (const local of localMaps) {
+          if (!remoteById.has(local.id)) {
+            // Local-only map — keep it and push to server
+            merged.push(local)
+            syncEngine.debouncedPush(local.id)
+          }
+        }
+
+        // Also save remote maps to local IndexedDB for offline access
+        for (const remote of remoteMaps) {
+          await db.saveMap(remote)
+        }
+
+        recentMaps.value = merged
+        return
+      } catch {
+        // Remote server unreachable — show local maps only
+      }
+    }
+
     if (!_isTauri && session.value?.user) {
-      // Fetch from server — properly scoped by userId in PostgreSQL
+      // Web: fetch from server — properly scoped by userId in PostgreSQL
       const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
-      recentMaps.value = response.maps.map((m: any) => ({
-        id: m.id,
-        title: m.title,
-        nodes: m.data?.nodes || [],
-        edges: m.data?.edges || [],
-        camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
-        settings: m.data?.settings || {},
-        rootNodeId: m.data?.rootNodeId,
-        preview: m.preview,
-        tags: m.tags || [],
-        createdAt: new Date(m.createdAt).getTime(),
-        updatedAt: new Date(m.updatedAt).getTime(),
-        syncVersion: m.syncVersion,
-        checksum: m.checksum
-      })) as DBMapDocument[]
+      recentMaps.value = response.maps.map(mapServerResponse)
     } else {
-      // Offline or Tauri — read from local IndexedDB
-      recentMaps.value = await db.getRecentMaps(20)
+      // Offline or Tauri not signed in — read from local IndexedDB
+      recentMaps.value = localMaps
     }
   } catch (error) {
     console.error('Failed to load maps from server, falling back to local:', error)
-    // Fallback to IndexedDB on network error
     recentMaps.value = await db.getRecentMaps(20)
   }
 }
@@ -358,6 +405,10 @@ async function createNewMap() {
     mapStore.newDocument()
     const doc = mapStore.toSerializable()
     await db.saveMap(doc)
+    // Push to server immediately so it appears on web too
+    if (syncEngine.isSyncEnabled.value) {
+      syncEngine.debouncedPush(doc.id)
+    }
     await navigateTo(`/map/${doc.id}`)
   } catch (error) {
     alert(`Failed to create map: ${error instanceof Error ? error.message : String(error)}`)
@@ -383,11 +434,19 @@ async function confirmDeleteMap() {
   deleteTargetId.value = null
   try {
     // Delete from server (soft-delete in PostgreSQL)
-    if (!_isTauri && syncEngine.isSyncEnabled.value) {
-      await $fetch('/api/sync/push', {
-        method: 'POST',
-        body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
-      })
+    if (syncEngine.isSyncEnabled.value) {
+      if (_isTauri && desktopAuth?.isSignedIn.value) {
+        await desktopAuth.remoteFetch('/api/sync/push', {
+          method: 'POST',
+          body: JSON.stringify({ mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }),
+          headers: { 'Content-Type': 'application/json' },
+        })
+      } else if (!_isTauri) {
+        await $fetch('/api/sync/push', {
+          method: 'POST',
+          body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
+        })
+      }
     }
     // Also remove from local IndexedDB
     await db.deleteMap(mapId)
@@ -453,6 +512,7 @@ async function handleAIQuickStart() {
     mapRenderer.renderMapStructure(structure, { x: 0, y: 0 })
     const doc = mapStore.toSerializable()
     await db.saveMap(doc)
+    if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(doc.id)
 
     completeAllSteps()
     await new Promise(r => setTimeout(r, 500))
@@ -463,13 +523,16 @@ async function handleAIQuickStart() {
     await navigateTo(`/map/${doc.id}`)
   } catch (error: any) {
     console.error('AI generation failed:', error)
-    aiError.value = error?.message?.includes('Session expired')
-      ? error.message
-      : error?.message?.includes('No AI provider configured')
+    const msg = error?.message || ''
+    aiError.value = msg.includes('Session expired')
+      ? msg
+      : msg.includes('No AI provider configured')
         ? 'Please configure an AI provider with an API key in Settings first.'
-        : error?.message?.includes('No API key')
-          ? 'Please add an API key for your AI provider in Settings.'
-          : 'Failed to generate map. Please check your AI settings and try again.'
+        : msg.includes('No API key') || msg.includes('No API key configured')
+          ? 'Please add an API key for your AI provider in Settings. If you already added one, try removing and re-adding it.'
+          : msg.includes('API error')
+            ? msg
+            : `Failed to generate map. ${msg || 'Please check your AI settings and try again.'}`
     resetAIProgress()
   } finally {
     aiLoading.value = false
@@ -574,6 +637,7 @@ async function createMapFromNodes(nodes: { content: string; level: number }[], t
   mapStore.resolveOverlaps()
   const doc = mapStore.toSerializable()
   await db.saveMap(doc)
+  if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(doc.id)
   await navigateTo(`/map/${doc.id}`)
 }
 
@@ -617,6 +681,7 @@ async function createFromTemplate(template: typeof templates[0]) {
   mapStore.resolveOverlaps()
   const doc = mapStore.toSerializable()
   await db.saveMap(doc)
+  if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(doc.id)
   showTemplatesModal.value = false
   await navigateTo(`/map/${doc.id}`)
 }
@@ -624,8 +689,8 @@ async function createFromTemplate(template: typeof templates[0]) {
 
 <template>
   <div class="dashboard-page">
-  <!-- Loading state -->
-  <div v-if="!authChecked && status === 'loading'" class="auth-loading">
+  <!-- Loading state — shown until authChecked is set in onMounted -->
+  <div v-if="!authChecked" class="auth-loading">
     <div class="loading-spinner" />
   </div>
 

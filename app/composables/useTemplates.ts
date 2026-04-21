@@ -23,6 +23,9 @@ export function useTemplates() {
     myTemplates: false,
   })
 
+  // Tauri detection
+  const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+
   async function fetchTemplates(page = 1) {
     loading.value = true
     error.value = null
@@ -34,16 +37,29 @@ export function useTemplates() {
       if (filters.category !== 'all') params.category = filters.category
       if (filters.search) params.search = filters.search
 
-      const data = await $fetch<{ templates: Template[]; total: number }>('/api/templates', { params })
-      templates.value = data.templates
-      total.value = data.total
-    } catch (e: any) {
-      // On Tauri/desktop, server APIs aren't available — show empty state
-      if (typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)) {
+      // In Tauri: try remote fetch via HTTP plugin if signed in, otherwise empty
+      if (_isTauri) {
+        try {
+          const desktopAuth = useDesktopAuth()
+          if (desktopAuth.isSignedIn.value) {
+            const qs = new URLSearchParams(params).toString()
+            const data = await desktopAuth.remoteFetch<{ templates: Template[]; total: number }>(`/api/templates?${qs}`)
+            templates.value = data.templates
+            total.value = data.total
+            return
+          }
+        } catch {
+          // Remote server unreachable
+        }
         templates.value = []
         total.value = 0
         return
       }
+
+      const data = await $fetch<{ templates: Template[]; total: number }>('/api/templates', { params })
+      templates.value = data.templates
+      total.value = data.total
+    } catch (e: any) {
       error.value = e.data?.statusMessage || 'Failed to load templates'
     } finally {
       loading.value = false
@@ -54,6 +70,22 @@ export function useTemplates() {
     loading.value = true
     error.value = null
     try {
+      // In Tauri: try remote fetch via HTTP plugin if signed in, otherwise empty
+      if (_isTauri) {
+        try {
+          const desktopAuth = useDesktopAuth()
+          if (desktopAuth.isSignedIn.value) {
+            const data = await desktopAuth.remoteFetch<{ templates: Template[] }>('/api/templates/my')
+            myTemplates.value = data.templates
+            return
+          }
+        } catch {
+          // Remote server unreachable
+        }
+        myTemplates.value = []
+        return
+      }
+
       const data = await $fetch<{ templates: Template[] }>('/api/templates/my')
       myTemplates.value = data.templates
     } catch (e: any) {

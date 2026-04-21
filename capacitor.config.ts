@@ -28,12 +28,12 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'dark',
-      backgroundColor: '#032221'
+      backgroundColor: '#09090B'
     },
     SplashScreen: {
       launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#032221',
+      launchAutoHide: false,
+      backgroundColor: '#09090B',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
       splashFullScreen: true,
@@ -43,10 +43,10 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     scheme: 'NeuroCanvas',
-    backgroundColor: '#032221'
+    backgroundColor: '#09090B'
   },
   android: {
-    backgroundColor: '#032221',
+    backgroundColor: '#09090B',
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: true

@@ -5,6 +5,7 @@ import type { ContextMenuItem } from '~/components/ui/NcContextMenu.vue'
 import type { AISuggestion, RichNodeSuggestion, GenerationContext } from '~/types'
 import type { SidebarAction } from '~/types/sidebar'
 import { useMapStore } from '~/stores/mapStore'
+import { useUserStore } from '~/stores/userStore'
 import { useSemanticStore } from '~/stores/semanticStore'
 import { useDatabase } from '~/composables/useDatabase'
 import { useAutoSave } from '~/composables/useAutoSave'
@@ -120,6 +121,8 @@ const selectedNode = computed(() => {
 
 watch(selectedNode, (node) => {
   showPropertiesPanel.value = !!node
+  // Dismiss hover preview when node is selected — properties panel shows details instead
+  if (node) hoveredPreviewNode.value = null
 })
 
 // Multi-select action bar
@@ -190,7 +193,19 @@ const sidebarCollapsed = ref(false)
 
 // Zoom presets (managed by ZoomControls component internally)
 
-// Minimap collapse state (toggle with M key)
+// User preferences — sync to canvas
+const userStore = useUserStore()
+
+// Grid visibility — sync user preference to map store
+watch(() => userStore.preferences.value.showGrid, (show) => {
+  mapStore.settings.gridEnabled = show
+}, { immediate: true })
+
+// View mode toggle: canvas (default) or graph (Obsidian-style)
+const viewMode = ref<'canvas' | 'graph' | 'editor'>('canvas')
+
+// Minimap visibility — respect user preference from settings
+const minimapEnabled = computed(() => userStore.preferences.value.showMinimap)
 const minimapCollapsed = ref(false)
 
 // Semantic search & settings
@@ -303,7 +318,9 @@ onMounted(async () => {
       // Only initialize AI for authenticated users
       if (!guest.isGuest.value) {
         aiSettings.initialize()
-        ai.initialize()
+        ai.initialize().catch((e) => {
+          console.error('[Map] AI init failed:', e)
+        })
       }
 
       // Track guest map ID and show onboarding
@@ -354,6 +371,8 @@ onMounted(async () => {
             semanticProcessor.enqueueNodes(allNodeIds, 'normal')
           }
         }
+      }).catch((e) => {
+        console.error('[Map] AI init failed:', e)
       })
     }
 
@@ -1490,9 +1509,9 @@ useHead({
         @generate-map="showGenerateMapDialog = true"
       />
 
-      <!-- Canvas -->
+      <!-- Canvas View -->
       <CanvasInfiniteCanvas
-        v-if="!isLoading && !loadError"
+        v-if="!isLoading && !loadError && viewMode === 'canvas'"
         ref="canvasRef"
         :camera="camera"
         :tool="activeTool"
@@ -1503,6 +1522,18 @@ useHead({
         @node-hover="handleNodeHover"
         @drop-category="handleDropCategory"
         @drop-node="handleDropNode"
+      />
+
+      <!-- Graph View (Obsidian-style force-directed) -->
+      <CanvasForceGraphCanvas
+        v-if="!isLoading && !loadError && viewMode === 'graph'"
+        @select-node="(id: string) => mapStore.selectNode(id)"
+        @deselect="mapStore.clearSelection()"
+      />
+
+      <!-- Markdown Editor View -->
+      <CanvasMarkdownEditorView
+        v-if="!isLoading && !loadError && viewMode === 'editor'"
       />
 
       <!-- Multi-Select Action Bar -->
@@ -1518,18 +1549,19 @@ useHead({
         />
       </Transition>
 
-      <!-- Node Hover Preview -->
+      <!-- Node Hover Preview (canvas only) -->
       <Transition name="nc-fade-up">
         <CanvasNodeHoverPreview
-          v-if="hoveredPreviewNode && !contextMenuVisible"
+          v-if="viewMode === 'canvas' && hoveredPreviewNode && !contextMenuVisible"
           :node="hoveredPreviewNode"
           :screen-x="hoverPreviewPosition.x"
           :screen-y="hoverPreviewPosition.y"
         />
       </Transition>
 
-      <!-- Spatial HUD Overlay -->
+      <!-- Spatial HUD Overlay (canvas only) -->
       <CanvasSpatialHUDOverlay
+        v-if="viewMode === 'canvas'"
         :camera="camera"
         :nodes="mapStore.nodes"
         :visible-count="mapStore.nodes.size"
@@ -1547,6 +1579,7 @@ useHead({
         :has-selection="!!selectedNode"
         :breadcrumbs="cameraIntel.breadcrumbs.value"
         :regions="mapRegions.regions.value"
+        :view-mode="viewMode"
         @start-editing="startEditingTitle"
         @save-title="saveTitle"
         @cancel-edit="cancelEditTitle"
@@ -1561,11 +1594,13 @@ useHead({
         @undo="mapStore.undo()"
         @redo="mapStore.redo()"
         @navigate-breadcrumb="(crumb) => springCamera.setTarget(crumb, 'snappy')"
+        @set-view="viewMode = $event"
       />
     </div>
 
-    <!-- ═══════════════ BOTTOM TOOLBAR ═══════════════ -->
+    <!-- ═══════════════ BOTTOM TOOLBAR (canvas only) ═══════════════ -->
     <CanvasBottomToolbar
+      v-if="viewMode === 'canvas'"
       :active-tool="activeTool"
       :zoom="camera.zoom"
       :semantic-field-enabled="semanticFieldEnabled"
@@ -1587,8 +1622,8 @@ useHead({
       @redo="mapStore.redo()"
     />
 
-    <!-- Minimap (always visible on desktop) -->
-    <div class="minimap-wrapper">
+    <!-- Minimap (canvas mode only, when enabled in settings) -->
+    <div v-if="minimapEnabled && viewMode === 'canvas'" class="minimap-wrapper">
       <Minimap
         v-model:collapsed="minimapCollapsed"
         :camera="camera"

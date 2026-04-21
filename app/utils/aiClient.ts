@@ -95,6 +95,11 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
   const fetch = await getTauriFetch()
   const { provider, apiKey, model, messages, systemPrompt, maxTokens = 500, temperature = 0.7 } = req
 
+  // Guard: don't send requests with empty API keys
+  if (!apiKey && provider !== 'ollama') {
+    throw new Error('API key needs to be re-entered for desktop use. Go to Settings > AI Providers and update your API key.')
+  }
+
   switch (provider) {
     case 'openai':
     case 'openrouter': {
@@ -142,7 +147,8 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey || '',
-          'anthropic-version': '2023-06-01'
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: model || 'claude-sonnet-4-20250514',
@@ -290,6 +296,7 @@ async function directTestConnection(req: AITestConnectionRequest): Promise<AITes
           headers: {
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
             'content-type': 'application/json'
           },
           body: JSON.stringify({

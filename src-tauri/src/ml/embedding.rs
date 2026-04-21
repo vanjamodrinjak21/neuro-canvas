@@ -49,25 +49,36 @@ impl EmbeddingEngine {
         let mut builder = Session::builder()
             .context("create session builder")?;
 
-        // Try CoreML on Apple Silicon for acceleration
+        // On Apple Silicon, skip CoreML for the quantized model — CPU is fast enough
+        // and CoreML compilation can hang for 30s+ on first launch.
+        // Only use CoreML for the full-precision model where acceleration matters.
         #[cfg(target_os = "macos")]
         if hw.is_apple_silicon {
-            tracing::info!("Apple Silicon detected — attempting CoreML EP");
-            // Rebuild the builder to avoid ownership issues with the match
-            let coreml_result = Session::builder()
-                .and_then(|b| {
-                    b.with_execution_providers([
-                        ort::execution_providers::CoreMLExecutionProvider::default().build(),
-                    ])
-                });
-            match coreml_result {
-                Ok(b) => {
-                    builder = b;
-                    tracing::info!("CoreML EP registered");
+            let is_quantized = onnx_path
+                .file_name()
+                .and_then(|f| f.to_str())
+                .map(|f| f.contains("quantized"))
+                .unwrap_or(false);
+
+            if !is_quantized {
+                tracing::info!("Apple Silicon + full model — attempting CoreML EP");
+                let coreml_result = Session::builder()
+                    .and_then(|b| {
+                        b.with_execution_providers([
+                            ort::execution_providers::CoreMLExecutionProvider::default().build(),
+                        ])
+                    });
+                match coreml_result {
+                    Ok(b) => {
+                        builder = b;
+                        tracing::info!("CoreML EP registered");
+                    }
+                    Err(e) => {
+                        tracing::warn!("CoreML EP failed, falling back to CPU: {e}");
+                    }
                 }
-                Err(e) => {
-                    tracing::warn!("CoreML EP failed, falling back to CPU: {e}");
-                }
+            } else {
+                tracing::info!("Apple Silicon + quantized model — using CPU (faster startup)");
             }
         }
 

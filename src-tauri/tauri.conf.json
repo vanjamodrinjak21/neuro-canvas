@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob: tauri: ipc:; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com data:; img-src 'self' https: data: blob: tauri:; connect-src 'self' https: wss: tauri: ipc:",
       "dangerousDisableAssetCspModification": false
     }
   },

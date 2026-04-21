@@ -161,7 +161,8 @@ pub async fn ml_embed_batch(
     let total = texts.len();
     let chunk_size = 32; // MAX_BATCH from EmbeddingEngine
     let mut all_embeddings = Vec::with_capacity(total);
-    let mut completed = 0;
+    let mut completed: usize = 0;
+    let _ = completed; // suppress unused-assignment warning; updated in loop for progress
 
     for chunk_start in (0..total).step_by(chunk_size) {
         let chunk_end = (chunk_start + chunk_size).min(total);
