@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "declarationDir": "dist/esm",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist/esm",
+    "sourceMap": true,
+    "target": "ES2022",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/"]
+}

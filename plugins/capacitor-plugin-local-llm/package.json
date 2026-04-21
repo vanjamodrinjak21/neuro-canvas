@@ -1,0 +1,27 @@
+{
+  "name": "capacitor-plugin-local-llm",
+  "version": "0.1.0",
+  "description": "On-device LLM inference via llama.cpp for NeuroCanvas",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "files": ["dist/", "ios/", "android/"],
+  "capacitor": {
+    "ios": { "src": "ios" },
+    "android": { "src": "android" }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.0",
+    "rimraf": "^6.0.0"
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^8.0.0"
+  }
+}
