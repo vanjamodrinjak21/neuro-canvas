@@ -1,0 +1,1 @@
+import{i as c,o as t,c as r,a2 as s}from"./fe8463I6.js";const a={},n={class:"min-h-screen bg-nc-charcoal nc-paper-texture"};function o(e,l){return t(),r("div",n,[s(e.$slots,"default")])}const d=c(a,[["render",o]]);export{d as default};

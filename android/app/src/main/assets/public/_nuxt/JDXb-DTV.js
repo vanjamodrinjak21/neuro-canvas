@@ -1,0 +1,1 @@
+import{i as s,o,c as t,a2 as r}from"./fe8463I6.js";const n={},a={class:"prose-strong"};function c(e,_){return o(),t("strong",a,[r(e.$slots,"default",{},void 0,!0)])}const f=Object.assign(s(n,[["render",c],["__scopeId","data-v-ef446a83"]]),{__name:"ProseStrong"});export{f as default};

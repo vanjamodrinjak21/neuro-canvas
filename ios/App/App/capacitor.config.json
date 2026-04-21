@@ -1,0 +1,60 @@
+{
+	"appId": "com.neurocanvas.app",
+	"appName": "NeuroCanvas",
+	"webDir": ".output/public",
+	"server": {},
+	"plugins": {
+		"CapacitorSQLite": {
+			"iosDatabaseLocation": "Library/CapacitorDatabase",
+			"iosIsEncryption": false,
+			"androidIsEncryption": false,
+			"electronIsEncryption": false
+		},
+		"Filesystem": {
+			"requestLegacyExternalStorage": true
+		},
+		"Haptics": {
+			"enabled": true
+		},
+		"Keyboard": {
+			"resize": "body",
+			"resizeOnFullScreen": true
+		},
+		"StatusBar": {
+			"style": "dark",
+			"backgroundColor": "#09090B"
+		},
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"launchAutoHide": false,
+			"backgroundColor": "#09090B",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false,
+			"splashFullScreen": true,
+			"splashImmersive": true
+		}
+	},
+	"ios": {
+		"contentInset": "automatic",
+		"scheme": "NeuroCanvas",
+		"backgroundColor": "#09090B"
+	},
+	"android": {
+		"backgroundColor": "#09090B",
+		"allowMixedContent": false,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": true
+	},
+	"packageClassList": [
+		"CapacitorSQLitePlugin",
+		"DialogPlugin",
+		"FilesystemPlugin",
+		"HapticsPlugin",
+		"KeyboardPlugin",
+		"CAPNetworkPlugin",
+		"SharePlugin",
+		"SplashScreenPlugin",
+		"StatusBarPlugin",
+		"LocalLLMPlugin"
+	]
+}

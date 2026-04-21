@@ -1,0 +1,1 @@
+import{i as a,o as s,c as t,a as o,a2 as c}from"./fe8463I6.js";const r={},n={class:"table-wrapper"},_={class:"prose-table"};function d(e,l){return s(),t("div",n,[o("table",_,[c(e.$slots,"default",{},void 0,!0)])])}const f=Object.assign(a(r,[["render",d],["__scopeId","data-v-11de7cca"]]),{__name:"ProseTable"});export{f as default};
