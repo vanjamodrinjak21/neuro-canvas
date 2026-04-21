@@ -21,6 +21,11 @@ function _isTauri(): boolean {
   return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 }
 
+function _isCapacitor(): boolean {
+  return typeof window !== 'undefined' && 'Capacitor' in window
+    && !!(window as any).Capacitor?.isNativePlatform?.()
+}
+
 // Shared state across all instances
 const state = reactive<{
   settings: AISettings
@@ -78,6 +83,31 @@ export function useAISettings() {
       }
 
       state.isInitialized = true
+
+      // Auto-register local provider on Capacitor (mobile) if not already present
+      if (_isCapacitor()) {
+        const hasLocalProvider = state.settings.providers.some(p => p.type === 'local')
+        if (!hasLocalProvider) {
+          const template = PROVIDER_TEMPLATES['local']
+          const id = `local-${Date.now()}`
+          const localProvider: AIProviderConfig = {
+            id,
+            type: 'local',
+            name: template.name || 'Gemma 4 (On-Device)',
+            models: [...(template.models || [])],
+            selectedModelId: template.models?.[0]?.id,
+            isEnabled: true,
+            isDefault: state.settings.providers.length === 0,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          }
+          state.settings.providers.push(localProvider)
+          if (localProvider.isDefault) {
+            state.settings.defaultProviderId = id
+          }
+          await save()
+        }
+      }
     } catch (e) {
       state.error = e instanceof Error ? e.message : 'Failed to load AI settings'
       console.error('Failed to initialize AI settings:', e)

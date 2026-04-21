@@ -259,7 +259,7 @@ export function useAI() {
 
     // Check if we have a configured and enabled provider with a credential or local key
     const defaultProvider = aiSettings.defaultProvider.value
-    if (defaultProvider?.isEnabled && (defaultProvider.credentialId || defaultProvider.localApiKey || defaultProvider.type === 'ollama')) {
+    if (defaultProvider?.isEnabled && (defaultProvider.credentialId || defaultProvider.localApiKey || defaultProvider.type === 'ollama' || defaultProvider.type === 'local')) {
       try {
         return await smartExpandWithProvider(
           nodeContent,
@@ -495,8 +495,8 @@ export function useAI() {
     error.value = null
 
     try {
-      // Use simpler prompt for local models (Ollama) — they struggle with complex nested JSON
-      const isLocalModel = provider.type === 'ollama'
+      // Use simpler prompt for local models (Ollama / on-device) — they struggle with complex nested JSON
+      const isLocalModel = provider.type === 'ollama' || provider.type === 'local'
       const effectiveOptions = isLocalModel
         ? { ...options, branchCount: Math.min(options.branchCount || 4, 4), maxDepth: 1, includeCrossConnections: false }
         : options

@@ -95,8 +95,8 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
   const fetch = await getTauriFetch()
   const { provider, apiKey, model, messages, systemPrompt, maxTokens = 500, temperature = 0.7 } = req
 
-  // Guard: don't send requests with empty API keys
-  if (!apiKey && provider !== 'ollama') {
+  // Guard: don't send requests with empty API keys (local and ollama don't need keys)
+  if (!apiKey && provider !== 'ollama' && provider !== 'local') {
     throw new Error('API key needs to be re-entered for desktop use. Go to Settings > AI Providers and update your API key.')
   }
 
@@ -247,6 +247,25 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
       return {
         content: data.choices?.[0]?.message?.content || '',
         usage: data.usage
+      }
+    }
+
+    case 'local': {
+      const { useLocalLLM } = await import('~/composables/useLocalLLM')
+      const localLLM = useLocalLLM()
+
+      // Build a single prompt string from messages + system prompt
+      const userMessages = messages.map(m => m.content).join('\n')
+      const result = await localLLM.generate({
+        prompt: userMessages,
+        systemPrompt,
+        maxTokens,
+        temperature,
+      })
+
+      return {
+        content: result.content,
+        usage: { total_tokens: result.tokensUsed }
       }
     }
 

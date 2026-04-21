@@ -13,6 +13,11 @@ function _isTauri(): boolean {
   return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 }
 
+function _isCapacitor(): boolean {
+  return typeof window !== 'undefined' && 'Capacitor' in window
+    && !!(window as any).Capacitor?.isNativePlatform?.()
+}
+
 /**
  * Resolve the default AI provider config.
  * Web: returns credentialId for server-side vault decryption.
@@ -20,6 +25,12 @@ function _isTauri(): boolean {
  */
 export async function resolveProvider(): Promise<ResolvedProvider> {
   const guest = useGuestMode()
+
+  // Capacitor (mobile) guests can use the on-device local model without an account
+  if (_isCapacitor() && guest.isGuest.value) {
+    return { type: 'local' }
+  }
+
   if (guest.isGuest.value) {
     throw new Error('AI features require a free account. Sign up to unlock AI-powered mind mapping.')
   }

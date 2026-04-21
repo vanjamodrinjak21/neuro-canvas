@@ -2,7 +2,7 @@
  * AI Settings Types for BYOK (Bring Your Own Key) system
  */
 
-export type AIProviderType = 'openai' | 'anthropic' | 'ollama' | 'openrouter' | 'custom'
+export type AIProviderType = 'openai' | 'anthropic' | 'ollama' | 'openrouter' | 'custom' | 'local'
 
 export interface AIModel {
   id: string
@@ -113,6 +113,13 @@ export const PROVIDER_TEMPLATES: Record<AIProviderType, Partial<AIProviderConfig
     name: 'Custom Provider',
     baseUrl: '',
     models: []
+  },
+  local: {
+    type: 'local',
+    name: 'Gemma 4 (On-Device)',
+    models: [
+      { id: 'gemma4-2b', name: 'Gemma 4 2B', contextLength: 4096, maxOutputTokens: 2048 }
+    ]
   }
 }
 
