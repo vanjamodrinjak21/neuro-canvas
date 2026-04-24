@@ -27,16 +27,9 @@ const { data: fullNavigation } = await useAsyncData('docs-navigation', () =>
 const navigation = computed(() => {
   if (!fullNavigation.value) return null
 
-  // The full nav has top-level nodes for en/ and hr/ directories
-  // Find the one matching current locale
   const loc = locale.value
-  const localeRoot = fullNavigation.value.find(n =>
-    n.path === `/docs/${loc}` || (n.path || '').endsWith(`/${loc}`)
-  )
 
-  if (!localeRoot?.children) return null
-
-  // Strip locale from all paths: /docs/en/guides → /docs/guides
+  // Strip locale prefix from paths recursively
   function clean(items: any[]): any[] {
     return items.map(item => ({
       ...item,
@@ -45,8 +38,27 @@ const navigation = computed(() => {
     }))
   }
 
-  // Wrap in root "Docs" node so DocsSidebar unwrap logic works unchanged
-  return [{ title: 'Docs', path: '/docs', children: clean(localeRoot.children) }]
+  // Find the locale node in the tree — it could be at any level
+  function findLocaleNode(items: any[]): any | null {
+    for (const item of items) {
+      const p = item.path || ''
+      if (p === `/docs/${loc}` || p.endsWith(`/${loc}`)) return item
+      if (item.children) {
+        const found = findLocaleNode(item.children)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const localeNode = findLocaleNode(fullNavigation.value)
+
+  if (localeNode?.children) {
+    return [{ title: 'Docs', path: '/docs', children: clean(localeNode.children) }]
+  }
+
+  // Fallback: return the full tree as-is (pre-i18n compat)
+  return fullNavigation.value
 })
 
 const { data: rawSurround } = await useAsyncData(`docs-surround-${route.path}`, () =>
