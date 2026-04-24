@@ -13,23 +13,25 @@ interface Props {
 const props = defineProps<Props>()
 
 /**
- * Navigation comes from the docs page which already filters by locale
- * and strips locale prefixes. Items may be top-level sections directly
- * or wrapped in a root node — handle both.
+ * Nuxt Content v3 queryCollectionNavigation returns:
+ * [{ title: "Docs", path: "/docs", children: [{ title: "Getting Started", ... }, ...] }]
+ *
+ * The docs page pre-filters by locale and wraps in a root "Docs" node,
+ * so we just unwrap the first item's children as section groups.
  */
 const sections = computed<NavItem[]>(() => {
   if (!props.navigation || !props.navigation.length) return []
-  // If there's exactly one item with children and its path is /docs, unwrap it
-  if (props.navigation.length === 1 && props.navigation[0]?.children?.length) {
-    return props.navigation[0].children
+  // If the first item has children, it's the root "docs" node — unwrap it
+  const root = props.navigation[0]
+  if (root?.children?.length) {
+    return root.children
   }
+  // Fallback: treat top-level items as sections
   return props.navigation
 })
 
-// Map both English and Croatian section titles to icons
 const iconMap: Record<string, string> = {
   'getting started': 'rocket',
-  'brzi početak': 'rocket',
   'početak': 'rocket',
   'guides': 'book-open',
   'vodiči': 'book-open',

@@ -4,49 +4,61 @@ definePageMeta({ layout: false, pageTransition: false })
 const route = useRoute()
 const { locale } = useI18n()
 
-// Content path within the locale collection: /docs/getting-started/intro → /docs/en/getting-started/intro
+// Map URL path to locale-specific content path
+// /docs/getting-started/introduction → /docs/en/getting-started/introduction
 const contentPath = computed(() => {
   const slug = route.path.replace(/^\/docs\/?/, '')
   return `/docs/${locale.value}/${slug}`
 })
 
-// Query the locale-specific collection
-const collectionKey = computed(() => locale.value === 'hr' ? 'docs_hr' : 'docs_en')
-
-const { data: page } = await useAsyncData(`docs-${locale.value}-${route.path}`, () =>
-  queryCollection(collectionKey.value as 'docs_en' | 'docs_hr').path(contentPath.value).first()
+const { data: page } = await useAsyncData(`docs-${route.path}`, () =>
+  queryCollection('docs').path(contentPath.value).first(),
+  { watch: [locale] }
 )
 
-const { data: rawNavigation } = await useAsyncData(`docs-nav-${locale.value}`, () =>
-  queryCollectionNavigation(collectionKey.value as 'docs_en' | 'docs_hr')
+// Get full navigation tree, then filter to current locale
+const { data: fullNavigation } = await useAsyncData('docs-navigation', () =>
+  queryCollectionNavigation('docs')
 )
 
-// Strip locale prefix from paths so nav links match clean URLs
-// /docs/en/getting-started → /docs/getting-started
-function stripLocale(items: any[] | undefined): any[] {
-  if (!items) return []
-  const prefix = `/docs/${locale.value}`
-  return items.map(item => ({
-    ...item,
-    path: item.path?.replace(prefix, '/docs'),
-    children: item.children ? stripLocale(item.children) : undefined
-  }))
-}
-
+// Extract current locale's section from the full tree and strip locale prefix
+// Full tree: [{ title: "En", path: "/docs/en", children: [...] }, { title: "Hr", path: "/docs/hr", children: [...] }]
+// We want just the children of the matching locale node, with paths cleaned up
 const navigation = computed(() => {
-  if (!rawNavigation.value) return null
-  return stripLocale(rawNavigation.value)
+  if (!fullNavigation.value) return null
+
+  // The full nav has top-level nodes for en/ and hr/ directories
+  // Find the one matching current locale
+  const loc = locale.value
+  const localeRoot = fullNavigation.value.find(n =>
+    n.path === `/docs/${loc}` || (n.path || '').endsWith(`/${loc}`)
+  )
+
+  if (!localeRoot?.children) return null
+
+  // Strip locale from all paths: /docs/en/guides → /docs/guides
+  function clean(items: any[]): any[] {
+    return items.map(item => ({
+      ...item,
+      path: item.path?.replace(`/docs/${loc}`, '/docs'),
+      children: item.children ? clean(item.children) : undefined
+    }))
+  }
+
+  // Wrap in root "Docs" node so DocsSidebar unwrap logic works unchanged
+  return [{ title: 'Docs', path: '/docs', children: clean(localeRoot.children) }]
 })
 
-const { data: rawSurround } = await useAsyncData(`docs-surround-${locale.value}-${route.path}`, () =>
-  queryCollectionItemSurroundings(collectionKey.value as 'docs_en' | 'docs_hr', contentPath.value)
+const { data: rawSurround } = await useAsyncData(`docs-surround-${route.path}`, () =>
+  queryCollectionItemSurroundings('docs', contentPath.value),
+  { watch: [locale] }
 )
 
 const surround = computed(() => {
   if (!rawSurround.value) return null
-  const prefix = `/docs/${locale.value}`
+  const loc = locale.value
   return rawSurround.value.map((item: any) =>
-    item ? { ...item, path: item.path?.replace(prefix, '/docs') } : item
+    item ? { ...item, path: item.path?.replace(`/docs/${loc}`, '/docs') } : item
   )
 })
 
