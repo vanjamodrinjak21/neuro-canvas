@@ -1,105 +1,107 @@
 {
-  "app_name": "NeuroCanvas",
-  "nav": {
-    "home": "Početna",
-    "maps": "Sve mape",
-    "templates": "Predlošci",
-    "settings": "Postavke"
-  },
-  "buttons": {
-    "save": "Spremi",
-    "cancel": "Odustani",
-    "delete": "Obriši",
-    "close": "Zatvori",
-    "confirm": "Potvrdi",
-    "ok": "U redu",
-    "back": "Natrag",
-    "next": "Dalje",
-    "create": "Izradi",
-    "edit": "Uredi",
-    "search": "Traži",
-    "retry": "Pokušaj ponovno",
-    "copy": "Kopiraj",
-    "share": "Podijeli",
-    "export": "Izvezi",
-    "import": "Uvezi",
-    "collapse_sidebar": "Sažmi izbornik",
-    "expand_sidebar": "Proširi izbornik",
-    "search_shortcut": "Pretraži (\u2318K)",
-    "sign_up_free": "Registriraj se besplatno",
-    "unlock_all_features": "Otključaj sve značajke",
-    "sign_in": "Prijava",
-    "signing_in": "Prijavljivanje...",
-    "sign_out": "Odjava"
-  },
-  "search": {
-    "placeholder": "Pretraži mape..."
-  },
-  "theme": {
-    "to_dark": "Prebaci na tamni način",
-    "to_light": "Prebaci na svijetli način",
-    "light": "Svijetlo",
-    "dark": "Tamno",
-    "system": "Sustav"
-  },
-  "offline": {
-    "back_online": "Ponovno na mreži",
-    "message": "Izvan mreže \u2014 promjene spremljene lokalno",
-    "dismiss": "Odbaci"
-  },
-  "update": {
-    "available": "Dostupna nadogradnja",
-    "version_ready": "Verzija {version} je spremna za instalaciju.",
-    "update_now": "Nadogradi sada",
-    "later": "Kasnije",
-    "downloading": "Preuzimanje nadogradnje...",
-    "dismiss": "Odbaci"
-  },
-  "loading": {
-    "text": "Učitavanje...",
-    "version": "v1.0.0"
-  },
-  "confirm_dialog": {
-    "are_you_sure": "Jeste li sigurni?",
-    "cancel": "Odustani",
-    "confirm": "Potvrdi"
-  },
-  "onboarding": {
-    "welcome_title": "Dobrodošli u NeuroCanvas",
-    "welcome_desc": "Mentalno mapiranje potpomognuto umjetnom inteligencijom koje vam pomaže vizualno razmišljati i brže učiti.",
-    "step_create": "Izradite prvu mapu",
-    "step_create_desc": "Započnite s praznim platnom ili odaberite predložak.",
-    "step_ai": "Neka vam AI pomogne",
-    "step_ai_desc": "Odaberite bilo koji čvor i pritisnite \u2318E za proširenje pomoću AI-a.",
-    "step_connect": "Otkrijte veze",
-    "step_connect_desc": "Semantički mehanizam pronalazi skrivene povezanosti između vaših ideja.",
-    "get_started": "Započni",
-    "skip": "Preskoči"
-  },
-  "guest": {
-    "template_picker_title": "Odaberite predložak",
-    "template_picker_desc": "Odaberite polaznu točku za svoju prvu mapu",
-    "upgrade_title": "Otključajte sve značajke",
-    "upgrade_desc": "Registrirajte se besplatno za sinkronizaciju između uređaja, korištenje AI značajki i još mnogo toga.",
-    "upgrade_button": "Registriraj se besplatno",
-    "continue_guest": "Nastavi kao gost"
-  },
-  "errors": {
-    "generic": "Nešto je pošlo po krivu. Pokušajte ponovno.",
-    "network": "Greška mreže. Provjerite internetsku vezu.",
-    "not_found": "Nije pronađeno.",
-    "unauthorized": "Morate se prijaviti za pristup.",
-    "forbidden": "Nemate dopuštenje za ovu radnju.",
-    "server": "Greška poslužitelja. Pokušajte ponovno kasnije.",
-    "timeout": "Zahtjev je istekao. Pokušajte ponovno."
-  },
-  "time": {
-    "just_now": "Upravo sada",
-    "seconds_ago": "prije {n}s",
-    "minutes_ago": "prije {n}m",
-    "hours_ago": "prije {n}h",
-    "days_ago": "prije {n}d",
-    "today": "Danas",
-    "yesterday": "Jučer"
-  }
+    "common": {
+        "app_name": "NeuroCanvas",
+        "nav": {
+            "home": "Po\u010detna",
+            "maps": "Sve mape",
+            "templates": "Predlo\u0161ci",
+            "settings": "Postavke"
+        },
+        "buttons": {
+            "save": "Spremi",
+            "cancel": "Odustani",
+            "delete": "Obri\u0161i",
+            "close": "Zatvori",
+            "confirm": "Potvrdi",
+            "ok": "U redu",
+            "back": "Natrag",
+            "next": "Dalje",
+            "create": "Izradi",
+            "edit": "Uredi",
+            "search": "Tra\u017ei",
+            "retry": "Poku\u0161aj ponovno",
+            "copy": "Kopiraj",
+            "share": "Podijeli",
+            "export": "Izvezi",
+            "import": "Uvezi",
+            "collapse_sidebar": "Sa\u017emi izbornik",
+            "expand_sidebar": "Pro\u0161iri izbornik",
+            "search_shortcut": "Pretra\u017ei (\u2318K)",
+            "sign_up_free": "Registriraj se besplatno",
+            "unlock_all_features": "Otklju\u010daj sve zna\u010dajke",
+            "sign_in": "Prijava",
+            "signing_in": "Prijavljivanje...",
+            "sign_out": "Odjava"
+        },
+        "search": {
+            "placeholder": "Pretra\u017ei mape..."
+        },
+        "theme": {
+            "to_dark": "Prebaci na tamni na\u010din",
+            "to_light": "Prebaci na svijetli na\u010din",
+            "light": "Svijetlo",
+            "dark": "Tamno",
+            "system": "Sustav"
+        },
+        "offline": {
+            "back_online": "Ponovno na mre\u017ei",
+            "message": "Izvan mre\u017ee \u2014 promjene spremljene lokalno",
+            "dismiss": "Odbaci"
+        },
+        "update": {
+            "available": "Dostupna nadogradnja",
+            "version_ready": "Verzija {version} je spremna za instalaciju.",
+            "update_now": "Nadogradi sada",
+            "later": "Kasnije",
+            "downloading": "Preuzimanje nadogradnje...",
+            "dismiss": "Odbaci"
+        },
+        "loading": {
+            "text": "U\u010ditavanje...",
+            "version": "v1.0.0"
+        },
+        "confirm_dialog": {
+            "are_you_sure": "Jeste li sigurni?",
+            "cancel": "Odustani",
+            "confirm": "Potvrdi"
+        },
+        "onboarding": {
+            "welcome_title": "Dobrodo\u0161li u NeuroCanvas",
+            "welcome_desc": "Mentalno mapiranje potpomognuto umjetnom inteligencijom koje vam poma\u017ee vizualno razmi\u0161ljati i br\u017ee u\u010diti.",
+            "step_create": "Izradite prvu mapu",
+            "step_create_desc": "Zapo\u010dnite s praznim platnom ili odaberite predlo\u017eak.",
+            "step_ai": "Neka vam AI pomogne",
+            "step_ai_desc": "Odaberite bilo koji \u010dvor i pritisnite \u2318E za pro\u0161irenje pomo\u0107u AI-a.",
+            "step_connect": "Otkrijte veze",
+            "step_connect_desc": "Semanti\u010dki mehanizam pronalazi skrivene povezanosti izme\u0111u va\u0161ih ideja.",
+            "get_started": "Zapo\u010dni",
+            "skip": "Presko\u010di"
+        },
+        "guest": {
+            "template_picker_title": "Odaberite predlo\u017eak",
+            "template_picker_desc": "Odaberite polaznu to\u010dku za svoju prvu mapu",
+            "upgrade_title": "Otklju\u010dajte sve zna\u010dajke",
+            "upgrade_desc": "Registrirajte se besplatno za sinkronizaciju izme\u0111u ure\u0111aja, kori\u0161tenje AI zna\u010dajki i jo\u0161 mnogo toga.",
+            "upgrade_button": "Registriraj se besplatno",
+            "continue_guest": "Nastavi kao gost"
+        },
+        "errors": {
+            "generic": "Ne\u0161to je po\u0161lo po krivu. Poku\u0161ajte ponovno.",
+            "network": "Gre\u0161ka mre\u017ee. Provjerite internetsku vezu.",
+            "not_found": "Nije prona\u0111eno.",
+            "unauthorized": "Morate se prijaviti za pristup.",
+            "forbidden": "Nemate dopu\u0161tenje za ovu radnju.",
+            "server": "Gre\u0161ka poslu\u017eitelja. Poku\u0161ajte ponovno kasnije.",
+            "timeout": "Zahtjev je istekao. Poku\u0161ajte ponovno."
+        },
+        "time": {
+            "just_now": "Upravo sada",
+            "seconds_ago": "prije {n}s",
+            "minutes_ago": "prije {n}m",
+            "hours_ago": "prije {n}h",
+            "days_ago": "prije {n}d",
+            "today": "Danas",
+            "yesterday": "Ju\u010der"
+        }
+    }
 }

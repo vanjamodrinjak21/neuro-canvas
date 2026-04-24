@@ -1,4 +1,5 @@
 {
+  "landing": {
   "nav": {
     "features": "Features",
     "download": "Download",
@@ -75,5 +76,6 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "credit": "Built by Vanja Modrinjak"
+  }
   }
 }

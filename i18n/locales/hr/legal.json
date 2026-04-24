@@ -1,51 +1,53 @@
 {
-  "privacy": {
-    "title": "Pravila privatnosti",
-    "last_updated": "24. ožujka 2026.",
-    "intro": "NeuroCanvas (\"mi\", \"nas\", \"naš\") je aplikacija za mentalno mapiranje koju je razvio i kojom upravlja Vanja Modrinjak, samostalni developer iz Hrvatske.",
-    "sections": {
-      "introduction": "Uvod",
-      "info_we_collect": "Podaci koje prikupljamo",
-      "account_info": "Podaci o računu",
-      "map_data": "Podaci o mapama i sadržaju",
-      "user_preferences": "Korisničke postavke",
-      "technical_data": "Tehnički podaci",
-      "client_storage": "Pohrana na uređaju",
-      "how_we_use": "Kako koristimo vaše podatke",
-      "third_party_ai": "AI davatelji usluga trećih strana"
-    },
-    "details": {
-      "email_for_recovery": "koristi se za autentifikaciju, oporavak računa i transakcijske e-poruke",
-      "password_hash": "ako se registrirate putem e-adrese i lozinke (nikada ne pohranjujemo lozinke u čistom tekstu)",
-      "oauth_data": "ako se prijavite putem Googlea ili GitHuba, primamo vaše ime, e-adresu i URL profilne slike",
-      "account_email_password": "E-adresa i lozinka",
-      "account_oauth": "OAuth pristupni podaci"
+    "legal": {
+        "privacy": {
+            "title": "Pravila privatnosti",
+            "last_updated": "24. o\u017eujka 2026.",
+            "intro": "NeuroCanvas (\"mi\", \"nas\", \"na\u0161\") je aplikacija za mentalno mapiranje koju je razvio i kojom upravlja Vanja Modrinjak, samostalni developer iz Hrvatske.",
+            "sections": {
+                "introduction": "Uvod",
+                "info_we_collect": "Podaci koje prikupljamo",
+                "account_info": "Podaci o ra\u010dunu",
+                "map_data": "Podaci o mapama i sadr\u017eaju",
+                "user_preferences": "Korisni\u010dke postavke",
+                "technical_data": "Tehni\u010dki podaci",
+                "client_storage": "Pohrana na ure\u0111aju",
+                "how_we_use": "Kako koristimo va\u0161e podatke",
+                "third_party_ai": "AI davatelji usluga tre\u0107ih strana"
+            },
+            "details": {
+                "email_for_recovery": "koristi se za autentifikaciju, oporavak ra\u010duna i transakcijske e-poruke",
+                "password_hash": "ako se registrirate putem e-adrese i lozinke (nikada ne pohranjujemo lozinke u \u010distom tekstu)",
+                "oauth_data": "ako se prijavite putem Googlea ili GitHuba, primamo va\u0161e ime, e-adresu i URL profilne slike",
+                "account_email_password": "E-adresa i lozinka",
+                "account_oauth": "OAuth pristupni podaci"
+            }
+        },
+        "terms": {
+            "title": "Uvjeti kori\u0161tenja",
+            "last_updated": "24. o\u017eujka 2026.",
+            "agreement": "Ovi Uvjeti kori\u0161tenja predstavljaju pravno obvezuju\u0107i ugovor izme\u0111u vas i Vanje Modrinjaka, koji posluje pod nazivom NeuroCanvas.",
+            "sections": {
+                "definitions": "Definicije",
+                "eligibility": "Uvjeti pristupa",
+                "account_registration": "Registracija ra\u010duna",
+                "creating_account": "Izrada ra\u010duna",
+                "account_security": "Sigurnost ra\u010duna",
+                "account_termination": "Brisanje ra\u010duna od strane korisnika",
+                "use_of_service": "Kori\u0161tenje usluge",
+                "license": "Licenca za kori\u0161tenje",
+                "acceptable_use": "Prihvatljivo kori\u0161tenje",
+                "enforcement": "Provedba",
+                "user_content": "Korisni\u010dki sadr\u017eaj",
+                "ownership": "Vlasni\u0161tvo",
+                "license_to_nc": "Licenca za NeuroCanvas",
+                "data_portability": "Prenosivost podataka"
+            },
+            "details": {
+                "eligibility_age": "Morate imati najmanje 16 godina",
+                "support_email": "support{'@'}neuro-canvas.com",
+                "delete_timeline": "Nakon brisanja, uklonit \u0107emo podatke va\u0161eg ra\u010duna i korisni\u010dki sadr\u017eaj iz aktivnih sustava unutar 30 dana"
+            }
+        }
     }
-  },
-  "terms": {
-    "title": "Uvjeti korištenja",
-    "last_updated": "24. ožujka 2026.",
-    "agreement": "Ovi Uvjeti korištenja predstavljaju pravno obvezujući ugovor između vas i Vanje Modrinjaka, koji posluje pod nazivom NeuroCanvas.",
-    "sections": {
-      "definitions": "Definicije",
-      "eligibility": "Uvjeti pristupa",
-      "account_registration": "Registracija računa",
-      "creating_account": "Izrada računa",
-      "account_security": "Sigurnost računa",
-      "account_termination": "Brisanje računa od strane korisnika",
-      "use_of_service": "Korištenje usluge",
-      "license": "Licenca za korištenje",
-      "acceptable_use": "Prihvatljivo korištenje",
-      "enforcement": "Provedba",
-      "user_content": "Korisnički sadržaj",
-      "ownership": "Vlasništvo",
-      "license_to_nc": "Licenca za NeuroCanvas",
-      "data_portability": "Prenosivost podataka"
-    },
-    "details": {
-      "eligibility_age": "Morate imati najmanje 16 godina",
-      "support_email": "support{'@'}neuro-canvas.com",
-      "delete_timeline": "Nakon brisanja, uklonit ćemo podatke vašeg računa i korisnički sadržaj iz aktivnih sustava unutar 30 dana"
-    }
-  }
 }

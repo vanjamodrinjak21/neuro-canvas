@@ -1,87 +1,89 @@
 {
-  "page": {
-    "title": "Templates",
-    "subtitle": "Browse, create, and share mind map templates"
-  },
-  "buttons": {
-    "publish_template": "Publish Template"
-  },
-  "desktop_signin": {
-    "title": "Sign in for community templates",
-    "description": "Browse and use templates shared by the NeuroCanvas community.",
-    "sign_in": "Sign In"
-  },
-  "ai_bar": {
-    "title": "Generate with AI",
-    "description": "Describe what you need and AI will create a template structure",
-    "example": "e.g. \"SWOT analysis for a SaaS product\"",
-    "generate": "Generate",
-    "generating": "Generating..."
-  },
-  "filter": {
-    "all": "All",
-    "education": "Education",
-    "business": "Business",
-    "creative": "Creative",
-    "planning": "Planning",
-    "research": "Research",
-    "my_templates": "My Templates",
-    "search_placeholder": "Search templates...",
-    "popular": "Popular",
-    "newest": "Newest",
-    "a_z": "A-Z"
-  },
-  "loading": "Loading templates...",
-  "empty_state": {
-    "title": "No templates found",
-    "description": "Try a different category or search term"
-  },
-  "detail": {
-    "back": "Back to templates",
-    "ai_enhanced": "AI-Enhanced",
-    "uses": "Uses",
-    "nodes": "Nodes",
-    "levels": "Levels",
-    "published_today": "Published today",
-    "published_yesterday": "Published yesterday",
-    "published_days_ago": "Published {days} days ago",
-    "use_template": "Use This Template",
-    "ai_adapt": "AI Adapt to My Topic"
-  },
-  "ai_adapt_modal": {
-    "title": "AI Adapt Template",
-    "description": "{title} will be customized to your topic",
-    "topic_label": "Your Topic",
-    "topic_placeholder": "e.g. \"Launching a mobile fitness app\"",
-    "depth": "Depth",
-    "shallow": "Shallow",
-    "medium": "Medium",
-    "deep": "Deep",
-    "style": "Style",
-    "concise": "Concise",
-    "detailed": "Detailed",
-    "academic": "Academic",
-    "domain": "Domain",
-    "optional": "Optional",
-    "domain_placeholder": "e.g. \"Health & Fitness\"",
-    "cancel": "Cancel",
-    "generate": "Generate & Create Map"
-  },
-  "publish_modal": {
-    "title": "Publish Template",
-    "description": "Share your map structure with the community",
-    "source_map": "Source Map",
-    "select_map": "Select a map...",
-    "template_name": "Template Name",
-    "template_description": "Description",
-    "describe_template": "Describe what this template is for...",
-    "category": "Category",
-    "ai_enhancement": "AI Enhancement",
-    "enabled": "Enabled",
-    "disabled": "Disabled",
-    "tags": "Tags",
-    "add_tag": "+ Add tag",
-    "cancel": "Cancel",
-    "publish": "Publish to Community"
-  }
+    "templates": {
+        "page": {
+            "title": "Templates",
+            "subtitle": "Browse, create, and share mind map templates"
+        },
+        "buttons": {
+            "publish_template": "Publish Template"
+        },
+        "desktop_signin": {
+            "title": "Sign in for community templates",
+            "description": "Browse and use templates shared by the NeuroCanvas community.",
+            "sign_in": "Sign In"
+        },
+        "ai_bar": {
+            "title": "Generate with AI",
+            "description": "Describe what you need and AI will create a template structure",
+            "example": "e.g. \"SWOT analysis for a SaaS product\"",
+            "generate": "Generate",
+            "generating": "Generating..."
+        },
+        "filter": {
+            "all": "All",
+            "education": "Education",
+            "business": "Business",
+            "creative": "Creative",
+            "planning": "Planning",
+            "research": "Research",
+            "my_templates": "My Templates",
+            "search_placeholder": "Search templates...",
+            "popular": "Popular",
+            "newest": "Newest",
+            "a_z": "A-Z"
+        },
+        "loading": "Loading templates...",
+        "empty_state": {
+            "title": "No templates found",
+            "description": "Try a different category or search term"
+        },
+        "detail": {
+            "back": "Back to templates",
+            "ai_enhanced": "AI-Enhanced",
+            "uses": "Uses",
+            "nodes": "Nodes",
+            "levels": "Levels",
+            "published_today": "Published today",
+            "published_yesterday": "Published yesterday",
+            "published_days_ago": "Published {days} days ago",
+            "use_template": "Use This Template",
+            "ai_adapt": "AI Adapt to My Topic"
+        },
+        "ai_adapt_modal": {
+            "title": "AI Adapt Template",
+            "description": "{title} will be customized to your topic",
+            "topic_label": "Your Topic",
+            "topic_placeholder": "e.g. \"Launching a mobile fitness app\"",
+            "depth": "Depth",
+            "shallow": "Shallow",
+            "medium": "Medium",
+            "deep": "Deep",
+            "style": "Style",
+            "concise": "Concise",
+            "detailed": "Detailed",
+            "academic": "Academic",
+            "domain": "Domain",
+            "optional": "Optional",
+            "domain_placeholder": "e.g. \"Health & Fitness\"",
+            "cancel": "Cancel",
+            "generate": "Generate & Create Map"
+        },
+        "publish_modal": {
+            "title": "Publish Template",
+            "description": "Share your map structure with the community",
+            "source_map": "Source Map",
+            "select_map": "Select a map...",
+            "template_name": "Template Name",
+            "template_description": "Description",
+            "describe_template": "Describe what this template is for...",
+            "category": "Category",
+            "ai_enhancement": "AI Enhancement",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "tags": "Tags",
+            "add_tag": "+ Add tag",
+            "cancel": "Cancel",
+            "publish": "Publish to Community"
+        }
+    }
 }

@@ -1,83 +1,85 @@
 {
-  "greeting": {
-    "good_morning": "Dobro jutro",
-    "good_afternoon": "Dobar dan",
-    "good_evening": "Dobra večer"
-  },
-  "header": {
-    "your_maps": "Vaše mape"
-  },
-  "buttons": {
-    "ai_generate": "AI generiranje",
-    "new_map": "Nova mapa",
-    "import": "Uvezi",
-    "create_map": "Izradi mapu"
-  },
-  "sections": {
-    "recent_maps": "Nedavne mape",
-    "sort_by": "Sortiraj po",
-    "recent": "Nedavno",
-    "a_z": "A-Ž"
-  },
-  "empty_state": {
-    "no_maps_yet": "Još nema mapa",
-    "create_first_map": "Izradite prvu mentalnu mapu"
-  },
-  "map_card": {
-    "nodes": "0 čvorova | 1 čvor | {count} čvora | {count} čvorova",
-    "edited": "Uređeno {time}"
-  },
-  "overview": {
-    "title": "Pregled",
-    "last_30_days": "Zadnjih 30 dana",
-    "total_maps": "Ukupno mapa",
-    "total_nodes": "Ukupno čvorova",
-    "ai_generated": "AI generirano",
-    "connections_found": "Pronađenih veza"
-  },
-  "ai_banner": {
-    "title": "Generiraj mapu pomoću AI-a",
-    "description": "Opišite temu i dopustite AI-u da izgradi početnu strukturu",
-    "try_it": "Isprobaj"
-  },
-  "ai_modal": {
-    "title": "Generiraj pomoću AI-a",
-    "description": "Opišite temu. AI će strukturirati cijelu mentalnu mapu.",
-    "placeholder": "npr. kvantno računalstvo, UX istraživanje...",
-    "cancel": "Odustani",
-    "generate": "Generiraj",
-    "generating": "Generiranje \"{topic}\"",
-    "building_structure": "Izgradnja strukture mentalne mape...",
-    "analyzing_topic": "Analiza strukture teme",
-    "generating_branches": "Generiranje grana",
-    "adding_sub_nodes": "Dodavanje podčvorova i detalja",
-    "finding_connections": "Pronalaženje međusobnih veza"
-  },
-  "templates_modal": {
-    "title": "Istražite predloške",
-    "description": "Započnite s gotovom strukturom",
-    "cancel": "Odustani"
-  },
-  "import_modal": {
-    "title": "Uvezi datoteku",
-    "description": "Uvezite Markdown ili OPML datoteke",
-    "accepts": "Prihvaća: .md, .opml",
-    "cancel": "Odustani"
-  },
-  "delete_confirm": {
-    "title": "Obriši mapu",
-    "message": "Ova radnja se ne može poništiti. Jeste li sigurni?",
-    "cancel": "Odustani",
-    "delete": "Obriši"
-  },
-  "quick_templates": {
-    "brainstorm": "Oluja ideja",
-    "brainstorm_desc": "Središnja ideja s razgranatim mislima",
-    "pros_cons": "Za i protiv",
-    "pros_cons_desc": "Usporedba opcija s dvije strane",
-    "study_notes": "Bilješke za učenje",
-    "study_notes_desc": "Tema s ključnim pojmovima i detaljima",
-    "project_plan": "Plan projekta",
-    "project_plan_desc": "Ciljevi, zadaci i prekretnice"
-  }
+    "dashboard": {
+        "greeting": {
+            "good_morning": "Dobro jutro",
+            "good_afternoon": "Dobar dan",
+            "good_evening": "Dobra ve\u010der"
+        },
+        "header": {
+            "your_maps": "Va\u0161e mape"
+        },
+        "buttons": {
+            "ai_generate": "AI generiranje",
+            "new_map": "Nova mapa",
+            "import": "Uvezi",
+            "create_map": "Izradi mapu"
+        },
+        "sections": {
+            "recent_maps": "Nedavne mape",
+            "sort_by": "Sortiraj po",
+            "recent": "Nedavno",
+            "a_z": "A-\u017d"
+        },
+        "empty_state": {
+            "no_maps_yet": "Jo\u0161 nema mapa",
+            "create_first_map": "Izradite prvu mentalnu mapu"
+        },
+        "map_card": {
+            "nodes": "0 \u010dvorova | 1 \u010dvor | {count} \u010dvora | {count} \u010dvorova",
+            "edited": "Ure\u0111eno {time}"
+        },
+        "overview": {
+            "title": "Pregled",
+            "last_30_days": "Zadnjih 30 dana",
+            "total_maps": "Ukupno mapa",
+            "total_nodes": "Ukupno \u010dvorova",
+            "ai_generated": "AI generirano",
+            "connections_found": "Prona\u0111enih veza"
+        },
+        "ai_banner": {
+            "title": "Generiraj mapu pomo\u0107u AI-a",
+            "description": "Opi\u0161ite temu i dopustite AI-u da izgradi po\u010detnu strukturu",
+            "try_it": "Isprobaj"
+        },
+        "ai_modal": {
+            "title": "Generiraj pomo\u0107u AI-a",
+            "description": "Opi\u0161ite temu. AI \u0107e strukturirati cijelu mentalnu mapu.",
+            "placeholder": "npr. kvantno ra\u010dunalstvo, UX istra\u017eivanje...",
+            "cancel": "Odustani",
+            "generate": "Generiraj",
+            "generating": "Generiranje \"{topic}\"",
+            "building_structure": "Izgradnja strukture mentalne mape...",
+            "analyzing_topic": "Analiza strukture teme",
+            "generating_branches": "Generiranje grana",
+            "adding_sub_nodes": "Dodavanje pod\u010dvorova i detalja",
+            "finding_connections": "Pronala\u017eenje me\u0111usobnih veza"
+        },
+        "templates_modal": {
+            "title": "Istra\u017eite predlo\u0161ke",
+            "description": "Zapo\u010dnite s gotovom strukturom",
+            "cancel": "Odustani"
+        },
+        "import_modal": {
+            "title": "Uvezi datoteku",
+            "description": "Uvezite Markdown ili OPML datoteke",
+            "accepts": "Prihva\u0107a: .md, .opml",
+            "cancel": "Odustani"
+        },
+        "delete_confirm": {
+            "title": "Obri\u0161i mapu",
+            "message": "Ova radnja se ne mo\u017ee poni\u0161titi. Jeste li sigurni?",
+            "cancel": "Odustani",
+            "delete": "Obri\u0161i"
+        },
+        "quick_templates": {
+            "brainstorm": "Oluja ideja",
+            "brainstorm_desc": "Sredi\u0161nja ideja s razgranatim mislima",
+            "pros_cons": "Za i protiv",
+            "pros_cons_desc": "Usporedba opcija s dvije strane",
+            "study_notes": "Bilje\u0161ke za u\u010denje",
+            "study_notes_desc": "Tema s klju\u010dnim pojmovima i detaljima",
+            "project_plan": "Plan projekta",
+            "project_plan_desc": "Ciljevi, zadaci i prekretnice"
+        }
+    }
 }

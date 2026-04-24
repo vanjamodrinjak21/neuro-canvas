@@ -1,51 +1,53 @@
 {
-  "privacy": {
-    "title": "Privacy Policy",
-    "last_updated": "March 24, 2026",
-    "intro": "NeuroCanvas (\"we\", \"us\", \"our\") is a mind mapping application developed and operated by Vanja Modrinjak, an individual developer based in Croatia.",
-    "sections": {
-      "introduction": "Introduction",
-      "info_we_collect": "Information We Collect",
-      "account_info": "Account Information",
-      "map_data": "Map and Content Data",
-      "user_preferences": "User Preferences",
-      "technical_data": "Technical Data",
-      "client_storage": "Client-Side Storage",
-      "how_we_use": "How We Use Your Information",
-      "third_party_ai": "Third-Party AI Providers"
-    },
-    "details": {
-      "email_for_recovery": "used for authentication, account recovery, and transactional emails",
-      "password_hash": "if you sign up with email/password credentials (we never store plaintext passwords)",
-      "oauth_data": "if you sign in via Google or GitHub, we receive your name, email address, and profile picture URL",
-      "account_email_password": "Email address and password credentials",
-      "account_oauth": "OAuth provider credentials"
+    "legal": {
+        "privacy": {
+            "title": "Privacy Policy",
+            "last_updated": "March 24, 2026",
+            "intro": "NeuroCanvas (\"we\", \"us\", \"our\") is a mind mapping application developed and operated by Vanja Modrinjak, an individual developer based in Croatia.",
+            "sections": {
+                "introduction": "Introduction",
+                "info_we_collect": "Information We Collect",
+                "account_info": "Account Information",
+                "map_data": "Map and Content Data",
+                "user_preferences": "User Preferences",
+                "technical_data": "Technical Data",
+                "client_storage": "Client-Side Storage",
+                "how_we_use": "How We Use Your Information",
+                "third_party_ai": "Third-Party AI Providers"
+            },
+            "details": {
+                "email_for_recovery": "used for authentication, account recovery, and transactional emails",
+                "password_hash": "if you sign up with email/password credentials (we never store plaintext passwords)",
+                "oauth_data": "if you sign in via Google or GitHub, we receive your name, email address, and profile picture URL",
+                "account_email_password": "Email address and password credentials",
+                "account_oauth": "OAuth provider credentials"
+            }
+        },
+        "terms": {
+            "title": "Terms of Service",
+            "last_updated": "March 24, 2026",
+            "agreement": "These Terms of Service constitute a legally binding agreement between you and Vanja Modrinjak, operating under the name NeuroCanvas.",
+            "sections": {
+                "definitions": "Definitions",
+                "eligibility": "Eligibility",
+                "account_registration": "Account Registration",
+                "creating_account": "Creating an Account",
+                "account_security": "Account Security",
+                "account_termination": "Account Termination by You",
+                "use_of_service": "Use of the Service",
+                "license": "License to Use",
+                "acceptable_use": "Acceptable Use",
+                "enforcement": "Enforcement",
+                "user_content": "User Content",
+                "ownership": "Ownership",
+                "license_to_nc": "License to NeuroCanvas",
+                "data_portability": "Data Portability"
+            },
+            "details": {
+                "eligibility_age": "You must be at least 16 years of age",
+                "support_email": "support{'@'}neuro-canvas.com",
+                "delete_timeline": "Upon deletion, we will remove your Account data and User Content from our active systems within 30 days"
+            }
+        }
     }
-  },
-  "terms": {
-    "title": "Terms of Service",
-    "last_updated": "March 24, 2026",
-    "agreement": "These Terms of Service constitute a legally binding agreement between you and Vanja Modrinjak, operating under the name NeuroCanvas.",
-    "sections": {
-      "definitions": "Definitions",
-      "eligibility": "Eligibility",
-      "account_registration": "Account Registration",
-      "creating_account": "Creating an Account",
-      "account_security": "Account Security",
-      "account_termination": "Account Termination by You",
-      "use_of_service": "Use of the Service",
-      "license": "License to Use",
-      "acceptable_use": "Acceptable Use",
-      "enforcement": "Enforcement",
-      "user_content": "User Content",
-      "ownership": "Ownership",
-      "license_to_nc": "License to NeuroCanvas",
-      "data_portability": "Data Portability"
-    },
-    "details": {
-      "eligibility_age": "You must be at least 16 years of age",
-      "support_email": "support{'@'}neuro-canvas.com",
-      "delete_timeline": "Upon deletion, we will remove your Account data and User Content from our active systems within 30 days"
-    }
-  }
 }

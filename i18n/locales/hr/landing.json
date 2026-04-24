@@ -1,4 +1,5 @@
 {
+  "landing": {
   "nav": {
     "features": "Značajke",
     "download": "Preuzmi",
@@ -75,5 +76,6 @@
     "privacy": "Privatnost",
     "terms": "Uvjeti",
     "credit": "Izradio Vanja Modrinjak"
+  }
   }
 }

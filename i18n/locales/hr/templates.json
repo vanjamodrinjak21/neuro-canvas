@@ -1,87 +1,89 @@
 {
-  "page": {
-    "title": "Predlošci",
-    "subtitle": "Pregledajte, izradite i podijelite predloške mentalnih mapa"
-  },
-  "buttons": {
-    "publish_template": "Objavi predložak"
-  },
-  "desktop_signin": {
-    "title": "Prijavite se za predloške zajednice",
-    "description": "Pregledavajte i koristite predloške koje dijeli zajednica NeuroCanvasa.",
-    "sign_in": "Prijava"
-  },
-  "ai_bar": {
-    "title": "Generiraj pomoću AI-a",
-    "description": "Opišite što trebate i AI će izraditi strukturu predloška",
-    "example": "npr. \"SWOT analiza za SaaS proizvod\"",
-    "generate": "Generiraj",
-    "generating": "Generiranje..."
-  },
-  "filter": {
-    "all": "Sve",
-    "education": "Obrazovanje",
-    "business": "Poslovanje",
-    "creative": "Kreativno",
-    "planning": "Planiranje",
-    "research": "Istraživanje",
-    "my_templates": "Moji predlošci",
-    "search_placeholder": "Pretraži predloške...",
-    "popular": "Popularno",
-    "newest": "Najnovije",
-    "a_z": "A-Ž"
-  },
-  "loading": "Učitavanje predložaka...",
-  "empty_state": {
-    "title": "Predlošci nisu pronađeni",
-    "description": "Isprobajte drugu kategoriju ili pojam za pretragu"
-  },
-  "detail": {
-    "back": "Natrag na predloške",
-    "ai_enhanced": "AI poboljšano",
-    "uses": "Korištenja",
-    "nodes": "Čvorova",
-    "levels": "Razina",
-    "published_today": "Objavljeno danas",
-    "published_yesterday": "Objavljeno jučer",
-    "published_days_ago": "Objavljeno prije {days} dana",
-    "use_template": "Koristi ovaj predložak",
-    "ai_adapt": "AI prilagodba mojoj temi"
-  },
-  "ai_adapt_modal": {
-    "title": "AI prilagodba predloška",
-    "description": "{title} će biti prilagođen vašoj temi",
-    "topic_label": "Vaša tema",
-    "topic_placeholder": "npr. \"Pokretanje mobilne fitness aplikacije\"",
-    "depth": "Dubina",
-    "shallow": "Plitko",
-    "medium": "Srednje",
-    "deep": "Duboko",
-    "style": "Stil",
-    "concise": "Sažeto",
-    "detailed": "Detaljno",
-    "academic": "Akademski",
-    "domain": "Domena",
-    "optional": "Neobavezno",
-    "domain_placeholder": "npr. \"Zdravlje i fitness\"",
-    "cancel": "Odustani",
-    "generate": "Generiraj i izradi mapu"
-  },
-  "publish_modal": {
-    "title": "Objavi predložak",
-    "description": "Podijelite strukturu mape sa zajednicom",
-    "source_map": "Izvorna mapa",
-    "select_map": "Odaberite mapu...",
-    "template_name": "Naziv predloška",
-    "template_description": "Opis",
-    "describe_template": "Opišite čemu služi ovaj predložak...",
-    "category": "Kategorija",
-    "ai_enhancement": "AI poboljšanje",
-    "enabled": "Uključeno",
-    "disabled": "Isključeno",
-    "tags": "Oznake",
-    "add_tag": "+ Dodaj oznaku",
-    "cancel": "Odustani",
-    "publish": "Objavi u zajednici"
-  }
+    "templates": {
+        "page": {
+            "title": "Predlo\u0161ci",
+            "subtitle": "Pregledajte, izradite i podijelite predlo\u0161ke mentalnih mapa"
+        },
+        "buttons": {
+            "publish_template": "Objavi predlo\u017eak"
+        },
+        "desktop_signin": {
+            "title": "Prijavite se za predlo\u0161ke zajednice",
+            "description": "Pregledavajte i koristite predlo\u0161ke koje dijeli zajednica NeuroCanvasa.",
+            "sign_in": "Prijava"
+        },
+        "ai_bar": {
+            "title": "Generiraj pomo\u0107u AI-a",
+            "description": "Opi\u0161ite \u0161to trebate i AI \u0107e izraditi strukturu predlo\u0161ka",
+            "example": "npr. \"SWOT analiza za SaaS proizvod\"",
+            "generate": "Generiraj",
+            "generating": "Generiranje..."
+        },
+        "filter": {
+            "all": "Sve",
+            "education": "Obrazovanje",
+            "business": "Poslovanje",
+            "creative": "Kreativno",
+            "planning": "Planiranje",
+            "research": "Istra\u017eivanje",
+            "my_templates": "Moji predlo\u0161ci",
+            "search_placeholder": "Pretra\u017ei predlo\u0161ke...",
+            "popular": "Popularno",
+            "newest": "Najnovije",
+            "a_z": "A-\u017d"
+        },
+        "loading": "U\u010ditavanje predlo\u017eaka...",
+        "empty_state": {
+            "title": "Predlo\u0161ci nisu prona\u0111eni",
+            "description": "Isprobajte drugu kategoriju ili pojam za pretragu"
+        },
+        "detail": {
+            "back": "Natrag na predlo\u0161ke",
+            "ai_enhanced": "AI pobolj\u0161ano",
+            "uses": "Kori\u0161tenja",
+            "nodes": "\u010cvorova",
+            "levels": "Razina",
+            "published_today": "Objavljeno danas",
+            "published_yesterday": "Objavljeno ju\u010der",
+            "published_days_ago": "Objavljeno prije {days} dana",
+            "use_template": "Koristi ovaj predlo\u017eak",
+            "ai_adapt": "AI prilagodba mojoj temi"
+        },
+        "ai_adapt_modal": {
+            "title": "AI prilagodba predlo\u0161ka",
+            "description": "{title} \u0107e biti prilago\u0111en va\u0161oj temi",
+            "topic_label": "Va\u0161a tema",
+            "topic_placeholder": "npr. \"Pokretanje mobilne fitness aplikacije\"",
+            "depth": "Dubina",
+            "shallow": "Plitko",
+            "medium": "Srednje",
+            "deep": "Duboko",
+            "style": "Stil",
+            "concise": "Sa\u017eeto",
+            "detailed": "Detaljno",
+            "academic": "Akademski",
+            "domain": "Domena",
+            "optional": "Neobavezno",
+            "domain_placeholder": "npr. \"Zdravlje i fitness\"",
+            "cancel": "Odustani",
+            "generate": "Generiraj i izradi mapu"
+        },
+        "publish_modal": {
+            "title": "Objavi predlo\u017eak",
+            "description": "Podijelite strukturu mape sa zajednicom",
+            "source_map": "Izvorna mapa",
+            "select_map": "Odaberite mapu...",
+            "template_name": "Naziv predlo\u0161ka",
+            "template_description": "Opis",
+            "describe_template": "Opi\u0161ite \u010demu slu\u017ei ovaj predlo\u017eak...",
+            "category": "Kategorija",
+            "ai_enhancement": "AI pobolj\u0161anje",
+            "enabled": "Uklju\u010deno",
+            "disabled": "Isklju\u010deno",
+            "tags": "Oznake",
+            "add_tag": "+ Dodaj oznaku",
+            "cancel": "Odustani",
+            "publish": "Objavi u zajednici"
+        }
+    }
 }
