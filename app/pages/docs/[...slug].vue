@@ -4,56 +4,49 @@ definePageMeta({ layout: false, pageTransition: false })
 const route = useRoute()
 const { locale } = useI18n()
 
-// Build locale-aware content path: /docs/getting-started/intro → /docs/en/getting-started/intro
-const localePath = computed(() => {
+// Content path within the locale collection: /docs/getting-started/intro → /docs/en/getting-started/intro
+const contentPath = computed(() => {
   const slug = route.path.replace(/^\/docs\/?/, '')
   return `/docs/${locale.value}/${slug}`
 })
 
+// Query the locale-specific collection
+const collectionKey = computed(() => locale.value === 'hr' ? 'docs_hr' : 'docs_en')
+
 const { data: page } = await useAsyncData(`docs-${locale.value}-${route.path}`, () =>
-  queryCollection('docs').path(localePath.value).first()
+  queryCollection(collectionKey.value as 'docs_en' | 'docs_hr').path(contentPath.value).first()
 )
 
-// Navigation scoped to current locale's docs
-const { data: rawNavigation } = await useAsyncData(`docs-navigation-${locale.value}`, () =>
-  queryCollectionNavigation('docs')
+const { data: rawNavigation } = await useAsyncData(`docs-nav-${locale.value}`, () =>
+  queryCollectionNavigation(collectionKey.value as 'docs_en' | 'docs_hr')
 )
 
-// Strip locale prefix from content paths so nav links match URL routes
-// e.g. /docs/en/getting-started → /docs/getting-started
-function stripLocalePaths(items: any[] | undefined, loc: string): any[] {
+// Strip locale prefix from paths so nav links match clean URLs
+// /docs/en/getting-started → /docs/getting-started
+function stripLocale(items: any[] | undefined): any[] {
   if (!items) return []
+  const prefix = `/docs/${locale.value}`
   return items.map(item => ({
     ...item,
-    path: item.path?.replace(`/docs/${loc}`, '/docs'),
-    children: item.children ? stripLocalePaths(item.children, loc) : undefined
+    path: item.path?.replace(prefix, '/docs'),
+    children: item.children ? stripLocale(item.children) : undefined
   }))
 }
 
-// Filter navigation to current locale and strip locale prefix from paths
 const navigation = computed(() => {
   if (!rawNavigation.value) return null
-  const loc = locale.value
-  // Find the locale root in the nav tree — match by path ending or title
-  const localeNode = rawNavigation.value.find(n => {
-    const p = n.path || ''
-    return p === `/docs/${loc}` || p === `/${loc}` || p.endsWith(`/${loc}`)
-      || n.title?.toLowerCase() === loc
-  })
-  if (!localeNode?.children) return rawNavigation.value
-  return stripLocalePaths(localeNode.children, loc)
+  return stripLocale(rawNavigation.value)
 })
 
 const { data: rawSurround } = await useAsyncData(`docs-surround-${locale.value}-${route.path}`, () =>
-  queryCollectionItemSurroundings('docs', localePath.value)
+  queryCollectionItemSurroundings(collectionKey.value as 'docs_en' | 'docs_hr', contentPath.value)
 )
 
-// Strip locale prefix from prev/next paths
 const surround = computed(() => {
   if (!rawSurround.value) return null
-  const loc = locale.value
+  const prefix = `/docs/${locale.value}`
   return rawSurround.value.map((item: any) =>
-    item ? { ...item, path: item.path?.replace(`/docs/${loc}`, '/docs') } : item
+    item ? { ...item, path: item.path?.replace(prefix, '/docs') } : item
   )
 })
 
