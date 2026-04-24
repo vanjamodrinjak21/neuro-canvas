@@ -8,6 +8,9 @@ use tokenizers::Tokenizer;
 /// Maximum batch size to prevent OOM on GPU.
 const MAX_BATCH: usize = 32;
 
+/// Target output dimension after Matryoshka truncation.
+const MATRYOSHKA_DIM: usize = 256;
+
 /// Core ONNX embedding engine. Holds a loaded ONNX session and tokenizer.
 pub struct EmbeddingEngine {
     session: Session,
@@ -118,7 +121,7 @@ impl EmbeddingEngine {
         Ok(())
     }
 
-    /// Generate a 384-dim L2-normalised embedding for a single text.
+    /// Generate a `MATRYOSHKA_DIM`-dim L2-renormalised embedding for a single text.
     pub fn embed(&mut self, text: &str) -> Result<Vec<f32>> {
         let batch = self.embed_batch(&[text])?;
         batch
@@ -244,7 +247,10 @@ impl EmbeddingEngine {
             // L2 normalize
             let norm = pooled.iter().map(|v| v * v).sum::<f32>().sqrt().max(1e-12);
             let normalized: Vec<f32> = pooled.iter().map(|v| v / norm).collect();
-            results.push(normalized);
+
+            // Truncate to Matryoshka target dimensions and L2-renormalize
+            let truncated = truncate_matryoshka(&normalized, MATRYOSHKA_DIM);
+            results.push(truncated);
         }
 
         Ok(results)
@@ -257,6 +263,16 @@ impl EmbeddingEngine {
         }
         a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
     }
+}
+
+/// Truncate a Matryoshka embedding to target dimensions and L2-renormalize.
+fn truncate_matryoshka(embedding: &[f32], target_dim: usize) -> Vec<f32> {
+    let truncated = &embedding[..target_dim.min(embedding.len())];
+    let norm: f32 = truncated.iter().map(|v| v * v).sum::<f32>().sqrt();
+    if norm == 0.0 {
+        return truncated.to_vec();
+    }
+    truncated.iter().map(|v| v / norm).collect()
 }
 
 fn num_cpus() -> usize {

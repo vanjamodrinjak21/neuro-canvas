@@ -25,7 +25,7 @@ impl ModelVariant {
 
 /// Resolve model files for the given variant.
 /// - `"quantized"` → bundled resources (existing behavior)
-/// - `"full"` → downloaded to `$APPDATA/models/all-MiniLM-L6-v2-full/`
+/// - `"full"` → downloaded to `$APPDATA/models/nomic-embed-text-v1.5-full/`
 pub fn resolve_model_variant(
     resource_dir: &Path,
     app_data_dir: &Path,
@@ -42,7 +42,7 @@ fn resolve_bundled_model(resource_dir: &Path) -> Result<ModelPaths> {
     let dir = resource_dir
         .join("resources")
         .join("models")
-        .join("all-MiniLM-L6-v2");
+        .join("nomic-embed-text-v1.5");
 
     let onnx = dir.join("model_quantized.onnx");
     let tokenizer = dir.join("tokenizer.json");
@@ -90,7 +90,7 @@ pub fn resolve_model(resource_dir: &Path) -> Result<ModelPaths> {
 fn full_model_dir(app_data_dir: &Path) -> PathBuf {
     app_data_dir
         .join("models")
-        .join("all-MiniLM-L6-v2-full")
+        .join("nomic-embed-text-v1.5-full")
 }
 
 /// Check if the full-precision model has been downloaded.
@@ -108,9 +108,9 @@ pub fn delete_full_model(app_data_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// HuggingFace base URL for all-MiniLM-L6-v2 (non-quantized).
+/// HuggingFace base URL for nomic-embed-text-v1.5 (non-quantized).
 const HF_BASE: &str =
-    "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main";
+    "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5/resolve/main";
 
 /// Download the full-precision model from HuggingFace.
 /// Reports progress (0.0 → 1.0) via the provided watch channel sender.
