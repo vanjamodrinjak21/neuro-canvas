@@ -220,13 +220,19 @@ const userInitials = computed(() => {
 })
 
 // Stats
+function countItems(items: unknown): number {
+  if (Array.isArray(items)) return items.length
+  if (items && typeof items === 'object') return Object.keys(items).length
+  return 0
+}
+
 const stats = computed(() => {
-  const totalNodes = recentMaps.value.reduce((acc, m) => acc + m.nodes.length, 0)
+  const totalNodes = recentMaps.value.reduce((acc, m) => acc + countItems(m.nodes), 0)
   return {
     totalMaps: recentMaps.value.length,
     totalNodes,
     aiGenerated: Math.floor(totalNodes * 0.46),
-    connections: recentMaps.value.reduce((acc, m) => acc + (m.edges?.length || 0), 0)
+    connections: recentMaps.value.reduce((acc, m) => acc + countItems(m.edges), 0)
   }
 })
 
@@ -841,7 +847,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
                   }"
                 />
               </div>
-              <span class="thumb-count">{{ $t('dashboard.map_card.nodes', map.nodes.length, { count: map.nodes.length }) }}</span>
+              <span class="thumb-count">{{ $t('dashboard.map_card.nodes', countItems(map.nodes), { count: countItems(map.nodes) }) }}</span>
             </div>
             <!-- Info -->
             <div class="map-info">

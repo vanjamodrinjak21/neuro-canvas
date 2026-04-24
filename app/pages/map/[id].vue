@@ -4,7 +4,6 @@ import type { NodeTemplate } from '~/components/canvas/NodeTemplates.vue'
 import type { ContextMenuItem } from '~/components/ui/NcContextMenu.vue'
 import type { AISuggestion, RichNodeSuggestion, GenerationContext } from '~/types'
 import type { SidebarAction } from '~/types/sidebar'
-const { locale: currentLocale } = useI18n()
 import { useMapStore } from '~/stores/mapStore'
 import { useUserStore } from '~/stores/userStore'
 import { useSemanticStore } from '~/stores/semanticStore'
@@ -26,6 +25,9 @@ import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useSemanticProcessor } from '~/composables/useSemanticProcessor'
 import { useAISettings } from '~/composables/useAISettings'
 import { useGuestMode } from '~/composables/useGuestMode'
+
+// i18n
+const { locale: currentLocale } = useI18n()
 
 // Route
 const route = useRoute()
