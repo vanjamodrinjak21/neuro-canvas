@@ -139,8 +139,26 @@ export const embeddingPostSchema = z.object({
   embeddings: z.array(z.object({
     nodeId: z.string().min(1).max(128),
     text: z.string().min(1).max(50_000),
-    embedding: z.array(z.number()).min(1).max(4096)
+    embedding: z.array(z.number()).min(1).max(4096),
+    contentHash: z.string().min(1).max(64)
   })).min(1).max(500)
+})
+
+export const semanticSearchSchema = z.object({
+  query: z.string().min(1).max(10_000).trim(),
+  mapIds: z.array(cuid).max(100).optional(),
+  topK: z.number().int().min(1).max(100).default(20),
+  threshold: z.number().min(0).max(1).default(0.3),
+  queryEmbedding: z.array(z.number()).min(1).max(4096)
+})
+
+export const ragContextSchema = z.object({
+  query: z.string().min(1).max(10_000).trim(),
+  mapId: cuid,
+  maxNodes: z.number().int().min(1).max(50).default(10),
+  threshold: z.number().min(0).max(1).default(0.25),
+  includeNeighbors: z.boolean().default(true),
+  queryEmbedding: z.array(z.number()).min(1).max(4096)
 })
 
 export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
