@@ -53,6 +53,7 @@
     "@capacitor/status-bar": "^8.0.2",
     "@huggingface/transformers": "^4.0.0",
     "@nuxt/content": "^3.12.0",
+    "@nuxtjs/i18n": "^10.2.4",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.0.0",
     "@sidebase/nuxt-auth": "^1.2.0",
@@ -83,7 +84,6 @@
     "next-auth": "4.21.1",
     "nodemailer": "^7.0.7",
     "nuxt": "^4.0.0",
-    "onnxruntime-node": "^1.24.3",
     "otpauth": "^9.5.0",
     "pg": "^8.20.0",
     "prisma": "^7.0.0",
@@ -94,6 +94,9 @@
     "vue-filepond": "^7.0.4",
     "vue-router": "^4.5.0 || ^5.0.0",
     "zod": "^4.3.6"
+  },
+  "optionalDependencies": {
+    "onnxruntime-node": "^1.24.3"
   },
   "overrides": {
     "minimatch": "^10.2.1"
