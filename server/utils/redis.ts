@@ -115,6 +115,7 @@ export const cacheKeys = {
   user: (id: string) => `user:${id}`,
   userProfile: (id: string) => `user:${id}:profile`,
   session: (token: string) => `session:${token}`,
+  // Embedding cache keys (hot cache — source of truth is pgvector)
   embedding: (textHash: string) => `emb:${textHash}`,
   embeddingByNode: (mapId: string, nodeId: string) => `emb:map:${mapId}:node:${nodeId}`,
   embeddingsByMap: (mapId: string) => `emb:map:${mapId}:*`,
