@@ -82,10 +82,12 @@ const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.
 
 <style scoped>
 .nc-logo-mark {
+  background: #00D2BE;
   background: var(--nc-accent, #00D2BE);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  min-width: 0;
 }
 </style>
