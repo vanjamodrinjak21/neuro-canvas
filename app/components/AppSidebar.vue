@@ -136,7 +136,7 @@ const navItems = computed(() => [
 
 const visibleNavItems = computed(() => {
   if (guest.isGuest.value) return []
-  return navItems
+  return navItems.value
 })
 
 // Sidebar collapse

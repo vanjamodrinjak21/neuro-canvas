@@ -10,7 +10,7 @@ const tabs = computed(() => [
   { name: t('common.nav.settings'), path: '/settings', icon: 'settings' as const },
 ])
 
-function isActive(tab: typeof tabs[number]): boolean {
+function isActive(tab: typeof tabs.value[number]): boolean {
   if (tab.icon === 'home') return route.path === '/dashboard' && !route.query.templates
   if (tab.icon === 'maps') return route.path === '/maps'
   if (tab.icon === 'templates') return route.query.templates === 'true'
