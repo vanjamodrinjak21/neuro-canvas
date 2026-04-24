@@ -13,31 +13,35 @@ interface Props {
 const props = defineProps<Props>()
 
 /**
- * Nuxt Content v3 queryCollectionNavigation returns:
- * [{ title: "Docs", path: "/docs", children: [{ title: "Getting Started", path: "/docs/getting-started", children: [...] }, ...] }]
- *
- * We need the second level (sections) as our top-level groups.
+ * Navigation comes from the docs page which already filters by locale
+ * and strips locale prefixes. Items may be top-level sections directly
+ * or wrapped in a root node — handle both.
  */
 const sections = computed<NavItem[]>(() => {
   if (!props.navigation || !props.navigation.length) return []
-  // If the first item has children, it's the root "docs" node — unwrap it
-  const root = props.navigation[0]
-  if (root?.children?.length) {
-    return root.children
+  // If there's exactly one item with children and its path is /docs, unwrap it
+  if (props.navigation.length === 1 && props.navigation[0]?.children?.length) {
+    return props.navigation[0].children
   }
-  // Fallback: treat top-level items as sections
   return props.navigation
 })
 
+// Map both English and Croatian section titles to icons
 const iconMap: Record<string, string> = {
   'getting started': 'rocket',
+  'brzi početak': 'rocket',
+  'početak': 'rocket',
   'guides': 'book-open',
+  'vodiči': 'book-open',
   'platforms': 'monitor',
+  'platforme': 'monitor',
   'self-hosting': 'server',
   'self hosting': 'server',
+  'samostalno postavljanje': 'server',
   'api reference': 'code',
   'api': 'code',
   'changelog': 'clock',
+  'povijest promjena': 'clock',
 }
 
 function iconFor(title: string): string {
