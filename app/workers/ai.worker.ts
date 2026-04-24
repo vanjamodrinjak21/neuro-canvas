@@ -23,7 +23,7 @@ const MATRYOSHKA_DIM = 256
  * Truncate a Matryoshka embedding to target dimensions and L2-renormalize.
  * nomic-embed-text-v1.5 outputs 768d; we store 256d for efficiency.
  */
-function truncateAndNormalize(data: Float32Array, sourceDim: number, targetDim: number): Float32Array {
+function truncateAndNormalize(data: Float32Array, _sourceDim: number, targetDim: number): Float32Array {
   const truncated = new Float32Array(targetDim)
   for (let i = 0; i < targetDim; i++) {
     truncated[i] = data[i]!
@@ -672,7 +672,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         }
 
         // True batch inference for texts that need embedding
-        const rawTexts = textsToEmbed.map(t => t.text)
+        const rawTexts = textsToEmbed.map(t => `search_document: ${t.text}`)
         const batchSize = (payload as { batchSize?: number }).batchSize ?? 16
         const batchResults = rawTexts.length > 0
           ? await batchEmbed(rawTexts, batchSize, (completed, _total) => {

@@ -163,6 +163,31 @@ export function useSemanticProcessor() {
         semanticStore.setNodeEmbedding(id, embedding, 1, hash)
       }
 
+      // Fire-and-forget: persist embeddings to server (pgvector)
+      if (mapStore.id) {
+        const persistPayload = result.embeddings
+          .map(({ id, embedding }) => {
+            const node = mapStore.nodes.get(id)
+            if (!node) return null
+            return {
+              nodeId: id,
+              text: node.content,
+              embedding,
+              contentHash: String(nodeHashes.get(id) ?? 0)
+            }
+          })
+          .filter((e): e is NonNullable<typeof e> => e !== null)
+
+        if (persistPayload.length > 0) {
+          $fetch('/api/embeddings', {
+            method: 'POST',
+            body: { mapId: mapStore.id, embeddings: persistPayload }
+          }).catch(err => {
+            console.warn('[SemanticProcessor] Failed to persist embeddings:', err)
+          })
+        }
+      }
+
       // ── Step 2: Incremental similarity ──
       processorState.value = 'similarity'
       semanticStore.setProcessorState('similarity')
