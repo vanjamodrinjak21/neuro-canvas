@@ -906,33 +906,23 @@ async function createFromTemplate(template: typeof templates.value[0]) {
                 <span class="stat-label">{{ $t('dashboard.overview.connections_found') }}</span>
               </div>
             </div>
-            <!-- Mini bar chart -->
+            <!-- Mini bar chart — real data from recent activity -->
             <div class="overview-chart">
               <div
-                v-for="i in 14"
-                :key="i"
+                v-for="(map, i) in sortedMaps.slice(0, 14)"
+                :key="map.id"
                 class="chart-bar"
-                :class="{ accent: i % 3 === 0 || i % 5 === 0 }"
-                :style="{ height: (8 + Math.sin(i * 1.2) * 14 + Math.random() * 10) + 'px' }"
+                :style="{ height: Math.max(4, countItems(map.nodes) * 2) + 'px' }"
               />
             </div>
           </div>
         </div>
 
-        <!-- AI Quick Start Banner -->
-        <div class="ai-banner" @click="showAIModal = true">
-          <div class="ai-banner-icon">
-            <span class="i-lucide-sparkles" />
-          </div>
-          <div class="ai-banner-text">
-            <span class="ai-banner-title">{{ $t('dashboard.ai_banner.title') }}</span>
-            <span class="ai-banner-desc">{{ $t('dashboard.ai_banner.description') }}</span>
-          </div>
-          <button class="ai-banner-btn">
-            {{ $t('dashboard.ai_banner.try_it') }}
-            <span class="i-lucide-arrow-right" />
-          </button>
-        </div>
+        <!-- AI Quick Start -->
+        <button class="ai-inline-action" @click="showAIModal = true">
+          <span class="ai-inline-label">{{ $t('dashboard.ai_banner.title') }}</span>
+          <span class="ai-inline-hint">{{ $t('dashboard.ai_banner.try_it') }}</span>
+        </button>
       </template>
 
       <!-- Hidden file input -->
@@ -949,20 +939,13 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     <Teleport to="body">
       <div v-if="showAIModal" class="modal-overlay" @click.self="!aiLoading && (showAIModal = false)">
         <div class="ai-modal">
-          <!-- Glow effect -->
-          <div class="ai-modal-glow" />
-
           <!-- Input state -->
           <template v-if="!aiLoading">
             <div class="ai-modal-content">
-              <div class="ai-modal-icon-ring">
-                <span class="i-lucide-sparkles ai-modal-sparkle" />
-              </div>
               <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.title') }}</h2>
               <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.description') }}</p>
 
               <div class="ai-modal-input-wrap">
-                <span class="i-lucide-search ai-modal-input-icon" />
                 <input
                   v-model="aiTopic"
                   type="text"
@@ -984,7 +967,6 @@ async function createFromTemplate(template: typeof templates.value[0]) {
               <div class="ai-modal-actions">
                 <button class="ai-modal-cancel" @click="showAIModal = false">{{ $t('dashboard.ai_modal.cancel') }}</button>
                 <button class="ai-modal-generate" :disabled="!aiTopic.trim()" @click="handleAIQuickStart">
-                  <span class="i-lucide-sparkles ai-modal-btn-icon" />
                   {{ $t('dashboard.ai_modal.generate') }}
                 </button>
               </div>
@@ -994,9 +976,6 @@ async function createFromTemplate(template: typeof templates.value[0]) {
           <!-- Generating state with progress -->
           <template v-else>
             <div class="ai-modal-content">
-              <div class="ai-modal-icon-ring ai-modal-icon-ring--spinning">
-                <span class="i-lucide-sparkles ai-modal-sparkle" />
-              </div>
               <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.generating', { topic: aiTopic }) }}</h2>
               <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.building_structure') }}</p>
 
@@ -1753,76 +1732,37 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 
 /* ── AI Banner ── */
-.ai-banner {
+/* AI inline action — simple row, not a hero banner */
+.ai-inline-action {
   display: flex;
   align-items: center;
-  margin-top: 16px;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-border);
   border-radius: 8px;
-  padding: 18px 24px;
-  gap: 20px;
-  background: var(--d-accent-bg);
-  border: 1px solid var(--d-accent-border);
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color 150ms ease;
+  width: 100%;
 }
 
-.ai-banner:hover {
-  border-color: rgba(0, 210, 190, 0.25);
+.ai-inline-action:hover {
+  border-color: var(--d-accent-border);
 }
 
-.ai-banner-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--d-accent);
-  color: #09090B;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.ai-banner-text {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.ai-banner-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--d-text);
-  line-height: 18px;
-}
-
-.ai-banner-desc {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--d-text-3);
-  line-height: 16px;
-}
-
-.ai-banner-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.ai-inline-label {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: var(--d-accent);
-  background: none;
-  border: 1px solid rgba(0, 210, 190, 0.3);
-  border-radius: 6px;
-  padding: 6px 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s;
+  color: var(--d-text-2);
 }
 
-.ai-banner-btn:hover {
-  background: rgba(0, 210, 190, 0.08);
+.ai-inline-hint {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--d-text-3);
 }
 
 /* ── Modals ── */
@@ -1833,9 +1773,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  animation: fadeIn 150ms ease-out;
+  background: rgba(0, 0, 0, 0.5);
 }
 
 @keyframes fadeIn {
@@ -1989,103 +1927,51 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 /* ── AI Quick Start Modal (Futuristic) ── */
 .ai-modal {
   width: 90%;
-  max-width: 500px;
-  background: linear-gradient(180deg, rgba(0, 210, 190, 0.04) 0%, #0A0A0E 35%);
-  border: 1px solid rgba(0, 210, 190, 0.12);
-  border-radius: 16px;
+  max-width: 460px;
+  background: var(--nc-surface, #0D0D10);
+  border: 1px solid var(--nc-border, #1A1A1E);
+  border-radius: 8px;
   overflow: hidden;
   position: relative;
-  animation: slideUp 200ms ease-out;
-}
-
-.ai-modal-glow {
-  position: absolute;
-  top: -80px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(0, 210, 190, 0.15) 0%, transparent 70%);
-  pointer-events: none;
 }
 
 .ai-modal-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 36px 32px 28px;
-  gap: 20px;
-  position: relative;
-}
-
-.ai-modal-icon-ring {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 210, 190, 0.25);
-  background: rgba(0, 210, 190, 0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ai-modal-icon-ring--spinning {
-  animation: ai-ring-spin 2s linear infinite;
-  border-color: transparent;
-  border-top-color: rgba(0, 210, 190, 0.5);
-  border-right-color: rgba(0, 210, 190, 0.15);
-}
-
-@keyframes ai-ring-spin {
-  to { transform: rotate(360deg); }
-}
-
-.ai-modal-sparkle {
-  font-size: 22px;
-  color: #00D2BE;
+  padding: 24px;
+  gap: 16px;
 }
 
 .ai-modal-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 20px;
-  font-weight: 800;
-  color: #FAFAFA;
-  letter-spacing: -0.03em;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--nc-text, #FAFAFA);
   margin: 0;
-  text-align: center;
 }
 
 .ai-modal-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 400;
-  color: #52525B;
-  margin: -12px 0 0;
-  text-align: center;
+  color: var(--nc-text-muted, #52525B);
+  margin: 0;
 }
 
 .ai-modal-input-wrap {
   display: flex;
   align-items: center;
   width: 100%;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(0, 210, 190, 0.15);
-  border-radius: 12px;
-  padding: 0 16px;
-  gap: 10px;
-  transition: border-color 150ms var(--nc-ease-out, ease);
+  height: 40px;
+  background: var(--nc-bg, #050508);
+  border: 1px solid var(--nc-border, #1A1A1E);
+  border-radius: 6px;
+  padding: 0 12px;
+  transition: border-color 150ms ease;
 }
 
 .ai-modal-input-wrap:focus-within {
-  border-color: rgba(0, 210, 190, 0.4);
-  box-shadow: 0 0 0 3px rgba(0, 210, 190, 0.06);
-}
-
-.ai-modal-input-icon {
-  font-size: 16px;
-  color: rgba(0, 210, 190, 0.4);
-  flex-shrink: 0;
+  border-color: var(--nc-accent, #00D2BE);
 }
 
 .ai-modal-input {
@@ -2131,35 +2017,26 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 24px;
-  background: #00D2BE;
+  height: 36px;
+  padding: 0 16px;
+  background: var(--nc-accent, #00D2BE);
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   color: #09090B;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: opacity 150ms ease, transform 120ms var(--nc-ease-out, ease);
+  transition: opacity 150ms ease;
 }
 
 .ai-modal-generate:hover {
-  opacity: 0.9;
-}
-
-.ai-modal-generate:active {
-  transform: scale(0.97);
+  opacity: 0.85;
 }
 
 .ai-modal-generate:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
-}
-
-.ai-modal-btn-icon {
-  font-size: 14px;
 }
 
 /* Progress bar */
@@ -2227,13 +2104,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00D2BE;
-  animation: ai-dot-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes ai-dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
+  background: var(--nc-accent, #00D2BE);
 }
 
 .ai-step-label {
@@ -2267,9 +2138,6 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   border-color: rgba(0, 210, 190, 0.15);
 }
 
-:root.light .ai-modal-glow {
-  background: radial-gradient(circle, rgba(0, 210, 190, 0.08) 0%, transparent 70%);
-}
 
 :root.light .ai-modal-title { color: #111111; }
 :root.light .ai-modal-subtitle { color: #71717A; }
@@ -2367,9 +2235,6 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   display: none;
 }
 
-.animate-spin {
-  animation: spin 600ms linear infinite;
-}
 
 /* ── Light theme ── */
 :root.light .dashboard {
@@ -2393,9 +2258,6 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   color: var(--d-accent);
 }
 
-:root.light .ai-banner-icon {
-  color: #FFFFFF;
-}
 
 :root.light .btn-primary {
   color: #FFFFFF;
