@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-30',
@@ -19,8 +21,27 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@sidebase/nuxt-auth',
     '@nuxt/content',
-    '@nuxt/eslint'
+    '@nuxt/eslint',
+    '@nuxtjs/i18n'
   ],
+
+  // i18n configuration
+  i18n: {
+    locales: [
+      { code: 'en', name: 'English', files: ['en/common.json', 'en/auth.json', 'en/landing.json', 'en/dashboard.json', 'en/canvas.json', 'en/settings.json', 'en/templates.json', 'en/legal.json'] },
+      { code: 'hr', name: 'Hrvatski', files: ['hr/common.json', 'hr/auth.json', 'hr/landing.json', 'hr/dashboard.json', 'hr/canvas.json', 'hr/settings.json', 'hr/templates.json', 'hr/legal.json'] }
+    ],
+    defaultLocale: 'en',
+    strategy: 'no_prefix',
+    langDir: 'locales',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_locale',
+      fallbackLocale: 'en',
+      alwaysRedirect: false
+    },
+    vueI18n: './i18n/i18n.config.ts'
+  },
 
   // Nuxt Content configuration
   content: {
@@ -131,6 +152,12 @@ export default defineNuxtConfig({
     clearScreen: false,
     server: {
       strictPort: true
+    },
+    // Stub out mobile-only packages that don't exist in Docker/server builds
+    resolve: {
+      alias: {
+        'capacitor-plugin-local-llm': fileURLToPath(new URL('./stubs/empty.ts', import.meta.url)),
+      }
     }
   },
 

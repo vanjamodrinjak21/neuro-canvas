@@ -1,13 +1,14 @@
 <script setup lang="ts">
 const route = useRoute()
 const { haptics, isMobile } = usePlatform()
+const { t } = useI18n()
 
-const tabs = [
-  { name: 'Home', path: '/dashboard', icon: 'home' },
-  { name: 'Maps', path: '/maps', icon: 'maps' },
-  { name: 'Templates', path: '/dashboard?templates=true', icon: 'templates' },
-  { name: 'Settings', path: '/settings', icon: 'settings' },
-] as const
+const tabs = computed(() => [
+  { name: t('common.nav.home'), path: '/dashboard', icon: 'home' as const },
+  { name: t('common.nav.maps'), path: '/maps', icon: 'maps' as const },
+  { name: t('common.nav.templates'), path: '/dashboard?templates=true', icon: 'templates' as const },
+  { name: t('common.nav.settings'), path: '/settings', icon: 'settings' as const },
+])
 
 function isActive(tab: typeof tabs[number]): boolean {
   if (tab.icon === 'home') return route.path === '/dashboard' && !route.query.templates

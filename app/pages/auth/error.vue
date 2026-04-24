@@ -3,65 +3,33 @@ definePageMeta({
   layout: false
 })
 
+const { t } = useI18n()
 const route = useRoute()
 
-const errorMessages: Record<string, { title: string; message: string }> = {
-  Configuration: {
-    title: 'Server Error',
-    message: 'There is a problem with the server configuration. Please try again later.'
-  },
-  AccessDenied: {
-    title: 'Access Denied',
-    message: 'You do not have permission to sign in. This might be because your email is not allowed.'
-  },
-  Verification: {
-    title: 'Verification Failed',
-    message: 'The sign in link has expired or has already been used. Please request a new one.'
-  },
-  OAuthSignin: {
-    title: 'Sign In Error',
-    message: 'An error occurred while trying to sign in with that provider. Please try again.'
-  },
-  OAuthCallback: {
-    title: 'Callback Error',
-    message: 'An error occurred during the sign in callback. Please try again.'
-  },
-  OAuthCreateAccount: {
-    title: 'Account Creation Failed',
-    message: 'Could not create an account with that provider. The email might already be in use.'
-  },
-  EmailCreateAccount: {
-    title: 'Account Creation Failed',
-    message: 'Could not create an account with that email. Please try a different email.'
-  },
-  Callback: {
-    title: 'Callback Error',
-    message: 'An error occurred during the authentication callback. Please try again.'
-  },
-  OAuthAccountNotLinked: {
-    title: 'Account Not Linked',
-    message: 'This email is already associated with a different sign-in method. Please use your original sign-in method.'
-  },
-  EmailSignin: {
-    title: 'Email Error',
-    message: 'Could not send the sign in email. Please check your email address and try again.'
-  },
-  CredentialsSignin: {
-    title: 'Sign In Failed',
-    message: 'The email or password you entered is incorrect. Please try again.'
-  },
-  SessionRequired: {
-    title: 'Session Required',
-    message: 'You need to be signed in to access this page.'
-  },
-  Default: {
-    title: 'Authentication Error',
-    message: 'An unexpected error occurred. Please try again.'
-  }
+const errorKeyMap: Record<string, string> = {
+  Configuration: 'configuration',
+  AccessDenied: 'access_denied',
+  Verification: 'verification',
+  OAuthSignin: 'oauth_signin',
+  OAuthCallback: 'oauth_callback',
+  OAuthCreateAccount: 'oauth_create_account',
+  EmailCreateAccount: 'oauth_create_account',
+  Callback: 'oauth_callback',
+  OAuthAccountNotLinked: 'oauth_account_not_linked',
+  EmailSignin: 'oauth_signin',
+  CredentialsSignin: 'credentials_signin',
+  SessionRequired: 'session_required',
+  Default: 'default'
 }
 
 const errorCode = computed(() => (route.query.error as string) || 'Default')
-const errorInfo = computed(() => errorMessages[errorCode.value] || errorMessages.Default)
+const errorInfo = computed(() => {
+  const key = errorKeyMap[errorCode.value] || 'default'
+  return {
+    title: t(`auth.error.${key}.title`),
+    message: t(`auth.error.${key}.message`)
+  }
+})
 </script>
 
 <template>
@@ -100,27 +68,26 @@ const errorInfo = computed(() => errorMessages[errorCode.value] || errorMessages
       </div>
 
       <!-- Copy -->
-      <h1 class="heading">Your session got unplugged</h1>
+      <h1 class="heading">{{ $t('auth.error.page_heading') }}</h1>
       <p class="desc">
-        The authentication link expired, broke, or was used by a different brain.<br>
-        These things happen — even to the best neural networks.
+        {{ $t('auth.error.page_desc') }}
       </p>
 
       <!-- Actions -->
       <div class="actions">
         <NuxtLink to="/auth/signin" class="btn-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
-          Try Signing In Again
+          {{ $t('auth.error.button_signin') }}
         </NuxtLink>
         <NuxtLink to="/" class="btn-ghost">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-          Go Home
+          {{ $t('auth.error.button_home') }}
         </NuxtLink>
       </div>
 
       <!-- Error code footer -->
       <div class="error-footer">
-        <span class="error-badge">AUTH_ERROR</span>
+        <span class="error-badge">{{ $t('auth.error.badge') }}</span>
         <span class="error-details">{{ errorCode !== 'Default' ? errorCode : 'session_expired' }} · token_invalid · try_again_or_cry</span>
       </div>
     </div>

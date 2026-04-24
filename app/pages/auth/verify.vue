@@ -3,6 +3,7 @@ definePageMeta({
   layout: false
 })
 
+const { t } = useI18n()
 const route = useRoute()
 const email = computed(() => route.query.email as string | undefined)
 </script>
@@ -22,32 +23,31 @@ const email = computed(() => route.query.email as string | undefined)
           <span class="i-lucide-mail-check verify-icon" />
         </div>
 
-        <h1 class="verify-title">Check your email</h1>
+        <h1 class="verify-title">{{ $t('auth.verify.title') }}</h1>
 
         <p v-if="email" class="verify-message">
-          We sent a sign-in link to <strong>{{ email }}</strong>
+          {{ $t('auth.verify.message_with_email') }} <strong>{{ email }}</strong>
         </p>
         <p v-else class="verify-message">
-          We sent you a sign-in link.
+          {{ $t('auth.verify.message_without_email') }}
         </p>
 
         <p class="verify-hint">
-          Click the link in the email to sign in to your account.
-          The link will expire in 24 hours.
+          {{ $t('auth.verify.hint') }}
         </p>
 
         <div class="verify-tips">
-          <h3 class="tips-title">Didn't receive the email?</h3>
+          <h3 class="tips-title">{{ $t('auth.verify.tips_title') }}</h3>
           <ul class="tips-list">
-            <li>Check your spam or junk folder</li>
-            <li>Make sure you entered the correct email</li>
-            <li>Wait a few minutes and try again</li>
+            <li>{{ $t('auth.verify.tip_spam') }}</li>
+            <li>{{ $t('auth.verify.tip_email') }}</li>
+            <li>{{ $t('auth.verify.tip_wait') }}</li>
           </ul>
         </div>
 
         <NuxtLink to="/auth/signin" class="back-btn">
           <span class="i-lucide-arrow-left" />
-          Back to sign in
+          {{ $t('auth.verify.back_button') }}
         </NuxtLink>
       </div>
     </div>

@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { useGuestMode } from '~/composables/useGuestMode'
 
+const { t } = useI18n()
+
 definePageMeta({ layout: false })
 
-const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
-const { status } = _isTauri ? { status: ref('authenticated') } : useAuth()
-const isAuthenticated = computed(() => _isTauri || status.value === 'authenticated')
+const _isNative = typeof window !== 'undefined' && (
+  ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+  || ('Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.())
+)
+const { status } = _isNative ? { status: ref('authenticated') } : useAuth()
+const isAuthenticated = computed(() => _isNative || status.value === 'authenticated')
 const guest = useGuestMode()
 
 function handleTryFree() {
@@ -54,29 +59,29 @@ function scrollTo(id: string) {
     <nav :class="{ scrolled: isScrolled }">
       <NuxtLink to="/" class="logo">
         <NcLogo :size="16" :container-size="32" :radius="8" />
-        <span class="logo-name">NeuroCanvas</span>
+        <span class="logo-name">{{ $t('landing.footer.brand') }}</span>
       </NuxtLink>
       <div class="nav-center">
-        <a href="#features" @click.prevent="scrollTo('features')">Features</a>
-        <a href="#">Download</a>
-        <NuxtLink to="/docs">Docs</NuxtLink>
-        <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+        <a href="#features" @click.prevent="scrollTo('features')">{{ $t('landing.nav.features') }}</a>
+        <a href="#">{{ $t('landing.nav.download') }}</a>
+        <NuxtLink to="/docs">{{ $t('landing.nav.docs') }}</NuxtLink>
+        <a href="https://github.com" target="_blank" rel="noopener">{{ $t('landing.nav.github') }}</a>
       </div>
       <div class="nav-end">
         <template v-if="isAuthenticated">
-          <NuxtLink to="/dashboard" class="nav-link">Dashboard</NuxtLink>
+          <NuxtLink to="/dashboard" class="nav-link">{{ $t('landing.nav.dashboard') }}</NuxtLink>
         </template>
         <template v-else>
-          <NuxtLink to="/auth/signin" class="nav-link">Sign in</NuxtLink>
+          <NuxtLink to="/auth/signin" class="nav-link">{{ $t('landing.nav.signin') }}</NuxtLink>
           <button class="try-free-btn" @click="handleTryFree">
-            Try for Free
+            {{ $t('landing.nav.try_free') }}
           </button>
         </template>
         <NuxtLink
           :to="isAuthenticated ? '/dashboard' : '/auth/signup'"
           class="btn-primary"
         >
-          Get Started
+          {{ $t('landing.nav.get_started') }}
         </NuxtLink>
       </div>
     </nav>
@@ -84,22 +89,21 @@ function scrollTo(id: string) {
     <!-- ══════ HERO ══════ -->
     <section class="hero r">
       <div class="hero-badge s">
-        <span>Web · Desktop · Mobile</span>
+        <span>{{ $t('landing.hero.badge') }}</span>
       </div>
       <div class="hero-headlines s">
-        <h1 class="hero-h1">Think visually.</h1>
-        <h1 class="hero-serif">Learn infinitely.</h1>
+        <h1 class="hero-h1">{{ $t('landing.hero.h1') }}</h1>
+        <h1 class="hero-serif">{{ $t('landing.hero.serif') }}</h1>
       </div>
       <p class="hero-sub s">
-        AI-powered mind mapping that understands your ideas,<br >
-        suggests connections, and helps you learn faster.
+        {{ $t('landing.hero.subtitle') }}
       </p>
       <div class="hero-cta s">
         <NuxtLink
           :to="isAuthenticated ? '/dashboard' : '/auth/signup'"
           class="btn-primary btn-lg"
         >
-          Start mapping — free forever
+          {{ $t('landing.hero.cta_primary') }}
         </NuxtLink>
         <a
           href="https://github.com"
@@ -108,7 +112,7 @@ function scrollTo(id: string) {
           class="btn-outline btn-lg"
         >
           <svg class="gh-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
-          <span>View on GitHub</span>
+          <span>{{ $t('landing.hero.cta_github') }}</span>
         </a>
       </div>
     </section>
@@ -121,14 +125,14 @@ function scrollTo(id: string) {
           <div class="win-dots">
             <i class="dot-r" /><i class="dot-y" /><i class="dot-g" />
           </div>
-          <span class="win-title">Cognitive Psychology — NeuroCanvas</span>
+          <span class="win-title">{{ $t('landing.screenshot.window_title') }}</span>
           <div class="win-spacer" />
         </div>
         <!-- Canvas body -->
         <div class="win-body">
           <!-- Explorer sidebar -->
           <div class="mock-sidebar">
-            <span class="mock-label">EXPLORER</span>
+            <span class="mock-label">{{ $t('landing.screenshot.explorer_label') }}</span>
             <div class="mock-node mock-active">
               <span class="mock-dot" style="background:#00D2BE" />
               <span>Cognitive</span>
@@ -150,7 +154,7 @@ function scrollTo(id: string) {
               <span>Memory</span>
             </div>
             <div class="mock-spacer" />
-            <span class="mock-label">AI SUGGESTIONS</span>
+            <span class="mock-label">{{ $t('landing.screenshot.ai_suggestions') }}</span>
             <div class="mock-sug">
               <span class="mock-sug-letter">E</span>
               <span>Executive Function</span>
@@ -218,32 +222,32 @@ function scrollTo(id: string) {
     <!-- ══════ STATS ══════ -->
     <section class="stats r">
       <div class="stat s">
-        <span class="stat-num">100%</span>
-        <span class="stat-label">Free, forever</span>
+        <span class="stat-num">{{ $t('landing.stats.free_value') }}</span>
+        <span class="stat-label">{{ $t('landing.stats.free') }}</span>
       </div>
       <div class="stat-divider" />
       <div class="stat s">
-        <span class="stat-num">85k+</span>
-        <span class="stat-label">Maps created</span>
+        <span class="stat-num">{{ $t('landing.stats.maps_value') }}</span>
+        <span class="stat-label">{{ $t('landing.stats.maps') }}</span>
       </div>
       <div class="stat-divider" />
       <div class="stat s">
-        <span class="stat-num">3</span>
-        <span class="stat-label">Platforms supported</span>
+        <span class="stat-num">{{ $t('landing.stats.platforms_value') }}</span>
+        <span class="stat-label">{{ $t('landing.stats.platforms') }}</span>
       </div>
       <div class="stat-divider" />
       <div class="stat s">
-        <span class="stat-num">23</span>
-        <span class="stat-label">Relationship types</span>
+        <span class="stat-num">{{ $t('landing.stats.relationships_value') }}</span>
+        <span class="stat-label">{{ $t('landing.stats.relationships') }}</span>
       </div>
     </section>
 
     <!-- ══════ FEATURES ══════ -->
     <section id="features" class="features">
       <div class="features-head r">
-        <span class="label-teal s">Features</span>
+        <span class="label-teal s">{{ $t('landing.features.label') }}</span>
         <h2 class="features-title s">
-          Everything you need to<br >organize knowledge
+          {{ $t('landing.features.title') }}
         </h2>
       </div>
 
@@ -253,27 +257,27 @@ function scrollTo(id: string) {
           <div class="feature-icon">
             <i class="i-lucide-sparkles" />
           </div>
-          <h3>AI-Powered Expansion</h3>
+          <h3>{{ $t('landing.features.ai_expansion.title') }}</h3>
           <p>
-            Select any node and let AI suggest related concepts, definitions, and connections. Supports OpenAI, Claude, and local models.
+            {{ $t('landing.features.ai_expansion.description') }}
           </p>
         </div>
         <div class="feature-card s">
           <div class="feature-icon">
             <i class="i-lucide-maximize" />
           </div>
-          <h3>Infinite Canvas</h3>
+          <h3>{{ $t('landing.features.infinite_canvas.title') }}</h3>
           <p>
-            Pan, zoom, and navigate freely. Force-directed layouts keep your maps organized. Minimap for orientation in large maps.
+            {{ $t('landing.features.infinite_canvas.description') }}
           </p>
         </div>
         <div class="feature-card s">
           <div class="feature-icon">
             <i class="i-lucide-monitor" />
           </div>
-          <h3>Web, Desktop, Mobile</h3>
+          <h3>{{ $t('landing.features.cross_platform.title') }}</h3>
           <p>
-            Use the web app anywhere, install the desktop app via Tauri, or take it on the go with iOS and Android via Capacitor.
+            {{ $t('landing.features.cross_platform.description') }}
           </p>
         </div>
       </div>
@@ -284,27 +288,27 @@ function scrollTo(id: string) {
           <div class="feature-icon">
             <i class="i-lucide-refresh-cw" />
           </div>
-          <h3>Real-time Sync</h3>
+          <h3>{{ $t('landing.features.realtime_sync.title') }}</h3>
           <p>
-            Conflict-free sync powered by Yjs. Your maps stay consistent across all devices, even offline. Auto-save included.
+            {{ $t('landing.features.realtime_sync.description') }}
           </p>
         </div>
         <div class="feature-card s">
           <div class="feature-icon">
             <i class="i-lucide-cpu" />
           </div>
-          <h3>Semantic Engine</h3>
+          <h3>{{ $t('landing.features.semantic_engine.title') }}</h3>
           <p>
-            Embedding-based similarity search discovers hidden connections. Semantic clustering reveals patterns in your thinking.
+            {{ $t('landing.features.semantic_engine.description') }}
           </p>
         </div>
         <div class="feature-card s">
           <div class="feature-icon">
             <i class="i-lucide-download" />
           </div>
-          <h3>Export Anywhere</h3>
+          <h3>{{ $t('landing.features.export.title') }}</h3>
           <p>
-            Export as PNG for presentations, JSON for data portability, or Markdown for clean hierarchical outlines.
+            {{ $t('landing.features.export.description') }}
           </p>
         </div>
       </div>
@@ -312,17 +316,16 @@ function scrollTo(id: string) {
 
     <!-- ══════ FINAL CTA ══════ -->
     <section class="cta r">
-      <h2 class="cta-heading s">Ready to think differently?</h2>
+      <h2 class="cta-heading s">{{ $t('landing.cta.heading') }}</h2>
       <p class="cta-sub s">
-        Free, open-source, and built for students. Available on<br >
-        every platform you use.
+        {{ $t('landing.cta.subtitle') }}
       </p>
       <div class="cta-buttons s">
         <NuxtLink
           :to="isAuthenticated ? '/dashboard' : '/auth/signup'"
           class="btn-primary btn-lg"
         >
-          Download for free
+          {{ $t('landing.cta.button_primary') }}
         </NuxtLink>
         <a
           href="https://github.com"
@@ -331,7 +334,7 @@ function scrollTo(id: string) {
           class="btn-outline btn-lg"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
-          <span>View on GitHub</span>
+          <span>{{ $t('landing.cta.button_github') }}</span>
         </a>
       </div>
     </section>
@@ -341,17 +344,17 @@ function scrollTo(id: string) {
       <div class="footer-inner">
         <div class="footer-logo">
           <NcLogo :size="12" :container-size="24" :radius="6" />
-          <span class="footer-brand">NeuroCanvas</span>
+          <span class="footer-brand">{{ $t('landing.footer.brand') }}</span>
         </div>
         <div class="footer-nav">
-          <a href="#features" @click.prevent="scrollTo('features')">Features</a>
-          <a href="#">Download</a>
-          <NuxtLink to="/docs">Docs</NuxtLink>
-          <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
-          <NuxtLink to="/privacy">Privacy</NuxtLink>
-          <NuxtLink to="/terms">Terms</NuxtLink>
+          <a href="#features" @click.prevent="scrollTo('features')">{{ $t('landing.footer.features') }}</a>
+          <a href="#">{{ $t('landing.footer.download') }}</a>
+          <NuxtLink to="/docs">{{ $t('landing.footer.docs') }}</NuxtLink>
+          <a href="https://github.com" target="_blank" rel="noopener">{{ $t('landing.footer.github') }}</a>
+          <NuxtLink to="/privacy">{{ $t('landing.footer.privacy') }}</NuxtLink>
+          <NuxtLink to="/terms">{{ $t('landing.footer.terms') }}</NuxtLink>
         </div>
-        <span class="footer-credit">Built by Vanja Modrinjak</span>
+        <span class="footer-credit">{{ $t('landing.footer.credit') }}</span>
       </div>
     </footer>
   </div>

@@ -2,6 +2,8 @@
 import { useUserStore } from '~/stores/userStore'
 import { useGuestMode } from '~/composables/useGuestMode'
 
+const { t } = useI18n()
+
 const props = defineProps<{
   activeNav?: string
 }>()
@@ -125,12 +127,12 @@ const currentNav = computed(() => {
   return 'home'
 })
 
-const navItems = [
-  { id: 'home', label: 'Home', icon: 'i-lucide-house', to: '/dashboard' },
-  { id: 'maps', label: 'All Maps', icon: 'i-lucide-layout-grid', to: '/maps' },
-  { id: 'templates', label: 'Templates', icon: 'i-lucide-layers', to: '/templates' },
-  { id: 'settings', label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
-]
+const navItems = computed(() => [
+  { id: 'home', label: t('common.nav.home'), icon: 'i-lucide-house', to: '/dashboard' },
+  { id: 'maps', label: t('common.nav.maps'), icon: 'i-lucide-layout-grid', to: '/maps' },
+  { id: 'templates', label: t('common.nav.templates'), icon: 'i-lucide-layers', to: '/templates' },
+  { id: 'settings', label: t('common.nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
+])
 
 const visibleNavItems = computed(() => {
   if (guest.isGuest.value) return []

@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "features": "Značajke",
+    "download": "Preuzmi",
+    "docs": "Dokumentacija",
+    "github": "GitHub",
+    "dashboard": "Nadzorna ploča",
+    "signin": "Prijava",
+    "try_free": "Isprobaj besplatno",
+    "get_started": "Započni"
+  },
+  "hero": {
+    "badge": "Web \u00b7 Desktop \u00b7 Mobitel",
+    "h1": "Razmišljaj vizualno.",
+    "serif": "Uči neograničeno.",
+    "subtitle": "Mentalno mapiranje potpomognuto umjetnom inteligencijom koje\nrazumije vaše ideje, predlaže veze i pomaže vam brže učiti.",
+    "cta_primary": "Započni mapiranje \u2014 zauvijek besplatno",
+    "cta_github": "Pogledaj na GitHubu"
+  },
+  "screenshot": {
+    "window_title": "Kognitivna psihologija \u2014 NeuroCanvas",
+    "explorer_label": "PREGLEDNIK",
+    "ai_suggestions": "AI PRIJEDLOZI"
+  },
+  "stats": {
+    "free": "Besplatno, zauvijek",
+    "free_value": "100%",
+    "maps": "Izrađenih mapa",
+    "maps_value": "85k+",
+    "platforms": "Podržanih platforma",
+    "platforms_value": "3",
+    "relationships": "Vrsta veza",
+    "relationships_value": "23"
+  },
+  "features": {
+    "label": "Značajke",
+    "title": "Sve što trebate za\norganizaciju znanja",
+    "ai_expansion": {
+      "title": "AI proširenje",
+      "description": "Odaberite bilo koji čvor i dopustite AI-u da predloži povezane pojmove, definicije i veze. Podržava OpenAI, Claude i lokalne modele."
+    },
+    "infinite_canvas": {
+      "title": "Beskonačno platno",
+      "description": "Pomičite, zumirajte i navigirajte slobodno. Raspored usmjeren silom održava vaše mape organiziranima. Minimapa za orijentaciju u velikim mapama."
+    },
+    "cross_platform": {
+      "title": "Web, desktop, mobitel",
+      "description": "Koristite web aplikaciju bilo gdje, instalirajte desktop aplikaciju putem Taurija ili ponesite sa sobom na iOS i Android putem Capacitora."
+    },
+    "realtime_sync": {
+      "title": "Sinkronizacija u stvarnom vremenu",
+      "description": "Sinkronizacija bez sukoba pokretana Yjs-om. Vaše mape ostaju dosljedne na svim uređajima, čak i izvan mreže. Automatsko spremanje uključeno."
+    },
+    "semantic_engine": {
+      "title": "Semantički mehanizam",
+      "description": "Pretraga temeljena na vektorskim reprezentacijama otkriva skrivene veze. Semantičko grupiranje otkriva obrasce u vašem razmišljanju."
+    },
+    "export": {
+      "title": "Izvoz svugdje",
+      "description": "Izvezite kao PNG za prezentacije, JSON za prenosivost podataka ili Markdown za hijerarhijske bilješke."
+    }
+  },
+  "cta": {
+    "heading": "Spremni razmišljati drugačije?",
+    "subtitle": "Besplatno, otvorenog koda i izrađeno za studente. Dostupno na\nsvakoj platformi koju koristite.",
+    "button_primary": "Preuzmi besplatno",
+    "button_github": "Pogledaj na GitHubu"
+  },
+  "footer": {
+    "brand": "NeuroCanvas",
+    "features": "Značajke",
+    "download": "Preuzmi",
+    "docs": "Dokumentacija",
+    "github": "GitHub",
+    "privacy": "Privatnost",
+    "terms": "Uvjeti",
+    "credit": "Izradio Vanja Modrinjak"
+  }
+}

@@ -6,30 +6,41 @@ import { useAISettings } from '~/composables/useAISettings'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 
+const { t } = useI18n()
+
 definePageMeta({
   layout: false,
   middleware: 'auth'
 })
 
-// Tauri detection — only true on client, never during SSR/generate
+// Platform detection — only true on client, never during SSR/generate
 const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+const _isCapacitor = import.meta.client && typeof window !== 'undefined' && 'Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.()
+const _isNative = _isTauri || _isCapacitor
 
 // Auth
 // Minimal local-only user so the page renders — NOT a real session.
 // The sidebar checks desktopAuth.isSignedIn for real auth state.
-const _tauriSession = { user: { id: 'desktop-local', name: null, email: null } }
-const { data: _sessionData, status, getSession } = _isTauri
-  ? { data: ref(_tauriSession), status: ref('authenticated'), getSession: async () => _tauriSession }
+const _nativeSession = { user: { id: 'native-local', name: null, email: null } }
+const { data: _sessionData, status, getSession } = _isNative
+  ? { data: ref(_nativeSession), status: ref('authenticated'), getSession: async () => _nativeSession }
   : useAuth()
 const session = _sessionData ?? ref(null)
-const user = computed(() => session.value?.user)
+const desktopAuth = _isTauri ? useDesktopAuth() : null
+const mobileAuth = _isCapacitor ? useMobileAuth() : null
+const user = computed(() => {
+  // On native: prefer real user from desktop/mobile auth
+  if (_isTauri && desktopAuth?.isSignedIn.value && desktopAuth.user.value) return desktopAuth.user.value
+  if (_isCapacitor && mobileAuth?.isSignedIn.value && mobileAuth.user.value) return mobileAuth.user.value
+  return session.value?.user
+})
 // Always start false so SSR and client initial render match (loading spinner).
 // Set to true in onMounted to avoid hydration mismatch in Tauri.
 const authChecked = ref(!!session.value?.user)
 
 onMounted(async () => {
-  if (_isTauri) {
-    // In Tauri, session is already set — just mark as checked
+  if (_isNative) {
+    // On native apps, session is already set — just mark as checked
     authChecked.value = true
   } else {
     // Only force-fetch when no cached session (e.g. direct navigation).
@@ -92,10 +103,10 @@ const aiProgressPct = ref(0)
 
 function resetAIProgress() {
   aiSteps.value = [
-    { label: 'Analyzing topic structure', status: 'pending' },
-    { label: 'Generating branches', status: 'pending' },
-    { label: 'Adding sub-nodes & details', status: 'pending' },
-    { label: 'Finding cross-connections', status: 'pending' },
+    { label: t('dashboard.ai_modal.analyzing_topic'), status: 'pending' },
+    { label: t('dashboard.ai_modal.generating_branches'), status: 'pending' },
+    { label: t('dashboard.ai_modal.adding_sub_nodes'), status: 'pending' },
+    { label: t('dashboard.ai_modal.finding_connections'), status: 'pending' },
   ]
   aiProgressPct.value = 0
 }
@@ -125,12 +136,12 @@ const fileInput = ref<HTMLInputElement | null>(null)
 
 
 // Templates data
-const templates = [
+const templates = computed(() => [
   {
     id: 'brainstorm',
-    name: 'Brainstorm',
+    name: t('dashboard.quick_templates.brainstorm'),
     icon: 'i-lucide-lightbulb',
-    description: 'Central idea with branching thoughts',
+    description: t('dashboard.quick_templates.brainstorm_desc'),
     nodes: [
       { content: 'Main Idea', x: 400, y: 300, isRoot: true },
       { content: 'Branch 1', x: 200, y: 200 },
@@ -141,9 +152,9 @@ const templates = [
   },
   {
     id: 'pros-cons',
-    name: 'Pros & Cons',
+    name: t('dashboard.quick_templates.pros_cons'),
     icon: 'i-lucide-scale',
-    description: 'Weigh options with two sides',
+    description: t('dashboard.quick_templates.pros_cons_desc'),
     nodes: [
       { content: 'Decision', x: 400, y: 150, isRoot: true },
       { content: 'Pros', x: 250, y: 300 },
@@ -156,9 +167,9 @@ const templates = [
   },
   {
     id: 'study-notes',
-    name: 'Study Notes',
+    name: t('dashboard.quick_templates.study_notes'),
     icon: 'i-lucide-book-open',
-    description: 'Topic with key concepts and details',
+    description: t('dashboard.quick_templates.study_notes_desc'),
     nodes: [
       { content: 'Topic', x: 400, y: 100, isRoot: true },
       { content: 'Concept 1', x: 200, y: 250 },
@@ -171,9 +182,9 @@ const templates = [
   },
   {
     id: 'project-plan',
-    name: 'Project Plan',
+    name: t('dashboard.quick_templates.project_plan'),
     icon: 'i-lucide-kanban',
-    description: 'Goals, tasks, and milestones',
+    description: t('dashboard.quick_templates.project_plan_desc'),
     nodes: [
       { content: 'Project Goal', x: 400, y: 100, isRoot: true },
       { content: 'Phase 1', x: 200, y: 250 },
@@ -185,20 +196,20 @@ const templates = [
       { content: 'Task', x: 450, y: 400 }
     ]
   }
-]
+])
 
 // Time-aware greeting
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return t('dashboard.greeting.good_morning')
+  if (hour < 17) return t('dashboard.greeting.good_afternoon')
+  return t('dashboard.greeting.good_evening')
 })
 
 const userName = computed(() => {
   if (user.value?.name) return user.value.name
-  if (user.value?.email) return user.value.email.split('@')[0]
-  return 'Creator'
+  if (user.value?.email && user.value.email !== 'local@device') return user.value.email.split('@')[0]
+  return 'there'
 })
 
 const userInitials = computed(() => {
@@ -307,8 +318,7 @@ if (route.query.templates === 'true') {
   router.replace({ path: '/dashboard' })
 }
 
-// Desktop auth for Tauri sync
-const desktopAuth = _isTauri ? useDesktopAuth() : null
+// desktopAuth and mobileAuth are initialized at the top (used for user display + sync)
 
 function mapServerResponse(m: any): DBMapDocument {
   return {
@@ -335,10 +345,17 @@ async function loadMaps() {
     // Always load local maps first
     const localMaps = await db.getRecentMaps(50)
 
-    if (_isTauri && desktopAuth?.isSignedIn.value) {
-      // Tauri + signed in: merge local + remote
+    // Check if signed in on native platforms
+    const nativeSignedIn = (_isTauri && desktopAuth?.isSignedIn.value)
+      || (_isCapacitor && mobileAuth?.isSignedIn.value)
+
+    if (_isNative && nativeSignedIn) {
+      // Native + signed in: merge local + remote via native HTTP
       try {
-        const response = await desktopAuth.remoteFetch<{ maps: any[] }>('/api/sync/pull')
+        const remoteFetcher = _isTauri
+          ? desktopAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
+          : mobileAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
+        const response = await remoteFetcher
         const remoteMaps = response.maps.map(mapServerResponse)
 
         // Merge: remote wins for maps that exist on both sides (by id),
@@ -366,12 +383,12 @@ async function loadMaps() {
       }
     }
 
-    if (!_isTauri && session.value?.user) {
+    if (!_isNative && session.value?.user) {
       // Web: fetch from server — properly scoped by userId in PostgreSQL
       const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
       recentMaps.value = response.maps.map(mapServerResponse)
     } else {
-      // Offline or Tauri not signed in — read from local IndexedDB
+      // Offline or native not signed in — read from local IndexedDB
       recentMaps.value = localMaps
     }
   } catch (error) {
@@ -468,11 +485,11 @@ function formatDate(timestamp: number): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
   if (diffHours < 1) return 'Just now'
-  if (diffHours < 24) return `Edited ${diffHours}h ago`
-  if (diffDays === 1) return 'Edited yesterday'
-  if (diffDays < 7) return `Edited ${diffDays} days ago`
-  if (diffDays < 30) return `Edited ${Math.floor(diffDays / 7)} weeks ago`
-  return `Edited ${date.toLocaleDateString()}`
+  if (diffHours < 24) return t('dashboard.map_card.edited', { time: `${diffHours}h ago` })
+  if (diffDays === 1) return t('dashboard.map_card.edited', { time: 'yesterday' })
+  if (diffDays < 7) return t('dashboard.map_card.edited', { time: `${diffDays} days ago` })
+  if (diffDays < 30) return t('dashboard.map_card.edited', { time: `${Math.floor(diffDays / 7)} weeks ago` })
+  return t('dashboard.map_card.edited', { time: date.toLocaleDateString() })
 }
 
 // AI Quick Start
@@ -642,7 +659,7 @@ async function createMapFromNodes(nodes: { content: string; level: number }[], t
 }
 
 // Templates
-async function createFromTemplate(template: typeof templates[0]) {
+async function createFromTemplate(template: typeof templates.value[0]) {
   mapStore.newDocument()
   mapStore.setTitle(template.name)
   const nodeIds: string[] = []
@@ -709,7 +726,10 @@ async function createFromTemplate(template: typeof templates[0]) {
         <p class="mobile-greeting">{{ greeting }}, {{ userName?.split(' ')[0] || userName }}</p>
         <div class="mobile-top-right">
           <NuxtLink to="/settings" class="mobile-avatar-link">
-            <div class="mobile-avatar">{{ userInitials }}</div>
+            <div class="mobile-avatar">
+              <img v-if="user?.image" :src="user.image" :alt="userName" class="mobile-avatar-img">
+              <template v-else>{{ userInitials }}</template>
+            </div>
             <span class="i-lucide-settings mobile-settings-icon" />
           </NuxtLink>
         </div>
@@ -719,20 +739,20 @@ async function createFromTemplate(template: typeof templates[0]) {
       <header class="header">
         <div class="header-left">
           <p class="header-greeting">{{ greeting }}, {{ userName }}</p>
-          <h1 class="header-title">Your Maps</h1>
+          <h1 class="header-title">{{ $t('dashboard.header.your_maps') }}</h1>
         </div>
         <div class="header-actions">
           <button class="btn btn-outline" @click="showAIModal = true">
             <span class="i-lucide-sparkles btn-icon" />
-            AI Generate
+            {{ $t('dashboard.buttons.ai_generate') }}
           </button>
           <button class="btn btn-primary" :disabled="isCreatingMap" @click="createNewMap">
             <span class="i-lucide-plus btn-icon" />
-            New Map
+            {{ $t('dashboard.buttons.new_map') }}
           </button>
           <button class="btn btn-outline" @click="triggerImport">
             <span class="i-lucide-download btn-icon" />
-            Import
+            {{ $t('dashboard.buttons.import') }}
           </button>
         </div>
       </header>
@@ -741,21 +761,21 @@ async function createFromTemplate(template: typeof templates[0]) {
       <div class="mobile-actions">
         <button class="mobile-action-btn primary" :disabled="isCreatingMap" @click="createNewMap">
           <span class="i-lucide-plus mobile-action-icon" />
-          New Map
+          {{ $t('dashboard.buttons.new_map') }}
         </button>
         <button class="mobile-action-btn" @click="showAIModal = true">
           <span class="i-lucide-sparkles mobile-action-icon" />
-          AI Generate
+          {{ $t('dashboard.buttons.ai_generate') }}
         </button>
       </div>
 
       <!-- Section Label -->
       <div class="section-label">
-        <span class="label-text">Recent Maps</span>
+        <span class="label-text">{{ $t('dashboard.sections.recent_maps') }}</span>
         <div class="sort-control">
-          <span class="sort-label">Sort by</span>
+          <span class="sort-label">{{ $t('dashboard.sections.sort_by') }}</span>
           <button class="sort-btn" @click="sortBy = sortBy === 'recent' ? 'alphabetical' : 'recent'">
-            {{ sortBy === 'recent' ? 'Recent' : 'A-Z' }}
+            {{ sortBy === 'recent' ? $t('dashboard.sections.recent') : $t('dashboard.sections.a_z') }}
             <span class="i-lucide-chevron-down sort-chevron" />
           </button>
         </div>
@@ -779,11 +799,11 @@ async function createFromTemplate(template: typeof templates[0]) {
         <div class="empty-icon">
           <span class="i-lucide-map" />
         </div>
-        <h3 class="empty-title">No maps yet</h3>
-        <p class="empty-desc">Create your first mind map to get started</p>
+        <h3 class="empty-title">{{ $t('dashboard.empty_state.no_maps_yet') }}</h3>
+        <p class="empty-desc">{{ $t('dashboard.empty_state.create_first_map') }}</p>
         <button class="btn btn-primary" :disabled="isCreatingMap" @click="createNewMap">
           <span class="i-lucide-plus btn-icon" />
-          Create Map
+          {{ $t('dashboard.buttons.create_map') }}
         </button>
       </div>
 
@@ -820,7 +840,7 @@ async function createFromTemplate(template: typeof templates[0]) {
                   }"
                 />
               </div>
-              <span class="thumb-count">{{ map.nodes.length }} nodes</span>
+              <span class="thumb-count">{{ $t('dashboard.map_card.nodes', map.nodes.length, { count: map.nodes.length }) }}</span>
             </div>
             <!-- Info -->
             <div class="map-info">
@@ -852,31 +872,31 @@ async function createFromTemplate(template: typeof templates[0]) {
             <div class="new-map-icon">
               <span class="i-lucide-plus" />
             </div>
-            <span class="new-map-label">Create new map</span>
+            <span class="new-map-label">{{ $t('dashboard.buttons.create_map') }}</span>
           </button>
 
           <!-- Overview Panel -->
           <div class="overview-panel">
             <div class="overview-header">
-              <span class="overview-label">Overview</span>
-              <span class="overview-period">Last 30 days</span>
+              <span class="overview-label">{{ $t('dashboard.overview.title') }}</span>
+              <span class="overview-period">{{ $t('dashboard.overview.last_30_days') }}</span>
             </div>
             <div class="overview-stats">
               <div class="overview-stat">
                 <span class="stat-number">{{ stats.totalMaps }}</span>
-                <span class="stat-label">Total maps</span>
+                <span class="stat-label">{{ $t('dashboard.overview.total_maps') }}</span>
               </div>
               <div class="overview-stat">
                 <span class="stat-number">{{ stats.totalNodes }}</span>
-                <span class="stat-label">Total nodes</span>
+                <span class="stat-label">{{ $t('dashboard.overview.total_nodes') }}</span>
               </div>
               <div class="overview-stat">
                 <span class="stat-number accent">{{ stats.aiGenerated }}</span>
-                <span class="stat-label">AI-generated</span>
+                <span class="stat-label">{{ $t('dashboard.overview.ai_generated') }}</span>
               </div>
               <div class="overview-stat">
                 <span class="stat-number">{{ stats.connections }}</span>
-                <span class="stat-label">Connections found</span>
+                <span class="stat-label">{{ $t('dashboard.overview.connections_found') }}</span>
               </div>
             </div>
             <!-- Mini bar chart -->
@@ -898,11 +918,11 @@ async function createFromTemplate(template: typeof templates[0]) {
             <span class="i-lucide-sparkles" />
           </div>
           <div class="ai-banner-text">
-            <span class="ai-banner-title">Generate a map with AI</span>
-            <span class="ai-banner-desc">Describe a topic and let AI build the initial structure for you</span>
+            <span class="ai-banner-title">{{ $t('dashboard.ai_banner.title') }}</span>
+            <span class="ai-banner-desc">{{ $t('dashboard.ai_banner.description') }}</span>
           </div>
           <button class="ai-banner-btn">
-            Try it
+            {{ $t('dashboard.ai_banner.try_it') }}
             <span class="i-lucide-arrow-right" />
           </button>
         </div>
@@ -931,8 +951,8 @@ async function createFromTemplate(template: typeof templates[0]) {
               <div class="ai-modal-icon-ring">
                 <span class="i-lucide-sparkles ai-modal-sparkle" />
               </div>
-              <h2 class="ai-modal-title">Generate with AI</h2>
-              <p class="ai-modal-subtitle">Describe your topic. AI will structure the entire mind map.</p>
+              <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.title') }}</h2>
+              <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.description') }}</p>
 
               <div class="ai-modal-input-wrap">
                 <span class="i-lucide-search ai-modal-input-icon" />
@@ -940,7 +960,7 @@ async function createFromTemplate(template: typeof templates[0]) {
                   v-model="aiTopic"
                   type="text"
                   class="ai-modal-input"
-                  placeholder="e.g., Quantum Computing, UX Research..."
+                  :placeholder="$t('dashboard.ai_modal.placeholder')"
                   autofocus
                   @keyup.enter="handleAIQuickStart"
                 >
@@ -955,10 +975,10 @@ async function createFromTemplate(template: typeof templates[0]) {
               </div>
 
               <div class="ai-modal-actions">
-                <button class="ai-modal-cancel" @click="showAIModal = false">Cancel</button>
+                <button class="ai-modal-cancel" @click="showAIModal = false">{{ $t('dashboard.ai_modal.cancel') }}</button>
                 <button class="ai-modal-generate" :disabled="!aiTopic.trim()" @click="handleAIQuickStart">
                   <span class="i-lucide-sparkles ai-modal-btn-icon" />
-                  Generate
+                  {{ $t('dashboard.ai_modal.generate') }}
                 </button>
               </div>
             </div>
@@ -970,8 +990,8 @@ async function createFromTemplate(template: typeof templates[0]) {
               <div class="ai-modal-icon-ring ai-modal-icon-ring--spinning">
                 <span class="i-lucide-sparkles ai-modal-sparkle" />
               </div>
-              <h2 class="ai-modal-title">Generating "{{ aiTopic }}"</h2>
-              <p class="ai-modal-subtitle">Building your mind map structure...</p>
+              <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.generating', { topic: aiTopic }) }}</h2>
+              <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.building_structure') }}</p>
 
               <!-- Progress bar -->
               <div class="ai-progress-bar">
@@ -1007,8 +1027,8 @@ async function createFromTemplate(template: typeof templates[0]) {
             <div class="modal-icon modal-icon-templates">
               <span class="i-lucide-layout-template" />
             </div>
-            <h2 class="modal-title">Explore Templates</h2>
-            <p class="modal-subtitle">Start with a pre-built structure</p>
+            <h2 class="modal-title">{{ $t('dashboard.templates_modal.title') }}</h2>
+            <p class="modal-subtitle">{{ $t('dashboard.templates_modal.description') }}</p>
           </div>
           <div class="modal-body">
             <div class="templates-grid">
@@ -1027,7 +1047,7 @@ async function createFromTemplate(template: typeof templates[0]) {
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-ghost" @click="showTemplatesModal = false">Cancel</button>
+            <button class="btn btn-ghost" @click="showTemplatesModal = false">{{ $t('dashboard.templates_modal.cancel') }}</button>
           </div>
         </div>
       </div>
@@ -1041,15 +1061,15 @@ async function createFromTemplate(template: typeof templates[0]) {
             <div class="modal-icon modal-icon-import">
               <span class="i-lucide-upload" />
             </div>
-            <h2 class="modal-title">Import File</h2>
-            <p class="modal-subtitle">Import Markdown or OPML outline files</p>
+            <h2 class="modal-title">{{ $t('dashboard.import_modal.title') }}</h2>
+            <p class="modal-subtitle">{{ $t('dashboard.import_modal.description') }}</p>
           </div>
           <div class="modal-body">
             <FileUploader @file-added="handleFilePondFile" />
-            <p class="import-hint">Accepts: .md, .opml</p>
+            <p class="import-hint">{{ $t('dashboard.import_modal.accepts') }}</p>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-ghost" @click="showImportModal = false">Cancel</button>
+            <button class="btn btn-ghost" @click="showImportModal = false">{{ $t('dashboard.import_modal.cancel') }}</button>
           </div>
         </div>
       </div>
@@ -1064,14 +1084,14 @@ async function createFromTemplate(template: typeof templates[0]) {
             <div class="modal-icon modal-icon-danger">
               <span class="i-lucide-trash-2" />
             </div>
-            <h2 class="modal-title">Delete Map</h2>
-            <p class="modal-subtitle">This action cannot be undone. Are you sure?</p>
+            <h2 class="modal-title">{{ $t('dashboard.delete_confirm.title') }}</h2>
+            <p class="modal-subtitle">{{ $t('dashboard.delete_confirm.message') }}</p>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-ghost" @click="cancelDeleteMap">Cancel</button>
+            <button class="btn btn-ghost" @click="cancelDeleteMap">{{ $t('dashboard.delete_confirm.cancel') }}</button>
             <button class="btn btn-danger" @click="confirmDeleteMap">
               <span class="i-lucide-trash-2 btn-icon" />
-              Delete
+              {{ $t('dashboard.delete_confirm.delete') }}
             </button>
           </div>
         </div>
@@ -2453,6 +2473,12 @@ async function createFromTemplate(template: typeof templates[0]) {
     background: var(--d-surface-2);
   }
 
+  .mobile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   .mobile-avatar {
     width: 32px;
     height: 32px;
@@ -2464,6 +2490,8 @@ async function createFromTemplate(template: typeof templates[0]) {
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
     letter-spacing: 0.02em;
     flex-shrink: 0;
   }

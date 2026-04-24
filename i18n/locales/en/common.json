@@ -1,0 +1,105 @@
+{
+  "app_name": "NeuroCanvas",
+  "nav": {
+    "home": "Home",
+    "maps": "All Maps",
+    "templates": "Templates",
+    "settings": "Settings"
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "close": "Close",
+    "confirm": "Confirm",
+    "ok": "OK",
+    "back": "Back",
+    "next": "Next",
+    "create": "Create",
+    "edit": "Edit",
+    "search": "Search",
+    "retry": "Retry",
+    "copy": "Copy",
+    "share": "Share",
+    "export": "Export",
+    "import": "Import",
+    "collapse_sidebar": "Collapse sidebar",
+    "expand_sidebar": "Expand sidebar",
+    "search_shortcut": "Search (\u2318K)",
+    "sign_up_free": "Sign up free",
+    "unlock_all_features": "Unlock all features",
+    "sign_in": "Sign In",
+    "signing_in": "Signing in...",
+    "sign_out": "Sign Out"
+  },
+  "search": {
+    "placeholder": "Search maps..."
+  },
+  "theme": {
+    "to_dark": "Switch to dark mode",
+    "to_light": "Switch to light mode",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "offline": {
+    "back_online": "Back online",
+    "message": "Offline \u2014 changes saved locally",
+    "dismiss": "Dismiss"
+  },
+  "update": {
+    "available": "Update available",
+    "version_ready": "Version {version} is ready to install.",
+    "update_now": "Update now",
+    "later": "Later",
+    "downloading": "Downloading update...",
+    "dismiss": "Dismiss"
+  },
+  "loading": {
+    "text": "Loading...",
+    "version": "v1.0.0"
+  },
+  "confirm_dialog": {
+    "are_you_sure": "Are you sure?",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "onboarding": {
+    "welcome_title": "Welcome to NeuroCanvas",
+    "welcome_desc": "AI-powered mind mapping that helps you think visually and learn faster.",
+    "step_create": "Create your first map",
+    "step_create_desc": "Start with a blank canvas or choose a template to get going quickly.",
+    "step_ai": "Let AI help you",
+    "step_ai_desc": "Select any node and press \u2318E to expand it with AI-suggested concepts.",
+    "step_connect": "Discover connections",
+    "step_connect_desc": "The semantic engine finds hidden links between your ideas.",
+    "get_started": "Get Started",
+    "skip": "Skip"
+  },
+  "guest": {
+    "template_picker_title": "Choose a template",
+    "template_picker_desc": "Pick a starting point for your first map",
+    "upgrade_title": "Unlock all features",
+    "upgrade_desc": "Sign up for free to sync across devices, use AI features, and more.",
+    "upgrade_button": "Sign up free",
+    "continue_guest": "Continue as guest"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Check your connection.",
+    "not_found": "Not found.",
+    "unauthorized": "You need to sign in to access this.",
+    "forbidden": "You don't have permission to do this.",
+    "server": "Server error. Please try again later.",
+    "timeout": "Request timed out. Please try again."
+  },
+  "time": {
+    "just_now": "Just now",
+    "seconds_ago": "{n}s ago",
+    "minutes_ago": "{n}m ago",
+    "hours_ago": "{n}h ago",
+    "days_ago": "{n}d ago",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  }
+}

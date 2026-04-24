@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "features": "Features",
+    "download": "Download",
+    "docs": "Docs",
+    "github": "GitHub",
+    "dashboard": "Dashboard",
+    "signin": "Sign in",
+    "try_free": "Try for Free",
+    "get_started": "Get Started"
+  },
+  "hero": {
+    "badge": "Web \u00b7 Desktop \u00b7 Mobile",
+    "h1": "Think visually.",
+    "serif": "Learn infinitely.",
+    "subtitle": "AI-powered mind mapping that understands your ideas,\nsuggests connections, and helps you learn faster.",
+    "cta_primary": "Start mapping \u2014 free forever",
+    "cta_github": "View on GitHub"
+  },
+  "screenshot": {
+    "window_title": "Cognitive Psychology \u2014 NeuroCanvas",
+    "explorer_label": "EXPLORER",
+    "ai_suggestions": "AI SUGGESTIONS"
+  },
+  "stats": {
+    "free": "Free, forever",
+    "free_value": "100%",
+    "maps": "Maps created",
+    "maps_value": "85k+",
+    "platforms": "Platforms supported",
+    "platforms_value": "3",
+    "relationships": "Relationship types",
+    "relationships_value": "23"
+  },
+  "features": {
+    "label": "Features",
+    "title": "Everything you need to\norganize knowledge",
+    "ai_expansion": {
+      "title": "AI-Powered Expansion",
+      "description": "Select any node and let AI suggest related concepts, definitions, and connections. Supports OpenAI, Claude, and local models."
+    },
+    "infinite_canvas": {
+      "title": "Infinite Canvas",
+      "description": "Pan, zoom, and navigate freely. Force-directed layouts keep your maps organized. Minimap for orientation in large maps."
+    },
+    "cross_platform": {
+      "title": "Web, Desktop, Mobile",
+      "description": "Use the web app anywhere, install the desktop app via Tauri, or take it on the go with iOS and Android via Capacitor."
+    },
+    "realtime_sync": {
+      "title": "Real-time Sync",
+      "description": "Conflict-free sync powered by Yjs. Your maps stay consistent across all devices, even offline. Auto-save included."
+    },
+    "semantic_engine": {
+      "title": "Semantic Engine",
+      "description": "Embedding-based similarity search discovers hidden connections. Semantic clustering reveals patterns in your thinking."
+    },
+    "export": {
+      "title": "Export Anywhere",
+      "description": "Export as PNG for presentations, JSON for data portability, or Markdown for clean hierarchical outlines."
+    }
+  },
+  "cta": {
+    "heading": "Ready to think differently?",
+    "subtitle": "Free, open-source, and built for students. Available on\nevery platform you use.",
+    "button_primary": "Download for free",
+    "button_github": "View on GitHub"
+  },
+  "footer": {
+    "brand": "NeuroCanvas",
+    "features": "Features",
+    "download": "Download",
+    "docs": "Docs",
+    "github": "GitHub",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "credit": "Built by Vanja Modrinjak"
+  }
+}

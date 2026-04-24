@@ -4,6 +4,8 @@ import { useUserStore } from '~/stores/userStore'
 const { data: _sessionData } = useAuth()
 const session = _sessionData ?? ref(null)
 const userStore = useUserStore()
+const { locale, setLocale, locales } = useI18n()
+const { t } = useI18n()
 const flashSaved = inject<() => void>('flashSaved', () => {})
 
 const user = computed(() => session.value?.user)
@@ -42,19 +44,23 @@ watchEffect(() => {
   }
 })
 
-// Language options
-const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'hr', label: 'Hrvatski' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'fr', label: 'Français' },
-  { value: 'es', label: 'Español' }
-]
+// Language — wired to @nuxtjs/i18n
+const availableLocales = computed(() =>
+  (locales.value as Array<{ code: string; name: string }>).map(l => ({
+    value: l.code,
+    label: l.name
+  }))
+)
 
-const currentLanguageLabel = computed(() => {
-  const lang = languages.find(l => l.value === userStore.preferences.value.language)
-  return lang?.label || 'English'
-})
+async function changeLocale(code: string) {
+  await setLocale(code)
+  userStore.setPreference('language', code)
+  // Also persist in localStorage for Tauri/Capacitor
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('i18n_locale', code)
+  }
+  flashSaved()
+}
 
 // Save profile field
 async function saveProfile(field: 'name' | 'bio' | 'image', value: string) {
@@ -108,7 +114,7 @@ function saveAvatar() {
   <div class="tab-content">
     <!-- PROFILE Section -->
     <div class="settings-section">
-      <span class="section-label">Profile</span>
+      <span class="section-label">{{ t('settings.personal.profile') }}</span>
 
       <!-- Avatar + Name + Email row -->
       <div class="setting-row profile-row">
@@ -128,7 +134,7 @@ function saveAvatar() {
           </div>
         </div>
         <button class="change-avatar-btn" @click="showAvatarInput = !showAvatarInput">
-          Change avatar
+          {{ t('settings.personal.change_avatar') }}
         </button>
       </div>
 
@@ -153,8 +159,8 @@ function saveAvatar() {
       <!-- Display Name -->
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Display Name</span>
-          <span class="setting-desc">How your name appears to others</span>
+          <span class="setting-title">{{ t('settings.personal.display_name') }}</span>
+          <span class="setting-desc">{{ locale === 'hr' ? 'Kako se vaše ime prikazuje drugima' : 'How your name appears to others' }}</span>
         </div>
         <div class="input-group">
           <input
@@ -174,8 +180,8 @@ function saveAvatar() {
       <!-- Bio -->
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Bio</span>
-          <span class="setting-desc">A short description about yourself</span>
+          <span class="setting-title">{{ t('settings.personal.bio') }}</span>
+          <span class="setting-desc">{{ locale === 'hr' ? 'Kratki opis o sebi' : 'A short description about yourself' }}</span>
         </div>
         <input
           v-model="bio"
@@ -197,21 +203,21 @@ function saveAvatar() {
 
     <!-- PREFERENCES Section -->
     <div class="settings-section">
-      <span class="section-label">Preferences</span>
+      <span class="section-label">{{ t('settings.personal.preferences') }}</span>
 
-      <!-- Language -->
+      <!-- Language / Jezik -->
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Language</span>
-          <span class="setting-desc">Interface language for the app</span>
+          <span class="setting-title">{{ t('settings.personal.language') }}</span>
+          <span class="setting-desc">Jezik / Language</span>
         </div>
         <select
-          :value="userStore.preferences.value.language"
+          :value="locale"
           class="setting-select"
-          @change="userStore.setPreference('language', ($event.target as HTMLSelectElement).value)"
+          @change="changeLocale(($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="lang in languages" :key="lang.value" :value="lang.value">
-            {{ lang.label }}
+          <option v-for="loc in availableLocales" :key="loc.value" :value="loc.value">
+            {{ loc.label }}
           </option>
         </select>
       </div>
@@ -219,8 +225,8 @@ function saveAvatar() {
       <!-- Email Notifications -->
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Email Notifications</span>
-          <span class="setting-desc">Receive updates about new features and tips</span>
+          <span class="setting-title">{{ t('settings.personal.email_notifications') }}</span>
+          <span class="setting-desc">{{ locale === 'hr' ? 'Primajte obavijesti o novim značajkama i savjetima' : 'Receive updates about new features and tips' }}</span>
         </div>
         <button
           :class="['toggle-switch', { on: userStore.preferences.value.emailNotifications }]"
@@ -233,8 +239,8 @@ function saveAvatar() {
       <!-- Usage Analytics -->
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Usage Analytics</span>
-          <span class="setting-desc">Help improve NeuroCanvas by sharing anonymous usage data</span>
+          <span class="setting-title">{{ t('settings.personal.usage_analytics') }}</span>
+          <span class="setting-desc">{{ locale === 'hr' ? 'Pomozite poboljšati NeuroCanvas dijeljenjem anonimnih podataka o korištenju' : 'Help improve NeuroCanvas by sharing anonymous usage data' }}</span>
         </div>
         <button
           :class="['toggle-switch', { on: userStore.preferences.value.usageAnalytics }]"

@@ -1,0 +1,83 @@
+{
+  "greeting": {
+    "good_morning": "Good morning",
+    "good_afternoon": "Good afternoon",
+    "good_evening": "Good evening"
+  },
+  "header": {
+    "your_maps": "Your Maps"
+  },
+  "buttons": {
+    "ai_generate": "AI Generate",
+    "new_map": "New Map",
+    "import": "Import",
+    "create_map": "Create Map"
+  },
+  "sections": {
+    "recent_maps": "Recent Maps",
+    "sort_by": "Sort by",
+    "recent": "Recent",
+    "a_z": "A-Z"
+  },
+  "empty_state": {
+    "no_maps_yet": "No maps yet",
+    "create_first_map": "Create your first mind map to get started"
+  },
+  "map_card": {
+    "nodes": "0 nodes | 1 node | {count} nodes",
+    "edited": "Edited {time}"
+  },
+  "overview": {
+    "title": "Overview",
+    "last_30_days": "Last 30 days",
+    "total_maps": "Total maps",
+    "total_nodes": "Total nodes",
+    "ai_generated": "AI-generated",
+    "connections_found": "Connections found"
+  },
+  "ai_banner": {
+    "title": "Generate a map with AI",
+    "description": "Describe a topic and let AI build the initial structure for you",
+    "try_it": "Try it"
+  },
+  "ai_modal": {
+    "title": "Generate with AI",
+    "description": "Describe your topic. AI will structure the entire mind map.",
+    "placeholder": "e.g., Quantum Computing, UX Research...",
+    "cancel": "Cancel",
+    "generate": "Generate",
+    "generating": "Generating \"{topic}\"",
+    "building_structure": "Building your mind map structure...",
+    "analyzing_topic": "Analyzing topic structure",
+    "generating_branches": "Generating branches",
+    "adding_sub_nodes": "Adding sub-nodes & details",
+    "finding_connections": "Finding cross-connections"
+  },
+  "templates_modal": {
+    "title": "Explore Templates",
+    "description": "Start with a pre-built structure",
+    "cancel": "Cancel"
+  },
+  "import_modal": {
+    "title": "Import File",
+    "description": "Import Markdown or OPML outline files",
+    "accepts": "Accepts: .md, .opml",
+    "cancel": "Cancel"
+  },
+  "delete_confirm": {
+    "title": "Delete Map",
+    "message": "This action cannot be undone. Are you sure?",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "quick_templates": {
+    "brainstorm": "Brainstorm",
+    "brainstorm_desc": "Central idea with branching thoughts",
+    "pros_cons": "Pros & Cons",
+    "pros_cons_desc": "Weigh options with two sides",
+    "study_notes": "Study Notes",
+    "study_notes_desc": "Topic with key concepts and details",
+    "project_plan": "Project Plan",
+    "project_plan_desc": "Goals, tasks, and milestones"
+  }
+}
