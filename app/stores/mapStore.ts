@@ -463,9 +463,12 @@ const actions: MapActions = {
     state.id = doc.id
     state.title = doc.title
 
-    // Convert arrays back to Maps
-    state.nodes = new Map(doc.nodes.map(node => [node.id, node as Node]))
-    state.edges = new Map(doc.edges.map(edge => [edge.id, edge as Edge]))
+    // Convert arrays or objects back to Maps
+    // Server/templates may return nodes as { id: {...} } objects instead of arrays
+    const nodesArr: any[] = Array.isArray(doc.nodes) ? doc.nodes : Object.values(doc.nodes || {})
+    const edgesArr: any[] = Array.isArray(doc.edges) ? doc.edges : Object.values(doc.edges || {})
+    state.nodes = new Map(nodesArr.map(node => [node.id, node as Node]))
+    state.edges = new Map(edgesArr.map(edge => [edge.id, edge as Edge]))
 
     // Migration: auto-resize nodes that still have the old default 150x50
     for (const [, node] of state.nodes) {

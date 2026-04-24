@@ -836,7 +836,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
             <div class="map-thumb">
               <div class="thumb-nodes">
                 <div
-                  v-for="(node, i) in map.nodes.slice(0, 8)"
+                  v-for="(node, i) in (Array.isArray(map.nodes) ? map.nodes : Object.values(map.nodes || {})).slice(0, 8)"
                   :key="i"
                   class="thumb-node"
                   :style="{
