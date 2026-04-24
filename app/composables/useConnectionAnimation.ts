@@ -6,11 +6,11 @@ import type { Anchor } from '~/types'
  * Handles line draw, pulse travel, and anchor pop animations
  */
 
-// Animation timing constants
-const LINE_DRAW_DURATION = 300    // ms
-const PULSE_DELAY = 200           // ms - delay before pulse starts
-const PULSE_DURATION = 400        // ms
-const ANCHOR_POP_DURATION = 300   // ms
+// Animation timing constants — tuned for smooth, premium feel
+const LINE_DRAW_DURATION = 500    // ms — slower line draw for elegance
+const PULSE_DELAY = 100           // ms — tight follow after line starts
+const PULSE_DURATION = 600        // ms — leisurely pulse travel with trail
+const ANCHOR_POP_DURATION = 400   // ms — gentle anchor settle
 
 export interface ConnectionAnimation {
   id: string
@@ -35,22 +35,26 @@ const activeAnchorAnimations = ref<AnchorAnimation[]>([])
 let animationFrameId: number | null = null
 
 /**
- * Easing function - ease out cubic for smooth deceleration
+ * Easing: ease out quart — smooth deceleration, more gradual than cubic
  */
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3)
+function easeOutQuart(t: number): number {
+  return 1 - Math.pow(1 - t, 4)
 }
 
 /**
- * Easing function - ease out elastic for spring effect
+ * Easing: ease in-out sine — gentle start and end for pulse travel
  */
-function easeOutElastic(t: number): number {
-  const c4 = (2 * Math.PI) / 3
-  return t === 0
-    ? 0
-    : t === 1
-    ? 1
-    : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1
+function easeInOutSine(t: number): number {
+  return -(Math.cos(Math.PI * t) - 1) / 2
+}
+
+/**
+ * Easing: ease out back — slight overshoot then settle (for anchor pop)
+ */
+function easeOutBack(t: number): number {
+  const c1 = 1.70158
+  const c3 = c1 + 1
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
 }
 
 /**
@@ -59,23 +63,23 @@ function easeOutElastic(t: number): number {
 export function getLineDrawProgress(animation: ConnectionAnimation, currentTime: number): number {
   const elapsed = currentTime - animation.startTime
   const progress = Math.min(1, elapsed / LINE_DRAW_DURATION)
-  return easeOutCubic(progress)
+  return easeOutQuart(progress)
 }
 
 /**
  * Get pulse progress (0-1, or -1 if not started yet)
+ * Uses ease-in-out for smooth acceleration and deceleration along the path
  */
 export function getPulseProgress(animation: ConnectionAnimation, currentTime: number): number {
   const elapsed = currentTime - animation.startTime
 
-  // Pulse hasn't started yet
   if (elapsed < PULSE_DELAY) {
     return -1
   }
 
   const pulseElapsed = elapsed - PULSE_DELAY
   const progress = Math.min(1, pulseElapsed / PULSE_DURATION)
-  return progress
+  return easeInOutSine(progress)
 }
 
 /**
@@ -92,21 +96,12 @@ export function getAnchorScale(nodeId: string, anchor: Anchor, currentTime: numb
   const progress = Math.min(1, elapsed / ANCHOR_POP_DURATION)
 
   if (animation.type === 'appear') {
-    // Scale from 0 to 1 with overshoot
-    if (progress < 0.6) {
-      return easeOutCubic(progress / 0.6) * 1.2
-    } else {
-      // Settle back to 1
-      const settleProgress = (progress - 0.6) / 0.4
-      return 1.2 - 0.2 * easeOutCubic(settleProgress)
-    }
+    // Scale from 0 to 1 with gentle overshoot via easeOutBack
+    return easeOutBack(progress)
   } else {
-    // Pop: scale 1 -> 1.5 -> 1
-    if (progress < 0.5) {
-      return 1 + 0.5 * easeOutCubic(progress / 0.5)
-    } else {
-      return 1.5 - 0.5 * easeOutCubic((progress - 0.5) / 0.5)
-    }
+    // Pop: scale 1 → 1.3 → 1 with smooth sine curve
+    const popT = easeInOutSine(progress)
+    return 1 + 0.3 * Math.sin(popT * Math.PI)
   }
 }
 

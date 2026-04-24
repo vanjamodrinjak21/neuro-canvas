@@ -312,19 +312,20 @@ export function drawAnimatedEdge(
 
   ctx.beginPath()
 
+  const cp1 = { x: cx1, y: cy1 }
+  const cp2 = { x: cx2, y: cy2 }
+
   if (style.type === 'bezier') {
-    // Draw partial bezier curve for animation using bezierPoint utility
+    // High-resolution partial bezier curve — 64 segments for silky smooth draw
     ctx.moveTo(sourcePoint.x, sourcePoint.y)
-    const cp1 = { x: cx1, y: cy1 }
-    const cp2 = { x: cx2, y: cy2 }
-    const steps = 20
-    for (let i = 1; i <= steps * drawProgress; i++) {
-      const t = i / steps
+    const steps = 64
+    const maxStep = Math.ceil(steps * drawProgress)
+    for (let i = 1; i <= maxStep; i++) {
+      const t = Math.min(i / steps, drawProgress)
       const pt = bezierPoint(t, sourcePoint, cp1, cp2, targetPoint)
       ctx.lineTo(pt.x, pt.y)
     }
   } else {
-    // Straight line - simple partial draw
     const currentEndX = sourcePoint.x + (targetPoint.x - sourcePoint.x) * drawProgress
     const currentEndY = sourcePoint.y + (targetPoint.y - sourcePoint.y) * drawProgress
     ctx.moveTo(sourcePoint.x, sourcePoint.y)
@@ -334,30 +335,61 @@ export function drawAnimatedEdge(
   ctx.stroke()
   ctx.setLineDash([])
 
-  // Draw pulse dot (after line draw starts)
+  // Draw pulse with glow trail
   const pulseProgress = getPulseProgress(animation, currentTime)
   if (pulseProgress >= 0 && pulseProgress <= 1) {
-    let pulseX: number, pulseY: number
-
-    if (style.type === 'bezier') {
-      const cp1 = { x: cx1, y: cy1 }
-      const cp2 = { x: cx2, y: cy2 }
-      const pt = bezierPoint(pulseProgress, sourcePoint, cp1, cp2, targetPoint)
-      pulseX = pt.x
-      pulseY = pt.y
-    } else {
-      pulseX = sourcePoint.x + (targetPoint.x - sourcePoint.x) * pulseProgress
-      pulseY = sourcePoint.y + (targetPoint.y - sourcePoint.y) * pulseProgress
+    // Compute pulse position on the path
+    function pulsePos(t: number): { x: number; y: number } {
+      if (style.type === 'bezier') {
+        return bezierPoint(t, sourcePoint, cp1, cp2, targetPoint)
+      }
+      return {
+        x: sourcePoint.x + (targetPoint.x - sourcePoint.x) * t,
+        y: sourcePoint.y + (targetPoint.y - sourcePoint.y) * t
+      }
     }
 
-    const opacity = pulseProgress < 0.2 ? pulseProgress * 5 :
-                    pulseProgress > 0.8 ? (1 - pulseProgress) * 5 : 1
+    const pt = pulsePos(pulseProgress)
+
+    // Fade in/out: quick fade in, long sustain, gentle fade out
+    const opacity = pulseProgress < 0.1 ? pulseProgress * 10 :
+                    pulseProgress > 0.85 ? (1 - pulseProgress) / 0.15 : 1
+
+    // Outer glow — large soft halo
+    const gradient = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 14)
+    gradient.addColorStop(0, colors.nodeSelected)
+    gradient.addColorStop(0.4, colors.nodeSelected + '40')
+    gradient.addColorStop(1, 'transparent')
 
     ctx.beginPath()
-    ctx.arc(pulseX, pulseY, 4, 0, Math.PI * 2)
+    ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2)
+    ctx.fillStyle = gradient
+    ctx.globalAlpha = opacity * 0.6
+    ctx.fill()
+
+    // Inner dot — crisp bright core
+    ctx.beginPath()
+    ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2)
     ctx.fillStyle = colors.nodeSelected
     ctx.globalAlpha = opacity
     ctx.fill()
+
+    // Short trailing ghost dots
+    for (let i = 1; i <= 3; i++) {
+      const trailT = Math.max(0, pulseProgress - i * 0.04)
+      const trailPt = pulsePos(trailT)
+      const trailOpacity = opacity * (1 - i * 0.3)
+      const trailRadius = 3.5 - i * 0.7
+
+      if (trailOpacity > 0 && trailRadius > 0) {
+        ctx.beginPath()
+        ctx.arc(trailPt.x, trailPt.y, trailRadius, 0, Math.PI * 2)
+        ctx.fillStyle = colors.nodeSelected
+        ctx.globalAlpha = trailOpacity * 0.4
+        ctx.fill()
+      }
+    }
+
     ctx.globalAlpha = 1
   }
 

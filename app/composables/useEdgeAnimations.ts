@@ -25,7 +25,7 @@ export function useEdgeAnimations() {
   /**
    * Trigger entrance animations for all edges (staggered)
    */
-  function triggerEntranceAll(edges: Map<string, Edge>, staggerMs: number = 30) {
+  function triggerEntranceAll(edges: Map<string, Edge>, staggerMs: number = 40) {
     if (reducedMotion) return
 
     const now = performance.now()
@@ -34,7 +34,7 @@ export function useEdgeAnimations() {
       entranceStates.set(edge.id, {
         edgeId: edge.id,
         startTime: now,
-        duration: 400,
+        duration: 600, // slower for smoother entrance
         delay: index * staggerMs
       })
       index++
