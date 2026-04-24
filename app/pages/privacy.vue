@@ -1,11 +1,13 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 definePageMeta({ layout: false })
 
 useHead({ title: 'Privacy Policy - NeuroCanvas' })
 </script>
 
 <template>
-  <LegalLayout title="Privacy Policy" last-updated="March 24, 2026">
+  <LegalLayout :title="$t('legal.privacy.title')" :last-updated="$t('legal.privacy.last_updated')">
     <h2>1. Introduction</h2>
     <p>
       NeuroCanvas ("we", "us", "our") is a mind mapping application developed and operated by

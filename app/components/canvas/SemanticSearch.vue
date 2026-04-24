@@ -75,11 +75,13 @@ function selectResult(result: SemanticSearchResult) {
   emit('close')
 }
 
-function matchTypeBadge(type: SemanticSearchResult['matchType']) {
+const { t } = useI18n()
+
+function matchTypeBadgeI18n(type: SemanticSearchResult['matchType']) {
   switch (type) {
-    case 'exact': return { label: 'Text', class: 'nc-badge-exact' }
-    case 'semantic': return { label: 'Semantic', class: 'nc-badge-semantic' }
-    case 'hybrid': return { label: 'Both', class: 'nc-badge-hybrid' }
+    case 'exact': return { label: t('canvas.semantic_search.match_text'), class: 'nc-badge-exact' }
+    case 'semantic': return { label: t('canvas.semantic_search.match_semantic'), class: 'nc-badge-semantic' }
+    case 'hybrid': return { label: t('canvas.semantic_search.match_both'), class: 'nc-badge-hybrid' }
   }
 }
 
@@ -110,11 +112,11 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
               v-model="query"
               type="text"
               class="nc-search-input"
-              placeholder="Search nodes..."
+              :placeholder="$t('canvas.semantic_search.placeholder')"
               autocomplete="off"
               spellcheck="false"
             >
-            <kbd class="nc-search-kbd">Esc</kbd>
+            <kbd class="nc-search-kbd">{{ $t('canvas.semantic_search.escape_key') }}</kbd>
           </div>
 
           <!-- Results -->
@@ -130,26 +132,26 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
                 <span class="nc-result-text">{{ result.content }}</span>
                 <span class="nc-result-similarity">{{ Math.round(result.similarity * 100) }}%</span>
               </div>
-              <span :class="['nc-result-badge', matchTypeBadge(result.matchType).class]">
-                {{ matchTypeBadge(result.matchType).label }}
+              <span :class="['nc-result-badge', matchTypeBadgeI18n(result.matchType).class]">
+                {{ matchTypeBadgeI18n(result.matchType).label }}
               </span>
             </button>
           </div>
 
           <!-- Empty state -->
           <div v-else-if="query.trim() && !isSearching" class="nc-search-empty">
-            No matching nodes found
+            {{ $t('canvas.semantic_search.no_results') }}
           </div>
 
           <!-- Loading -->
           <div v-else-if="isSearching" class="nc-search-empty">
             <span class="nc-search-spinner" />
-            Searching...
+            {{ $t('canvas.semantic_search.searching') }}
           </div>
 
           <!-- Hint -->
           <div v-else class="nc-search-hint">
-            Type to search by text or meaning
+            {{ $t('canvas.semantic_search.hint') }}
           </div>
         </div>
       </div>

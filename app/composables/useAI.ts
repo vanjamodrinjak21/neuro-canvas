@@ -307,12 +307,14 @@ export function useAI() {
     nodeContent: string,
     context: string[],
     maxSuggestions: number,
-    provider: { type: string; apiKey?: string; credentialId?: string; baseUrl?: string; selectedModelId?: string }
+    provider: { type: string; apiKey?: string; credentialId?: string; baseUrl?: string; selectedModelId?: string },
+    locale?: string
   ): Promise<string[]> {
     isLoading.value = true
     error.value = null
 
-    const systemPrompt = `You are a mind mapping assistant. Generate ${maxSuggestions} concise, related concepts for expanding a mind map node. Each suggestion should be 1-5 words, actionable, and directly related to the topic. Return ONLY a JSON array of strings, no explanation.`
+    const langNote = locale && locale !== 'en' ? ` Generate all suggestions in ${locale === 'hr' ? 'Croatian' : locale}.` : ''
+    const systemPrompt = `You are a mind mapping assistant. Generate ${maxSuggestions} concise, related concepts for expanding a mind map node. Each suggestion should be 1-5 words, actionable, and directly related to the topic.${langNote} Return ONLY a JSON array of strings, no explanation.`
 
     const userPrompt = context.length > 0
       ? `Topic: "${nodeContent}"\n\nExisting related nodes: ${context.join(', ')}\n\nGenerate ${maxSuggestions} new, unique related concepts that aren't already covered.`
@@ -435,7 +437,8 @@ export function useAI() {
   async function generateNodeDescription(
     nodeContent: string,
     contextNodes: Array<{ content: string; description?: { summary: string } }> = [],
-    style: 'concise' | 'detailed' | 'academic' = 'detailed'
+    style: 'concise' | 'detailed' | 'academic' = 'detailed',
+    locale?: string
   ): Promise<NodeDescription> {
     const provider = await resolveProvider()
 
@@ -443,7 +446,7 @@ export function useAI() {
     error.value = null
 
     try {
-      const { system, user } = buildNodeDescriptionPrompt(nodeContent, contextNodes, style)
+      const { system, user } = buildNodeDescriptionPrompt(nodeContent, contextNodes, style, locale)
 
       // Check Redis cache (descriptions are stable, long TTL)
       const cache = getSemanticCache()

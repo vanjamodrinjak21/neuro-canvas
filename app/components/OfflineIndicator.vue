@@ -5,6 +5,7 @@
  * Shows a subtle banner when the device goes offline.
  * Uses VueUse's useOnline() + @capacitor/network for native detection.
  */
+const { t } = useI18n()
 const isOnline = ref(true)
 const showBanner = ref(false)
 const justReconnected = ref(false)
@@ -91,14 +92,14 @@ onUnmounted(() => {
         class="w-2 h-2 rounded-full shrink-0"
         :class="justReconnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'"
       />
-      <span v-if="justReconnected">Back online</span>
-      <span v-else>Offline &mdash; changes saved locally</span>
+      <span v-if="justReconnected">{{ $t('common.offline.back_online') }}</span>
+      <span v-else>{{ $t('common.offline.message') }}</span>
       <button
         v-if="!isOnline"
         class="ml-2 px-2 py-0.5 rounded text-xs bg-amber-800/60 hover:bg-amber-800 transition-colors"
         @click="showBanner = false"
       >
-        Dismiss
+        {{ $t('common.offline.dismiss') }}
       </button>
     </div>
   </Transition>

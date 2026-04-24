@@ -2,6 +2,7 @@
 import { useSyncEngine } from '~/composables/useSyncEngine'
 
 const syncEngine = useSyncEngine()
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'open-conflicts': []
@@ -9,14 +10,14 @@ const emit = defineEmits<{
 
 const statusLabel = computed(() => {
   switch (syncEngine.syncStatus.value) {
-    case 'idle': return 'Synced'
-    case 'syncing': return 'Syncing...'
+    case 'idle': return t('canvas.sync.status.synced')
+    case 'syncing': return t('canvas.sync.status.syncing')
     case 'offline': return syncEngine.pendingChanges.value > 0
-      ? `Offline (${syncEngine.pendingChanges.value})`
-      : 'Offline'
-    case 'conflict': return 'Conflict'
-    case 'error': return 'Sync error'
-    case 'disabled': return 'Local only'
+      ? t('canvas.sync.status.offline_pending', { n: syncEngine.pendingChanges.value })
+      : t('canvas.sync.status.offline')
+    case 'conflict': return t('canvas.sync.status.conflict')
+    case 'error': return t('canvas.sync.status.error')
+    case 'disabled': return t('canvas.sync.status.local_only')
     default: return ''
   }
 })

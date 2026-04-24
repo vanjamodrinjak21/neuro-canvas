@@ -55,6 +55,8 @@ export interface RichContext {
   totalEdges: number
   /** Map title */
   mapTitle?: string
+  /** Locale code for language instruction (e.g. 'hr', 'de', 'fr', 'es') */
+  locale?: string
 }
 
 export interface ContextParams {

@@ -4,6 +4,7 @@ import type { NodeTemplate } from '~/components/canvas/NodeTemplates.vue'
 import type { ContextMenuItem } from '~/components/ui/NcContextMenu.vue'
 import type { AISuggestion, RichNodeSuggestion, GenerationContext } from '~/types'
 import type { SidebarAction } from '~/types/sidebar'
+const { locale: currentLocale } = useI18n()
 import { useMapStore } from '~/stores/mapStore'
 import { useUserStore } from '~/stores/userStore'
 import { useSemanticStore } from '~/stores/semanticStore'
@@ -32,6 +33,7 @@ const router = useRouter()
 
 // Platform
 const platform = usePlatform()
+const isMobile = platform.isMobile
 const mapId = computed(() => route.params.id as string)
 
 // Stores
@@ -109,6 +111,7 @@ const templatePosition = ref<Point | null>(null)
 const showPropertiesPanel = ref(false)
 const showShortcutsModal = ref(false)
 const showBacklinksPanel = ref(false)
+const showDetailPanel = ref(false)
 
 // Selected node
 const selectedNode = computed(() => {
@@ -121,7 +124,8 @@ const selectedNode = computed(() => {
 
 watch(selectedNode, (node) => {
   showPropertiesPanel.value = !!node
-  // Dismiss hover preview when node is selected — properties panel shows details instead
+  showDetailPanel.value = !!node
+  // Dismiss hover preview when node is selected — detail panel shows full info instead
   if (node) hoveredPreviewNode.value = null
 })
 
@@ -186,7 +190,6 @@ const showGenerateMapDialog = ref(false)
 // Overflow menu (managed by OverflowMenu component internally)
 
 // Sidebar visibility (desktop always visible, mobile as sheet)
-const isMobile = ref(false)
 const showSidebarSheet = ref(false)
 const showMobileAISheet = ref(false)
 const sidebarCollapsed = ref(false)
@@ -201,7 +204,7 @@ watch(() => userStore.preferences.value.showGrid, (show) => {
   mapStore.settings.gridEnabled = show
 }, { immediate: true })
 
-// View mode toggle: canvas (default) or graph (Obsidian-style)
+// View mode toggle: canvas (default on desktop), editor (default on mobile)
 const viewMode = ref<'canvas' | 'graph' | 'editor'>('canvas')
 
 // Minimap visibility — respect user preference from settings
@@ -492,12 +495,11 @@ function cancelEditTitle() {
   isEditingTitle.value = false
 }
 
-// Check mobile on mount
+// Set mobile default view on mount
 onMounted(() => {
-  isMobile.value = window.innerWidth < 768
-  window.addEventListener('resize', () => {
-    isMobile.value = window.innerWidth < 768
-  })
+  if (isMobile.value) {
+    viewMode.value = 'editor'
+  }
 })
 
 // Helper to check if user is typing in an input field
@@ -521,6 +523,7 @@ onKeyStroke('Escape', () => {
   showTemplates.value = false
   contextMenuVisible.value = false
   showShortcutsModal.value = false
+  showDetailPanel.value = false
   if (isEditingTitle.value) cancelEditTitle()
 })
 onKeyStroke('s', (e) => {
@@ -655,7 +658,7 @@ function deleteSelectedWithAnimations() {
     }
   }
   mapStore.deleteSelected()
-  if (platform.isMobile.value) platform.haptics.impact('heavy')
+  if (isMobile.value) platform.haptics.impact('heavy')
   // Focus canvas after delete
   canvasRef.value?.containerRef?.focus()
 }
@@ -796,7 +799,7 @@ function handleNavigateToNode(nodeId: string) {
 function handleAddNode() {
   mapStore.addNode({ position: { x: 100, y: 100 }, content: 'New Node' })
   contextMenuVisible.value = false
-  if (platform.isMobile.value) platform.haptics.impact('medium')
+  if (isMobile.value) platform.haptics.impact('medium')
 }
 
 async function handleSmartExpand() {
@@ -824,7 +827,8 @@ async function handleSmartExpand() {
         label: e.label
       })),
       depth: 'medium',
-      style: 'detailed'
+      style: 'detailed',
+      locale: currentLocale.value
     }
 
     // Try enhanced expand first
@@ -1074,7 +1078,8 @@ async function handleGenerateSuggestions() {
         label: e.label
       })),
       depth: 'medium',
-      style: 'detailed'
+      style: 'detailed',
+      locale: currentLocale.value
     }
 
     // Try enhanced expand
@@ -1099,11 +1104,11 @@ async function handleGenerateSuggestions() {
     }
   } catch (error) {
     console.error('Failed to generate suggestions:', error)
-    if (platform.isMobile.value) platform.haptics.notification('error')
+    if (isMobile.value) platform.haptics.notification('error')
   } finally {
     isAILoading.value = false
     // Haptic feedback on AI completion
-    if (platform.isMobile.value && (aiSuggestions.value.length > 0 || richSuggestions.value.length > 0)) {
+    if (isMobile.value && (aiSuggestions.value.length > 0 || richSuggestions.value.length > 0)) {
       platform.haptics.notification('success')
     }
   }
@@ -1185,7 +1190,8 @@ async function handleDeepExpand() {
         label: e.label
       })),
       depth: 'deep',
-      style: 'detailed'
+      style: 'detailed',
+      locale: currentLocale.value
     }
 
     const suggestions = await ai.hierarchicalExpand(node.content, context, {
@@ -1235,7 +1241,7 @@ async function handleGenerateDescription() {
         description: n.metadata?.description as { summary: string } | undefined
       }))
 
-    const description = await ai.generateNodeDescription(node.content, contextNodes, 'detailed')
+    const description = await ai.generateNodeDescription(node.content, contextNodes, 'detailed', currentLocale.value)
 
     // Update the node with the generated description
     mapStore.updateNode(node.id, {
@@ -1267,7 +1273,8 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
       maxDepth: options.depth === 'shallow' ? 1 : options.depth === 'deep' ? 3 : 2,
       style: options.style as 'concise' | 'detailed' | 'academic',
       includeCrossConnections: options.depth !== 'shallow',
-      domain: options.domain
+      domain: options.domain,
+      locale: currentLocale.value
     })
 
     // Clear existing nodes if desired or render at offset
@@ -1446,9 +1453,8 @@ useHead({
       </div>
     </div>
 
-    <!-- ═══════════════ MOBILE OUTLINE EDITOR (< 768px) ═══════════════ -->
-    <!-- Obsidian-style: markdown/typing area only, no infinite canvas on mobile -->
-    <template v-if="isMobile && !isLoading && !loadError">
+    <!-- ═══════════════ MOBILE FAB (Editor view only) ═══════════════ -->
+    <template v-if="isMobile && viewMode === 'editor' && !isLoading && !loadError">
       <!-- AI Suggestions FAB -->
       <button
         class="fixed top-16 right-3 z-40 w-10 h-10 rounded-xl flex items-center justify-center bg-nc-surface-3 text-nc-ink border border-nc-surface-3 shadow-lg active:scale-95 transition-all"
@@ -1457,11 +1463,9 @@ useHead({
       >
         <span class="i-lucide-sparkles text-lg" />
       </button>
-
-      <OutlineEditor class="flex-1" />
     </template>
 
-    <!-- ═══════════════ LEFT SIDEBAR (Desktop — UNTOUCHED) ═══════════════ -->
+    <!-- ═══════════════ LEFT SIDEBAR (Desktop only) ═══════════════ -->
     <template v-if="!isMobile">
     <Transition
       enter-active-class="transition-all duration-300 ease-out"
@@ -1487,6 +1491,7 @@ useHead({
     >
       <span class="i-lucide-panel-left-open text-base" />
     </button>
+    </template><!-- end desktop sidebar -->
 
     <!-- ═══════════════ MAIN CANVAS AREA ═══════════════ -->
     <div class="flex-1 relative">
@@ -1502,20 +1507,39 @@ useHead({
         :is-drag-over="canvasRef?.isDragOver ?? false"
       />
 
-      <!-- Empty canvas guide (shown when no nodes exist) -->
+      <!-- Empty canvas guide (desktop only — no canvas on mobile) -->
       <CanvasEmptyCanvasGuide
-        v-if="!isLoading && !loadError && mapStore.nodes.size === 0"
+        v-if="!isLoading && !loadError && mapStore.nodes.size === 0 && !isMobile"
         @add-node="handleAddNodeFromSidebar"
         @generate-map="showGenerateMapDialog = true"
       />
 
-      <!-- Canvas View -->
+      <!-- Mobile Segmented Control (Editor | Graph) -->
+      <div v-if="isMobile && !isLoading && !loadError" class="nc-mobile-segmented-wrapper">
+        <div class="nc-mobile-segmented">
+          <button
+            :class="['nc-segment', { active: viewMode === 'editor' }]"
+            @click="viewMode = 'editor'; platform.haptics.selection()"
+          >
+            <span class="i-lucide-file-text nc-segment-icon" />
+            <span class="nc-segment-label">Editor</span>
+          </button>
+          <button
+            :class="['nc-segment', { active: viewMode === 'graph' }]"
+            @click="viewMode = 'graph'; platform.haptics.selection()"
+          >
+            <span class="i-lucide-git-fork nc-segment-icon" />
+            <span class="nc-segment-label">Graph</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas View (desktop only) -->
       <CanvasInfiniteCanvas
-        v-if="!isLoading && !loadError && viewMode === 'canvas'"
+        v-if="!isLoading && !loadError && viewMode === 'canvas' && !isMobile"
         ref="canvasRef"
         :camera="camera"
         :tool="activeTool"
-        class="absolute inset-0"
         @update:camera="springCamera.setCurrent($event)"
         @pan-end="(v: { vx: number; vy: number }) => springCamera.addVelocity(v.vx, v.vy)"
         @contextmenu="handleCanvasContextMenu"
@@ -1549,10 +1573,10 @@ useHead({
         />
       </Transition>
 
-      <!-- Node Hover Preview (canvas only) -->
+      <!-- Node Hover Preview (canvas only, hidden when detail panel is open) -->
       <Transition name="nc-fade-up">
         <CanvasNodeHoverPreview
-          v-if="viewMode === 'canvas' && hoveredPreviewNode && !contextMenuVisible"
+          v-if="viewMode === 'canvas' && hoveredPreviewNode && !contextMenuVisible && !showDetailPanel"
           :node="hoveredPreviewNode"
           :screen-x="hoverPreviewPosition.x"
           :screen-y="hoverPreviewPosition.y"
@@ -1598,9 +1622,9 @@ useHead({
       />
     </div>
 
-    <!-- ═══════════════ BOTTOM TOOLBAR (canvas only) ═══════════════ -->
+    <!-- ═══════════════ BOTTOM TOOLBAR (canvas only, desktop) ═══════════════ -->
     <CanvasBottomToolbar
-      v-if="viewMode === 'canvas'"
+      v-if="viewMode === 'canvas' && !isMobile"
       :active-tool="activeTool"
       :zoom="camera.zoom"
       :semantic-field-enabled="semanticFieldEnabled"
@@ -1622,8 +1646,8 @@ useHead({
       @redo="mapStore.redo()"
     />
 
-    <!-- Minimap (canvas mode only, when enabled in settings) -->
-    <div v-if="minimapEnabled && viewMode === 'canvas'" class="minimap-wrapper">
+    <!-- Minimap (canvas mode only, desktop, when enabled in settings) -->
+    <div v-if="minimapEnabled && viewMode === 'canvas' && !isMobile" class="minimap-wrapper">
       <Minimap
         v-model:collapsed="minimapCollapsed"
         :camera="camera"
@@ -1635,35 +1659,6 @@ useHead({
         @fit-all="fitToContent"
       />
     </div>
-
-    <!-- ═══════════════ MOBILE BOTTOM BAR ═══════════════ -->
-    <nav class="absolute bottom-0 left-0 right-0 z-toolbar md:hidden">
-      <div class="nc-glass-elevated border-t border-nc-border px-4 py-3">
-        <div class="flex items-center justify-around">
-          <NcButton :variant="activeTool === 'select' ? 'primary' : 'ghost'" size="icon" @click="activeTool = 'select'">
-            <span class="i-lucide-mouse-pointer" />
-          </NcButton>
-          <NcButton :variant="activeTool === 'pan' ? 'primary' : 'ghost'" size="icon" @click="activeTool = 'pan'">
-            <span class="i-lucide-hand" />
-          </NcButton>
-          <NcButton :variant="activeTool === 'node' ? 'primary' : 'ghost'" size="icon" @click="activeTool = 'node'">
-            <span class="i-lucide-plus" />
-          </NcButton>
-          <NcButton :variant="activeTool === 'connect' ? 'primary' : 'ghost'" size="icon" @click="activeTool = 'connect'">
-            <span class="i-lucide-move-diagonal" />
-          </NcButton>
-          <button
-            class="nc-ai-btn !py-2 !px-3"
-            :disabled="!selectedNode || isAILoading"
-            @click="handleGenerateSuggestions"
-          >
-            <span class="i-lucide-sparkles" />
-          </button>
-        </div>
-      </div>
-    </nav>
-
-    </template><!-- end desktop-only -->
 
     <!-- Mobile Sidebar Sheet -->
     <CanvasMobileSidebarSheet
@@ -1708,6 +1703,15 @@ useHead({
       :node="selectedNode"
       @close="showBacklinksPanel = false"
       @navigate="handleNavigateToNode"
+    />
+
+    <!-- Node Detail Panel (right side) -->
+    <CanvasNodeDetailPanel
+      :visible="showDetailPanel && !isMobile"
+      :node="selectedNode"
+      @close="showDetailPanel = false"
+      @navigate="handleNavigateToNode"
+      @generate-description="handleGenerateDescription"
     />
 
     <GraphView
@@ -1791,56 +1795,61 @@ useHead({
   pointer-events: auto;
 }
 
-@media (max-width: 768px) {
-  .minimap-wrapper {
-    display: none;
-  }
+/* ═══ Mobile Segmented Control ═══ */
+.nc-mobile-segmented-wrapper {
+  position: relative;
+  z-index: 30;
+  padding: 0 16px 12px;
+  flex-shrink: 0;
+}
 
-  /* Canvas sidebar becomes bottom sheet on mobile */
-  .nc-sidebar-wrapper {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    width: 100%;
-    max-height: 55vh;
-    z-index: 150;
-    border-radius: 16px 16px 0 0;
-    overflow: hidden;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
-  }
+.nc-mobile-segmented {
+  display: flex;
+  background: var(--nc-surface-2, #111114);
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid var(--nc-border, #1E1E22);
+  gap: 4px;
+}
 
-  .nc-sidebar-wrapper :deep(.shell) {
-    min-height: auto;
-    height: 100%;
-    border-right: none;
-    border-radius: 16px 16px 0 0;
-    border-top: 1px solid #1E1E22;
-  }
+.nc-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 28px;
+  border-radius: 8px;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
 
-  :root.light .nc-sidebar-wrapper :deep(.shell) {
-    border-top-color: #E8E8E6;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.08);
-  }
+.nc-segment-icon {
+  font-size: 14px;
+  color: var(--nc-text-secondary, #888890);
+}
 
-  .nc-sidebar-wrapper :deep(.shell__spacer) {
-    display: none;
-  }
+.nc-segment-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--nc-text-secondary, #888890);
+}
 
-  .nc-sidebar-wrapper :deep(.shell__content) {
-    padding-top: 0;
-  }
+.nc-segment.active {
+  background: var(--nc-surface-3, #1E1E22);
+}
 
-  .nc-sidebar-wrapper :deep(.shell__resize-handle) {
-    display: none;
-  }
+.nc-segment.active .nc-segment-icon {
+  color: var(--nc-ink, #FAFAFA);
+}
 
-  .nc-sidebar-show-btn {
-    display: none;
-  }
-
-  /* Top bar handled by TopBar.vue component's own mobile styles */
+.nc-segment.active .nc-segment-label {
+  font-weight: 600;
+  color: var(--nc-ink, #FAFAFA);
 }
 </style>
 

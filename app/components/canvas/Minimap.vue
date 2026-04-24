@@ -432,6 +432,8 @@ function handlePointerUp() {
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
 }
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -440,8 +442,8 @@ function toggleCollapse() {
     <button
       v-if="isCollapsed"
       class="nc-minimap-toggle"
-      title="Show minimap (M)"
-      aria-label="Show minimap"
+      :title="$t('canvas.minimap.show')"
+      :aria-label="$t('canvas.minimap.toggle')"
       @click="toggleCollapse"
     >
       <span class="i-lucide-map text-xs" />
@@ -454,11 +456,11 @@ function toggleCollapse() {
     >
       <!-- Header -->
       <div class="nc-minimap-header">
-        <span class="nc-minimap-title">MINIMAP</span>
+        <span class="nc-minimap-title">{{ $t('canvas.minimap.title') }}</span>
         <button
           class="nc-minimap-collapse-btn"
-          title="Collapse minimap (M)"
-          aria-label="Toggle minimap"
+          :title="$t('canvas.minimap.collapse')"
+          :aria-label="$t('canvas.minimap.toggle')"
           @click.stop="toggleCollapse"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>

@@ -14,6 +14,7 @@ const mapStore = useMapStore()
 const router = useRouter()
 const syncEngine = useSyncEngine()
 const { confirm, ConfirmDialog } = useConfirmDialog()
+const { t } = useI18n()
 
 // State
 const allMaps = ref<DBMapDocument[]>([])
@@ -110,28 +111,47 @@ const filteredMaps = computed(() => {
 })
 
 const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
-const _session = _isTauri ? { data: ref({ user: { id: 'desktop-user' } }) } : useAuth()
+const _isCapacitor = typeof window !== 'undefined' && 'Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.()
+const _isNative = _isTauri || _isCapacitor
+const _session = _isNative ? { data: ref({ user: { id: 'native-user' } }) } : useAuth()
+const _mobileAuth = _isCapacitor ? useMobileAuth() : null
+const _desktopAuth = _isTauri ? useDesktopAuth() : null
+
+function mapResponse(m: any): DBMapDocument {
+  return {
+    id: m.id,
+    title: m.title,
+    nodes: m.data?.nodes || [],
+    edges: m.data?.edges || [],
+    camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
+    settings: m.data?.settings || {},
+    rootNodeId: m.data?.rootNodeId,
+    preview: m.preview,
+    tags: m.tags || [],
+    createdAt: new Date(m.createdAt).getTime(),
+    updatedAt: new Date(m.updatedAt).getTime(),
+    syncVersion: m.syncVersion,
+    checksum: m.checksum
+  } as DBMapDocument
+}
 
 // Load all maps from server (PostgreSQL → Redis → client), fallback to IndexedDB
 onMounted(async () => {
   try {
-    if (!_isTauri && _session.data?.value?.user) {
+    const nativeSignedIn = (_isTauri && _desktopAuth?.isSignedIn.value)
+      || (_isCapacitor && _mobileAuth?.isSignedIn.value)
+
+    if (_isNative && nativeSignedIn) {
+      // Native + signed in: fetch via native HTTP
+      const fetcher = _isTauri
+        ? _desktopAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
+        : _mobileAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
+      const response = await fetcher
+      allMaps.value = response.maps.map(mapResponse)
+    } else if (!_isNative && _session.data?.value?.user) {
+      // Web: fetch from server
       const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
-      allMaps.value = response.maps.map((m: any) => ({
-        id: m.id,
-        title: m.title,
-        nodes: m.data?.nodes || [],
-        edges: m.data?.edges || [],
-        camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
-        settings: m.data?.settings || {},
-        rootNodeId: m.data?.rootNodeId,
-        preview: m.preview,
-        tags: m.tags || [],
-        createdAt: new Date(m.createdAt).getTime(),
-        updatedAt: new Date(m.updatedAt).getTime(),
-        syncVersion: m.syncVersion,
-        checksum: m.checksum
-      })) as DBMapDocument[]
+      allMaps.value = response.maps.map(mapResponse)
     } else {
       allMaps.value = await db.getAllMaps()
     }
@@ -205,18 +225,18 @@ function formatDate(timestamp: number): string {
       <!-- Header -->
       <div class="maps-header">
         <div class="header-left">
-          <h1 class="header-title">All Maps</h1>
+          <h1 class="header-title">{{ $t('common.nav.maps') }}</h1>
           <span class="header-count">{{ filteredMaps.length }} mind maps</span>
         </div>
 
         <div class="header-actions">
-          <div class="search-box">
+          <div class="search-box search-box--desktop">
             <span class="i-lucide-search search-icon" />
             <input
               v-model="searchQuery"
               type="text"
               class="search-input"
-              placeholder="Search maps..."
+              :placeholder="$t('common.search.placeholder')"
             >
           </div>
           <button
@@ -224,13 +244,24 @@ function formatDate(timestamp: number): string {
             @click="toggleSelectMode"
           >
             <span class="i-lucide-check-square" />
-            {{ selectMode ? 'Cancel' : 'Select' }}
+            {{ selectMode ? $t('common.buttons.cancel') : 'Select' }}
           </button>
           <button class="btn-sort">
             <span class="i-lucide-arrow-up-down" />
             Sort
           </button>
         </div>
+      </div>
+
+      <!-- Mobile search (outside header-actions so it stays visible) -->
+      <div class="search-box search-box--mobile">
+        <span class="i-lucide-search search-icon" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="search-input"
+          :placeholder="$t('common.search.placeholder')"
+        >
       </div>
 
       <!-- Select toolbar -->
@@ -242,7 +273,7 @@ function formatDate(timestamp: number): string {
         <span class="select-count">{{ selectedCount }} selected</span>
         <button v-if="selectedCount > 0" class="btn-delete" @click="deleteSelected">
           <span class="i-lucide-trash-2" />
-          Delete
+          {{ $t('common.buttons.delete') }}
         </button>
       </div>
 
@@ -254,21 +285,21 @@ function formatDate(timestamp: number): string {
       <!-- Empty state -->
       <div v-else-if="filteredMaps.length === 0 && !searchQuery" class="empty-state">
         <span class="i-lucide-map empty-icon" />
-        <h3 class="empty-title">No maps yet</h3>
-        <p class="empty-desc">Create your first mind map to get started</p>
+        <h3 class="empty-title">{{ $t('common.errors.not_found') }}</h3>
+        <p class="empty-desc">{{ $t('common.onboarding.step_create_desc') }}</p>
         <button class="btn-primary" @click="createNewMap">
           <span class="i-lucide-plus" />
-          Create Map
+          {{ $t('common.buttons.create') }}
         </button>
       </div>
 
       <!-- No results -->
       <div v-else-if="filteredMaps.length === 0 && searchQuery" class="empty-state">
         <span class="i-lucide-search-x empty-icon" />
-        <h3 class="empty-title">No maps found</h3>
-        <p class="empty-desc">Try a different search term</p>
+        <h3 class="empty-title">{{ $t('common.errors.not_found') }}</h3>
+        <p class="empty-desc">{{ $t('common.errors.generic') }}</p>
         <button class="btn-ghost" @click="searchQuery = ''">
-          Clear search
+          {{ $t('common.buttons.cancel') }}
         </button>
       </div>
 
@@ -372,6 +403,10 @@ function formatDate(timestamp: number): string {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.search-box--mobile {
+  display: none;
 }
 
 /* Search */
@@ -857,8 +892,9 @@ function formatDate(timestamp: number): string {
     display: none;
   }
 
-  /* Search bar: full width, inside padding */
-  .search-box {
+  /* Mobile search bar: visible on mobile */
+  .search-box--mobile {
+    display: flex;
     margin: 0 24px 20px;
     height: 44px;
     border-radius: 8px;
@@ -866,7 +902,7 @@ function formatDate(timestamp: number): string {
     border: 1px solid #1E1E22;
   }
 
-  :root.light .search-box {
+  :root.light .search-box--mobile {
     background: #FFFFFF;
     border-color: #E8E8E6;
   }

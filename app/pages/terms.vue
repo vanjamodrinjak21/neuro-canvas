@@ -1,11 +1,13 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 definePageMeta({ layout: false })
 
 useHead({ title: 'Terms of Service - NeuroCanvas' })
 </script>
 
 <template>
-  <LegalLayout title="Terms of Service" last-updated="March 24, 2026">
+  <LegalLayout :title="$t('legal.terms.title')" :last-updated="$t('legal.terms.last_updated')">
     <p>
       These Terms of Service ("Terms") constitute a legally binding agreement between you ("User", "you", or "your") and
       Vanja Modrinjak, an individual developer operating under the name NeuroCanvas ("NeuroCanvas", "we", "us", or "our").

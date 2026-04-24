@@ -11,6 +11,23 @@ import type {
 } from '~/types/ai-generation'
 
 /**
+ * Get language instruction for AI prompts based on locale.
+ * Returns an instruction string that tells the LLM to generate content in the specified language.
+ * JSON keys stay in English; only user-facing values (titles, descriptions, labels) are translated.
+ */
+export function getLanguageInstruction(locale?: string): string {
+  if (!locale || locale === 'en') return ''
+  const languageNames: Record<string, string> = {
+    hr: 'Croatian (Hrvatski)',
+    de: 'German (Deutsch)',
+    fr: 'French (Français)',
+    es: 'Spanish (Español)'
+  }
+  const langName = languageNames[locale] || locale
+  return `\nIMPORTANT: Generate ALL user-facing text (titles, descriptions, labels, questions) in ${langName}. JSON property names must remain in English. Only the string VALUES should be in ${langName}.`
+}
+
+/**
  * Get style-specific instructions for prompts
  */
 function getStyleInstructions(style: GenerationStyle): string {
@@ -86,6 +103,8 @@ export function buildEnhancedExpandPrompt(
   const styleInstructions = getStyleInstructions(context.style)
   const domainContext = context.domain ? `\nDomain/Subject Area: ${context.domain}` : ''
 
+  const langInstruction = getLanguageInstruction(context.locale)
+
   const system = `You are an expert mind mapping assistant who generates DIVERSE, INTERESTING concept suggestions. Don't just list obvious subcategories - provide a MIX of:
 - Deeper explorations (what lies beneath this concept?)
 - Practical applications (how is this used in real life?)
@@ -93,7 +112,7 @@ export function buildEnhancedExpandPrompt(
 - Concrete examples (specific instances, not abstract)
 - Surprising connections (what unexpected things relate?)
 
-${styleInstructions}
+${styleInstructions}${langInstruction}
 
 CRITICAL REQUIREMENTS:
 1. Generate exactly ${maxSuggestions} suggestions with VARIED categories
@@ -130,13 +149,15 @@ Return ONLY the JSON array:`
 export function buildNodeDescriptionPrompt(
   nodeContent: string,
   contextNodes: Array<{ content: string; description?: { summary: string } }>,
-  style: GenerationStyle = 'detailed'
+  style: GenerationStyle = 'detailed',
+  locale?: string
 ): { system: string; user: string } {
   const styleInstructions = getStyleInstructions(style)
+  const langInstruction = getLanguageInstruction(locale)
 
   const system = `You are an expert knowledge synthesizer. Generate clear, informative descriptions for mind map nodes.
 
-${styleInstructions}
+${styleInstructions}${langInstruction}
 
 IMPORTANT RULES:
 1. The summary should explain WHY this concept matters, not just define it
@@ -178,11 +199,13 @@ export function buildMapStructurePrompt(
     maxDepth = 2,
     style = 'detailed',
     includeCrossConnections = true,
-    domain
+    domain,
+    locale
   } = options
 
   const styleInstructions = getStyleInstructions(style)
   const domainContext = domain ? `\nDomain/Subject Area: ${domain}` : ''
+  const langInstruction = getLanguageInstruction(locale)
 
   // Calculate complexity based on depth setting
   const minChildren = maxDepth >= 2 ? 2 : 1
@@ -191,7 +214,7 @@ export function buildMapStructurePrompt(
 
   const system = `You are an expert mind mapping architect who creates rich, interconnected knowledge maps. Your maps should be visually interesting with varied structure - NOT a boring flat hierarchy.
 
-${styleInstructions}
+${styleInstructions}${langInstruction}
 
 CRITICAL STRUCTURE REQUIREMENTS:
 1. Create ${branchCount} main branches with VARIED depths (some shallow, some deep)
@@ -284,10 +307,11 @@ export function buildHierarchicalExpandPrompt(
   const { depth = 2, maxPerLevel = 3, style = 'detailed' } = options
   const styleInstructions = getStyleInstructions(style)
   const domainContext = context.domain ? `\nDomain/Subject Area: ${context.domain}` : ''
+  const langInstruction = getLanguageInstruction(context.locale)
 
   const system = `You are an expert mind mapping assistant creating RICH hierarchical expansions. Your output should create a mini-knowledge tree that explores "${nodeContent}" from multiple angles.
 
-${styleInstructions}
+${styleInstructions}${langInstruction}
 
 STRUCTURE REQUIREMENTS:
 1. Generate ${maxPerLevel} DIVERSE main branches (not just categories!)
@@ -344,9 +368,11 @@ Return ONLY the JSON array:`
 export function buildConnectionSuggestionPrompt(
   nodes: Array<{ id: string; content: string; description?: { summary: string } }>,
   existingEdges: Array<{ sourceId: string; targetId: string }>,
-  maxSuggestions: number = 5
+  maxSuggestions: number = 5,
+  locale?: string
 ): { system: string; user: string } {
-  const system = `You are an expert at discovering meaningful relationships between concepts. Analyze nodes and suggest connections that reveal hidden relationships and create a more interconnected knowledge graph.
+  const langInstruction = getLanguageInstruction(locale)
+  const system = `You are an expert at discovering meaningful relationships between concepts. Analyze nodes and suggest connections that reveal hidden relationships and create a more interconnected knowledge graph.${langInstruction}
 
 IMPORTANT RULES:
 1. Only suggest connections that add genuine insight

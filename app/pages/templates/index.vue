@@ -10,6 +10,7 @@ definePageMeta({
 })
 
 const router = useRouter()
+const { t } = useI18n()
 
 // Tauri detection
 const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
@@ -38,23 +39,23 @@ const mapStore = useMapStore()
 const mapRenderer = useMapRenderer()
 const db = useDatabase()
 
-const categories: Array<{ value: TemplateCategory | 'all' | 'my'; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'education', label: 'Education' },
-  { value: 'business', label: 'Business' },
-  { value: 'creative', label: 'Creative' },
-  { value: 'planning', label: 'Planning' },
-  { value: 'research', label: 'Research' },
-  { value: 'my', label: 'My Templates' },
-]
+const categories = computed<Array<{ value: TemplateCategory | 'all' | 'my'; label: string }>>(() => [
+  { value: 'all', label: t('templates.filter.all') },
+  { value: 'education', label: t('templates.filter.education') },
+  { value: 'business', label: t('templates.filter.business') },
+  { value: 'creative', label: t('templates.filter.creative') },
+  { value: 'planning', label: t('templates.filter.planning') },
+  { value: 'research', label: t('templates.filter.research') },
+  { value: 'my', label: t('templates.filter.my_templates') },
+])
 
 const activeCategory = ref<string>('all')
 const sortBy = ref('popular')
-const sortOptions = [
-  { value: 'popular', label: 'Popular' },
-  { value: 'newest', label: 'Newest' },
-  { value: 'alphabetical', label: 'A-Z' },
-]
+const sortOptions = computed(() => [
+  { value: 'popular', label: t('templates.filter.popular') },
+  { value: 'newest', label: t('templates.filter.newest') },
+  { value: 'alphabetical', label: t('templates.filter.a_z') },
+])
 
 const displayedTemplates = computed(() => {
   if (activeCategory.value === 'my') return myTemplates.value ?? []
@@ -164,14 +165,14 @@ onMounted(async () => {
       <!-- Header -->
       <div class="templates-header">
         <div class="header-left">
-          <h1 class="page-title">Templates</h1>
-          <p class="page-subtitle">Browse, create, and share mind map templates</p>
+          <h1 class="page-title">{{ $t('templates.page.title') }}</h1>
+          <p class="page-subtitle">{{ $t('templates.page.subtitle') }}</p>
         </div>
         <button v-if="!_isTauri" class="publish-btn" @click="showPublishModal = true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
-          Publish Template
+          {{ $t('templates.buttons.publish_template') }}
         </button>
       </div>
 
@@ -181,11 +182,11 @@ onMounted(async () => {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
         </div>
         <div class="prompt-text">
-          <span class="prompt-title">Sign in for community templates</span>
-          <span class="prompt-desc">Browse and use templates shared by the NeuroCanvas community.</span>
+          <span class="prompt-title">{{ $t('templates.desktop_signin.title') }}</span>
+          <span class="prompt-desc">{{ $t('templates.desktop_signin.description') }}</span>
         </div>
         <button class="prompt-signin-btn" @click="desktopAuth?.signIn()">
-          Sign In
+          {{ $t('templates.desktop_signin.sign_in') }}
         </button>
       </div>
 
@@ -197,8 +198,8 @@ onMounted(async () => {
           </svg>
         </div>
         <div class="ai-bar-text">
-          <span class="ai-bar-title">Generate with AI</span>
-          <span class="ai-bar-desc">Describe what you need and AI will create a template structure</span>
+          <span class="ai-bar-title">{{ $t('templates.ai_bar.title') }}</span>
+          <span class="ai-bar-desc">{{ $t('templates.ai_bar.description') }}</span>
         </div>
         <div class="ai-bar-input-wrap">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -209,7 +210,7 @@ onMounted(async () => {
             v-model="aiPrompt"
             type="text"
             class="ai-bar-input"
-            placeholder='e.g. "SWOT analysis for a SaaS product"'
+            :placeholder="$t('templates.ai_bar.example')"
             @keydown.enter="handleAIGenerate"
           >
         </div>
@@ -218,7 +219,7 @@ onMounted(async () => {
             <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
           </svg>
           <div v-else class="btn-spinner" />
-          {{ aiGenerating ? 'Generating...' : 'Generate' }}
+          {{ aiGenerating ? $t('templates.ai_bar.generating') : $t('templates.ai_bar.generate') }}
         </button>
       </div>
       <div v-if="aiError && !_isTauri" class="ai-error-banner">
@@ -252,7 +253,7 @@ onMounted(async () => {
               v-model="searchQuery"
               type="text"
               class="search-input"
-              placeholder="Search templates..."
+              :placeholder="$t('templates.filter.search_placeholder')"
               @input="handleSearch"
             >
           </div>
@@ -267,7 +268,7 @@ onMounted(async () => {
       <!-- Templates Grid -->
       <div v-if="loading && displayedTemplates.length === 0" class="loading-state">
         <div class="spinner" />
-        <span>Loading templates...</span>
+        <span>{{ $t('templates.loading') }}</span>
       </div>
 
       <div v-else-if="displayedTemplates.length === 0" class="empty-state">
@@ -275,8 +276,8 @@ onMounted(async () => {
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <path d="M3 9h18M9 3v18" />
         </svg>
-        <p>No templates found</p>
-        <span>Try a different category or search term</span>
+        <p>{{ $t('templates.empty_state.title') }}</p>
+        <span>{{ $t('templates.empty_state.description') }}</span>
       </div>
 
       <div v-else class="templates-grid">

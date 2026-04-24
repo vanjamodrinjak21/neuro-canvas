@@ -1,11 +1,16 @@
 // Self-evaluation and meta-prompts
 
+import { getLanguageInstruction } from '~/utils/ai-prompts'
+
 export function buildSelfEvaluationPrompt(
   originalPrompt: string,
   aiOutput: string,
-  domain: string
+  domain: string,
+  locale?: string
 ): { system: string; user: string } {
-  const system = `You are a quality evaluator for AI-generated knowledge map suggestions.
+  const langInstruction = getLanguageInstruction(locale)
+
+  const system = `You are a quality evaluator for AI-generated knowledge map suggestions.${langInstruction}
 Rate the output on these criteria (0-10 each):
 1. Relevance: How well do suggestions relate to the topic?
 2. Diversity: How varied are the categories and relationship types?

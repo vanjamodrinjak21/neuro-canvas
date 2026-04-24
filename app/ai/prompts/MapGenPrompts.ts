@@ -3,6 +3,7 @@
 import type { RichContext } from '../types/context'
 import type { PersonaDefinition } from './SystemPersonas'
 import type { MapGenerationOptions } from '~/types/ai-generation'
+import { getLanguageInstruction } from '~/utils/ai-prompts'
 
 export function buildMapGenerationV2(
   topic: string,
@@ -19,11 +20,12 @@ export function buildMapGenerationV2(
   const minChildren = maxDepth >= 2 ? 2 : 1
   const maxChildren = maxDepth >= 3 ? 4 : 3
   const crossConnectionCount = includeCrossConnections ? Math.min(branchCount, 5) : 0
+  const langInstruction = getLanguageInstruction(context.locale)
 
   const system = `${persona.systemPrompt}
 
 You are creating a rich, interconnected knowledge map about "${topic}".
-
+${langInstruction}
 DOMAIN CONTEXT: ${context.subject.guidance.vocabularyHints.join('. ')}
 
 STRUCTURE REQUIREMENTS:

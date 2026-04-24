@@ -3,6 +3,7 @@
 import type { RichContext, UserHistory  } from '../types/context'
 import type { AIBehaviorConfig } from '../types/cognitive'
 import type { PersonaDefinition } from './SystemPersonas'
+import { getLanguageInstruction } from '~/utils/ai-prompts'
 
 export function buildSmartExpandV2(
   nodeContent: string,
@@ -13,6 +14,7 @@ export function buildSmartExpandV2(
 ): { system: string; user: string } {
   const suggestionCount = behavior.suggestionCount || 5
   const domainVocab = context.subject.guidance.vocabularyHints.join('. ')
+  const langInstruction = getLanguageInstruction(context.locale)
 
   // Build memory-aware preferences block
   let preferencesBlock = ''
@@ -26,7 +28,7 @@ export function buildSmartExpandV2(
   const system = `${persona.systemPrompt}
 
 ${persona.expandBehavior}
-
+${langInstruction}
 DOMAIN CONTEXT: ${domainVocab}
 
 CRITICAL REQUIREMENTS:

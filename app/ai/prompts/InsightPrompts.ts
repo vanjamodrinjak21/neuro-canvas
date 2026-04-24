@@ -2,15 +2,17 @@
 
 import type { RichContext } from '../types/context'
 import type { PersonaDefinition } from './SystemPersonas'
+import { getLanguageInstruction } from '~/utils/ai-prompts'
 
 export function buildInsightAnalysisPrompt(
   context: RichContext,
   persona: PersonaDefinition
 ): { system: string; user: string } {
   const domainGuidance = getDomainInsightGuidance(context.subject.domain)
+  const langInstruction = getLanguageInstruction(context.locale)
 
   const system = `${persona.systemPrompt}
-
+${langInstruction}
 You are analyzing a knowledge map to discover insights, gaps, and structural improvements.
 
 INSIGHT TYPES you can identify:

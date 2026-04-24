@@ -6,7 +6,7 @@ import { useAISettings } from '~/composables/useAISettings'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 
-const { t } = useI18n()
+const { t, locale: currentLocale } = useI18n()
 
 definePageMeta({
   layout: false,
@@ -515,7 +515,8 @@ async function handleAIQuickStart() {
       branchCount: 5,
       maxDepth: 2,
       style: 'detailed',
-      includeCrossConnections: true
+      includeCrossConnections: true,
+      locale: currentLocale.value
     })
 
     // Step 3: Building nodes

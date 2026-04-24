@@ -2,6 +2,7 @@
 import { useSyncEngine, type SyncConflict } from '~/composables/useSyncEngine'
 
 const syncEngine = useSyncEngine()
+const { t } = useI18n()
 
 const isOpen = computed(() => syncEngine.conflicts.value.length > 0)
 
@@ -33,19 +34,19 @@ async function keepRemote() {
       <div class="conflict-dialog">
         <header class="conflict-header">
           <span class="i-lucide-git-merge conflict-icon" />
-          <h3>Sync Conflict</h3>
+          <h3>{{ $t('canvas.sync.conflict_dialog.title') }}</h3>
         </header>
 
         <p class="conflict-desc">
-          This map was modified on another device. Choose which version to keep.
+          {{ $t('canvas.sync.conflict_dialog.description') }}
         </p>
 
         <div class="conflict-comparison">
           <div class="version-card">
-            <div class="version-badge local-badge">This Device</div>
+            <div class="version-badge local-badge">{{ $t('canvas.sync.conflict_dialog.this_device') }}</div>
             <h4 class="version-title">{{ currentConflict.localTitle }}</h4>
             <div class="version-meta">
-              <span>{{ currentConflict.localNodeCount }} nodes</span>
+              <span>{{ $t('canvas.sync.conflict_dialog.nodes', currentConflict.localNodeCount, { n: currentConflict.localNodeCount }) }}</span>
               <span>{{ formatTime(currentConflict.localUpdatedAt) }}</span>
             </div>
           </div>
@@ -53,10 +54,10 @@ async function keepRemote() {
           <div class="version-vs">vs</div>
 
           <div class="version-card">
-            <div class="version-badge remote-badge">Server</div>
+            <div class="version-badge remote-badge">{{ $t('canvas.sync.conflict_dialog.server') }}</div>
             <h4 class="version-title">{{ currentConflict.remoteTitle }}</h4>
             <div class="version-meta">
-              <span>{{ currentConflict.remoteNodeCount }} nodes</span>
+              <span>{{ $t('canvas.sync.conflict_dialog.nodes', currentConflict.remoteNodeCount, { n: currentConflict.remoteNodeCount }) }}</span>
               <span>{{ formatTime(currentConflict.remoteUpdatedAt) }}</span>
             </div>
           </div>
@@ -64,10 +65,10 @@ async function keepRemote() {
 
         <div class="conflict-actions">
           <button class="btn btn-outline" @click="keepLocal">
-            Keep Mine
+            {{ $t('canvas.sync.conflict_dialog.keep_mine') }}
           </button>
           <button class="btn btn-primary" @click="keepRemote">
-            Keep Theirs
+            {{ $t('canvas.sync.conflict_dialog.keep_theirs') }}
           </button>
         </div>
       </div>

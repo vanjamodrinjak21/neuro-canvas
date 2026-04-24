@@ -3,6 +3,7 @@
 import type { RichContext } from '../types/context'
 import type { PersonaDefinition } from './SystemPersonas'
 import type { ThinkingMode } from '../types/cognitive'
+import { getLanguageInstruction } from '~/utils/ai-prompts'
 
 export function buildAgentSystemPrompt(
   context: RichContext,
@@ -10,9 +11,10 @@ export function buildAgentSystemPrompt(
   thinkingMode?: ThinkingMode
 ): string {
   const modeGuidance = thinkingMode ? getThinkingModeGuidance(thinkingMode) : ''
+  const langInstruction = getLanguageInstruction(context.locale)
 
   return `${persona.systemPrompt}
-
+${langInstruction}
 You are an AI agent helping a user develop their knowledge map about "${context.mapTitle || 'their topic'}".
 Subject: ${context.subject.domain} (${context.subject.expertiseLevel} level)
 

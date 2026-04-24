@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { updateAvailable, updateVersion, updateBody, isDownloading, downloadProgress, error, checkForUpdates, downloadAndInstall } = useTauriUpdater()
+const { t } = useI18n()
 
 const dismissed = ref(false)
 
@@ -24,10 +25,10 @@ onMounted(() => {
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
             <h4 class="text-sm font-semibold text-[#e8e4d9]">
-              Update available
+              {{ $t('common.update.available') }}
             </h4>
             <p class="mt-1 text-xs text-[#e8e4d9]/60">
-              Version {{ updateVersion }} is ready to install.
+              {{ $t('common.update.version_ready', { version: updateVersion }) }}
             </p>
             <p
               v-if="updateBody"
@@ -38,7 +39,7 @@ onMounted(() => {
           </div>
           <button
             class="shrink-0 p-0.5 text-[#e8e4d9]/40 transition-colors hover:text-[#e8e4d9]/70"
-            aria-label="Dismiss"
+            :aria-label="$t('common.update.dismiss')"
             @click="dismiss"
           >
             <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -59,7 +60,7 @@ onMounted(() => {
             />
           </div>
           <p class="mt-1 text-xs text-[#e8e4d9]/40">
-            Downloading update...
+            {{ $t('common.update.downloading') }}
           </p>
         </div>
 
@@ -68,13 +69,13 @@ onMounted(() => {
             class="rounded-md bg-[#e8e4d9] px-3 py-1.5 text-xs font-medium text-[#0a0a0f] transition-opacity hover:opacity-90"
             @click="downloadAndInstall"
           >
-            Update now
+            {{ $t('common.update.update_now') }}
           </button>
           <button
             class="rounded-md border border-[#1a1a2e] px-3 py-1.5 text-xs font-medium text-[#e8e4d9]/60 transition-colors hover:border-[#e8e4d9]/20 hover:text-[#e8e4d9]/80"
             @click="dismiss"
           >
-            Later
+            {{ $t('common.update.later') }}
           </button>
         </div>
       </div>

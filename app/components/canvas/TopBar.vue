@@ -34,6 +34,7 @@ const emit = defineEmits<{
 
 const mapStore = useMapStore()
 const autoSave = useAutoSave()
+const { t } = useI18n()
 
 const titleInputRef = ref<HTMLInputElement | null>(null)
 
@@ -65,11 +66,11 @@ const relativeSaveTime = computed(() => {
   const lastSaved = autoSave.lastSavedAt.value
   if (!lastSaved) return null
   const diff = Math.floor((now.value - lastSaved) / 1000)
-  if (diff < 5) return 'Just saved'
-  if (diff < 60) return `Saved ${diff}s ago`
+  if (diff < 5) return t('canvas.topbar.save_status.just_saved')
+  if (diff < 60) return t('canvas.topbar.save_status.saved_seconds_ago', { n: diff })
   const minutes = Math.floor(diff / 60)
-  if (minutes < 60) return `Saved ${minutes}m ago`
-  return `Saved ${Math.floor(minutes / 60)}h ago`
+  if (minutes < 60) return t('canvas.topbar.save_status.saved_minutes_ago', { n: minutes })
+  return t('canvas.topbar.save_status.saved_hours_ago', { n: Math.floor(minutes / 60) })
 })
 
 // Named breadcrumbs (map to nearest region label)
@@ -112,7 +113,7 @@ defineExpose({ focusTitleInput })
         <NuxtLink
           to="/dashboard"
           class="topbar-icon-btn"
-          aria-label="Back to dashboard"
+          :aria-label="$t('canvas.topbar.back')"
         >
           <span class="i-lucide-arrow-left text-lg" />
         </NuxtLink>
@@ -148,7 +149,7 @@ defineExpose({ focusTitleInput })
             :key="crumb.timestamp"
             class="topbar-crumb"
             :class="{ 'topbar-crumb-current': i === namedBreadcrumbs.length - 1 }"
-            :title="`Navigate to ${crumb.label}`"
+            :title="$t('canvas.topbar.breadcrumb_navigate', { label: crumb.label })"
             :aria-current="i === namedBreadcrumbs.length - 1 ? 'page' : undefined"
             @click="emit('navigate-breadcrumb', crumb)"
           >
@@ -163,10 +164,10 @@ defineExpose({ focusTitleInput })
           </template>
           <template v-else-if="!mapStore.isDirty">
             <span class="topbar-saved-dot" />
-            <span>{{ relativeSaveTime || 'Saved' }}</span>
+            <span>{{ relativeSaveTime || $t('canvas.topbar.save_status.saved') }}</span>
           </template>
           <template v-else>
-            <span class="text-nc-ink-soft">Unsaved</span>
+            <span class="text-nc-ink-soft">{{ $t('canvas.topbar.save_status.unsaved') }}</span>
           </template>
         </span>
 
@@ -183,34 +184,34 @@ defineExpose({ focusTitleInput })
           @click="emit('smart-expand')"
         >
           <span class="i-lucide-sparkles" :class="isAILoading ? 'animate-spin' : ''" />
-          AI Expand
+          {{ $t('canvas.topbar.ai_expand') }}
         </button>
 
         <!-- View toggle: Canvas / Graph / Editor -->
         <div class="topbar-view-tabs mobile-hide">
           <button
             :class="['topbar-view-tab', { active: viewMode === 'canvas' }]"
-            title="Canvas view"
+            :title="$t('canvas.topbar.canvas_view')"
             @click="emit('set-view', 'canvas')"
           >
             <span class="i-lucide-layout-dashboard" />
-            <span class="topbar-view-label">Canvas</span>
+            <span class="topbar-view-label">{{ $t('canvas.topbar.canvas_label') }}</span>
           </button>
           <button
             :class="['topbar-view-tab', { active: viewMode === 'graph' }]"
-            title="Graph view"
+            :title="$t('canvas.topbar.graph_view')"
             @click="emit('set-view', 'graph')"
           >
             <span class="i-lucide-git-fork" />
-            <span class="topbar-view-label">Graph</span>
+            <span class="topbar-view-label">{{ $t('canvas.topbar.graph_label') }}</span>
           </button>
           <button
             :class="['topbar-view-tab', { active: viewMode === 'editor' }]"
-            title="Markdown editor"
+            :title="$t('canvas.topbar.editor_view')"
             @click="emit('set-view', 'editor')"
           >
             <span class="i-lucide-file-text" />
-            <span class="topbar-view-label">Editor</span>
+            <span class="topbar-view-label">{{ $t('canvas.topbar.editor_label') }}</span>
           </button>
         </div>
 

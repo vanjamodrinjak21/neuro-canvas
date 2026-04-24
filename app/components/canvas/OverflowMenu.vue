@@ -31,11 +31,13 @@ const emit = defineEmits<{
   settings: []
 }>()
 
-const exportFormats = [
-  { key: 'png' as const, icon: 'i-lucide-image', label: 'PNG Image', hint: 'Screenshot' },
-  { key: 'json' as const, icon: 'i-lucide-braces', label: 'JSON', hint: 'Full data' },
-  { key: 'markdown' as const, icon: 'i-lucide-file-text', label: 'Markdown', hint: 'Outline' }
-]
+const { t } = useI18n()
+
+const exportFormats = computed(() => [
+  { key: 'png' as const, icon: 'i-lucide-image', label: t('canvas.overflow_menu.export_png'), hint: t('canvas.overflow_menu.export_png_hint') },
+  { key: 'json' as const, icon: 'i-lucide-braces', label: t('canvas.overflow_menu.export_json'), hint: t('canvas.overflow_menu.export_json_hint') },
+  { key: 'markdown' as const, icon: 'i-lucide-file-text', label: t('canvas.overflow_menu.export_markdown'), hint: t('canvas.overflow_menu.export_markdown_hint') }
+])
 
 function handleExport(format: 'png' | 'json' | 'markdown') {
   emit(`export-${format}`)
@@ -47,7 +49,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
     <DropdownMenuTrigger as-child>
       <button
         class="overflow-trigger"
-        aria-label="More actions"
+        :aria-label="$t('canvas.overflow_menu.more_actions')"
       >
         <span class="i-lucide-more-horizontal text-lg" />
       </button>
@@ -61,7 +63,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
         class="overflow-panel"
       >
         <!-- History -->
-        <DropdownMenuLabel class="menu-label">History</DropdownMenuLabel>
+        <DropdownMenuLabel class="menu-label">{{ $t('canvas.overflow_menu.history') }}</DropdownMenuLabel>
         <DropdownMenuGroup>
           <DropdownMenuItem
             :disabled="!canUndo"
@@ -69,8 +71,8 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
             @select="emit('undo')"
           >
             <span class="i-lucide-undo-2 menu-icon" />
-            <span class="flex-1">Undo</span>
-            <span class="menu-shortcut">⌘Z</span>
+            <span class="flex-1">{{ $t('canvas.overflow_menu.undo') }}</span>
+            <span class="menu-shortcut">{{ $t('canvas.overflow_menu.undo_shortcut') }}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             :disabled="!canRedo"
@@ -78,15 +80,15 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
             @select="emit('redo')"
           >
             <span class="i-lucide-redo-2 menu-icon" />
-            <span class="flex-1">Redo</span>
-            <span class="menu-shortcut">⌘⇧Z</span>
+            <span class="flex-1">{{ $t('canvas.overflow_menu.redo') }}</span>
+            <span class="menu-shortcut">{{ $t('canvas.overflow_menu.redo_shortcut') }}</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator class="menu-sep" />
 
         <!-- File -->
-        <DropdownMenuLabel class="menu-label">File</DropdownMenuLabel>
+        <DropdownMenuLabel class="menu-label">{{ $t('canvas.overflow_menu.file') }}</DropdownMenuLabel>
         <DropdownMenuGroup>
           <DropdownMenuItem
             :disabled="!isDirty"
@@ -94,8 +96,8 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
             @select="emit('save')"
           >
             <span class="i-lucide-save menu-icon" />
-            <span class="flex-1">Save</span>
-            <span class="menu-shortcut">⌘S</span>
+            <span class="flex-1">{{ $t('canvas.overflow_menu.save') }}</span>
+            <span class="menu-shortcut">{{ $t('canvas.overflow_menu.save_shortcut') }}</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -103,14 +105,14 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
             @select="emit('share')"
           >
             <span class="i-lucide-share-2 menu-icon" />
-            <span class="flex-1">Share</span>
+            <span class="flex-1">{{ $t('canvas.overflow_menu.share') }}</span>
           </DropdownMenuItem>
 
           <!-- Export sub-menu -->
           <DropdownMenuSub>
             <DropdownMenuSubTrigger class="menu-item sub-trigger">
               <span class="i-lucide-download menu-icon" />
-              <span class="flex-1">Export</span>
+              <span class="flex-1">{{ $t('canvas.overflow_menu.export') }}</span>
               <span class="i-lucide-chevron-right text-xs text-nc-ink-muted" />
             </DropdownMenuSubTrigger>
 
@@ -143,15 +145,15 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
             @select="emit('help')"
           >
             <span class="i-lucide-keyboard menu-icon" />
-            <span class="flex-1">Keyboard shortcuts</span>
-            <span class="menu-shortcut">?</span>
+            <span class="flex-1">{{ $t('canvas.overflow_menu.keyboard_shortcuts') }}</span>
+            <span class="menu-shortcut">{{ $t('canvas.overflow_menu.keyboard_shortcuts_shortcut') }}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             class="menu-item"
             @select="emit('settings')"
           >
             <span class="i-lucide-settings menu-icon" />
-            <span class="flex-1">Settings</span>
+            <span class="flex-1">{{ $t('canvas.overflow_menu.settings') }}</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

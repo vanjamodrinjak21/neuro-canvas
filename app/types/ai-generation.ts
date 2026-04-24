@@ -152,6 +152,8 @@ export interface GenerationContext {
   domain?: string
   /** Optional rich context snapshot from v2 Context Engine */
   contextSnapshot?: import('~/ai/types/context').RichContext
+  /** Locale code for AI-generated content language (e.g. 'hr', 'en') */
+  locale?: string
 }
 
 /**
@@ -168,6 +170,8 @@ export interface MapGenerationOptions {
   includeCrossConnections?: boolean
   /** Optional domain specialization */
   domain?: string
+  /** Locale code for AI-generated content language */
+  locale?: string
 }
 
 /**

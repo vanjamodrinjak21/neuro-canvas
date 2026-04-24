@@ -3,47 +3,48 @@ import { useSemanticStore } from '~/stores/semanticStore'
 import type { AIStatus } from '~/types/semantic'
 
 const semanticStore = useSemanticStore()
+const { t } = useI18n()
 
 // Status configurations
-const statusConfig: Record<AIStatus, {
+const statusConfig = computed<Record<AIStatus, {
   color: string
   bgColor: string
   icon: string
   label: string
-}> = {
+}>>(() => ({
   idle: {
     color: '#555558',
     bgColor: 'rgba(85, 85, 88, 0.1)',
     icon: 'i-lucide-brain',
-    label: 'AI Idle'
+    label: t('canvas.ai_status.idle')
   },
   'loading-model': {
     color: '#60A5FA',
     bgColor: 'rgba(96, 165, 250, 0.1)',
     icon: 'i-lucide-loader-2',
-    label: 'Loading AI'
+    label: t('canvas.ai_status.loading_model')
   },
   computing: {
     color: '#FACC15',
     bgColor: 'rgba(250, 204, 21, 0.1)',
     icon: 'i-lucide-sparkles',
-    label: 'Computing'
+    label: t('canvas.ai_status.computing')
   },
   ready: {
     color: '#00D2BE',
     bgColor: 'rgba(0, 210, 190, 0.1)',
     icon: 'i-lucide-brain',
-    label: 'AI Ready'
+    label: t('canvas.ai_status.ready')
   },
   error: {
     color: '#EF4444',
     bgColor: 'rgba(239, 68, 68, 0.1)',
     icon: 'i-lucide-alert-circle',
-    label: 'AI Error'
+    label: t('canvas.ai_status.error')
   }
-}
+}))
 
-const currentConfig = computed(() => statusConfig[semanticStore.aiState.status as AIStatus])
+const currentConfig = computed(() => statusConfig.value[semanticStore.aiState.status as AIStatus])
 
 // Show progress during model loading
 const showProgress = computed(() =>
@@ -104,7 +105,7 @@ const tooltipText = computed(() => {
       class="nc-ai-gpu-badge"
       :class="semanticStore.aiState.hasWebGPU ? 'gpu' : 'wasm'"
     >
-      {{ semanticStore.aiState.hasWebGPU ? 'GPU' : 'CPU' }}
+      {{ semanticStore.aiState.hasWebGPU ? $t('canvas.ai_status.gpu_badge') : $t('canvas.ai_status.cpu_badge') }}
     </span>
   </div>
 </template>

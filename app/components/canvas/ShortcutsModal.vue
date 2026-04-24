@@ -7,6 +7,8 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { t } = useI18n()
+
 interface ShortcutItem {
   description: string
   keys: string[]
@@ -17,55 +19,55 @@ interface ShortcutGroup {
   items: ShortcutItem[]
 }
 
-const SHORTCUT_GROUPS: ShortcutGroup[] = [
+const SHORTCUT_GROUPS = computed<ShortcutGroup[]>(() => [
   {
-    label: 'Navigation',
+    label: t('canvas.shortcuts.navigation'),
     items: [
-      { description: 'Pan canvas', keys: ['Space', '+ Drag'] },
-      { description: 'Zoom in', keys: ['⌘', '+'] },
-      { description: 'Zoom out', keys: ['⌘', '−'] },
-      { description: 'Fit to screen', keys: ['F'] },
-      { description: 'Arrow keys to pan', keys: ['←', '→', '↑', '↓'] },
-      { description: 'Reset zoom', keys: ['1'] },
+      { description: t('canvas.shortcuts.pan_canvas'), keys: ['Space', '+ Drag'] },
+      { description: t('canvas.shortcuts.zoom_in'), keys: ['⌘', '+'] },
+      { description: t('canvas.shortcuts.zoom_out'), keys: ['⌘', '−'] },
+      { description: t('canvas.shortcuts.fit_to_screen'), keys: ['F'] },
+      { description: t('canvas.shortcuts.arrow_pan'), keys: ['←', '→', '↑', '↓'] },
+      { description: t('canvas.shortcuts.reset_zoom'), keys: ['1'] },
     ]
   },
   {
-    label: 'Tools',
+    label: t('canvas.shortcuts.tools'),
     items: [
-      { description: 'Select tool', keys: ['V'] },
-      { description: 'Pan tool', keys: ['H'] },
-      { description: 'Add node tool', keys: ['N'] },
-      { description: 'Connect tool', keys: ['C'] },
-      { description: 'Templates', keys: ['T'] },
+      { description: t('canvas.shortcuts.select_tool_desc'), keys: ['V'] },
+      { description: t('canvas.shortcuts.pan_tool_desc'), keys: ['H'] },
+      { description: t('canvas.shortcuts.add_node_desc'), keys: ['N'] },
+      { description: t('canvas.shortcuts.connect_desc'), keys: ['C'] },
+      { description: t('canvas.shortcuts.templates_desc'), keys: ['T'] },
     ]
   },
   {
-    label: 'Editing',
+    label: t('canvas.shortcuts.editing'),
     items: [
-      { description: 'Delete selected', keys: ['⌫'] },
-      { description: 'Edit node text', keys: ['Double-click'] },
-      { description: 'Duplicate', keys: ['⌘', 'D'] },
-      { description: 'Select all', keys: ['⌘', 'A'] },
-      { description: 'Undo', keys: ['⌘', 'Z'] },
-      { description: 'Redo', keys: ['⌘', '⇧', 'Z'] },
+      { description: t('canvas.shortcuts.delete'), keys: ['⌫'] },
+      { description: t('canvas.shortcuts.edit_node'), keys: ['Double-click'] },
+      { description: t('canvas.shortcuts.duplicate'), keys: ['⌘', 'D'] },
+      { description: t('canvas.shortcuts.select_all'), keys: ['⌘', 'A'] },
+      { description: t('canvas.overflow_menu.undo'), keys: ['⌘', 'Z'] },
+      { description: t('canvas.overflow_menu.redo'), keys: ['⌘', '⇧', 'Z'] },
     ]
   },
   {
-    label: 'Graph & Links',
+    label: t('canvas.shortcuts.graph_links'),
     items: [
-      { description: 'Open Graph View', keys: ['⌘', 'G'] },
-      { description: 'Toggle Backlinks Panel', keys: ['⌘', 'B'] },
-      { description: 'Toggle Semantic Field', keys: ['S'] },
+      { description: t('canvas.shortcuts.open_graph'), keys: ['⌘', 'G'] },
+      { description: t('canvas.shortcuts.toggle_backlinks'), keys: ['⌘', 'B'] },
+      { description: t('canvas.shortcuts.toggle_semantic'), keys: ['S'] },
     ]
   },
   {
-    label: 'AI Features',
+    label: t('canvas.shortcuts.ai_features'),
     items: [
-      { description: 'AI Expand', keys: ['⌘', 'E'] },
-      { description: 'Accept suggestion', keys: ['⌘', '↵'] },
+      { description: t('canvas.shortcuts.ai_expand_desc'), keys: ['⌘', 'E'] },
+      { description: t('canvas.shortcuts.accept_suggestion'), keys: ['⌘', '↵'] },
     ]
   }
-]
+])
 </script>
 
 <template>
@@ -86,7 +88,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
           @click.stop
         >
           <div class="px-6 py-5 border-b border-nc-border nc-between">
-            <h2 class="font-display font-bold text-lg text-nc-ink">Keyboard Shortcuts</h2>
+            <h2 class="font-display font-bold text-lg text-nc-ink">{{ $t('canvas.shortcuts.title') }}</h2>
             <button
               class="w-8 h-8 rounded-nc-md nc-center text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-2 transition-colors"
               @click="emit('close')"

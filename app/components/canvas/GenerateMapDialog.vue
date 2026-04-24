@@ -15,19 +15,21 @@ const depth = ref<'shallow' | 'medium' | 'deep'>('medium')
 const style = ref<'concise' | 'detailed' | 'academic'>('detailed')
 const domain = ref('')
 
+const { t } = useI18n()
+
 // Depth options with more interesting descriptions
-const depthOptions = [
-  { value: 'shallow', label: 'Quick', description: '~15 nodes, fast overview' },
-  { value: 'medium', label: 'Balanced', description: '~25 nodes, good depth & breadth' },
-  { value: 'deep', label: 'Comprehensive', description: '~40+ nodes, deep exploration' }
-]
+const depthOptions = computed(() => [
+  { value: 'shallow', label: t('canvas.generate_map.depth_quick'), description: t('canvas.generate_map.depth_quick_desc') },
+  { value: 'medium', label: t('canvas.generate_map.depth_balanced'), description: t('canvas.generate_map.depth_balanced_desc') },
+  { value: 'deep', label: t('canvas.generate_map.depth_comprehensive'), description: t('canvas.generate_map.depth_comprehensive_desc') }
+])
 
 // Style options
-const styleOptions = [
-  { value: 'concise', label: 'Concise', description: 'Key points only' },
-  { value: 'detailed', label: 'Detailed', description: 'Rich explanations' },
-  { value: 'academic', label: 'Academic', description: 'Scholarly depth' }
-]
+const styleOptions = computed(() => [
+  { value: 'concise', label: t('canvas.generate_map.style_concise'), description: t('canvas.generate_map.style_concise_desc') },
+  { value: 'detailed', label: t('canvas.generate_map.style_detailed'), description: t('canvas.generate_map.style_detailed_desc') },
+  { value: 'academic', label: t('canvas.generate_map.style_academic'), description: t('canvas.generate_map.style_academic_desc') }
+])
 
 function handleGenerate() {
   if (!topic.value.trim()) return
@@ -85,8 +87,8 @@ watch(() => props.visible, (isVisible) => {
                   <span class="i-lucide-map text-lg" />
                 </div>
                 <div>
-                  <h2 class="nc-dialog-title">Generate Mind Map</h2>
-                  <p class="nc-dialog-subtitle">Create a complete map from a topic</p>
+                  <h2 class="nc-dialog-title">{{ $t('canvas.generate_map.title') }}</h2>
+                  <p class="nc-dialog-subtitle">{{ $t('canvas.generate_map.subtitle') }}</p>
                 </div>
               </div>
               <button class="nc-close-btn" @click="handleClose">
@@ -98,21 +100,21 @@ watch(() => props.visible, (isVisible) => {
             <div class="nc-dialog-content">
               <!-- Topic input -->
               <div class="nc-field">
-                <label class="nc-label">Topic</label>
+                <label class="nc-label">{{ $t('canvas.generate_map.topic_label') }}</label>
                 <input
                   v-model="topic"
                   type="text"
                   class="nc-input"
-                  placeholder="e.g., Machine Learning, Climate Change, JavaScript..."
+                  :placeholder="$t('canvas.generate_map.topic_placeholder')"
                   :disabled="isLoading"
                   @keydown.enter="handleGenerate"
                 >
-                <p class="nc-hint">Be specific for better results (e.g., "How neural networks learn" vs just "AI")</p>
+                <p class="nc-hint">{{ $t('canvas.generate_map.topic_hint') }}</p>
               </div>
 
               <!-- Depth selector -->
               <div class="nc-field">
-                <label class="nc-label">Depth</label>
+                <label class="nc-label">{{ $t('canvas.generate_map.depth_label') }}</label>
                 <div class="nc-option-grid">
                   <button
                     v-for="opt in depthOptions"
@@ -129,7 +131,7 @@ watch(() => props.visible, (isVisible) => {
 
               <!-- Style selector -->
               <div class="nc-field">
-                <label class="nc-label">Style</label>
+                <label class="nc-label">{{ $t('canvas.generate_map.style_label') }}</label>
                 <div class="nc-option-grid">
                   <button
                     v-for="opt in styleOptions"
@@ -147,17 +149,17 @@ watch(() => props.visible, (isVisible) => {
               <!-- Domain input (optional) -->
               <div class="nc-field">
                 <label class="nc-label">
-                  Domain
-                  <span class="nc-optional">(optional)</span>
+                  {{ $t('canvas.generate_map.domain_label') }}
+                  <span class="nc-optional">{{ $t('canvas.generate_map.domain_optional') }}</span>
                 </label>
                 <input
                   v-model="domain"
                   type="text"
                   class="nc-input"
-                  placeholder="e.g., Computer Science, Biology, Business..."
+                  :placeholder="$t('canvas.generate_map.domain_placeholder')"
                   :disabled="isLoading"
                 >
-                <p class="nc-hint">Specify a domain for specialized vocabulary</p>
+                <p class="nc-hint">{{ $t('canvas.generate_map.domain_hint') }}</p>
               </div>
             </div>
 
@@ -168,7 +170,7 @@ watch(() => props.visible, (isVisible) => {
                 :disabled="isLoading"
                 @click="handleClose"
               >
-                Cancel
+                {{ $t('canvas.generate_map.cancel') }}
               </button>
               <button
                 class="nc-btn nc-btn-primary"
@@ -177,7 +179,7 @@ watch(() => props.visible, (isVisible) => {
               >
                 <span v-if="isLoading" class="i-lucide-loader-2 animate-spin" />
                 <span v-else class="i-lucide-sparkles" />
-                <span>{{ isLoading ? 'Generating...' : 'Generate Map' }}</span>
+                <span>{{ isLoading ? $t('canvas.generate_map.generating') : $t('canvas.generate_map.generate') }}</span>
               </button>
             </div>
           </div>

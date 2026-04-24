@@ -15,6 +15,7 @@ const emit = defineEmits<{
 const mapStore = useMapStore()
 const semanticStore = useSemanticStore()
 const insightEngine = useInsightEngine()
+const { t } = useI18n()
 
 // Insight type icons (v1 + v2 types)
 const insightIcons: Record<string, string> = {
@@ -171,23 +172,23 @@ function handleDismiss(insightId: string) {
 function getActionText(insight: Insight): string {
   if (isEnriched(insight) && insight.suggestedAction) {
     switch (insight.suggestedAction) {
-      case 'add-node': return 'Add Node'
-      case 'add-connection': return 'Connect'
-      case 'restructure': return 'Restructure'
-      case 'merge': return 'Merge'
-      case 'expand': return 'Expand'
-      case 'delete': return 'Remove'
+      case 'add-node': return t('canvas.insight_panel.action_add_node')
+      case 'add-connection': return t('canvas.insight_panel.action_connect')
+      case 'restructure': return t('canvas.insight_panel.action_restructure')
+      case 'merge': return t('canvas.insight_panel.action_merge')
+      case 'expand': return t('canvas.insight_panel.action_expand')
+      case 'delete': return t('canvas.insight_panel.action_remove')
     }
   }
   switch (insight.type) {
-    case 'bridge': return 'Connect'
-    case 'gap': case 'conceptual-gap': return 'Add Node'
-    case 'outlier': return 'View'
-    case 'structural-suggestion': return 'Apply'
-    case 'deepening-opportunity': return 'Expand'
-    case 'balance-issue': return 'Fix'
-    case 'accuracy-concern': return 'Review'
-    default: return 'Add'
+    case 'bridge': return t('canvas.insight_panel.action_connect')
+    case 'gap': case 'conceptual-gap': return t('canvas.insight_panel.action_add_node')
+    case 'outlier': return t('canvas.insight_panel.action_view')
+    case 'structural-suggestion': return t('canvas.insight_panel.action_apply')
+    case 'deepening-opportunity': return t('canvas.insight_panel.action_expand')
+    case 'balance-issue': return t('canvas.insight_panel.action_fix')
+    case 'accuracy-concern': return t('canvas.insight_panel.action_review')
+    default: return t('canvas.insight_panel.action_add')
   }
 }
 </script>
@@ -197,7 +198,7 @@ function getActionText(insight: Insight): string {
     <div class="nc-insight-header">
       <span class="flex items-center gap-2">
         <span class="i-lucide-lightbulb text-sm" />
-        <span>Insights</span>
+        <span>{{ $t('canvas.insight_panel.title') }}</span>
         <span v-if="insights.length > 0" class="nc-insight-count">{{ insights.length }}</span>
       </span>
     </div>
@@ -216,7 +217,7 @@ function getActionText(insight: Insight): string {
               insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-scan'
             ]"
           />
-          <span>{{ insightEngine.isAnalyzing.value ? 'Analyzing...' : 'Analyze' }}</span>
+          <span>{{ insightEngine.isAnalyzing.value ? $t('canvas.insight_panel.analyzing') : $t('canvas.insight_panel.analyze') }}</span>
         </button>
         <button
           class="nc-insight-analyze-btn nc-insight-ai-btn"
@@ -229,7 +230,7 @@ function getActionText(insight: Insight): string {
               insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-sparkles'
             ]"
           />
-          <span>AI Analyze</span>
+          <span>{{ $t('canvas.insight_panel.ai_analyze') }}</span>
         </button>
       </div>
 
@@ -237,10 +238,10 @@ function getActionText(insight: Insight): string {
       <div v-if="insights.length === 0 && !insightEngine.isAnalyzing.value" class="nc-insight-empty">
         <span class="i-lucide-brain text-2xl mb-2 text-nc-ink-muted" />
         <p v-if="semanticStore.nodesWithEmbeddings.length < 3">
-          Add more nodes to discover insights
+          {{ $t('canvas.insight_panel.add_more_nodes') }}
         </p>
         <p v-else>
-          Click "Analyze Map" to discover insights
+          {{ $t('canvas.insight_panel.click_analyze') }}
         </p>
       </div>
 
@@ -264,7 +265,7 @@ function getActionText(insight: Insight): string {
             <span v-if="isEnriched(insight)" class="nc-insight-ai-badge">AI</span>
             <button
               class="nc-insight-dismiss"
-              title="Dismiss"
+              :title="$t('canvas.insight_panel.dismiss')"
               @click.stop="handleDismiss(insight.id)"
             >
               <span class="i-lucide-x text-xs" />
@@ -283,7 +284,7 @@ function getActionText(insight: Insight): string {
               @click.stop="toggleReasoning(insight.id)"
             >
               <span :class="expandedInsights.has(insight.id) ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="text-xs" />
-              {{ expandedInsights.has(insight.id) ? 'Hide reasoning' : 'Show reasoning' }}
+              {{ expandedInsights.has(insight.id) ? $t('canvas.insight_panel.hide_reasoning') : $t('canvas.insight_panel.show_reasoning') }}
             </button>
             <p v-if="expandedInsights.has(insight.id)" class="nc-insight-reasoning-text">
               {{ (insight as EnrichedInsight).reasoning }}
@@ -302,7 +303,7 @@ function getActionText(insight: Insight): string {
               />
             </span>
             <span class="nc-insight-confidence-text">
-              {{ Math.round(insight.confidence * 100) }}% confidence
+              {{ $t('canvas.insight_panel.confidence', { n: Math.round(insight.confidence * 100) }) }}
             </span>
           </div>
 
@@ -320,7 +321,7 @@ function getActionText(insight: Insight): string {
               @click="handleView(insight)"
             >
               <span class="i-lucide-eye text-xs" />
-              View
+              {{ $t('canvas.insight_panel.action_view') }}
             </button>
           </div>
         </div>

@@ -12,6 +12,7 @@ const emit = defineEmits<{
   'fit-to-content': []
 }>()
 
+const { t } = useI18n()
 const showZoomPresets = ref(false)
 
 function handleSlider(event: Event) {
@@ -42,8 +43,8 @@ onUnmounted(() => {
   <div class="nc-zoom-control">
     <button
       class="nc-zoom-btn"
-      title="Zoom out (-)"
-      aria-label="Zoom out"
+      :title="$t('canvas.zoom_controls.zoom_out')"
+      :aria-label="$t('canvas.zoom_controls.zoom_out')"
       @click="emit('zoom-out')"
     >
       <span class="i-lucide-minus text-sm" />
@@ -57,7 +58,7 @@ onUnmounted(() => {
         step="0.05"
         :value="zoom"
         class="nc-zoom-slider"
-        aria-label="Zoom level"
+        :aria-label="$t('canvas.zoom_controls.zoom_level')"
         @input="handleSlider"
         @dblclick="emit('reset-zoom')"
       >
@@ -67,8 +68,8 @@ onUnmounted(() => {
 
     <button
       class="nc-zoom-btn"
-      title="Zoom in (+)"
-      aria-label="Zoom in"
+      :title="$t('canvas.zoom_controls.zoom_in')"
+      :aria-label="$t('canvas.zoom_controls.zoom_in')"
       @click="emit('zoom-in')"
     >
       <span class="i-lucide-plus text-sm" />
@@ -77,8 +78,8 @@ onUnmounted(() => {
     <div class="relative">
       <button
         class="nc-zoom-percentage"
-        title="Zoom presets"
-        aria-label="Zoom presets menu"
+        :title="$t('canvas.zoom_controls.zoom_presets')"
+        :aria-label="$t('canvas.zoom_controls.zoom_presets')"
         @click.stop="showZoomPresets = !showZoomPresets"
       >
         {{ Math.round(zoom * 100) }}%
@@ -95,7 +96,7 @@ onUnmounted(() => {
           class="nc-zoom-presets"
           @click.stop
         >
-          <div class="nc-zoom-presets-header">Zoom Level</div>
+          <div class="nc-zoom-presets-header">{{ $t('canvas.zoom_controls.zoom_level') }}</div>
           <button :class="{ active: Math.round(zoom * 100) === 25 }" @click="setZoom(0.25)">25%</button>
           <button :class="{ active: Math.round(zoom * 100) === 50 }" @click="setZoom(0.5)">50%</button>
           <button :class="{ active: Math.round(zoom * 100) === 75 }" @click="setZoom(0.75)">75%</button>
@@ -108,13 +109,13 @@ onUnmounted(() => {
           <div class="nc-zoom-presets-divider" />
           <button @click="emit('fit-to-content'); showZoomPresets = false">
             <span class="i-lucide-maximize-2 text-xs mr-1.5" />
-            Fit to content
-            <span class="nc-zoom-preset-shortcut">0</span>
+            {{ $t('canvas.zoom_controls.fit_to_content') }}
+            <span class="nc-zoom-preset-shortcut">{{ $t('canvas.zoom_controls.fit_to_content_shortcut') }}</span>
           </button>
           <button @click="emit('reset-zoom'); showZoomPresets = false">
             <span class="i-lucide-rotate-ccw text-xs mr-1.5" />
-            Reset zoom
-            <span class="nc-zoom-preset-shortcut">1</span>
+            {{ $t('canvas.zoom_controls.reset_zoom') }}
+            <span class="nc-zoom-preset-shortcut">{{ $t('canvas.zoom_controls.reset_zoom_shortcut') }}</span>
           </button>
         </div>
       </Transition>

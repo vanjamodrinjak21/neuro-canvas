@@ -2,6 +2,7 @@
 import type { CanvasTool } from '~/types/canvas'
 
 const { haptics, isMobile } = usePlatform()
+const { t } = useI18n()
 
 const props = defineProps<{
   activeTool: CanvasTool
@@ -28,12 +29,12 @@ const emit = defineEmits<{
   'redo': []
 }>()
 
-const tools: { id: CanvasTool; icon: string; label: string; shortcut: string }[] = [
-  { id: 'select', icon: 'i-lucide-mouse-pointer', label: 'Select', shortcut: 'V' },
-  { id: 'pan', icon: 'i-lucide-hand', label: 'Pan', shortcut: 'H' },
-  { id: 'node', icon: 'i-lucide-plus', label: 'Add Node', shortcut: 'N' },
-  { id: 'connect', icon: 'i-lucide-move-diagonal', label: 'Connect', shortcut: 'C' },
-]
+const tools = computed<{ id: CanvasTool; icon: string; label: string; shortcut: string }[]>(() => [
+  { id: 'select', icon: 'i-lucide-mouse-pointer', label: t('canvas.toolbar.select_label'), shortcut: 'V' },
+  { id: 'pan', icon: 'i-lucide-hand', label: t('canvas.toolbar.pan_label'), shortcut: 'H' },
+  { id: 'node', icon: 'i-lucide-plus', label: t('canvas.toolbar.add_node_label'), shortcut: 'N' },
+  { id: 'connect', icon: 'i-lucide-move-diagonal', label: t('canvas.toolbar.connect_label'), shortcut: 'C' },
+])
 
 const isProcessing = computed(() => (props.processingQueueSize ?? 0) > 0)
 const isFieldReady = computed(() => props.semanticFieldEnabled && !isProcessing.value)
@@ -55,7 +56,7 @@ function selectTool(tool: CanvasTool) {
         :key="tool.id"
         :class="['nc-bottom-tool-btn', activeTool === tool.id && 'active']"
         :title="`${tool.label} (${tool.shortcut})`"
-        :aria-label="`${tool.label} tool (${tool.shortcut})`"
+        :aria-label="`${tool.label} (${tool.shortcut})`"
         :aria-pressed="activeTool === tool.id"
         role="radio"
         @click="selectTool(tool.id)"
@@ -70,22 +71,22 @@ function selectTool(tool: CanvasTool) {
       <!-- Semantic Field Toggle -->
       <button
         :class="['nc-bottom-tool-btn', semanticFieldEnabled && 'active']"
-        title="Toggle Semantic Field (S)"
-        :aria-label="`Semantic field ${semanticFieldEnabled ? 'on' : 'off'} (S)`"
+        :title="$t('canvas.toolbar.semantic_field_toggle')"
+        :aria-label="semanticFieldEnabled ? $t('canvas.toolbar.semantic_field_on') : $t('canvas.toolbar.semantic_field_off')"
         :aria-pressed="semanticFieldEnabled"
         @click="emit('toggle-semantic')"
       >
         <span class="i-lucide-network text-base" />
         <span v-if="semanticFieldEnabled" class="nc-tool-indicator" />
-        <span v-if="semanticFieldEnabled" class="nc-tool-label">Semantic</span>
+        <span v-if="semanticFieldEnabled" class="nc-tool-label">{{ $t('canvas.toolbar.semantic_label') }}</span>
       </button>
 
       <!-- Semantic Settings Gear -->
       <button
         v-if="semanticFieldEnabled"
         class="nc-bottom-tool-btn nc-settings-gear"
-        title="Semantic Field Settings"
-        aria-label="Open semantic field settings"
+        :title="$t('canvas.toolbar.semantic_settings')"
+        :aria-label="$t('canvas.toolbar.semantic_settings_aria')"
         @click="emit('open-semantic-settings')"
       >
         <span class="i-lucide-settings-2 text-xs" />
@@ -96,8 +97,8 @@ function selectTool(tool: CanvasTool) {
         v-if="semanticFieldEnabled"
         class="nc-semantic-status"
         :title="isProcessing
-          ? `Embedding ${processingQueueSize} node${(processingQueueSize ?? 0) > 1 ? 's' : ''}...`
-          : 'Semantic field ready'"
+          ? $t('canvas.toolbar.semantic_embedding', processingQueueSize ?? 0, { n: processingQueueSize ?? 0 })
+          : $t('canvas.toolbar.semantic_ready')"
       >
         <span v-if="isProcessing" class="nc-semantic-spinner" />
         <span v-if="isProcessing" class="nc-queue-count">{{ processingQueueSize }}</span>
@@ -110,8 +111,8 @@ function selectTool(tool: CanvasTool) {
       <!-- Undo / Redo -->
       <button
         class="nc-bottom-tool-btn"
-        title="Undo (Ctrl+Z)"
-        aria-label="Undo (Ctrl+Z)"
+        :title="$t('canvas.toolbar.undo')"
+        :aria-label="$t('canvas.toolbar.undo')"
         :disabled="!canUndo"
         @click="emit('undo')"
       >
@@ -119,8 +120,8 @@ function selectTool(tool: CanvasTool) {
       </button>
       <button
         class="nc-bottom-tool-btn"
-        title="Redo (Ctrl+Shift+Z)"
-        aria-label="Redo (Ctrl+Shift+Z)"
+        :title="$t('canvas.toolbar.redo')"
+        :aria-label="$t('canvas.toolbar.redo')"
         :disabled="!canRedo"
         @click="emit('redo')"
       >
@@ -143,11 +144,11 @@ function selectTool(tool: CanvasTool) {
     <div class="nc-toolbar-right">
       <button
         class="nc-shortcuts-btn"
-        aria-label="Show keyboard shortcuts (?)"
+        :aria-label="$t('canvas.toolbar.shortcuts')"
         @click="emit('open-shortcuts')"
       >
         <span class="i-lucide-keyboard text-sm" />
-        <span class="hidden sm:inline">Shortcuts</span>
+        <span class="hidden sm:inline">{{ $t('canvas.overflow_menu.keyboard_shortcuts') }}</span>
       </button>
     </div>
   </div>

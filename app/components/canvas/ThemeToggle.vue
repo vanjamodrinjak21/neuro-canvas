@@ -2,6 +2,7 @@
 import { useUserStore } from '~/stores/userStore'
 
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const isLight = computed(() => {
   if (userStore.preferences.value.theme === 'system') {
@@ -79,7 +80,7 @@ function applyThemeChange() {
     ref="toggleBtnRef"
     class="theme-toggle"
     :class="{ 'is-light': isLight, 'is-animating': isAnimating }"
-    :aria-label="isLight ? 'Switch to dark mode' : 'Switch to light mode'"
+    :aria-label="isLight ? $t('canvas.theme_toggle.to_dark') : $t('canvas.theme_toggle.to_light')"
     @click="toggle"
   >
     <span class="theme-toggle-track">
