@@ -34,10 +34,14 @@ function stripLocalePaths(items: any[] | undefined, loc: string): any[] {
 const navigation = computed(() => {
   if (!rawNavigation.value) return null
   const loc = locale.value
-  // Find the locale root in the navigation tree
-  const localeNode = rawNavigation.value.find(n => n.path === `/docs/${loc}`)
-  const children = localeNode?.children || rawNavigation.value
-  return stripLocalePaths(children, loc)
+  // Find the locale root in the nav tree — match by path ending or title
+  const localeNode = rawNavigation.value.find(n => {
+    const p = n.path || ''
+    return p === `/docs/${loc}` || p === `/${loc}` || p.endsWith(`/${loc}`)
+      || n.title?.toLowerCase() === loc
+  })
+  if (!localeNode?.children) return rawNavigation.value
+  return stripLocalePaths(localeNode.children, loc)
 })
 
 const { data: rawSurround } = await useAsyncData(`docs-surround-${locale.value}-${route.path}`, () =>

@@ -6,6 +6,15 @@ const emit = defineEmits<{
 }>()
 
 const userStore = useUserStore()
+const { locale, setLocale } = useI18n()
+
+function toggleLocale() {
+  const next = locale.value === 'en' ? 'hr' : 'en'
+  setLocale(next)
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('i18n_locale', next)
+  }
+}
 
 const isLight = computed(() => {
   if (userStore.preferences.value.theme === 'system') {
@@ -116,6 +125,13 @@ function applyThemeChange() {
     <!-- Right: actions -->
     <div class="docs-header__right">
       <NuxtLink to="/dashboard" class="docs-header__app-btn">App</NuxtLink>
+      <button
+        class="docs-header__lang-toggle"
+        :aria-label="locale === 'en' ? 'Switch to Croatian' : 'Prebaci na engleski'"
+        @click="toggleLocale"
+      >
+        {{ locale === 'en' ? 'HR' : 'EN' }}
+      </button>
       <button
         ref="toggleBtnRef"
         class="docs-header__theme-toggle"
@@ -341,6 +357,36 @@ function applyThemeChange() {
 
 :root.light .docs-header__app-btn:hover {
   background: rgba(0, 0, 0, 0.03);
+}
+
+/* ─── Language toggle ─── */
+.docs-header__lang-toggle {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--nc-border);
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', var(--nc-font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--nc-text-secondary);
+  transition: color var(--nc-duration-fast) ease, border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
+  flex-shrink: 0;
+}
+
+.docs-header__lang-toggle:hover {
+  color: var(--nc-text);
+  border-color: var(--nc-border-active);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:root.light .docs-header__lang-toggle:hover {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 /* ─── Theme toggle ─── */
