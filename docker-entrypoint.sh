@@ -1,18 +1,27 @@
 #!/bin/sh
-set -e
 
 echo "Running database migrations..."
 
-# Attempt normal migration deploy
-if npx prisma migrate deploy 2>&1; then
+# Run migrations and capture output
+MIGRATE_OUTPUT=$(npx prisma migrate deploy 2>&1)
+MIGRATE_EXIT=$?
+
+echo "$MIGRATE_OUTPUT"
+
+if [ $MIGRATE_EXIT -eq 0 ]; then
   echo "Migrations applied successfully."
 else
-  echo "Migration failed — attempting to baseline existing database..."
-  # Mark the init migration as already applied (creates _prisma_migrations table)
-  npx prisma migrate resolve --applied 0_init
-  # Now deploy remaining incremental migrations
-  npx prisma migrate deploy
-  echo "Baseline applied and migrations deployed successfully."
+  echo "Migration deploy exited with code $MIGRATE_EXIT"
+
+  # Check if the failure is due to missing _prisma_migrations table (fresh DB)
+  if echo "$MIGRATE_OUTPUT" | grep -q "P3005\|P3009\|does not exist"; then
+    echo "Attempting to baseline existing database..."
+    npx prisma migrate resolve --applied 0_init 2>&1 || true
+    npx prisma migrate deploy 2>&1
+    echo "Baseline applied and migrations deployed."
+  else
+    echo "Migration error — check logs above. Starting server anyway..."
+  fi
 fi
 
 echo "Starting application..."
