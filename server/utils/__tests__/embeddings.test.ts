@@ -9,7 +9,7 @@ describe('truncateMatryoshka', () => {
     const result = truncateMatryoshka(input, 256)
 
     expect(result).toHaveLength(256)
-    const norm = Math.sqrt(result.reduce((s, v) => s + v * v, 0))
+    const norm = Math.sqrt(result.reduce((s: number, v: number) => s + v * v, 0))
     expect(norm).toBeCloseTo(1.0, 5)
   })
 
@@ -34,7 +34,7 @@ describe('truncateMatryoshka', () => {
     const result = truncateMatryoshka(input, 256)
 
     expect(result).toHaveLength(256)
-    const norm = Math.sqrt(result.reduce((s, v) => s + v * v, 0))
+    const norm = Math.sqrt(result.reduce((s: number, v: number) => s + v * v, 0))
     expect(norm).toBeCloseTo(1.0, 5)
   })
 })

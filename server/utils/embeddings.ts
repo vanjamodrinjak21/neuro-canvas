@@ -132,25 +132,26 @@ export async function embedQueryServerSide(text: string): Promise<number[]> {
     const hiddenDim = data.length / seqLen
 
     // Mean pooling over the sequence dimension (all tokens have mask = 1).
-    const pooled = new Array<number>(hiddenDim).fill(0)
+    const pooled: number[] = new Array<number>(hiddenDim).fill(0)
     for (let i = 0; i < seqLen; i++) {
       for (let j = 0; j < hiddenDim; j++) {
-        pooled[j] += data[i * hiddenDim + j]!
+        pooled[j] = pooled[j]! + data[i * hiddenDim + j]!
       }
     }
     for (let j = 0; j < hiddenDim; j++) {
-      pooled[j] /= seqLen
+      pooled[j] = pooled[j]! / seqLen
     }
 
     // L2 normalise.
     let norm = 0
     for (let j = 0; j < hiddenDim; j++) {
-      norm += pooled[j]! * pooled[j]!
+      const v = pooled[j]!
+      norm += v * v
     }
     norm = Math.sqrt(norm)
     if (norm > 0) {
       for (let j = 0; j < hiddenDim; j++) {
-        pooled[j] /= norm
+        pooled[j] = pooled[j]! / norm
       }
     }
 
