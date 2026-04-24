@@ -2,7 +2,7 @@
  * AI Worker for NeuroCanvas - Semantic Constellation Engine
  *
  * Handles AI operations in a separate thread using transformers.js:
- * - Real embeddings using all-MiniLM-L6-v2 (~23MB)
+ * - Real embeddings using nomic-embed-text-v1.5 (~111MB, 768→256d Matryoshka)
  * - True batch inference for performance
  * - Optimized dot-product similarity (pre-normalized embeddings)
  * - Incremental similarity updates
@@ -13,8 +13,33 @@
 import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/transformers'
 
 // Configure transformers.js to use IndexedDB for model caching
-env.cacheDir = 'indexeddb://neurocanvas-models'
+env.cacheDir = 'indexeddb://neurocanvas-models-v2'
 env.allowLocalModels = false
+
+/** Target dimension for Matryoshka truncation */
+const MATRYOSHKA_DIM = 256
+
+/**
+ * Truncate a Matryoshka embedding to target dimensions and L2-renormalize.
+ * nomic-embed-text-v1.5 outputs 768d; we store 256d for efficiency.
+ */
+function truncateAndNormalize(data: Float32Array, sourceDim: number, targetDim: number): Float32Array {
+  const truncated = new Float32Array(targetDim)
+  for (let i = 0; i < targetDim; i++) {
+    truncated[i] = data[i]!
+  }
+  let norm = 0
+  for (let i = 0; i < targetDim; i++) {
+    norm += truncated[i]! * truncated[i]!
+  }
+  norm = Math.sqrt(norm)
+  if (norm > 0) {
+    for (let i = 0; i < targetDim; i++) {
+      truncated[i]! /= norm
+    }
+  }
+  return truncated
+}
 
 // Suppress the specific ONNX Runtime EP assignment info message that fires
 // when shape-related ops are assigned to CPU instead of WebGPU.  All other
@@ -103,14 +128,14 @@ async function initEmbeddingModel(onProgress?: (progress: number) => void): Prom
       }
     }
 
-    console.log(`[AI Worker] Initializing embedding model with ${device}...`)
+    console.log(`[AI Worker] Initializing nomic-embed-text-v1.5 with ${device}...`)
 
     try {
-      // Load the all-MiniLM-L6-v2 model (~23MB, 384 dimensions)
+      // Load nomic-embed-text-v1.5 model (~111MB, 768→256d Matryoshka)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       embeddingPipeline = await (pipeline as any)(
         'feature-extraction',
-        'Xenova/all-MiniLM-L6-v2',
+        'nomic-ai/nomic-embed-text-v1.5',
         { device, progress_callback: progressCallback }
       ) as FeatureExtractionPipeline
     } catch (gpuError) {
@@ -122,7 +147,7 @@ async function initEmbeddingModel(onProgress?: (progress: number) => void): Prom
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         embeddingPipeline = await (pipeline as any)(
           'feature-extraction',
-          'Xenova/all-MiniLM-L6-v2',
+          'nomic-ai/nomic-embed-text-v1.5',
           { device, progress_callback: progressCallback }
         ) as FeatureExtractionPipeline
       } else {
@@ -161,20 +186,18 @@ async function batchEmbed(
     const end = Math.min(start + batchSize, total)
     const batch = texts.slice(start, end)
 
-    // True batch inference — pipeline accepts array of strings
     const output = await embeddingPipeline(batch, {
       pooling: 'mean',
       normalize: true
     })
 
-    // Extract individual embeddings from the batched output tensor
     const data = output.data as Float32Array
-    const dims = 384 // all-MiniLM-L6-v2 dimension
+    const nativeDim = data.length / batch.length
     for (let i = 0; i < batch.length; i++) {
-      // Create a view into the output data without copying
-      const embedding = new Float32Array(data.buffer, data.byteOffset + i * dims * 4, dims)
-      // Copy to own buffer so the pipeline can free the original tensor
-      results.push(new Float32Array(embedding))
+      const offset = i * nativeDim
+      const fullEmbedding = new Float32Array(data.buffer, data.byteOffset + offset * 4, nativeDim)
+      const truncated = truncateAndNormalize(fullEmbedding, nativeDim, MATRYOSHKA_DIM)
+      results.push(truncated)
     }
 
     onProgress?.(Math.min(end, total), total)
@@ -194,8 +217,9 @@ async function generateEmbedding(text: string): Promise<number[]> {
     normalize: true
   })
 
-  // Extract the embedding array from the tensor
-  return Array.from(output.data as Float32Array)
+  const fullData = output.data as Float32Array
+  const truncated = truncateAndNormalize(fullData, fullData.length, MATRYOSHKA_DIM)
+  return Array.from(truncated)
 }
 
 // Generate embeddings for multiple texts (sequential fallback)
@@ -216,7 +240,9 @@ async function generateEmbeddings(
       pooling: 'mean',
       normalize: true
     })
-    embeddings.push(Array.from(output.data as Float32Array))
+    const fullData = output.data as Float32Array
+    const truncated = truncateAndNormalize(fullData, fullData.length, MATRYOSHKA_DIM)
+    embeddings.push(Array.from(truncated))
     onProgress?.(i + 1, texts.length)
   }
 
@@ -414,7 +440,7 @@ function detectClusters(
       }
 
       // Compute centroid embedding (average)
-      const dim = embeddings[0]?.embedding.length ?? 384
+      const dim = embeddings[0]?.embedding.length ?? 256
       const centroidEmb = new Float32Array(dim)
       let count = 0
       for (const nid of cluster) {
@@ -681,7 +707,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
 
         respond(id, 'success', {
           embeddings: results,
-          dimensions: results[0]?.embedding.length || 384
+          dimensions: results[0]?.embedding.length || 256
         })
         break
       }

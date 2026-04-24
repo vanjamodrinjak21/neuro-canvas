@@ -210,7 +210,7 @@ export interface DBSemanticData {
   id: string // composite: `${mapId}-${nodeId}`
   nodeId: string
   mapId: string
-  embedding: number[]
+  embedding: number[] // 256d (Matryoshka-truncated nomic-embed-text-v1.5)
   embeddingVersion: number
   updatedAt: number
 }
