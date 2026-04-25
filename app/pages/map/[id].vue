@@ -25,6 +25,11 @@ import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useSemanticProcessor } from '~/composables/useSemanticProcessor'
 import { useAISettings } from '~/composables/useAISettings'
 import { useGuestMode } from '~/composables/useGuestMode'
+import { useCollabSession, type RemoteUser } from '~/composables/useCollabSession'
+import { cursorColor } from '~/utils/cursorColor'
+import { mapDocumentToYDoc } from '~/utils/ydocConverter'
+import CollabCursorLayer from '~/components/canvas/CollabCursorLayer.vue'
+import CollabParticipants from '~/components/canvas/CollabParticipants.vue'
 
 // i18n
 const { locale: currentLocale } = useI18n()
@@ -52,9 +57,75 @@ const guest = useGuestMode()
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
 
+// Real-time collab session (Plan 2). Inert unless NUXT_PUBLIC_COLLAB_ENABLED.
+const collabSession = shallowRef<ReturnType<typeof useCollabSession> | null>(null)
+const collabRemotes = ref<RemoteUser[]>([])
+
+async function tryStartCollab() {
+  const config = useRuntimeConfig()
+  if (!config.public.collabEnabled || !config.public.partykitHost) return
+  const shareToken = (route.query.via as string | undefined) ?? null
+  try {
+    const res = await $fetch<{
+      ok: true
+      wsUrl: string
+      jwt: string
+      role: 'viewer' | 'editor'
+      sessionId: string
+      displayName: string
+    }>('/api/collab/token', {
+      method: 'POST',
+      body: { mapId: mapId.value, shareToken }
+    })
+    if (!res?.ok || !res.wsUrl) return
+    // Seed a fresh Y.Doc from the current mapStore JSON so the room comes online with our state.
+    const ydoc = mapDocumentToYDoc({
+      id: mapStore.id,
+      title: mapStore.title,
+      nodes: mapStore.nodes,
+      edges: mapStore.edges,
+      camera: mapStore.camera,
+      rootNodeId: mapStore.rootNodeId,
+      createdAt: mapStore.createdAt,
+      updatedAt: mapStore.updatedAt,
+      settings: mapStore.settings
+    })
+    const session = useCollabSession({
+      ydoc,
+      wsUrl: res.wsUrl,
+      mapId: mapId.value,
+      jwt: res.jwt,
+      role: res.role,
+      sessionId: res.sessionId,
+      displayName: res.displayName,
+      color: cursorColor(res.sessionId)
+    })
+    collabSession.value = session
+    watch(session.remotes, (next) => { collabRemotes.value = next })
+  } catch (err) {
+    console.warn('[collab] token mint or session start failed', err)
+  }
+}
+
+function broadcastCursor(ev: PointerEvent) {
+  if (ev.pointerType !== 'mouse') return
+  const session = collabSession.value
+  if (!session) return
+  const cam = camera.value
+  const x = ev.clientX / cam.zoom + cam.x
+  const y = ev.clientY / cam.zoom + cam.y
+  session.setCursor({ x, y })
+}
+function clearRemoteCursor() { collabSession.value?.setCursor(null) }
+
 // Guest onboarding overlays
 const showOnboarding = ref(false)
 const showTemplatePicker = ref(false)
+const showSavePrompt = ref(false)
+const guestEditCount = ref(0)
+const guestSessionStart = ref<number>(Date.now())
+const guestSessionMinutes = computed(() => Math.max(1, Math.floor((Date.now() - guestSessionStart.value) / 60000)))
+const savePromptDismissedAt = ref<number>(0)
 
 // Reduced motion detection
 const { isReduced: reducedMotion } = useReducedMotion()
@@ -127,8 +198,6 @@ const selectedNode = computed(() => {
 watch(selectedNode, (node) => {
   showPropertiesPanel.value = !!node
   showDetailPanel.value = !!node
-  // Dismiss hover preview when node is selected — detail panel shows full info instead
-  if (node) hoveredPreviewNode.value = null
 })
 
 // Multi-select action bar
@@ -151,29 +220,6 @@ const multiSelectPosition = computed(() => {
     y: minY * camera.value.zoom + camera.value.y
   }
 })
-
-// Node hover preview
-const hoveredPreviewNode = ref<import('~/types/canvas').Node | null>(null)
-const hoverPreviewPosition = ref({ x: 0, y: 0 })
-let hoverDelayTimer: ReturnType<typeof setTimeout> | null = null
-
-function handleNodeHover(event: { nodeId: string | null; screenPosition: import('~/types/canvas').Point }) {
-  if (hoverDelayTimer) {
-    clearTimeout(hoverDelayTimer)
-    hoverDelayTimer = null
-  }
-  if (!event.nodeId) {
-    hoveredPreviewNode.value = null
-    return
-  }
-  hoverDelayTimer = setTimeout(() => {
-    const node = mapStore.nodes.get(event.nodeId!)
-    if (node) {
-      hoveredPreviewNode.value = node
-      hoverPreviewPosition.value = event.screenPosition
-    }
-  }, 500)
-}
 
 // Context menu
 const contextMenuVisible = ref(false)
@@ -209,8 +255,8 @@ watch(() => userStore.preferences.value.showGrid, (show) => {
 // View mode toggle: canvas (default on desktop), editor (default on mobile)
 const viewMode = ref<'canvas' | 'graph' | 'editor'>('canvas')
 
-// Minimap visibility — respect user preference from settings
-const minimapEnabled = computed(() => userStore.preferences.value.showMinimap)
+// Minimap visibility — respect user preference from settings (default: true)
+const minimapEnabled = computed(() => userStore.preferences.value.showMinimap !== false)
 const minimapCollapsed = ref(false)
 
 // Semantic search & settings
@@ -256,38 +302,83 @@ const canvasContainerHeight = ref(0)
 // Guest template handler
 function handleGuestTemplateSelect(templateId: string | null) {
   showTemplatePicker.value = false
+  if (guest.isGuest.value && !guest.onboardingComplete.value) {
+    showOnboarding.value = true
+  }
   if (!templateId) return
 
   const templates: Record<string, { nodes: Array<{ content: string; x: number; y: number }>; edges: number[][] }> = {
+    'decision-tree': {
+      nodes: [
+        { content: 'Decision', x: 400, y: 150 },
+        { content: 'Option A', x: 150, y: 320 },
+        { content: 'Risks', x: 400, y: 320 },
+        { content: 'Option B', x: 650, y: 320 },
+        { content: 'Pro', x: 150, y: 480 },
+        { content: 'Mixed', x: 400, y: 480 },
+        { content: 'Con', x: 650, y: 480 },
+      ],
+      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
+    },
     brainstorm: {
       nodes: [
-        { content: 'Main Idea', x: 400, y: 300 },
-        { content: 'Concept A', x: 200, y: 150 },
-        { content: 'Concept B', x: 600, y: 150 },
-        { content: 'Concept C', x: 200, y: 450 },
-        { content: 'Concept D', x: 600, y: 450 },
+        { content: 'Topic', x: 400, y: 150 },
+        { content: 'Idea 1', x: 150, y: 320 },
+        { content: 'Idea 2', x: 400, y: 320 },
+        { content: 'Idea 3', x: 650, y: 320 },
+        { content: 'Sub a', x: 150, y: 480 },
+        { content: 'Sub b', x: 400, y: 480 },
+        { content: 'Sub c', x: 650, y: 480 },
       ],
-      edges: [[0, 1], [0, 2], [0, 3], [0, 4]],
+      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
     },
     'pros-cons': {
       nodes: [
-        { content: 'Decision', x: 400, y: 200 },
-        { content: 'Pros', x: 200, y: 400 },
-        { content: 'Cons', x: 600, y: 400 },
-        { content: 'Pro 1', x: 100, y: 550 },
-        { content: 'Con 1', x: 500, y: 550 },
+        { content: 'Question', x: 400, y: 150 },
+        { content: 'Pro 1', x: 150, y: 320 },
+        { content: 'Mixed', x: 400, y: 320 },
+        { content: 'Con 1', x: 650, y: 320 },
+        { content: 'Pro 2', x: 150, y: 480 },
+        { content: 'Tradeoff', x: 400, y: 480 },
+        { content: 'Con 2', x: 650, y: 480 },
       ],
-      edges: [[0, 1], [0, 2], [1, 3], [2, 4]],
+      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
     },
     'project-plan': {
       nodes: [
-        { content: 'Project', x: 100, y: 300 },
-        { content: 'Phase 1', x: 300, y: 150 },
-        { content: 'Phase 2', x: 500, y: 300 },
-        { content: 'Phase 3', x: 700, y: 150 },
-        { content: 'Launch', x: 700, y: 450 },
+        { content: 'Goal', x: 400, y: 150 },
+        { content: 'Spec', x: 150, y: 320 },
+        { content: 'Build', x: 400, y: 320 },
+        { content: 'Ship', x: 650, y: 320 },
+        { content: 'Today', x: 150, y: 480 },
+        { content: 'Wk 2', x: 400, y: 480 },
+        { content: 'Wk 4', x: 650, y: 480 },
       ],
-      edges: [[0, 1], [1, 2], [2, 3], [2, 4]],
+      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
+    },
+    'research-synthesis': {
+      nodes: [
+        { content: 'Question', x: 400, y: 150 },
+        { content: 'Source 1', x: 150, y: 320 },
+        { content: 'Source 2', x: 400, y: 320 },
+        { content: 'Source 3', x: 650, y: 320 },
+        { content: 'Theme', x: 150, y: 480 },
+        { content: 'AI synth', x: 400, y: 480 },
+        { content: 'Gap', x: 650, y: 480 },
+      ],
+      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
+    },
+    'mind-map': {
+      nodes: [
+        { content: 'Center', x: 400, y: 300 },
+        { content: 'Branch', x: 150, y: 200 },
+        { content: 'Branch', x: 650, y: 200 },
+        { content: 'Branch', x: 400, y: 500 },
+        { content: 'Sub', x: 50, y: 100 },
+        { content: 'Sub', x: 750, y: 100 },
+        { content: 'Sub', x: 400, y: 600 },
+      ],
+      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
     },
   }
 
@@ -296,15 +387,58 @@ function handleGuestTemplateSelect(templateId: string | null) {
 
   const nodeIds: string[] = []
   for (const n of tmpl.nodes) {
-    const id = mapStore.addNode({ x: n.x, y: n.y, content: n.content })
-    nodeIds.push(id)
+    const node = mapStore.addNode({ position: { x: n.x, y: n.y }, content: n.content })
+    nodeIds.push(typeof node === 'string' ? node : (node as { id: string }).id)
   }
 
   for (const [srcIdx, tgtIdx] of tmpl.edges) {
-    if (nodeIds[srcIdx] && nodeIds[tgtIdx]) {
-      mapStore.addEdge(nodeIds[srcIdx], nodeIds[tgtIdx])
+    const src = srcIdx !== undefined ? nodeIds[srcIdx] : undefined
+    const tgt = tgtIdx !== undefined ? nodeIds[tgtIdx] : undefined
+    if (src && tgt) {
+      mapStore.addEdge(src, tgt)
     }
   }
+}
+
+// Guest AI generate handler — guest can't use AI yet, so trigger upgrade modal
+function handleGuestGenerate(_prompt: string) {
+  showTemplatePicker.value = false
+  if (guest.isGuest.value && !guest.onboardingComplete.value) {
+    showOnboarding.value = true
+  }
+  guest.requireFeature('ai')
+}
+
+// Track guest edits and trigger save prompt at threshold (10 edits or 5 min after onboarding)
+function maybeShowSavePrompt() {
+  if (!guest.isGuest.value) return
+  if (showSavePrompt.value) return
+  // Cooldown: don't re-show within 3 min of dismissal
+  if (Date.now() - savePromptDismissedAt.value < 180_000) return
+  if (guestEditCount.value >= 10 && guestSessionMinutes.value >= 3) {
+    showSavePrompt.value = true
+  }
+}
+
+if (import.meta.client) {
+  watch(
+    () => [mapStore.nodes?.size ?? 0, mapStore.edges?.size ?? 0],
+    ([n, e], [pn, pe] = [0, 0]) => {
+      const delta = (n - (pn ?? 0)) + (e - (pe ?? 0))
+      if (delta > 0 && guest.isGuest.value) {
+        guestEditCount.value += delta
+        maybeShowSavePrompt()
+      }
+    },
+  )
+
+  // Tab-close warning for guests with unsaved work
+  window.addEventListener('beforeunload', (ev) => {
+    if (guest.isGuest.value && guestEditCount.value > 3) {
+      ev.preventDefault()
+      ev.returnValue = ''
+    }
+  })
 }
 
 // Load map
@@ -328,11 +462,11 @@ onMounted(async () => {
         })
       }
 
-      // Track guest map ID and show onboarding
+      // Track guest map ID and show template picker first, then onboarding after a pick
       if (guest.isGuest.value) {
         guest.setGuestMapId(mapStore.id)
         if (!guest.onboardingComplete.value) {
-          showOnboarding.value = true
+          showTemplatePicker.value = true
         }
       }
 
@@ -445,6 +579,20 @@ onUnmounted(() => {
   autoSave.stop()
   if (wheelCleanup) wheelCleanup()
   document.body.classList.remove('canvas-page')
+  collabSession.value?.dispose()
+  collabSession.value = null
+})
+
+// Selection broadcast — re-publish whenever local selection changes.
+watch(
+  () => Array.from(mapStore.selection.nodeIds),
+  (ids) => collabSession.value?.setSelection(ids),
+  { deep: true }
+)
+
+// Kick off the realtime session once the map has finished loading.
+watch(isLoading, (loading) => {
+  if (!loading) tryStartCollab()
 })
 
 onBeforeUnmount(async () => {
@@ -1509,9 +1657,9 @@ useHead({
         :is-drag-over="canvasRef?.isDragOver ?? false"
       />
 
-      <!-- Empty canvas guide (desktop only — no canvas on mobile) -->
+      <!-- Empty canvas guide (desktop only — canvas mode only) -->
       <CanvasEmptyCanvasGuide
-        v-if="!isLoading && !loadError && mapStore.nodes.size === 0 && !isMobile"
+        v-if="!isLoading && !loadError && mapStore.nodes.size === 0 && !isMobile && viewMode === 'canvas'"
         @add-node="handleAddNodeFromSidebar"
         @generate-map="showGenerateMapDialog = true"
       />
@@ -1545,22 +1693,36 @@ useHead({
         @update:camera="springCamera.setCurrent($event)"
         @pan-end="(v: { vx: number; vy: number }) => springCamera.addVelocity(v.vx, v.vy)"
         @contextmenu="handleCanvasContextMenu"
-        @node-hover="handleNodeHover"
         @drop-category="handleDropCategory"
         @drop-node="handleDropNode"
+        @pointermove.passive="broadcastCursor"
+        @pointerleave="clearRemoteCursor"
+      />
+
+      <!-- Real-time collab cursor + selection halo overlay -->
+      <CollabCursorLayer
+        v-if="collabSession && viewMode === 'canvas' && !isMobile"
+        :remotes="collabRemotes"
+        :camera="camera"
       />
 
       <!-- Graph View (Obsidian-style force-directed) -->
       <CanvasForceGraphCanvas
-        v-if="!isLoading && !loadError && viewMode === 'graph'"
+        v-if="!isLoading && !loadError && viewMode === 'graph' && mapStore.nodes.size > 0"
         @select-node="(id: string) => mapStore.selectNode(id)"
         @deselect="mapStore.clearSelection()"
       />
 
-      <!-- Markdown Editor View -->
+      <!-- Markdown Editor View — always available; typing here creates nodes -->
       <CanvasMarkdownEditorView
         v-if="!isLoading && !loadError && viewMode === 'editor'"
       />
+
+
+      <!-- Real-time collab participants (desktop, top-right) -->
+      <div v-if="collabSession && !isMobile" class="collab-participants-anchor">
+        <CollabParticipants :remotes="collabRemotes" />
+      </div>
 
       <!-- Multi-Select Action Bar -->
       <Transition name="nc-fade-up">
@@ -1574,27 +1736,6 @@ useHead({
           @delete="deleteSelectedWithAnimations()"
         />
       </Transition>
-
-      <!-- Node Hover Preview (canvas only, hidden when detail panel is open) -->
-      <Transition name="nc-fade-up">
-        <CanvasNodeHoverPreview
-          v-if="viewMode === 'canvas' && hoveredPreviewNode && !contextMenuVisible && !showDetailPanel"
-          :node="hoveredPreviewNode"
-          :screen-x="hoverPreviewPosition.x"
-          :screen-y="hoverPreviewPosition.y"
-        />
-      </Transition>
-
-      <!-- Spatial HUD Overlay (canvas only) -->
-      <CanvasSpatialHUDOverlay
-        v-if="viewMode === 'canvas'"
-        :camera="camera"
-        :nodes="mapStore.nodes"
-        :visible-count="mapStore.nodes.size"
-        :regions="mapRegions.regions.value"
-        :root-node-id="mapStore.rootNodeId"
-        :is-editing-title="isEditingTitle"
-      />
 
       <!-- Top Bar -->
       <CanvasTopBar
@@ -1650,7 +1791,7 @@ useHead({
 
     <!-- Minimap (canvas mode only, desktop, when enabled in settings) -->
     <div v-if="minimapEnabled && viewMode === 'canvas' && !isMobile" class="minimap-wrapper">
-      <Minimap
+      <CanvasMinimap
         v-model:collapsed="minimapCollapsed"
         :camera="camera"
         :container-width="canvasContainerWidth"
@@ -1770,16 +1911,26 @@ useHead({
     <!-- Sync conflict resolution dialog -->
     <SyncConflictDialog />
 
-    <!-- Guest Onboarding -->
-    <GuestOnboardingWalkthrough
-      v-if="showOnboarding"
-      @complete="showOnboarding = false; showTemplatePicker = true"
-    />
-
-    <!-- Guest Template Picker -->
+    <!-- Guest Template Picker (shown first) -->
     <GuestTemplatePicker
       v-if="showTemplatePicker"
       @select="handleGuestTemplateSelect"
+      @generate="handleGuestGenerate"
+    />
+
+    <!-- Guest Onboarding (after template pick) -->
+    <GuestOnboardingWalkthrough
+      v-if="showOnboarding"
+      @complete="showOnboarding = false"
+    />
+
+    <!-- Guest Save-Your-Work Prompt -->
+    <GuestSaveWorkPrompt
+      :visible="showSavePrompt"
+      :edit-count="guestEditCount"
+      :session-minutes="guestSessionMinutes"
+      @dismiss="showSavePrompt = false"
+      @remind="showSavePrompt = false; savePromptDismissedAt = Date.now()"
     />
 
     <!-- Guest Upgrade Modal -->
@@ -1789,13 +1940,22 @@ useHead({
 </template>
 
 <style scoped>
-.minimap-wrapper {
+.collab-participants-anchor {
   position: absolute;
-  bottom: 84px;
-  right: 20px;
-  z-index: 100;
+  top: 14px;
+  right: 240px;
+  z-index: 60;
   pointer-events: auto;
 }
+
+.minimap-wrapper {
+  position: fixed;
+  bottom: 96px;
+  right: 24px;
+  z-index: 200;
+  pointer-events: auto;
+}
+
 
 /* ═══ Mobile Segmented Control ═══ */
 .nc-mobile-segmented-wrapper {
