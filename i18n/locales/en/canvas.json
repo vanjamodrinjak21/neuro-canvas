@@ -274,6 +274,40 @@
                 "error": "Sync error",
                 "local_only": "Local only"
             }
+        },
+        "share_modal": {
+            "title": "Share map",
+            "node_count": "{n} nodes",
+            "close": "Close",
+            "create_new": "Create a new link",
+            "editor_requires_signin": "Editor links require sign-in",
+            "label_placeholder": "Label this link \u2014 e.g. Design team",
+            "role_viewer": "Viewer",
+            "role_editor": "Editor",
+            "role_viewer_chip": "VIEWER",
+            "role_editor_chip": "EDITOR",
+            "role_revoked": "REVOKED",
+            "expiry_1d": "1 day",
+            "expiry_7d": "7 days",
+            "expiry_30d": "30 days",
+            "expiry_never": "No expiry",
+            "create": "Create",
+            "creating": "Creating\u2026",
+            "active_links": "Active links",
+            "link_count": "{n} active",
+            "loading": "Loading\u2026",
+            "empty": "No links yet \u2014 create one above to start sharing.",
+            "untitled": "Untitled link",
+            "no_expiry": "no expiry",
+            "expires_in": "expires in {rel}",
+            "expired": "expired",
+            "revoked_ago": "revoked {rel} ago",
+            "rel_days": "{n}d",
+            "rel_hours": "{n}h",
+            "rel_mins": "{n}m",
+            "copy_link": "Copy link",
+            "revoke": "Revoke",
+            "footnote": "Editor links require sign-in. Viewer links work for anyone."
         }
     }
 }

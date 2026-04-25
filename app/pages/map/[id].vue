@@ -607,7 +607,15 @@ async function handleSave() {
 }
 
 // Share & Export
+const showShareModal = ref(false)
 async function handleShare() {
+  // If collab is enabled, open the rich share-link modal.
+  // Otherwise fall back to the legacy native-share text export.
+  const config = useRuntimeConfig()
+  if (config.public.collabEnabled) {
+    showShareModal.value = true
+    return
+  }
   try {
     await exportUtils.shareAsText(mapStore, platform)
   } catch (e) {
@@ -1723,6 +1731,15 @@ useHead({
       <div v-if="collabSession && !isMobile" class="collab-participants-anchor">
         <CollabParticipants :remotes="collabRemotes" />
       </div>
+
+      <!-- Share Map Modal (collab-aware tiered links) -->
+      <CanvasShareMapModal
+        v-if="showShareModal"
+        :map-id="mapStore.id"
+        :map-title="mapStore.title"
+        :node-count="mapStore.nodes.size"
+        @close="showShareModal = false"
+      />
 
       <!-- Multi-Select Action Bar -->
       <Transition name="nc-fade-up">
