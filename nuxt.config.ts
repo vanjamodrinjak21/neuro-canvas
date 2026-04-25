@@ -82,9 +82,12 @@ export default defineNuxtConfig({
     emailFrom: process.env.EMAIL_FROM || 'NeuroCanvas <noreply@neurocanvas.app>',
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+    // Real-time collab (Phase 2 enables this; Phase 1 leaves the public flag false)
+    partykitFlushSecret: process.env.PARTYKIT_FLUSH_SECRET || '',
     // Public (exposed to client)
     public: {
-      authOrigin: process.env.AUTH_ORIGIN || 'http://localhost:3000'
+      authOrigin: process.env.AUTH_ORIGIN || 'http://localhost:3000',
+      collabEnabled: process.env.NUXT_PUBLIC_COLLAB_ENABLED === 'true'
     }
   },
 
