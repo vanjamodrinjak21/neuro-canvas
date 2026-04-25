@@ -1,0 +1,10 @@
+{
+  "name": "neurocanvas-collab",
+  "main": "src/server.ts",
+  "compatibilityDate": "2025-01-01",
+  "vars": {
+    "PARTYKIT_JWT_SECRET": "set-via-secrets",
+    "FLUSH_URL": "https://app.neurocanvas.app/api/collab/flush",
+    "PARTYKIT_FLUSH_SECRET": "set-via-secrets"
+  }
+}
