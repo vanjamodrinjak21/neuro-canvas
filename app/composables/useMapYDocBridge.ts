@@ -11,7 +11,7 @@
  * (a reactive MapDocument), `$subscribe(fn)` (returns dispose), and
  * `applySnapshot(doc)` works — including a Pinia store or a unit-test stub.
  */
-import * as Y from 'yjs'
+import type * as Y from 'yjs'
 import type { MapDocument } from '~/types'
 import { syncStateIntoYDoc, LOCAL_ORIGIN } from '~/utils/ydocBridge'
 import { yDocToMapDocument } from '~/utils/ydocConverter'

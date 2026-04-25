@@ -26,8 +26,9 @@ import { useSemanticProcessor } from '~/composables/useSemanticProcessor'
 import { useAISettings } from '~/composables/useAISettings'
 import { useGuestMode } from '~/composables/useGuestMode'
 import { useCollabSession, type RemoteUser } from '~/composables/useCollabSession'
+import { useMapYDocBridge, type MapStoreSurface } from '~/composables/useMapYDocBridge'
 import { cursorColor } from '~/utils/cursorColor'
-import { mapDocumentToYDoc } from '~/utils/ydocConverter'
+import * as Y from 'yjs'
 import CollabCursorLayer from '~/components/canvas/CollabCursorLayer.vue'
 import CollabParticipants from '~/components/canvas/CollabParticipants.vue'
 
@@ -57,9 +58,49 @@ const guest = useGuestMode()
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
 
-// Real-time collab session (Plan 2). Inert unless NUXT_PUBLIC_COLLAB_ENABLED.
+// Real-time collab session (Plans 2-4). Inert unless NUXT_PUBLIC_COLLAB_ENABLED.
 const collabSession = shallowRef<ReturnType<typeof useCollabSession> | null>(null)
+const collabBridge = shallowRef<ReturnType<typeof useMapYDocBridge> | null>(null)
 const collabRemotes = ref<RemoteUser[]>([])
+
+function makeBridgeSurface(): MapStoreSurface {
+  return {
+    state: {
+      get id() { return mapStore.id },
+      get title() { return mapStore.title },
+      get nodes() { return mapStore.nodes },
+      get edges() { return mapStore.edges },
+      get camera() { return mapStore.camera },
+      get rootNodeId() { return mapStore.rootNodeId ?? undefined },
+      get createdAt() { return mapStore.createdAt ?? 0 },
+      get updatedAt() { return mapStore.lastSavedAt ?? 0 },
+      get settings() { return mapStore.settings }
+    } as unknown as MapStoreSurface['state'],
+    $subscribe(fn) {
+      // mapStore is a custom reactive composable, not Pinia — emulate
+      // .$subscribe with a deep watch on the relevant fields.
+      const stop = watch(
+        () => [mapStore.nodes, mapStore.edges, mapStore.camera, mapStore.rootNodeId, mapStore.settings, mapStore.nodesVersion],
+        () => fn(),
+        { deep: true, flush: 'post' }
+      )
+      return stop
+    },
+    applySnapshot(snap) {
+      mapStore.loadDocument({
+        id: snap.id,
+        title: snap.title,
+        nodes: snap.nodes,
+        edges: snap.edges,
+        camera: snap.camera,
+        rootNodeId: snap.rootNodeId,
+        settings: snap.settings,
+        createdAt: snap.createdAt,
+        updatedAt: snap.updatedAt
+      })
+    }
+  }
+}
 
 async function tryStartCollab() {
   const config = useRuntimeConfig()
@@ -78,18 +119,14 @@ async function tryStartCollab() {
       body: { mapId: mapId.value, shareToken }
     })
     if (!res?.ok || !res.wsUrl) return
-    // Seed a fresh Y.Doc from the current mapStore JSON so the room comes online with our state.
-    const ydoc = mapDocumentToYDoc({
-      id: mapStore.id,
-      title: mapStore.title,
-      nodes: mapStore.nodes,
-      edges: mapStore.edges,
-      camera: mapStore.camera,
-      rootNodeId: mapStore.rootNodeId,
-      createdAt: mapStore.createdAt,
-      updatedAt: mapStore.updatedAt,
-      settings: mapStore.settings
-    })
+
+    // Empty Y.Doc — the bridge's first tick will mirror mapStore into it
+    // before the y-partykit provider opens its websocket and exchanges
+    // state vectors with the server.
+    const ydoc = new Y.Doc()
+    const surface = makeBridgeSurface()
+    collabBridge.value = useMapYDocBridge(ydoc, surface, { debounceMs: 100 })
+
     const session = useCollabSession({
       ydoc,
       wsUrl: res.wsUrl,
@@ -581,6 +618,8 @@ onUnmounted(() => {
   document.body.classList.remove('canvas-page')
   collabSession.value?.dispose()
   collabSession.value = null
+  collabBridge.value?.dispose()
+  collabBridge.value = null
 })
 
 // Selection broadcast — re-publish whenever local selection changes.
