@@ -21,57 +21,71 @@ function toggle() {
   isAnimating.value = true
 
   const btn = toggleBtnRef.value
-  if (!btn || typeof window === 'undefined') {
+  const overlay = overlayRef.value
+  if (!btn || !overlay || typeof window === 'undefined') {
     applyThemeChange()
+    isAnimating.value = false
     return
   }
 
+  const root = document.documentElement
   const rect = btn.getBoundingClientRect()
   const cx = rect.left + rect.width / 2
   const cy = rect.top + rect.height / 2
-
   const maxX = Math.max(cx, window.innerWidth - cx)
   const maxY = Math.max(cy, window.innerHeight - cy)
   const maxRadius = Math.ceil(Math.sqrt(maxX * maxX + maxY * maxY))
 
-  const overlay = overlayRef.value
-  if (!overlay) {
-    applyThemeChange()
-    return
-  }
+  // Suppress every transition in the document while the swap happens.
+  // Without this, color/background-color transitions on hundreds of elements
+  // start at the same moment as the theme class flip, causing visible jitter
+  // at the edges of the expanding overlay.
+  root.setAttribute('data-theme-switching', '')
 
+  overlay.style.transition = 'none'
   overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
   overlay.style.display = 'block'
   overlay.style.opacity = '1'
+  // Force a layout flush so the next frame starts from clip(0) cleanly.
+  void overlay.offsetHeight
 
-  overlay.offsetHeight
+  const onClipEnd = (e: TransitionEvent) => {
+    if (e.propertyName !== 'clip-path') return
+    overlay.removeEventListener('transitionend', onClipEnd)
 
-  overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'
-  overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
-
-  setTimeout(() => {
+    // Overlay fully covers the viewport — flip the theme behind it.
     applyThemeChange()
 
-    setTimeout(() => {
-      overlay.style.transition = 'opacity 300ms ease'
+    // Wait one frame so the new theme paints before we start fading.
+    requestAnimationFrame(() => {
+      overlay.style.transition = 'opacity 280ms cubic-bezier(0.16, 1, 0.3, 1)'
       overlay.style.opacity = '0'
+    })
 
-      setTimeout(() => {
-        overlay.style.display = 'none'
-        overlay.style.transition = ''
-        overlay.style.clipPath = ''
-        isAnimating.value = false
-      }, 300)
-    }, 60)
-  }, 480)
+    const onFadeEnd = (ev: TransitionEvent) => {
+      if (ev.propertyName !== 'opacity') return
+      overlay.removeEventListener('transitionend', onFadeEnd)
+      overlay.style.display = 'none'
+      overlay.style.transition = ''
+      overlay.style.clipPath = ''
+      // Re-enable transitions for normal interactions.
+      root.removeAttribute('data-theme-switching')
+      isAnimating.value = false
+    }
+    overlay.addEventListener('transitionend', onFadeEnd)
+  }
+  overlay.addEventListener('transitionend', onClipEnd)
+
+  // Start the clip-path expansion on the next frame for a clean transition start.
+  requestAnimationFrame(() => {
+    overlay.style.transition = 'clip-path 460ms cubic-bezier(0.22, 1, 0.36, 1)'
+    overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
+  })
 }
 
 function applyThemeChange() {
   const next = isLight.value ? 'dark' : 'light'
   userStore.setPreference('theme', next)
-  if (isAnimating.value && !overlayRef.value) {
-    setTimeout(() => { isAnimating.value = false }, 100)
-  }
 }
 </script>
 
