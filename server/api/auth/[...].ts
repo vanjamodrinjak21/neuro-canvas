@@ -316,7 +316,9 @@ export default NuxtAuthHandler({
     },
 
     async jwt({ token, user }) {
-      console.log(`[Auth:jwt] called, hasUser=${!!user}, tokenId=${token?.id || 'none'}, tokenEmail=${token?.email || 'none'}`)
+      if (process.env.AUTH_DEBUG === 'true') {
+        console.log(`[Auth:jwt] called, hasUser=${!!user}, tokenId=${token?.id ? '<present>' : 'none'}`)
+      }
       // Initial sign-in: populate token from user record
       if (user) {
         token.id = user.id
@@ -361,7 +363,9 @@ export default NuxtAuthHandler({
     },
 
     async session({ session, token }) {
-      console.log(`[Auth:session] called, hasToken=${!!token}, tokenId=${(token as any)?.id || 'none'}, expired=${(token as any)?.expired || false}`)
+      if (process.env.AUTH_DEBUG === 'true') {
+        console.log(`[Auth:session] called, hasToken=${!!token}, expired=${(token as Record<string, unknown>)?.expired || false}`)
+      }
       // Reject expired tokens (password changed after token issued)
       if ((token as Record<string, unknown>).expired) {
         console.warn('[Auth] Session rejected: token expired (password changed)')

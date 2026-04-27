@@ -28,7 +28,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Share link not found' })
   }
 
-  // Check expiration
+  if (share.revokedAt) {
+    throw createError({ statusCode: 410, statusMessage: 'Share link has been revoked' })
+  }
+
   if (share.expiresAt && share.expiresAt < new Date()) {
     throw createError({ statusCode: 410, statusMessage: 'Share link has expired' })
   }
