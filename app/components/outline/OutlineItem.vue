@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { OutlineItem } from '~/composables/useOutlineSync'
+import { renderInlineMarkdown } from '~/utils/inlineMarkdown'
 
 const props = defineProps<{
   item: OutlineItem
@@ -27,27 +28,6 @@ const renderedContent = computed(() => {
   return renderInlineMarkdown(props.item.content)
 })
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-
-function renderInlineMarkdown(text: string): string {
-  if (!text) return ''
-  // Escape HTML first to prevent XSS, then apply markdown formatting
-  const safe = escapeHtml(text)
-  return safe
-    // Code (must be first to avoid conflicts)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Links — only allow http/https URLs
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, linkText, url) => {
-      if (!/^https?:\/\//i.test(url)) return linkText
-      return `<a href="${url}" target="_blank" rel="noopener">${linkText}</a>`
-    })
-}
 
 function focusInput() {
   nextTick(() => {
