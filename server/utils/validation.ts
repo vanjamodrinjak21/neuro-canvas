@@ -176,6 +176,70 @@ export const ragContextSchema = z.object({
   queryEmbedding: z.array(z.number()).min(1).max(4096)
 })
 
+// --------------------------------------------------------------------------
+// Comments (per-map collaboration)
+// --------------------------------------------------------------------------
+
+const COMMENT_BODY_MAX = 5_000
+
+export const commentCreateSchema = z.object({
+  body: z.string().min(1).max(COMMENT_BODY_MAX).trim(),
+  threadId: z.string().min(1).max(128).nullable().optional(),
+  anchorNodeId: z.string().min(1).max(128).nullable().optional(),
+  anchorX: z.number().finite().nullable().optional(),
+  anchorY: z.number().finite().nullable().optional(),
+  mentions: z.array(z.string().min(1).max(128)).max(50).optional(),
+})
+
+export const commentUpdateSchema = z.object({
+  body: z.string().min(1).max(COMMENT_BODY_MAX).trim(),
+})
+
+// --------------------------------------------------------------------------
+// Shares (map sharing CRUD)
+// --------------------------------------------------------------------------
+
+// COMMENTER is allowed in the schema even though the public type union is
+// {viewer, editor} — the broader role enum lives in Prisma and is normalized
+// inside sharesService.
+const shareRole = z.enum(['viewer', 'commenter', 'editor'])
+const shareLabel = z.string().max(64).trim().nullable().optional()
+// ISO 8601 datetime; null clears, undefined leaves untouched.
+const shareExpiresAt = z.string().datetime().max(64).nullable().optional()
+
+export const shareCreateSchema = z.object({
+  role: shareRole.default('viewer'),
+  label: shareLabel,
+  expiresAt: shareExpiresAt,
+})
+
+export const shareUpdateSchema = z.object({
+  role: shareRole.optional(),
+  label: shareLabel,
+  expiresAt: shareExpiresAt,
+}).refine(
+  d => d.role !== undefined || d.label !== undefined || d.expiresAt !== undefined,
+  { message: 'At least one of role, label, or expiresAt must be provided' }
+)
+
+// --------------------------------------------------------------------------
+// Real-time collab (token mint)
+// --------------------------------------------------------------------------
+
+export const collabTokenSchema = z.object({
+  mapId: cuid,
+  shareToken: z.string().min(1).max(128).nullable().optional(),
+})
+
+// --------------------------------------------------------------------------
+// Template instantiation (POST /api/templates/[slug]/use)
+// --------------------------------------------------------------------------
+
+export const templateUseSchema = z.object({
+  mapId: cuid.optional(),
+  title: safeTitle.optional(),
+})
+
 export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body)
   if (!result.success) {
