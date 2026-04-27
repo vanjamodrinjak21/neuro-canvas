@@ -85,11 +85,20 @@ export default defineNuxtConfig({
     // Real-time collab
     partykitFlushSecret: process.env.PARTYKIT_FLUSH_SECRET || '',
     partykitJwtSecret: process.env.PARTYKIT_JWT_SECRET || '',
+    // Releases — used by /api/releases/latest. GITHUB_RELEASES_REPO is e.g.
+    // "owner/name" (defaults to inferring from package.json repository field
+    // at runtime). GITHUB_TOKEN lifts the public 60-req/hr unauth rate limit
+    // to 5000-req/hr; safe to leave empty in dev.
+    githubReleasesRepo: process.env.GITHUB_RELEASES_REPO || '',
+    githubToken: process.env.GITHUB_TOKEN || '',
     // Public (exposed to client)
     public: {
       authOrigin: process.env.AUTH_ORIGIN || 'http://localhost:3000',
       collabEnabled: process.env.NUXT_PUBLIC_COLLAB_ENABLED === 'true',
-      partykitHost: process.env.NUXT_PUBLIC_PARTYKIT_HOST || ''
+      partykitHost: process.env.NUXT_PUBLIC_PARTYKIT_HOST || '',
+      // Public read-only for the /download page; if unset the client falls
+      // back to /api/releases/latest, which derives the repo server-side.
+      releasesRepo: process.env.NUXT_PUBLIC_RELEASES_REPO || ''
     }
   },
 

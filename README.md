@@ -50,6 +50,9 @@ Copy `.env.example` to `.env` and populate. Required keys:
 | `PARTYKIT_FLUSH_SECRET` | Server → PartyKit flush HMAC |
 | `PARTYKIT_JWT_SECRET` | PartyKit presence JWT secret |
 | `NUXT_PUBLIC_PARTYKIT_HOST` | e.g. `nc-collab.<you>.partykit.dev` |
+| `GITHUB_RELEASES_REPO` | `owner/name` repo for the `/download` page |
+| `GITHUB_TOKEN` | (optional) lifts unauth GitHub API rate limit |
+| `NUXT_PUBLIC_RELEASES_REPO` | (optional) public-side fallback repo link |
 
 **Never commit `.env`, `.env.local`, or any `.env.*` file other than `.env.example`.** They are gitignored.
 
@@ -72,7 +75,22 @@ npm run tauri:dev    # Desktop dev
 npm run cap:sync     # Sync web build → native shells
 npm run cap:ios      # Run on iOS
 npm run cap:android  # Run on Android
+
+npm run version:check        # show per-platform versions, flag drift
+npm run version:bump 1.2.3   # bump every platform file in lockstep
+npm run version:bump 1.2.3 -- --tag  # …and create the v1.2.3 git tag
 ```
+
+## Releases
+
+Pushing a tag of the form `vMAJOR.MINOR.PATCH` triggers
+`.github/workflows/release.yml`, which builds and uploads every desktop /
+mobile artifact to a single GitHub Release. The website's `/download` page
+reads `/api/releases/latest` (Redis-cached) and surfaces the right artifact
+for each visitor.
+
+See [`RELEASING.md`](./RELEASING.md) for the full procedure, code-signing
+setup, and rollback steps.
 
 ## Layout
 

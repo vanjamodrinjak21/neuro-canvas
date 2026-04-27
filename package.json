@@ -32,7 +32,10 @@
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "version:check": "node scripts/bump-version.mjs --check",
+    "version:bump": "node scripts/bump-version.mjs",
+    "release": "node scripts/bump-version.mjs $npm_config_to --tag"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",

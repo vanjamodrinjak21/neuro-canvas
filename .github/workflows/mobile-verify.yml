@@ -1,0 +1,100 @@
+name: Mobile Verify
+
+# Cheap unsigned native builds on every PR / push to main, so a broken
+# Capacitor sync or Gradle config never reaches a release tag.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: mobile-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android (debug, unsigned)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - run: npm ci --legacy-peer-deps
+
+      - run: npx prisma generate
+      - run: npm run generate
+        env:
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+
+      - run: npx cap sync android
+
+      - name: Assemble debug
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug
+
+  ios:
+    name: iOS (build, no sign)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/App/Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/App/Podfile.lock') }}
+          restore-keys: ${{ runner.os }}-pods-
+
+      - run: npm ci --legacy-peer-deps
+
+      - run: npx prisma generate
+      - run: npm run generate
+        env:
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+
+      - name: Sync Capacitor + install Pods
+        run: |
+          npx cap sync ios
+          (cd ios/App && pod install --repo-update)
+
+      - name: Build for simulator (no signing)
+        working-directory: ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
