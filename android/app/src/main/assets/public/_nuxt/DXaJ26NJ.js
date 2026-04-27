@@ -1,1 +1,0 @@
-import{i as c,o as s,c as o,a2 as n}from"./fe8463I6.js";const r={},a={class:"h-screen w-screen overflow-hidden bg-nc-charcoal"};function t(e,l){return s(),o("div",a,[n(e.$slots,"default")])}const _=c(r,[["render",t]]);export{_ as default};

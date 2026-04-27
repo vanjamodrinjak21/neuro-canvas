@@ -1,1 +1,0 @@
-import{i as o,o as s,c,a2 as t}from"./fe8463I6.js";const r={},a={class:"prose-code"};function n(e,d){return s(),c("code",a,[t(e.$slots,"default",{},void 0,!0)])}const f=Object.assign(o(r,[["render",n],["__scopeId","data-v-b14b2f56"]]),{__name:"ProseCode"});export{f as default};

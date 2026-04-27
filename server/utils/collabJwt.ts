@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 
-export type CollabRole = 'viewer' | 'editor'
+export type CollabRole = 'viewer' | 'commenter' | 'editor'
 
 export interface CollabJwtPayload {
   mapId: string
@@ -24,7 +24,7 @@ export async function verifyCollabJwt(token: string, secret: string): Promise<Co
   if (
     typeof payload.mapId !== 'string' ||
     typeof payload.sessionId !== 'string' ||
-    (payload.role !== 'viewer' && payload.role !== 'editor')
+    (payload.role !== 'viewer' && payload.role !== 'commenter' && payload.role !== 'editor')
   ) {
     throw new Error('Malformed collab JWT')
   }

@@ -71,6 +71,15 @@
             "cancel": "Cancel",
             "delete": "Delete"
         },
+        "search": {
+            "placeholder": "Search maps, nodes, templates"
+        },
+        "nav": {
+            "home": "Home",
+            "all_maps": "All maps",
+            "templates": "Templates",
+            "settings": "Settings"
+        },
         "quick_templates": {
             "brainstorm": "Brainstorm",
             "brainstorm_desc": "Central idea with branching thoughts",

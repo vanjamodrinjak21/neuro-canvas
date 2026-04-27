@@ -24,6 +24,8 @@ const emit = defineEmits<{
   redo: []
   save: []
   share: []
+  'version-history': []
+  'comments': []
   'export-png': []
   'export-json': []
   'export-markdown': []
@@ -108,6 +110,22 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
             <span class="flex-1">{{ $t('canvas.overflow_menu.share') }}</span>
           </DropdownMenuItem>
 
+          <DropdownMenuItem
+            class="menu-item"
+            @select="emit('version-history')"
+          >
+            <span class="i-lucide-history menu-icon" />
+            <span class="flex-1">{{ $t('canvas.version_history.title') }}</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            class="menu-item"
+            @select="emit('comments')"
+          >
+            <span class="i-lucide-message-square menu-icon" />
+            <span class="flex-1">{{ $t('canvas.comments.title') }}</span>
+          </DropdownMenuItem>
+
           <!-- Export sub-menu -->
           <DropdownMenuSub>
             <DropdownMenuSubTrigger class="menu-item sub-trigger">
@@ -184,16 +202,16 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 
 /* ── Main panel ──────────────────────────── */
 .overflow-panel {
-  z-index: 200;
-  min-width: 210px;
+  z-index: 300;
+  min-width: 220px;
   padding: 6px;
   border-radius: var(--nc-radius-lg);
-  background: var(--nc-glass-bg-elevated);
-  backdrop-filter: blur(var(--nc-glass-blur-heavy)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--nc-glass-blur-heavy)) saturate(140%);
-  border: 1px solid var(--nc-border);
-  box-shadow: var(--nc-shadow-xl);
-
+  background: #18181B;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 16px 48px rgba(0, 0, 0, 0.3);
   animation: menuIn 0.15s var(--nc-ease);
 }
 
@@ -201,85 +219,99 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
+  gap: 10px;
+  padding: 8px 12px;
   min-height: 36px;
   border-radius: var(--nc-radius-md);
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
-  color: var(--nc-ink);
+  font-weight: 450;
+  color: #E4E4E7;
   cursor: pointer;
   outline: none;
   user-select: none;
-  transition: background var(--nc-duration-fast) var(--nc-ease-smooth);
+  transition: background var(--nc-duration-fast) var(--nc-ease-smooth),
+              color var(--nc-duration-fast) var(--nc-ease-smooth);
 }
 .menu-item[data-disabled] {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 .menu-item[data-highlighted] {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+  color: #FAFAFA;
 }
 .menu-item:focus-visible {
   outline: 2px solid var(--nc-accent);
   outline-offset: -2px;
 }
 .menu-icon {
-  font-size: 15px;
-  color: var(--nc-ink-soft);
+  font-size: 16px;
+  color: #A1A1AA;
+  flex-shrink: 0;
+}
+.menu-item[data-highlighted] .menu-icon {
+  color: #D4D4D8;
 }
 .menu-shortcut {
   font-size: 11px;
-  color: var(--nc-ink-muted);
+  color: #52525B;
   font-family: var(--nc-font-mono);
+  letter-spacing: 0.02em;
 }
 .menu-label {
-  padding: 6px 10px 2px;
+  padding: 8px 12px 4px;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--nc-ink-muted);
+  color: #52525B;
 }
 .menu-sep {
   height: 1px;
-  margin: 4px 6px;
-  background: var(--nc-border);
+  margin: 4px 8px;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* ── Sub-trigger chevron ─────────────────── */
 .sub-trigger[data-state="open"] {
-  background: var(--nc-surface-3);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 /* ── Export fly-out panel ────────────────── */
 .export-panel {
-  z-index: 201;
-  min-width: 190px;
+  z-index: 301;
+  min-width: 200px;
   padding: 6px;
   border-radius: var(--nc-radius-lg);
-  background: var(--nc-glass-bg-elevated);
-  backdrop-filter: blur(var(--nc-glass-blur-heavy)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--nc-glass-blur-heavy)) saturate(140%);
-  border: 1px solid var(--nc-border);
-  box-shadow: var(--nc-shadow-xl);
-
+  background: #18181B;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 16px 48px rgba(0, 0, 0, 0.3);
   animation: subIn 0.12s var(--nc-ease);
 }
 .export-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 10px;
+  padding: 8px 12px;
   border-radius: var(--nc-radius-md);
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px;
-  color: var(--nc-ink);
+  font-weight: 450;
+  color: #E4E4E7;
   cursor: pointer;
   outline: none;
   user-select: none;
-  transition: background var(--nc-duration-fast) var(--nc-ease-smooth);
+  transition: background var(--nc-duration-fast) var(--nc-ease-smooth),
+              color var(--nc-duration-fast) var(--nc-ease-smooth);
 }
 .export-item[data-highlighted] {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+  color: #FAFAFA;
 }
 .export-item:focus-visible {
   outline: 2px solid var(--nc-accent);
@@ -289,13 +321,70 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   color: var(--nc-accent);
 }
 .export-icon {
-  font-size: 15px;
-  color: var(--nc-ink-soft);
+  font-size: 16px;
+  color: #A1A1AA;
+  flex-shrink: 0;
   transition: color var(--nc-duration-fast) var(--nc-ease-smooth);
 }
 .export-hint {
   font-size: 11px;
-  color: var(--nc-ink-muted);
+  color: #52525B;
+}
+
+/* ── Light theme ────────────────────────── */
+:root.light .overflow-panel {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 16px 48px rgba(0, 0, 0, 0.08);
+}
+:root.light .menu-item {
+  color: #3F3F46;
+}
+:root.light .menu-item[data-highlighted] {
+  background: rgba(0, 0, 0, 0.04);
+  color: #18181B;
+}
+:root.light .menu-icon {
+  color: #71717A;
+}
+:root.light .menu-item[data-highlighted] .menu-icon {
+  color: #3F3F46;
+}
+:root.light .menu-shortcut {
+  color: #A1A1AA;
+}
+:root.light .menu-label {
+  color: #A1A1AA;
+}
+:root.light .menu-sep {
+  background: rgba(0, 0, 0, 0.06);
+}
+:root.light .sub-trigger[data-state="open"] {
+  background: rgba(0, 0, 0, 0.04);
+}
+:root.light .export-panel {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 16px 48px rgba(0, 0, 0, 0.08);
+}
+:root.light .export-item {
+  color: #3F3F46;
+}
+:root.light .export-item[data-highlighted] {
+  background: rgba(0, 0, 0, 0.04);
+  color: #18181B;
+}
+:root.light .export-icon {
+  color: #71717A;
+}
+:root.light .export-hint {
+  color: #A1A1AA;
 }
 
 /* ── Entrance animations ─────────────────── */

@@ -228,7 +228,10 @@ onMounted(() => {
     <div class="form-panel">
       <div class="form-container">
         <div class="form-header">
-          <h2 class="form-title">{{ $t('auth.signin.form_title') }}</h2>
+          <span class="form-eyebrow">00 — sign in</span>
+          <h2 class="form-title">
+            {{ $t('auth.signin.form_title') }}<span class="form-title-italic">.</span>
+          </h2>
           <p class="form-subtitle">{{ $t('auth.signin.form_subtitle') }}</p>
         </div>
 
@@ -470,22 +473,37 @@ onMounted(() => {
 .form-header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+}
+
+.form-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--a-text-4, #52525B);
 }
 
 .form-title {
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 38px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
   margin: 0;
 }
 
+.form-title-italic {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--nc-accent, #00D2BE);
+}
+
 .form-subtitle {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--a-text-3);
   margin: 0;
-  line-height: 22px;
+  line-height: 1.55;
 }
 
 /* OAuth */
@@ -499,9 +517,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 48px;
+  height: 44px;
   gap: 10px;
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--a-surface);
   border: 1px solid var(--a-border);
   color: var(--a-text);
@@ -509,11 +527,17 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 150ms var(--nc-ease-out);
+  transition: border-color 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out);
 }
 
 .oauth-btn:hover:not(:disabled) {
-  border-color: #27272A;
+  border-color: #3F3F46;
+  background: #121216;
+}
+
+:root.light .oauth-btn:hover:not(:disabled) {
+  background: #F4F2EC;
+  border-color: #C8C4B8;
 }
 
 .oauth-btn:active:not(:disabled) {

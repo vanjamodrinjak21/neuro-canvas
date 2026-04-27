@@ -27,12 +27,15 @@ const state = reactive<AuthState>({
 })
 
 export function useAuthStore() {
-  const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+  const _isNative = typeof window !== 'undefined' && (
+    ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+    || ('Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.())
+  )
 
-  // In Tauri mode, provide no-op stubs (no auth server available)
+  // In native mode (Tauri/Capacitor), provide no-op stubs (no auth server available)
   let signIn: any = async () => ({})
   let signOut: any = async () => {}
-  if (!_isTauri) {
+  if (!_isNative) {
     try {
       const auth = useAuth()
       signIn = auth.signIn

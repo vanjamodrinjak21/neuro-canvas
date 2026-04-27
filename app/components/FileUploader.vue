@@ -39,7 +39,7 @@ function handleAddFile(error: any, file: any) {
       :files="files"
       :allow-multiple="false"
       :instant-upload="false"
-      :accepted-file-types="['text/markdown', 'text/x-opml', 'application/xml', 'text/plain', '.md', '.opml']"
+      :accepted-file-types="['text/markdown', 'text/x-opml', 'application/xml', 'text/plain', 'application/json', '.md', '.opml', '.json']"
       label-idle="Drag & drop your file or <span class='filepond--label-action'>Browse</span>"
       :credits="false"
       @addfile="handleAddFile"

@@ -225,8 +225,11 @@ function formatDate(timestamp: number): string {
       <!-- Header -->
       <div class="maps-header">
         <div class="header-left">
-          <h1 class="header-title">{{ $t('common.nav.maps') }}</h1>
-          <span class="header-count">{{ filteredMaps.length }} mind maps</span>
+          <span class="header-eyebrow">02 — all maps</span>
+          <h1 class="header-title">
+            Everything <span class="header-title-italic">you've thought about.</span>
+          </h1>
+          <span class="header-count">{{ filteredMaps.length }} maps</span>
         </div>
 
         <div class="header-actions">
@@ -382,21 +385,47 @@ function formatDate(timestamp: number): string {
 .header-left {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.header-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #52525B;
 }
 
 .header-title {
-  font-size: 24px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 30px;
   font-weight: 600;
   color: #FAFAFA;
   margin: 0;
   letter-spacing: -0.02em;
-  line-height: 32px;
+  line-height: 1;
+}
+
+.header-title-italic {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: #A1A1AA;
 }
 
 .header-count {
-  font-size: 13px;
-  color: #71717A;
-  line-height: 18px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #52525B;
+  line-height: 14px;
+}
+
+:root.light .header-eyebrow,
+:root.light .header-count {
+  color: #8A8780;
+}
+
+:root.light .header-title-italic {
+  color: #5A5A5A;
 }
 
 .header-actions {

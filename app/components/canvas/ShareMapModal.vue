@@ -4,7 +4,7 @@ import { ref, onMounted, computed } from 'vue'
 interface ShareRow {
   id: string
   token: string
-  role: 'VIEWER' | 'EDITOR'
+  role: 'VIEWER' | 'COMMENTER' | 'EDITOR'
   label: string | null
   createdAt: string
   expiresAt: string | null
@@ -21,7 +21,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 const newLabel = ref('')
-const newRole = ref<'viewer' | 'editor'>('editor')
+const newRole = ref<'viewer' | 'commenter' | 'editor'>('editor')
 const newExpiry = ref<'never' | '1d' | '7d' | '30d'>('7d')
 const creating = ref(false)
 
@@ -130,6 +130,7 @@ onMounted(load)
             >
             <select v-model="newRole" class="select">
               <option value="viewer">{{ t('canvas.share_modal.role_viewer') }}</option>
+              <option value="commenter">{{ t('canvas.comments.share_modal_role_commenter') }}</option>
               <option value="editor">{{ t('canvas.share_modal.role_editor') }}</option>
             </select>
             <select v-model="newExpiry" class="select">
@@ -164,7 +165,15 @@ onMounted(load)
                 <div class="row-label-line">
                   <span class="row-label">{{ s.label || t('canvas.share_modal.untitled') }}</span>
                   <span class="role-chip" :data-role="s.revokedAt ? 'REVOKED' : s.role">
-                    {{ s.revokedAt ? t('canvas.share_modal.role_revoked') : (s.role === 'EDITOR' ? t('canvas.share_modal.role_editor_chip') : t('canvas.share_modal.role_viewer_chip')) }}
+                    {{
+                      s.revokedAt
+                        ? t('canvas.share_modal.role_revoked')
+                        : s.role === 'EDITOR'
+                          ? t('canvas.share_modal.role_editor_chip')
+                          : s.role === 'COMMENTER'
+                            ? t('canvas.comments.share_modal_role_commenter_chip')
+                            : t('canvas.share_modal.role_viewer_chip')
+                    }}
                   </span>
                 </div>
                 <div class="row-meta">

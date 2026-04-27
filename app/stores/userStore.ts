@@ -75,6 +75,9 @@ const actions = {
         document.documentElement.classList.add('reduce-motion')
       }
 
+      // Apply font size
+      actions.applyFontSize(state.preferences.fontSize)
+
       state.isLoaded = true
     } catch (error) {
       console.error('Failed to load preferences:', error)
@@ -121,6 +124,14 @@ const actions = {
         document.documentElement.classList.remove('reduce-motion')
       }
     }
+    if (key === 'fontSize') {
+      actions.applyFontSize(value as UserPreferences['fontSize'])
+    }
+  },
+
+  applyFontSize(size: UserPreferences['fontSize']): void {
+    if (typeof window === 'undefined') return
+    document.documentElement.dataset.fontSize = size
   },
 
   /**

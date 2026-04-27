@@ -240,7 +240,7 @@ async function onSignOut() {
   <div class="tab-content">
     <!-- ACCOUNT Section -->
     <div class="settings-section">
-      <span class="section-label">Account</span>
+      <span class="section-label">01 — account</span>
 
       <div class="setting-row">
         <div class="setting-info">
@@ -261,7 +261,7 @@ async function onSignOut() {
 
     <!-- SECURITY Section -->
     <div class="settings-section">
-      <span class="section-label">Security</span>
+      <span class="section-label">02 — security</span>
 
       <!-- Change Password -->
       <div class="setting-row" :class="{ expanded: showPasswordForm }">
@@ -461,7 +461,7 @@ async function onSignOut() {
 
     <!-- DANGER ZONE Section -->
     <div class="settings-section">
-      <span class="section-label danger">Danger Zone</span>
+      <span class="section-label danger">03 — danger zone</span>
 
       <!-- Export All Data -->
       <div class="setting-row">
@@ -565,13 +565,13 @@ async function onSignOut() {
 }
 
 .section-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 16px;
-  color: var(--s-accent, #00D2BE);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.06em;
+  line-height: 14px;
+  color: var(--s-muted, #52525B);
   padding-bottom: 4px;
 }
 

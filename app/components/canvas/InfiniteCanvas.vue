@@ -348,7 +348,7 @@ defineExpose({
 <template>
   <div
     ref="containerRef"
-    :class="['relative w-full h-full overflow-hidden select-none', cursorStyle]"
+    :class="['absolute inset-0 overflow-hidden select-none', cursorStyle]"
     style="touch-action: none"
     tabindex="0"
     @pointerdown="interaction.handlePointerDown"

@@ -280,6 +280,22 @@ function createInitialState(): MapState {
 // Store instance (using reactive for Vue compatibility)
 const state = reactive<MapState>(createInitialState())
 
+// Optional Y.UndoManager-backed engine attached when a collab bridge is live.
+// When set, the store's undo/redo/canUndo/canRedo proxy to it. The legacy
+// immer-patches stack continues to be maintained (and remains the source of
+// truth for solo-mode), so detaching the bridge restores the old behaviour.
+interface UndoEngine {
+  undo: () => void
+  redo: () => void
+  canUndo: { value: boolean }
+  canRedo: { value: boolean }
+}
+let undoEngine: UndoEngine | null = null
+
+export function attachUndoEngine(engine: UndoEngine | null): void {
+  undoEngine = engine
+}
+
 // Helper to find the oldest node by createdAt (for migration of existing maps)
 function findOldestNodeId(nodes: Map<string, Node>): string | null {
   if (nodes.size === 0) return null
@@ -912,6 +928,14 @@ const actions: MapActions = {
     },
 
   undo() {
+    // Collab path: Y.UndoManager owns the stack — the legacy immer history
+    // is irrelevant here because the bridge's applySnapshot bypasses it.
+    if (undoEngine) {
+      undoEngine.undo()
+      state.isDirty = true
+      return
+    }
+
     if (state.historyIndex < 0) return
 
     const entry = state.history[state.historyIndex]
@@ -927,6 +951,12 @@ const actions: MapActions = {
   },
 
   redo() {
+    if (undoEngine) {
+      undoEngine.redo()
+      state.isDirty = true
+      return
+    }
+
     if (state.historyIndex >= state.history.length - 1) return
 
     const entry = state.history[state.historyIndex + 1]
@@ -942,10 +972,12 @@ const actions: MapActions = {
   },
 
   canUndo() {
+    if (undoEngine) return undoEngine.canUndo.value
     return state.historyIndex >= 0
   },
 
   canRedo() {
+    if (undoEngine) return undoEngine.canRedo.value
     return state.historyIndex < state.history.length - 1
   },
 

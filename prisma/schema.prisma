@@ -99,6 +99,7 @@ model Map {
   versions    MapVersion[]
   embeddings  NodeEmbedding[]
   shares      MapShare[]
+  comments    Comment[]
 
   @@index([userId, updatedAt])
   @@index([userId])
@@ -136,6 +137,7 @@ model SyncState {
 
 enum ShareRole {
   VIEWER
+  COMMENTER
   EDITOR
 }
 
@@ -154,6 +156,38 @@ model MapShare {
 
   @@index([token])
   @@index([mapId])
+}
+
+model Comment {
+  id           String           @id @default(cuid())
+  mapId        String
+  threadId     String           // First message in a thread reuses its own id; replies share it
+  authorId     String           // userId or "guest:<nanoid>"
+  authorName   String
+  authorColor  String
+  body         String           @db.Text
+  anchorNodeId String?          // Null when the thread is anchored to a free canvas point
+  anchorX      Float?
+  anchorY      Float?
+  resolvedAt   DateTime?        // Thread-level state — denormalised onto every message in the thread
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  map          Map              @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  mentions     CommentMention[]
+
+  @@index([mapId])
+  @@index([threadId])
+  @@index([anchorNodeId])
+}
+
+model CommentMention {
+  id              String   @id @default(cuid())
+  commentId       String
+  mentionedUserId String
+  notifiedAt      DateTime?
+  comment         Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, mentionedUserId])
 }
 
 model CollabSession {

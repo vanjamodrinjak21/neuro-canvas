@@ -68,10 +68,14 @@ const errorInfo = computed(() => {
       </div>
 
       <!-- Copy -->
-      <h1 class="heading">{{ $t('auth.error.page_heading') }}</h1>
+      <span class="error-eyebrow">00 — auth error</span>
+      <h1 class="heading">
+        {{ $t('auth.error.page_heading') }}
+      </h1>
       <p class="desc">
         {{ $t('auth.error.page_desc') }}
       </p>
+      <p class="error-receipt">error_code: {{ errorCode.toLowerCase() }} · session: invalid</p>
 
       <!-- Actions -->
       <div class="actions">
@@ -140,20 +144,37 @@ const errorInfo = computed(() => {
 }
 
 /* Copy */
+.error-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #52525B;
+  margin-bottom: 12px;
+}
+
 .heading {
   font-family: 'Instrument Serif', serif;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 400;
   font-style: italic;
-  line-height: 36px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: #FAFAFA;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 .desc {
   font-size: 14px;
-  line-height: 22px;
-  color: #71717A;
+  line-height: 1.55;
+  color: #A1A1AA;
+  margin: 0 0 16px;
+  max-width: 420px;
+}
+
+.error-receipt {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #52525B;
   margin: 0 0 28px;
 }
 

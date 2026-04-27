@@ -282,6 +282,59 @@ function onWheel(e: WheelEvent) {
   camera.y = my - (my - camera.y) * (newZoom / camera.zoom)
   camera.zoom = newZoom
 }
+
+// --- Touch: Pinch-to-zoom + two-finger pan ---
+const activeTouches = new Map<number, { x: number; y: number }>()
+let pinchStartDist = 0
+let pinchStartZoom = 1
+let pinchStartCam = { x: 0, y: 0 }
+let pinchStartMid = { x: 0, y: 0 }
+
+function onTouchStart(e: TouchEvent) {
+  for (const t of e.changedTouches) {
+    activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY })
+  }
+  if (activeTouches.size === 2) {
+    e.preventDefault()
+    const pts = [...activeTouches.values()]
+    pinchStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+    pinchStartZoom = camera.zoom
+    pinchStartCam = { x: camera.x, y: camera.y }
+    pinchStartMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+  }
+}
+
+function onTouchMove(e: TouchEvent) {
+  for (const t of e.changedTouches) {
+    activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY })
+  }
+  if (activeTouches.size === 2) {
+    e.preventDefault()
+    const pts = [...activeTouches.values()]
+    const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+    const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+
+    const scale = dist / pinchStartDist
+    const newZoom = Math.min(5, Math.max(0.1, pinchStartZoom * scale))
+
+    // Zoom toward pinch midpoint
+    const canvas = canvasRef.value
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const mx = pinchStartMid.x - rect.left - rect.width / 2
+    const my = pinchStartMid.y - rect.top - rect.height / 2
+
+    camera.x = pinchStartCam.x + (mid.x - pinchStartMid.x) + mx - mx * (newZoom / pinchStartZoom)
+    camera.y = pinchStartCam.y + (mid.y - pinchStartMid.y) + my - my * (newZoom / pinchStartZoom)
+    camera.zoom = newZoom
+  }
+}
+
+function onTouchEnd(e: TouchEvent) {
+  for (const t of e.changedTouches) {
+    activeTouches.delete(t.identifier)
+  }
+}
 </script>
 
 <template>
@@ -293,6 +346,10 @@ function onWheel(e: WheelEvent) {
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
       @wheel.passive="onWheel"
+      @touchstart="onTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+      @touchcancel="onTouchEnd"
     />
   </div>
 </template>
@@ -303,6 +360,7 @@ function onWheel(e: WheelEvent) {
   inset: 0;
   overflow: hidden;
   background: var(--nc-bg, #09090B);
+  padding-top: 72px;
 }
 
 .force-graph-canvas {
@@ -310,6 +368,7 @@ function onWheel(e: WheelEvent) {
   width: 100%;
   height: 100%;
   cursor: grab;
+  touch-action: none;
 }
 
 .force-graph-canvas:active {

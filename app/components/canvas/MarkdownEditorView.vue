@@ -238,24 +238,31 @@ function setCaretOffset(el: HTMLElement, offset: number) {
 
 // ── Sync: contenteditable → text ref → store ─────────────────────────────────
 
+const isUserEditing = ref(false)
+let editingIdleTimer: ReturnType<typeof setTimeout> | null = null
+
 function onEditorInput() {
   if (isUpdatingFromStore.value) return
   const el = editorRef.value
   if (!el) return
 
-  // Extract plain text — each child div is one line
-  const lines: string[] = []
-  for (const child of el.children) {
-    lines.push((child as HTMLElement).textContent || '')
-  }
-  text.value = lines.join('\n')
+  isUserEditing.value = true
+  if (editingIdleTimer) clearTimeout(editingIdleTimer)
+  editingIdleTimer = setTimeout(() => { isUserEditing.value = false }, 2000)
 
-  // Debounce sync to store
+  // Use innerText which correctly handles line breaks from contenteditable
+  // regardless of how the browser structures the child elements.
+  // This avoids the bug where backspace merges divs and el.children
+  // iteration loses entire paragraphs.
+  text.value = el.innerText || ''
+
+  // Debounce sync to store — use a longer delay to avoid
+  // partial text getting synced while user is mid-edit
   if (debounceTimer !== null) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
     debounceTimer = null
     mdSync.fromMarkdown(text.value)
-  }, 800)
+  }, 1500)
 }
 
 function renderEditor() {
@@ -288,9 +295,22 @@ function loadFromStore() {
 }
 
 // Re-render styling on text change (preserving cursor)
+// Skip re-render while user is actively typing — the DOM is already correct
+// from their input. Only re-render when idle (debounce) to apply syntax highlighting.
+let renderDebounce: ReturnType<typeof setTimeout> | null = null
 watch(text, () => {
   if (!isUpdatingFromStore.value) {
-    nextTick(() => renderEditor())
+    // On mobile, frequent DOM rebuilds cause cursor jumps.
+    // Debounce the re-render so it only fires after the user pauses typing.
+    if (renderDebounce) clearTimeout(renderDebounce)
+    renderDebounce = setTimeout(() => {
+      renderDebounce = null
+      // Only re-render if editor is not focused (or if composition ended)
+      const el = editorRef.value
+      if (el && document.activeElement !== el) {
+        nextTick(() => renderEditor())
+      }
+    }, 1000)
   }
 })
 
@@ -298,11 +318,19 @@ onMounted(() => {
   loadFromStore()
   nextTick(() => { editorRef.value?.focus() })
 })
-onUnmounted(() => { if (debounceTimer !== null) clearTimeout(debounceTimer) })
+onUnmounted(() => {
+  if (debounceTimer !== null) clearTimeout(debounceTimer)
+  if (renderDebounce) clearTimeout(renderDebounce)
+  if (editingIdleTimer) clearTimeout(editingIdleTimer)
+})
 
 watch(
   () => [mapStore.nodes.size, mapStore.edges.size] as const,
-  () => { if (!isUpdatingFromStore.value) loadFromStore() }
+  () => {
+    // Don't overwrite the editor while the user is actively typing.
+    // Their edits will sync to the store via the debounced fromMarkdown call.
+    if (!isUpdatingFromStore.value && !isUserEditing.value) loadFromStore()
+  }
 )
 
 const mapTitle = computed(() => mapStore.title || 'Untitled Map')
@@ -456,7 +484,7 @@ const MdeTreeItem = defineComponent({
 
 <style scoped>
 /* ═══ LAYOUT — exact Paper values ═══ */
-.mde { position: absolute; inset: 0; display: flex; background: var(--nc-bg, #09090B); overflow: hidden; }
+.mde { position: absolute; inset: 0; display: flex; background: var(--nc-bg, #09090B); overflow: hidden; padding-top: 72px; }
 
 /* ── Left: Tree (240px, #0A0A0C) ── */
 .mde-tree { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; background: #0A0A0C; border-right: 1px solid #1A1A1E; }
@@ -621,6 +649,13 @@ const MdeTreeItem = defineComponent({
 :root.light .mde-bar-name { color: #111; }
 
 /* ── Responsive ── */
-@media (max-width: 768px) { .mde-tree, .mde-right { display: none; } .mde-center { border-right: none; } }
 @media (max-width: 1024px) { .mde-right { display: none; } }
+@media (max-width: 768px) {
+  .mde-tree, .mde-right { display: none; }
+  .mde-center { border-right: none; }
+  .mde-live-editor { padding: 20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px); }
+  .mde-bar { padding: 10px 20px; }
+  .mde-line--h1 { font-size: 22px; }
+  .mde-line--h2 { font-size: 16px; }
+}
 </style>

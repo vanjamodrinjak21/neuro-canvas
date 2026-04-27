@@ -8,8 +8,12 @@ useUserStore()
 const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 const desktopAuth = _isTauri ? useDesktopAuth() : null
 
-// --- App loading screen ---
-const appLoading = ref(true)
+// --- App loading screen (native apps only) ---
+const _isNativeApp = typeof window !== 'undefined' && (
+  ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+  || ('Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.())
+)
+const appLoading = ref(_isNativeApp)
 const loadingStatus = ref('Initializing...')
 const loadingProgress = ref(0)
 const loadingRef = ref<InstanceType<typeof AppLoadingScreen> | null>(null)
@@ -21,17 +25,18 @@ async function step(progress: number, status: string, ms: number) {
 }
 
 onMounted(async () => {
-  await step(15, 'Loading assets...', 300)
-  await step(35, 'Preparing workspace...', 400)
-  await step(60, 'Setting up environment...', 350)
-  await step(85, 'Almost ready...', 300)
-  await step(100, 'Ready', 200)
+  if (_isNativeApp) {
+    await step(15, 'Loading assets...', 300)
+    await step(35, 'Preparing workspace...', 400)
+    await step(60, 'Setting up environment...', 350)
+    await step(85, 'Almost ready...', 300)
+    await step(100, 'Ready', 200)
 
-  // Smooth exit animation, then remove
-  if (loadingRef.value) {
-    await loadingRef.value.leave()
+    if (loadingRef.value) {
+      await loadingRef.value.leave()
+    }
+    appLoading.value = false
   }
-  appLoading.value = false
 
   // Dismiss Capacitor native splash if present
   if (typeof window !== 'undefined' && 'Capacitor' in window) {

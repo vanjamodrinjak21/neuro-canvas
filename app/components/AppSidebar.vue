@@ -247,14 +247,79 @@ onMounted(() => {
 
     <!-- Bottom section -->
     <div class="sidebar-bottom">
-      <!-- Guest: show sign-up CTA -->
-      <div v-if="guest.isGuest.value" class="guest-cta">
-        <NuxtLink to="/auth/signup" class="guest-signup-btn" @click="guest.exitGuestMode()">
-          <span class="i-lucide-user-plus guest-signup-icon" />
+      <!-- Guest: engagement ladder + save CTA -->
+      <div v-if="guest.isGuest.value" class="guest-ladder" :class="{ 'is-collapsed': collapsed }">
+        <template v-if="!collapsed">
+          <div class="ladder-eyebrow-row">
+            <span class="ladder-eyebrow">UNLOCK BY SAVING</span>
+            <span class="ladder-count">5 things</span>
+          </div>
+          <ul class="ladder-list">
+            <li class="ladder-item is-next">
+              <span class="ladder-icon ladder-icon--ai">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M6 1 L7.5 4.5 L11 6 L7.5 7.5 L6 11 L4.5 7.5 L1 6 L4.5 4.5 Z" />
+                </svg>
+              </span>
+              <span class="ladder-label">AI on this node</span>
+              <span class="ladder-arrow">→</span>
+            </li>
+            <li class="ladder-item">
+              <span class="ladder-icon">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M7 2 V8 M4 5 L7 8 L10 5" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M2 11 H12" />
+                </svg>
+              </span>
+              <span class="ladder-label">Export PNG / JSON</span>
+            </li>
+            <li class="ladder-item">
+              <span class="ladder-icon">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="2" width="10" height="10" rx="1.5" />
+                  <path d="M5 7 L7 9 L10 5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span class="ladder-label">Multiple maps</span>
+            </li>
+            <li class="ladder-item">
+              <span class="ladder-icon">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 4 L11 4 M3 7 L11 7 M3 10 L8 10" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="ladder-label">24 templates</span>
+            </li>
+            <li class="ladder-item">
+              <span class="ladder-icon">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="7" cy="7" r="4.5" />
+                  <path d="M7 3 V7 H10" />
+                </svg>
+              </span>
+              <span class="ladder-label">Sync across devices</span>
+            </li>
+          </ul>
+        </template>
+
+        <NuxtLink to="/auth/signup" class="ladder-cta" :title="collapsed ? 'Save my map' : undefined" @click="guest.exitGuestMode()">
           <template v-if="!collapsed">
-            <span class="guest-signup-text">Sign up free</span>
-            <span class="guest-signup-sub">Unlock all features</span>
+            <div class="ladder-cta-meta">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="6" cy="6" r="4.5" />
+                <path d="M6 4 V6 L7.5 7.5" />
+              </svg>
+              <span>closes tab → all gone</span>
+            </div>
+            <div class="ladder-cta-title">Save what you've built.</div>
+            <div class="ladder-cta-desc">8 seconds. No card.</div>
+            <div class="ladder-cta-btn">Save my map →</div>
           </template>
+          <span v-else class="ladder-cta-collapsed">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M3 8 L7 12 L13 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
         </NuxtLink>
       </div>
 
@@ -699,34 +764,185 @@ onMounted(() => {
   transition: transform 0.2s ease;
 }
 
-/* Guest CTA */
-.guest-cta {
-  padding: 12px;
-  border-left: 2px solid var(--nc-accent, #00D2BE);
-  margin-left: 12px;
+/* Guest engagement ladder */
+.guest-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 14px 0;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-.guest-signup-btn {
+.guest-ladder.is-collapsed {
+  padding: 14px 8px 0;
+}
+
+.ladder-eyebrow-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.ladder-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--sb-muted, #52525B);
+}
+
+.ladder-count {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--nc-accent, #00D2BE);
+}
+
+.ladder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ladder-item {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 16px;
-  background: var(--nc-accent, #00D2BE);
-  border: none;
-  border-radius: 10px;
-  color: #09090B;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
+  gap: 10px;
+  padding: 8px 6px;
+  font-size: 12px;
+  color: var(--sb-muted, #A1A1AA);
 }
 
-.guest-signup-btn:hover {
-  opacity: 0.9;
+.ladder-item.is-next {
+  color: var(--nc-accent, #00D2BE);
+}
+
+.ladder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--sb-surface-2, #121216);
+  border: 1px solid var(--sb-border, #1E1E22);
+  border-radius: 6px;
+  color: var(--sb-muted, #52525B);
+  flex-shrink: 0;
+}
+
+:root.light .ladder-icon {
+  background: #F4F2EC;
+  border-color: #DDD9CF;
+  color: #8A8780;
+}
+
+.ladder-icon--ai {
+  background: rgba(0, 210, 190, 0.06);
+  border-color: rgba(0, 210, 190, 0.22);
+  color: var(--nc-accent, #00D2BE);
+}
+
+:root.light .ladder-icon--ai {
+  background: rgba(0, 181, 164, 0.06);
+  border-color: rgba(0, 181, 164, 0.22);
+  color: var(--nc-accent-dark, #00B5A4);
+}
+
+.ladder-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.ladder-arrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--sb-muted, #52525B);
+}
+
+.ladder-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--sb-surface-2, #121216);
+  border: 1px solid rgba(0, 210, 190, 0.22);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms ease, transform 80ms ease;
+}
+
+.ladder-cta:hover {
+  border-color: rgba(0, 210, 190, 0.4);
+}
+
+.ladder-cta:active {
+  transform: scale(0.99);
+}
+
+:root.light .ladder-cta {
+  background: #F4F2EC;
+  border-color: rgba(0, 181, 164, 0.25);
+}
+
+.is-collapsed .ladder-cta {
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.ladder-cta-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--sb-muted, #A1A1AA);
+}
+
+.ladder-cta-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sb-text, #FAFAFA);
+  line-height: 1.3;
+}
+
+:root.light .ladder-cta-title {
+  color: #1A1A1A;
+}
+
+.ladder-cta-desc {
+  font-size: 11px;
+  color: var(--sb-muted, #A1A1AA);
+  line-height: 1.4;
+}
+
+:root.light .ladder-cta-desc {
+  color: #5A5A5A;
+}
+
+.ladder-cta-btn {
+  margin-top: 4px;
+  padding: 8px 12px;
+  background: var(--nc-accent, #00D2BE);
+  border-radius: 8px;
+  color: #09090B;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ladder-cta-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 28px;
+  background: var(--nc-accent, #00D2BE);
+  color: #09090B;
+  border-radius: 6px;
 }
 
 .sidebar-user-row {
@@ -779,23 +995,6 @@ onMounted(() => {
 
 :root.light .sidebar-theme-btn:hover {
   background: rgba(0, 0, 0, 0.06);
-}
-
-.guest-signup-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.guest-signup-text {
-  font-weight: 600;
-}
-
-.guest-signup-sub {
-  width: 100%;
-  font-size: 11px;
-  font-weight: 400;
-  opacity: 0.7;
-  margin-top: -4px;
 }
 
 /* User section wrapper */

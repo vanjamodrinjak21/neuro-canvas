@@ -38,11 +38,17 @@ function _isTauri(): boolean {
   return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 }
 
+function _isCapacitor(): boolean {
+  return typeof window !== 'undefined' && 'Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.()
+}
+
 const REMOTE_BASE = 'https://neuro-canvas.com'
 
 /**
- * Fetch wrapper that uses Tauri HTTP plugin for remote API calls (has auth cookies),
- * or $fetch for web mode (same-origin, session cookie in browser).
+ * Fetch wrapper that uses native HTTP for remote API calls:
+ * - Tauri: @tauri-apps/plugin-http (has auth cookies in native cookie jar)
+ * - Capacitor: CapacitorHttp (bypasses CORS, native cookie jar)
+ * - Web: $fetch (same-origin, session cookie in browser)
  */
 async function syncFetch<T>(path: string, options?: { method?: string; body?: unknown; params?: Record<string, string | undefined> }): Promise<T> {
   if (_isTauri()) {
@@ -68,6 +74,32 @@ async function syncFetch<T>(path: string, options?: { method?: string; body?: un
     }
     return res.json() as Promise<T>
   }
+
+  if (_isCapacitor()) {
+    const { CapacitorHttp } = await import('@capacitor/core')
+    let url = `${REMOTE_BASE}${path}`
+    if (options?.params) {
+      const qs = new URLSearchParams()
+      for (const [k, v] of Object.entries(options.params)) {
+        if (v !== undefined) qs.set(k, v)
+      }
+      const qsStr = qs.toString()
+      if (qsStr) url += `?${qsStr}`
+    }
+    const res = await CapacitorHttp.request({
+      url,
+      method: options?.method || 'GET',
+      headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
+      data: options?.body,
+    })
+    if (res.status < 200 || res.status >= 300) {
+      const err: any = new Error(`Sync fetch failed: ${res.status}`)
+      err.statusCode = res.status
+      throw err
+    }
+    return (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) as T
+  }
+
   // Web mode: use $fetch (same-origin)
   return ($fetch as any)(path, {
     method: options?.method || 'GET',
@@ -81,11 +113,13 @@ export function useSyncEngine() {
   const { deviceId } = useDeviceId()
 
   // Auth gate: sync only when logged in
-  // In Tauri: check desktop auth state (user signed in via HTTP plugin)
+  // Native apps: check desktop/mobile auth state (signed in via native HTTP plugin)
   const desktopAuth = _isTauri() ? useDesktopAuth() : null
-  const _tauriSession = _isTauri() ? { user: null } : null
-  const { data: _sessionData } = _tauriSession
-    ? { data: ref(_tauriSession) }
+  const mobileAuth = _isCapacitor() ? useMobileAuth() : null
+  const _isNative = _isTauri() || _isCapacitor()
+  const _nativeSession = _isNative ? { user: null } : null
+  const { data: _sessionData } = _nativeSession
+    ? { data: ref(_nativeSession) }
     : useAuth()
   const session = _sessionData ?? ref(null)
 
@@ -93,6 +127,10 @@ export function useSyncEngine() {
     // Tauri: use desktop auth user id
     if (desktopAuth?.isSignedIn.value && desktopAuth.user.value?.id) {
       return desktopAuth.user.value.id
+    }
+    // Capacitor: use mobile auth user id
+    if (mobileAuth?.isSignedIn.value && mobileAuth.user.value?.id) {
+      return mobileAuth.user.value.id
     }
     return (session.value?.user as { id?: string })?.id || null
   })
@@ -286,8 +324,8 @@ export function useSyncEngine() {
     if (!isSyncEnabled.value || typeof EventSource === 'undefined') return
     disconnectSSE()
 
-    // Tauri: SSE won't work (no same-origin server). Use periodic polling instead.
-    if (_isTauri()) {
+    // Native apps: SSE won't work (no same-origin server). Use periodic polling instead.
+    if (_isTauri() || _isCapacitor()) {
       startTauriPolling()
       return
     }

@@ -48,7 +48,7 @@ export const aiMemoryPostSchema = z.object({
   data: z.record(z.string(), z.any())
 })
 
-export const syncPushSchema = z.object({
+const syncPushSave = z.object({
   mapId: cuid,
   data: z.record(z.string(), z.any()).refine(
     (d) => JSON.stringify(d).length <= MAX_MAP_DATA_BYTES,
@@ -60,8 +60,23 @@ export const syncPushSchema = z.object({
   deviceId: z.string().max(200).optional(),
   preview: z.string().max(2_000_000).optional(),
   tags: z.array(z.string().max(100)).max(50).optional(),
-  action: z.enum(['save', 'delete']).optional()
+  action: z.enum(['save']).optional()
 })
+
+const syncPushDelete = z.object({
+  mapId: cuid,
+  action: z.literal('delete'),
+  deviceId: z.string().max(200).optional(),
+  // Allow but ignore these fields for backwards compat
+  data: z.any().optional(),
+  title: z.any().optional(),
+  syncVersion: z.any().optional(),
+  checksum: z.any().optional(),
+  preview: z.any().optional(),
+  tags: z.any().optional(),
+})
+
+export const syncPushSchema = z.union([syncPushDelete, syncPushSave])
 
 export const syncBulkPushSchema = z.object({
   maps: z.array(z.object({

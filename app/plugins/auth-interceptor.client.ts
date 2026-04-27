@@ -7,6 +7,10 @@
  * user can re-authenticate and get a fresh JWT.
  */
 export default defineNuxtPlugin((nuxtApp) => {
+  // Native apps don't use server auth — skip 401 interception
+  if ('Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.()) return
+  if ('__TAURI__' in window || '__TAURI_INTERNALS__' in window) return
+
   let handling401 = false
 
   async function handleSessionExpired() {

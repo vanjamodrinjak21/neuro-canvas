@@ -71,6 +71,15 @@
             "cancel": "Odustani",
             "delete": "Obri\u0161i"
         },
+        "search": {
+            "placeholder": "Pretra\u017ei mape, \u010dvorove, predlo\u0161ke"
+        },
+        "nav": {
+            "home": "Po\u010detna",
+            "all_maps": "Sve mape",
+            "templates": "Predlo\u0161ci",
+            "settings": "Postavke"
+        },
         "quick_templates": {
             "brainstorm": "Oluja ideja",
             "brainstorm_desc": "Sredi\u0161nja ideja s razgranatim mislima",

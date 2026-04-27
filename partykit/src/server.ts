@@ -40,10 +40,13 @@ export default class MapRoom implements Party.Server {
   }
 
   async onRequest(req: Party.Request) {
-    // /parties/main/<mapId>/kick — Nitro broadcasts this when a share is revoked.
+    // /parties/main/<mapId>/{kick,reload} — Nitro broadcasts these on
+    // share revocation and version restore respectively.
     if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
     const url = new URL(req.url)
-    if (!url.pathname.endsWith('/kick')) return new Response('Not found', { status: 404 })
+    const isKick = url.pathname.endsWith('/kick')
+    const isReload = url.pathname.endsWith('/reload')
+    if (!isKick && !isReload) return new Response('Not found', { status: 404 })
 
     const vars = (this.party.context as unknown as { vars: RoomVars }).vars
     const sig = req.headers.get('x-collab-signature') || ''
@@ -51,10 +54,23 @@ export default class MapRoom implements Party.Server {
     const expected = await hmacHex(body, vars.PARTYKIT_FLUSH_SECRET)
     if (sig !== expected) return new Response('Unauthorized', { status: 401 })
 
-    // We don't store the share-token -> session-id mapping in the room (it lives
-    // in the JWT only). Closing every connection is heavier than necessary but
-    // simple and correct: each client will re-mint its JWT, hit /api/collab/token,
-    // and either get a fresh JWT (link still valid) or a 410 (link revoked).
+    if (isReload) {
+      // Notify clients to re-fetch Map.ydoc (version restored), then close
+      // sockets so y-partykit doesn't rebroadcast the now-stale state vector.
+      const reason = (() => {
+        try { return (JSON.parse(body) as { reason?: string }).reason ?? 'reload' }
+        catch { return 'reload' }
+      })()
+      for (const conn of this.party.getConnections()) {
+        try { conn.send(JSON.stringify({ type: 'collab:reload', reason })) } catch { /* ignore */ }
+        conn.close(4002, 'Version restored — reloading')
+      }
+      return new Response('ok')
+    }
+
+    // Kick: see comment in original implementation — closing all conns is
+    // simple and correct since clients will re-mint and validate against
+    // Postgres on reconnect.
     for (const conn of this.party.getConnections()) {
       conn.close(4001, 'Share token revoked — please reload')
     }
@@ -63,6 +79,9 @@ export default class MapRoom implements Party.Server {
 
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const role = ctx.request.headers.get('x-collab-role') || 'viewer'
+    // Commenters do not (yet) get write access to the canvas Y.Doc — they
+    // post via the REST /api/maps/:id/comments endpoints. Per-Y.Map gating
+    // (commenters writing only the `comments` Y.Map) is a follow-up.
     const opts: YPartyKitOptions = {
       readOnly: role !== 'editor',
       callback: {

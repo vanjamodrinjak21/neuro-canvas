@@ -65,8 +65,8 @@ const darkPalette = {
   nodeSelected: '#00FFE0',
   root: '#FAFAFA',
   edge: 'rgba(37, 37, 48, 0.6)',
-  viewport: 'rgba(0, 210, 190, 0.5)',
-  viewportFill: 'rgba(0, 210, 190, 0.04)',
+  viewport: 'rgba(0, 210, 190, 0.95)',
+  viewportFill: 'rgba(0, 210, 190, 0.12)',
   regionLabel: 'rgba(250, 250, 250, 0.4)',
   breadcrumb: 'rgba(0, 210, 190, 0.3)',
 }
@@ -350,15 +350,19 @@ function render() {
     }
   }
 
-  // Draw viewport rectangle with rounded corners (Paper spec)
+  // Draw viewport rectangle ("you are here") with rounded corners
   const vr = viewportRect.value
   ctx.beginPath()
   ctx.roundRect(vr.x, vr.y, vr.width, vr.height, 4)
   ctx.fillStyle = colors.value.viewportFill
   ctx.fill()
+  ctx.shadowColor = colors.value.viewport
+  ctx.shadowBlur = 6
   ctx.strokeStyle = colors.value.viewport
-  ctx.lineWidth = 1.5
+  ctx.lineWidth = 2
   ctx.stroke()
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
 
   // Crosshair on hover
   if (isHovered.value) {
@@ -376,9 +380,25 @@ function render() {
 }
 
 // Watch for changes and re-render (throttled)
-watch([() => props.camera, () => mapStore.nodesVersion, () => mapStore.nodes.size, () => mapStore.edges.size, () => props.regions, () => props.breadcrumbs], () => {
-  scheduleRender()
-}, { deep: false })
+// Camera x/y/zoom are watched explicitly so panning the canvas re-renders the
+// "you are here" viewport rectangle on the minimap.
+watch(
+  [
+    () => props.camera.x,
+    () => props.camera.y,
+    () => props.camera.zoom,
+    () => mapStore.nodesVersion,
+    () => mapStore.nodes.size,
+    () => mapStore.edges.size,
+    () => props.regions,
+    () => props.breadcrumbs,
+    () => props.containerWidth,
+    () => props.containerHeight,
+  ],
+  () => {
+    scheduleRender()
+  },
+)
 
 watch(isCollapsed, (collapsed) => {
   if (!collapsed) {
@@ -495,11 +515,20 @@ const { t } = useI18n()
   flex-direction: column;
   width: 220px;
   height: 156px;
-  background: #09090BEB;
-  border: 1px solid #1A1A1E;
+  background: rgba(17, 17, 20, 0.94);
+  border: 1px solid #2A2A2E;
   border-radius: 10px;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   animation: minimap-appear 0.2s ease-out;
+}
+
+:root.light .nc-minimap-body {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: #E4E4E7;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
 }
 
 @keyframes minimap-appear {
@@ -576,13 +605,15 @@ const { t } = useI18n()
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: #09090BEB;
-  border: 1px solid #1A1A1E;
-  color: var(--nc-ink-muted);
+  background: rgba(17, 17, 20, 0.94);
+  border: 1px solid #2A2A2E;
+  color: var(--nc-ink-muted, #A1A1AA);
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   transition: color var(--nc-duration-fast) var(--nc-ease-out),
               border-color var(--nc-duration-fast) var(--nc-ease-out);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .nc-minimap-toggle:hover {

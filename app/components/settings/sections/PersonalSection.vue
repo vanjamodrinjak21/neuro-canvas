@@ -114,7 +114,7 @@ function saveAvatar() {
   <div class="tab-content">
     <!-- PROFILE Section -->
     <div class="settings-section">
-      <span class="section-label">{{ t('settings.personal.profile') }}</span>
+      <span class="section-label">01 — {{ t('settings.personal.profile').toLowerCase() }}</span>
 
       <!-- Avatar + Name + Email row -->
       <div class="setting-row profile-row">
@@ -203,7 +203,7 @@ function saveAvatar() {
 
     <!-- PREFERENCES Section -->
     <div class="settings-section">
-      <span class="section-label">{{ t('settings.personal.preferences') }}</span>
+      <span class="section-label">02 — {{ t('settings.personal.preferences').toLowerCase() }}</span>
 
       <!-- Language / Jezik -->
       <div class="setting-row">
@@ -267,13 +267,13 @@ function saveAvatar() {
 }
 
 .section-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 16px;
-  color: var(--s-accent, #00D2BE);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.06em;
+  line-height: 14px;
+  color: var(--s-muted, #52525B);
   padding-bottom: 4px;
 }
 

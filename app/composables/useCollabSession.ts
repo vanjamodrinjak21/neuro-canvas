@@ -7,7 +7,7 @@ export interface CollabSessionOpts {
   wsUrl: string         // wss://host/parties/main/<mapId>
   mapId: string
   jwt: string
-  role: 'viewer' | 'editor'
+  role: 'viewer' | 'commenter' | 'editor'
   sessionId: string
   displayName: string
   color: string
@@ -23,7 +23,7 @@ export interface RemoteUser {
 
 export interface CollabSession {
   provider: YProvider
-  role: Ref<'viewer' | 'editor'>
+  role: Ref<'viewer' | 'commenter' | 'editor'>
   remotes: Ref<RemoteUser[]>
   setCursor: (xy: { x: number; y: number } | null) => void
   setSelection: (ids: string[]) => void

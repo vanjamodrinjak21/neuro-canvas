@@ -24,6 +24,8 @@ const emit = defineEmits<{
   'undo': []
   'redo': []
   'share': []
+  'version-history': []
+  'comments': []
   'export-png': []
   'export-json': []
   'export-markdown': []
@@ -225,6 +227,8 @@ defineExpose({ focusTitleInput })
           @redo="emit('redo')"
           @save="emit('save')"
           @share="emit('share')"
+          @version-history="emit('version-history')"
+          @comments="emit('comments')"
           @export-png="emit('export-png')"
           @export-json="emit('export-json')"
           @export-markdown="emit('export-markdown')"
@@ -261,6 +265,21 @@ defineExpose({ focusTitleInput })
 @media (hover: hover) and (pointer: fine) {
   .topbar-icon-btn:hover {
     color: var(--nc-ink);
+  }
+}
+
+.topbar-logo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .topbar-logo-btn:hover {
+    opacity: 1;
   }
 }
 

@@ -24,9 +24,9 @@ export function drawDotGrid(
   const endY = startY + viewHeight + gridSize * 2
 
   ctx.fillStyle = colors.gridDot
-  ctx.globalAlpha = 0.15
+  ctx.globalAlpha = 0.45
 
-  const dotRadius = 1 / camera.zoom
+  const dotRadius = 1.2 / camera.zoom
 
   for (let x = startX; x <= endX; x += gridSize) {
     for (let y = startY; y <= endY; y += gridSize) {

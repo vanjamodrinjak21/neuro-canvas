@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Node } from '~/types'
+import type { NodeShape } from '~/types/canvas'
 import { useMapStore } from '~/stores/mapStore'
 import { nodeCategories, nodeColors, getCategoryInfo } from '~/composables/useSidebarState'
 import { SIDEBAR_DISPATCH_KEY } from '~/types/sidebar'
@@ -24,8 +25,21 @@ const localContent = ref('')
 const localNotes = ref('')
 const localBorderColor = ref('#2A2A30')
 const localCategory = ref<string | null>(null)
+const localShape = ref<NodeShape>('rounded')
 
 const labelMaxLength = 50
+
+// Shape definitions with SVG path data for mini previews
+const shapeOptions: { id: NodeShape; label: string; icon: string }[] = [
+  { id: 'rounded', label: 'Rounded', icon: 'i-lucide-square' },
+  { id: 'rectangle', label: 'Rectangle', icon: 'i-lucide-rectangle-horizontal' },
+  { id: 'circle', label: 'Circle', icon: 'i-lucide-circle' },
+  { id: 'diamond', label: 'Diamond', icon: 'i-lucide-diamond' },
+  { id: 'hexagon', label: 'Hexagon', icon: 'i-lucide-hexagon' },
+  { id: 'star', label: 'Star', icon: 'i-lucide-star' },
+  { id: 'pill', label: 'Pill', icon: 'i-lucide-tablet' },
+  { id: 'dot', label: 'Dot', icon: 'i-lucide-circle-dot' },
+]
 
 // Sync from prop
 watch(() => props.selectedNode, (node) => {
@@ -34,6 +48,7 @@ watch(() => props.selectedNode, (node) => {
     localNotes.value = (node.metadata?.notes as string) || ''
     localBorderColor.value = node.style.borderColor
     localCategory.value = (node.metadata?.category as string) || null
+    localShape.value = node.style.shape || 'rounded'
   }
 }, { immediate: true })
 
@@ -56,6 +71,15 @@ function updateBorderColor(color: string) {
   if (props.selectedNode) {
     mapStore.updateNode(props.selectedNode.id, {
       style: { ...props.selectedNode.style, borderColor: color },
+    })
+  }
+}
+
+function updateShape(shape: NodeShape) {
+  localShape.value = shape
+  if (props.selectedNode) {
+    mapStore.updateNode(props.selectedNode.id, {
+      style: { ...props.selectedNode.style, shape },
     })
   }
 }
@@ -156,10 +180,17 @@ const categoryChips = computed(() => [
         <!-- Shape -->
         <div class="properties__field">
           <label class="properties__label">Shape</label>
-          <div class="properties__select">
-            <span class="i-lucide-square properties__select-icon" />
-            <span class="properties__select-value">Rounded</span>
-            <span class="i-lucide-chevron-down properties__select-chevron" />
+          <div class="properties__shapes">
+            <button
+              v-for="shape in shapeOptions"
+              :key="shape.id"
+              :class="['properties__shape-btn', localShape === shape.id && 'properties__shape-btn--active']"
+              :title="shape.label"
+              @click="updateShape(shape.id)"
+            >
+              <span :class="[shape.icon, 'properties__shape-icon']" />
+              <span class="properties__shape-label">{{ shape.label }}</span>
+            </button>
           </div>
         </div>
 
@@ -406,39 +437,73 @@ const categoryChips = computed(() => [
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
 }
 
-/* Select (Shape dropdown) */
-.properties__select {
+/* Shapes grid */
+.properties__shapes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.properties__shape-btn {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
   background: #111113;
   border: 1px solid #1A1A1E;
   border-radius: 8px;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: all 0.15s ease;
 }
 
-.properties__select:hover {
-  border-color: #27272A;
+.properties__shape-btn:hover {
+  border-color: #3F3F46;
+  background: #18181B;
 }
 
-.properties__select-icon {
-  font-size: 14px;
+.properties__shape-btn--active {
+  border-color: var(--nc-accent, #00D2BE);
+  background: rgba(0, 210, 190, 0.06);
+  box-shadow: 0 0 0 1px rgba(0, 210, 190, 0.15);
+}
+
+.properties__shape-btn--active:hover {
+  border-color: var(--nc-accent, #00D2BE);
+  background: rgba(0, 210, 190, 0.1);
+}
+
+.properties__shape-icon {
+  font-size: 16px;
+  color: #71717A;
+  transition: color 0.15s;
+}
+
+.properties__shape-btn:hover .properties__shape-icon {
+  color: #A1A1AA;
+}
+
+.properties__shape-btn--active .properties__shape-icon {
+  color: var(--nc-accent, #00D2BE);
+}
+
+.properties__shape-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: #3F3F46;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+}
+
+.properties__shape-btn:hover .properties__shape-label {
   color: #71717A;
 }
 
-.properties__select-value {
-  flex: 1;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  color: #D4D4D8;
-}
-
-.properties__select-chevron {
-  font-size: 12px;
-  color: #52525B;
+.properties__shape-btn--active .properties__shape-label {
+  color: var(--nc-accent, #00D2BE);
+  font-weight: 600;
 }
 
 /* Input */
@@ -580,7 +645,32 @@ const categoryChips = computed(() => [
   color: #71717A;
 }
 
-:root.light .properties__select,
+:root.light .properties__shape-btn {
+  background: #F4F4F5;
+  border-color: #E4E4E7;
+}
+
+:root.light .properties__shape-btn:hover {
+  border-color: #D4D4D8;
+  background: #EBEBED;
+}
+
+:root.light .properties__shape-icon {
+  color: #A1A1AA;
+}
+
+:root.light .properties__shape-btn:hover .properties__shape-icon {
+  color: #52525B;
+}
+
+:root.light .properties__shape-label {
+  color: #A1A1AA;
+}
+
+:root.light .properties__shape-btn:hover .properties__shape-label {
+  color: #52525B;
+}
+
 :root.light .properties__input,
 :root.light .properties__textarea {
   background: #F4F4F5;

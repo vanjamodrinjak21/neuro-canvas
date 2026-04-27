@@ -4,7 +4,7 @@ import type { NodeTemplate } from '~/components/canvas/NodeTemplates.vue'
 import type { ContextMenuItem } from '~/components/ui/NcContextMenu.vue'
 import type { AISuggestion, RichNodeSuggestion, GenerationContext } from '~/types'
 import type { SidebarAction } from '~/types/sidebar'
-import { useMapStore } from '~/stores/mapStore'
+import { useMapStore, attachUndoEngine } from '~/stores/mapStore'
 import { useUserStore } from '~/stores/userStore'
 import { useSemanticStore } from '~/stores/semanticStore'
 import { useDatabase } from '~/composables/useDatabase'
@@ -111,7 +111,7 @@ async function tryStartCollab() {
       ok: true
       wsUrl: string
       jwt: string
-      role: 'viewer' | 'editor'
+      role: 'viewer' | 'commenter' | 'editor'
       sessionId: string
       displayName: string
     }>('/api/collab/token', {
@@ -125,7 +125,15 @@ async function tryStartCollab() {
     // state vectors with the server.
     const ydoc = new Y.Doc()
     const surface = makeBridgeSurface()
-    collabBridge.value = useMapYDocBridge(ydoc, surface, { debounceMs: 100 })
+    const bridge = useMapYDocBridge(ydoc, surface, { debounceMs: 100 })
+    collabBridge.value = bridge
+    // Hand undo/redo to Y.UndoManager so Ctrl-Z only reverts local edits.
+    attachUndoEngine({
+      undo: bridge.undo,
+      redo: bridge.redo,
+      canUndo: bridge.canUndo,
+      canRedo: bridge.canRedo
+    })
 
     const session = useCollabSession({
       ydoc,
@@ -620,6 +628,7 @@ onUnmounted(() => {
   collabSession.value = null
   collabBridge.value?.dispose()
   collabBridge.value = null
+  attachUndoEngine(null)
 })
 
 // Selection broadcast — re-publish whenever local selection changes.
@@ -647,6 +656,14 @@ async function handleSave() {
 
 // Share & Export
 const showShareModal = ref(false)
+const showVersionHistory = ref(false)
+const showComments = ref(false)
+const viaShareToken = computed(() => (route.query.via as string | undefined) ?? null)
+function reloadAfterRestore() {
+  // The restore endpoint kicks live editors via PartyKit; the local owner
+  // has to refetch too so they see the restored state.
+  window.location.reload()
+}
 async function handleShare() {
   // If collab is enabled, open the rich share-link modal.
   // Otherwise fall back to the legacy native-share text export.
@@ -1780,6 +1797,22 @@ useHead({
         @close="showShareModal = false"
       />
 
+      <!-- Version History Panel -->
+      <CanvasVersionHistoryPanel
+        v-if="showVersionHistory"
+        :map-id="mapStore.id"
+        @close="showVersionHistory = false"
+        @restored="reloadAfterRestore"
+      />
+
+      <!-- Comments Panel -->
+      <CanvasCommentsSidePanel
+        v-if="showComments"
+        :map-id="mapStore.id"
+        :via-token="viaShareToken"
+        @close="showComments = false"
+      />
+
       <!-- Multi-Select Action Bar -->
       <Transition name="nc-fade-up">
         <CanvasMultiSelectBar
@@ -1810,6 +1843,8 @@ useHead({
         @smart-expand="handleSmartExpand"
         @save="handleSave"
         @share="handleShare"
+        @version-history="showVersionHistory = true"
+        @comments="showComments = true"
         @export-png="handleExportPng"
         @export-json="handleExportJson"
         @export-markdown="handleExportMarkdown"

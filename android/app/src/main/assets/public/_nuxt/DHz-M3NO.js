@@ -1,1 +1,0 @@
-import{d as o,o as t,c as a,a2 as r,i as c}from"./fe8463I6.js";const n=["id"],d=o({__name:"ProseH1",props:{id:{}},setup(e){return(s,_)=>(t(),a("h1",{id:e.id,class:"prose-h1"},[r(s.$slots,"default",{},void 0,!0)],8,n))}}),p=Object.assign(c(d,[["__scopeId","data-v-0d2c2ea4"]]),{__name:"ProseH1"});export{p as default};

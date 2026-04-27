@@ -112,7 +112,17 @@ async function handleAIGenerate() {
     mapRenderer.renderMapStructure(result.structure, { x: 0, y: 0 })
     const doc = mapStore.toSerializable()
 
-    // 3. Publish as template with inline data (map is in IndexedDB, not server DB)
+    // 3. Convert arrays to records (server expects Record<string, any>)
+    const nodesRecord: Record<string, any> = {}
+    for (const node of doc.nodes) {
+      nodesRecord[node.id] = node
+    }
+    const edgesRecord: Record<string, any> = {}
+    for (const edge of doc.edges) {
+      edgesRecord[edge.id] = edge
+    }
+
+    // 4. Publish as template with inline data (map is in IndexedDB, not server DB)
     const { publishTemplate } = useTemplates()
     await publishTemplate({
       title: aiPrompt.value,
@@ -120,8 +130,8 @@ async function handleAIGenerate() {
       category: 'creative',
       tags: ['ai-generated'],
       aiEnhanced: true,
-      nodes: doc.nodes,
-      edges: doc.edges,
+      nodes: nodesRecord,
+      edges: edgesRecord,
       settings: doc.settings,
     })
 

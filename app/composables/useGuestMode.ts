@@ -84,6 +84,7 @@ export function useGuestMode() {
     guestMapId: computed(() => state.guestMapId),
     onboardingComplete: computed(() => state.onboardingComplete),
     showUpgradeModal: computed(() => state.showUpgradeModal),
+    upgradeFeature: computed(() => state.upgradeFeature),
     upgradeInfo,
     enterGuestMode,
     exitGuestMode,

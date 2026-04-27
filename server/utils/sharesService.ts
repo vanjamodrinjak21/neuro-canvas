@@ -8,19 +8,25 @@ export class ShareError extends Error {
   }
 }
 
+export type ShareRoleString = 'viewer' | 'commenter' | 'editor'
+
 export interface CreateShareInput {
-  role: 'viewer' | 'editor'
+  role: ShareRoleString
   label: string | null
   expiresAt: Date | null
 }
 
 export interface UpdateShareInput {
-  role?: 'viewer' | 'editor'
+  role?: ShareRoleString
   label?: string | null
   expiresAt?: Date | null
 }
 
-const ROLE_TO_ENUM: Record<string, ShareRole> = { viewer: 'VIEWER', editor: 'EDITOR' }
+const ROLE_TO_ENUM: Record<string, ShareRole> = {
+  viewer: 'VIEWER',
+  commenter: 'COMMENTER',
+  editor: 'EDITOR'
+}
 
 async function assertOwnership(mapId: string, userId: string): Promise<void> {
   const map = await prisma.map.findUnique({ where: { id: mapId }, select: { id: true, userId: true } })

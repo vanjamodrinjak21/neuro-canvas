@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
+import { parseLosslessMarkdown, parseMapJson, MapImportError } from '~/utils/mapImport'
 import { useMapStore } from '~/stores/mapStore'
 import { useAI } from '~/composables/useAI'
 import { useAISettings } from '~/composables/useAISettings'
@@ -246,19 +247,27 @@ const sortedMaps = computed(() => {
   return maps.sort((a, b) => b.updatedAt - a.updatedAt)
 })
 
-// Visible map limit (one row)
+// Visible map limit — fill the viewport with rows of cards
 const showAllMaps = ref(false)
-const visibleLimit = ref(4)
+const visibleLimit = ref(12)
 const mapsGridRef = ref<HTMLElement | null>(null)
 
 function updateVisibleLimit() {
   const el = mapsGridRef.value?.$el || mapsGridRef.value
   if (!el) return
   const gridWidth = el.clientWidth
-  const minCardWidth = 240
+  const minCardWidth = 320
   const gap = 16
-  const cols = Math.floor((gridWidth + gap) / (minCardWidth + gap))
-  visibleLimit.value = Math.max(3, cols)
+  const cols = Math.max(1, Math.floor((gridWidth + gap) / (minCardWidth + gap)))
+
+  // Fill remaining viewport height with rows of cards
+  const cardHeight = 240
+  const gridTop = el.getBoundingClientRect().top
+  const reservedBelow = 360
+  const available = Math.max(0, window.innerHeight - gridTop - reservedBelow)
+  const rows = Math.max(2, Math.floor((available + gap) / (cardHeight + gap)))
+
+  visibleLimit.value = Math.max(cols * 2, cols * rows)
 }
 
 const visibleMaps = computed(() => {
@@ -583,21 +592,70 @@ async function handleFilePondFile(file: File) {
 async function processImportedFile(file: File) {
   const text = await file.text()
   const ext = file.name.split('.').pop()?.toLowerCase()
-  let nodes: { content: string; level: number }[] = []
+
+  // ── JSON: full lossless restore via mapStore.fromSerializable ─────
+  if (ext === 'json') {
+    try {
+      const doc = parseMapJson(text)
+      await importLosslessDoc(doc)
+    } catch (err) {
+      const msg = err instanceof MapImportError ? err.message : 'Failed to import JSON'
+      alert(`Could not import JSON: ${msg}`)
+    }
+    return
+  }
+
+  // ── Markdown: try lossless first, fall back to legacy outline parser ─
   if (ext === 'md') {
-    nodes = parseMarkdown(text)
-  } else if (ext === 'opml') {
-    nodes = parseOPML(text)
-  } else {
-    alert('Unsupported file type. Please use .md or .opml')
+    try {
+      const lossless = parseLosslessMarkdown(text)
+      if (lossless) {
+        await importLosslessDoc(lossless)
+        return
+      }
+    } catch (err) {
+      const msg = err instanceof MapImportError ? err.message : 'Markdown is not a NeuroCanvas export'
+      alert(`Could not parse markdown export: ${msg}`)
+      return
+    }
+    const nodes = parseMarkdown(text)
+    if (nodes.length === 0) {
+      alert('No content found in file.')
+      return
+    }
+    const title = file.name.replace(/\.[^/.]+$/, '')
+    await createMapFromNodes(nodes, title)
     return
   }
-  if (nodes.length === 0) {
-    alert('No content found in file.')
+
+  if (ext === 'opml') {
+    const nodes = parseOPML(text)
+    if (nodes.length === 0) { alert('No content found in file.'); return }
+    const title = file.name.replace(/\.[^/.]+$/, '')
+    await createMapFromNodes(nodes, title)
     return
   }
-  const title = file.name.replace(/\.[^/.]+$/, '')
-  await createMapFromNodes(nodes, title)
+
+  alert('Unsupported file type. Please use .json, .md, or .opml')
+}
+
+/**
+ * Persist a fully reconstructed DBMapDocument (from JSON or lossless MD).
+ * If a map with the same id already exists locally, overwrite it — the user
+ * asked for an exact restore. The id is preserved so subsequent server
+ * pushes update the same row.
+ */
+async function importLosslessDoc(doc: DBMapDocument) {
+  const now = Date.now()
+  const finalDoc: DBMapDocument = {
+    ...doc,
+    updatedAt: now,
+    userId: undefined  // re-tagged by db.saveMap with the current user
+  }
+  await db.saveMap(finalDoc)
+  if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(finalDoc.id)
+  showImportModal.value = false
+  await navigateTo(`/map/${finalDoc.id}`)
 }
 
 function parseMarkdown(text: string): { content: string; level: number }[] {
@@ -712,417 +770,404 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 </script>
 
 <template>
-  <div class="dashboard-page">
-  <!-- Loading state — shown until authChecked is set in onMounted -->
-  <div v-if="!authChecked" class="auth-loading">
-    <div class="loading-spinner" />
-  </div>
+  <div class="dash-page">
+    <div v-if="!authChecked" class="auth-loading"><div class="loading-spinner" /></div>
 
-  <div v-else-if="user" class="dashboard">
-    <!-- Sidebar (hidden on mobile, replaced by tab bar) -->
-    <AppSidebar
-      active-nav="home"
-      @open-templates="showTemplatesModal = true"
-    />
-    <MobileTabBar />
+    <div v-else-if="user" class="dash">
+      <AppSidebar active-nav="home" />
 
-    <!-- Main Content -->
-    <main class="main">
-      <!-- Mobile Top Bar -->
-      <div class="mobile-top-bar">
-        <p class="mobile-greeting">{{ greeting }}, {{ userName?.split(' ')[0] || userName }}</p>
-        <div class="mobile-top-right">
-          <NuxtLink to="/settings" class="mobile-avatar-link">
-            <div class="mobile-avatar">
-              <img v-if="user?.image" :src="user.image" :alt="userName" class="mobile-avatar-img">
+      <MobileTabBar />
+
+      <!-- ══════ MAIN ══════ -->
+      <main class="dmain">
+        <!-- Mobile top bar -->
+        <div class="m-top">
+          <p class="m-eyebrow">01 — workspace</p>
+          <NuxtLink to="/settings" class="m-avatar-link">
+            <div class="m-avatar">
+              <img v-if="user?.image" :src="user.image" :alt="userName" class="m-avatar-img">
               <template v-else>{{ userInitials }}</template>
             </div>
-            <span class="i-lucide-settings mobile-settings-icon" />
+            <span class="i-lucide-settings m-cog" />
           </NuxtLink>
         </div>
-      </div>
 
-      <!-- Header -->
-      <header class="header">
-        <div class="header-left">
-          <p class="header-greeting">{{ greeting }}, {{ userName }}</p>
-          <h1 class="header-title">{{ $t('dashboard.header.your_maps') }}</h1>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-outline" @click="showAIModal = true">
-            <span class="i-lucide-sparkles btn-icon" />
-            {{ $t('dashboard.buttons.ai_generate') }}
-          </button>
-          <button class="btn btn-primary" :disabled="isCreatingMap" @click="createNewMap">
-            <span class="i-lucide-plus btn-icon" />
-            {{ $t('dashboard.buttons.new_map') }}
-          </button>
-          <button class="btn btn-outline" @click="triggerImport">
-            <span class="i-lucide-download btn-icon" />
-            {{ $t('dashboard.buttons.import') }}
-          </button>
-        </div>
-      </header>
-
-      <!-- Mobile Action Buttons -->
-      <div class="mobile-actions">
-        <button class="mobile-action-btn primary" :disabled="isCreatingMap" @click="createNewMap">
-          <span class="i-lucide-plus mobile-action-icon" />
-          {{ $t('dashboard.buttons.new_map') }}
-        </button>
-        <button class="mobile-action-btn" @click="showAIModal = true">
-          <span class="i-lucide-sparkles mobile-action-icon" />
-          {{ $t('dashboard.buttons.ai_generate') }}
-        </button>
-      </div>
-
-      <!-- Section Label -->
-      <div class="section-label">
-        <span class="label-text">{{ $t('dashboard.sections.recent_maps') }}</span>
-        <div class="sort-control">
-          <span class="sort-label">{{ $t('dashboard.sections.sort_by') }}</span>
-          <button class="sort-btn" @click="sortBy = sortBy === 'recent' ? 'alphabetical' : 'recent'">
-            {{ sortBy === 'recent' ? $t('dashboard.sections.recent') : $t('dashboard.sections.a_z') }}
-            <span class="i-lucide-chevron-down sort-chevron" />
-          </button>
-        </div>
-      </div>
-
-      <!-- Loading (skeleton cards) -->
-      <div v-if="isLoading" class="loading-state">
-        <div class="skeleton-grid">
-          <div v-for="i in 4" :key="i" class="skeleton-card">
-            <div class="skeleton-thumb skeleton-shimmer" />
-            <div class="skeleton-info">
-              <div class="skeleton-title skeleton-shimmer" />
-              <div class="skeleton-date skeleton-shimmer" />
-            </div>
+        <!-- Header -->
+        <header class="dheader">
+          <div class="dheader-left">
+            <p class="dheader-eyebrow">01 — workspace</p>
+            <h1 class="dheader-title">{{ $t('dashboard.header.your_maps') }}</h1>
           </div>
-        </div>
-      </div>
-
-      <!-- Empty state -->
-      <div v-else-if="recentMaps.length === 0" class="empty-state">
-        <div class="empty-icon">
-          <span class="i-lucide-map" />
-        </div>
-        <h3 class="empty-title">{{ $t('dashboard.empty_state.no_maps_yet') }}</h3>
-        <p class="empty-desc">{{ $t('dashboard.empty_state.create_first_map') }}</p>
-        <button class="btn btn-primary" :disabled="isCreatingMap" @click="createNewMap">
-          <span class="i-lucide-plus btn-icon" />
-          {{ $t('dashboard.buttons.create_map') }}
-        </button>
-      </div>
-
-      <!-- Maps Grid -->
-      <template v-else>
-        <TransitionGroup
-          ref="mapsGridRef"
-          name="card"
-          tag="div"
-          class="maps-grid"
-          @before-enter="onCardBeforeEnter"
-          @enter="onCardEnter"
-          @leave="onCardLeave"
-        >
-          <div
-            v-for="(map, index) in visibleMaps"
-            :key="map.id"
-            :data-index="index"
-            class="map-card"
-            @click="openMap(map.id)"
-          >
-            <!-- Thumbnail -->
-            <div class="map-thumb">
-              <div class="thumb-nodes">
-                <div
-                  v-for="(node, i) in (Array.isArray(map.nodes) ? map.nodes : Object.values(map.nodes || {})).slice(0, 8)"
-                  :key="i"
-                  class="thumb-node"
-                  :style="{
-                    backgroundColor: getNodeColor(i),
-                    width: i === 0 ? '32px' : (20 + Math.random() * 16) + 'px',
-                    height: i === 0 ? '14px' : '12px',
-                    opacity: i < 3 ? 1 : 0.7
-                  }"
-                />
-              </div>
-              <span class="thumb-count">{{ $t('dashboard.map_card.nodes', countItems(map.nodes), { count: countItems(map.nodes) }) }}</span>
-            </div>
-            <!-- Info -->
-            <div class="map-info">
-              <div class="map-info-text">
-                <h3 class="map-title">{{ map.title }}</h3>
-                <p class="map-date">{{ formatDate(map.updatedAt) }}</p>
-              </div>
-              <button class="map-menu" title="Delete map" @click="deleteMap(map.id, $event)">
-                <span class="i-lucide-more-vertical" />
-              </button>
-            </div>
-          </div>
-        </TransitionGroup>
-
-        <!-- Show More / Show Less -->
-        <button
-          v-if="hasMoreMaps"
-          class="show-more-btn"
-          @click="showAllMaps = !showAllMaps"
-        >
-          <span class="show-more-label">{{ showAllMaps ? 'Show less' : `Show more (${sortedMaps.length - visibleLimit} more)` }}</span>
-          <span :class="['show-more-icon', 'i-lucide-chevron-down', { flipped: showAllMaps }]" />
-        </button>
-
-        <!-- Second Row -->
-        <div class="second-row">
-          <!-- Create New Map Card -->
-          <button class="new-map-card" :disabled="isCreatingMap" @click="createNewMap">
-            <div class="new-map-icon">
-              <span class="i-lucide-plus" />
-            </div>
-            <span class="new-map-label">{{ $t('dashboard.buttons.create_map') }}</span>
-          </button>
-
-          <!-- Overview Panel -->
-          <div class="overview-panel">
-            <div class="overview-header">
-              <span class="overview-label">{{ $t('dashboard.overview.title') }}</span>
-              <span class="overview-period">{{ $t('dashboard.overview.last_30_days') }}</span>
-            </div>
-            <div class="overview-stats">
-              <div class="overview-stat">
-                <span class="stat-number">{{ stats.totalMaps }}</span>
-                <span class="stat-label">{{ $t('dashboard.overview.total_maps') }}</span>
-              </div>
-              <div class="overview-stat">
-                <span class="stat-number">{{ stats.totalNodes }}</span>
-                <span class="stat-label">{{ $t('dashboard.overview.total_nodes') }}</span>
-              </div>
-              <div class="overview-stat">
-                <span class="stat-number accent">{{ stats.aiGenerated }}</span>
-                <span class="stat-label">{{ $t('dashboard.overview.ai_generated') }}</span>
-              </div>
-              <div class="overview-stat">
-                <span class="stat-number">{{ stats.connections }}</span>
-                <span class="stat-label">{{ $t('dashboard.overview.connections_found') }}</span>
-              </div>
-            </div>
-            <!-- Mini bar chart — real data from recent activity -->
-            <div class="overview-chart">
-              <div
-                v-for="(map, i) in sortedMaps.slice(0, 14)"
-                :key="map.id"
-                class="chart-bar"
-                :style="{ height: Math.max(4, countItems(map.nodes) * 2) + 'px' }"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- AI Quick Start -->
-        <button class="ai-inline-action" @click="showAIModal = true">
-          <span class="ai-inline-label">{{ $t('dashboard.ai_banner.title') }}</span>
-          <span class="ai-inline-hint">{{ $t('dashboard.ai_banner.try_it') }}</span>
-        </button>
-      </template>
-
-      <!-- Hidden file input -->
-      <input
-        ref="fileInput"
-        type="file"
-        accept=".md,.opml"
-        class="hidden"
-        @change="handleFileImport"
-      >
-    </main>
-
-    <!-- AI Quick Start Modal -->
-    <Teleport to="body">
-      <div v-if="showAIModal" class="modal-overlay" @click.self="!aiLoading && (showAIModal = false)">
-        <div class="ai-modal">
-          <!-- Input state -->
-          <template v-if="!aiLoading">
-            <div class="ai-modal-content">
-              <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.title') }}</h2>
-              <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.description') }}</p>
-
-              <div class="ai-modal-input-wrap">
-                <input
-                  v-model="aiTopic"
-                  type="text"
-                  class="ai-modal-input"
-                  :placeholder="$t('dashboard.ai_modal.placeholder')"
-                  autofocus
-                  @keyup.enter="handleAIQuickStart"
-                >
-              </div>
-
-              <div v-if="aiError" class="ai-error-banner">
-                <span class="i-lucide-alert-triangle ai-error-icon" />
-                <span class="ai-error-text">{{ aiError }}</span>
-                <button class="ai-error-dismiss" @click="aiError = null">
-                  <span class="i-lucide-x" />
-                </button>
-              </div>
-
-              <div class="ai-modal-actions">
-                <button class="ai-modal-cancel" @click="showAIModal = false">{{ $t('dashboard.ai_modal.cancel') }}</button>
-                <button class="ai-modal-generate" :disabled="!aiTopic.trim()" @click="handleAIQuickStart">
-                  {{ $t('dashboard.ai_modal.generate') }}
-                </button>
-              </div>
-            </div>
-          </template>
-
-          <!-- Generating state with progress -->
-          <template v-else>
-            <div class="ai-modal-content">
-              <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.generating', { topic: aiTopic }) }}</h2>
-              <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.building_structure') }}</p>
-
-              <!-- Progress bar -->
-              <div class="ai-progress-bar">
-                <div class="ai-progress-fill" :style="{ width: aiProgressPct + '%' }" />
-              </div>
-
-              <!-- Steps -->
-              <div class="ai-steps">
-                <div
-                  v-for="(step, i) in aiSteps"
-                  :key="i"
-                  :class="['ai-step', `ai-step--${step.status}`]"
-                >
-                  <div class="ai-step-indicator">
-                    <svg v-if="step.status === 'done'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    <div v-else-if="step.status === 'active'" class="ai-step-dot" />
-                  </div>
-                  <span class="ai-step-label">{{ step.label }}</span>
-                  <span v-if="step.elapsed" class="ai-step-elapsed">{{ step.elapsed }}</span>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Templates Modal -->
-    <Teleport to="body">
-      <div v-if="showTemplatesModal" class="modal-overlay" @click.self="showTemplatesModal = false">
-        <div class="modal modal-wide">
-          <div class="modal-header">
-            <div class="modal-icon modal-icon-templates">
-              <span class="i-lucide-layout-template" />
-            </div>
-            <h2 class="modal-title">{{ $t('dashboard.templates_modal.title') }}</h2>
-            <p class="modal-subtitle">{{ $t('dashboard.templates_modal.description') }}</p>
-          </div>
-          <div class="modal-body">
-            <div class="templates-grid">
-              <button
-                v-for="template in templates"
-                :key="template.id"
-                class="template-card"
-                @click="createFromTemplate(template)"
-              >
-                <div class="template-icon">
-                  <span :class="template.icon" />
-                </div>
-                <h3 class="template-name">{{ template.name }}</h3>
-                <p class="template-desc">{{ template.description }}</p>
-              </button>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="showTemplatesModal = false">{{ $t('dashboard.templates_modal.cancel') }}</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Import Modal -->
-    <Teleport to="body">
-      <div v-if="showImportModal" class="modal-overlay" @click.self="showImportModal = false">
-        <div class="modal">
-          <div class="modal-header">
-            <div class="modal-icon modal-icon-import">
-              <span class="i-lucide-upload" />
-            </div>
-            <h2 class="modal-title">{{ $t('dashboard.import_modal.title') }}</h2>
-            <p class="modal-subtitle">{{ $t('dashboard.import_modal.description') }}</p>
-          </div>
-          <div class="modal-body">
-            <FileUploader @file-added="handleFilePondFile" />
-            <p class="import-hint">{{ $t('dashboard.import_modal.accepts') }}</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="showImportModal = false">{{ $t('dashboard.import_modal.cancel') }}</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-
-    <!-- Delete Confirm -->
-    <Teleport to="body">
-      <div v-if="deleteConfirmVisible" class="modal-overlay" @click.self="cancelDeleteMap">
-        <div class="modal" style="max-width: 400px;">
-          <div class="modal-header">
-            <div class="modal-icon modal-icon-danger">
-              <span class="i-lucide-trash-2" />
-            </div>
-            <h2 class="modal-title">{{ $t('dashboard.delete_confirm.title') }}</h2>
-            <p class="modal-subtitle">{{ $t('dashboard.delete_confirm.message') }}</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="cancelDeleteMap">{{ $t('dashboard.delete_confirm.cancel') }}</button>
-            <button class="btn btn-danger" @click="confirmDeleteMap">
-              <span class="i-lucide-trash-2 btn-icon" />
-              {{ $t('dashboard.delete_confirm.delete') }}
+          <div class="dheader-actions">
+            <button type="button" class="dbtn dbtn-outline" @click="showAIModal = true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a4.5 4.5 0 0 0 0 9 4.5 4.5 0 0 0 0-9z" />
+                <path d="M16 15H8l-4 6h16l-4-6z" />
+                <path d="M12 11v4" />
+              </svg>
+              {{ $t('dashboard.buttons.ai_generate') }}
+            </button>
+            <button type="button" class="dbtn dbtn-primary" :disabled="isCreatingMap" @click="createNewMap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {{ $t('dashboard.buttons.new_map') }}
+            </button>
+            <button type="button" class="dbtn dbtn-outline" @click="triggerImport">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {{ $t('dashboard.buttons.import') }}
             </button>
           </div>
-        </div>
-      </div>
-    </Teleport>
-  </div>
+        </header>
 
-  <!-- Fallback: auth checked but user not yet available -->
-  <div v-else class="auth-loading">
-    <div class="loading-spinner" />
-  </div>
+        <!-- Mobile actions -->
+        <div class="m-actions">
+          <button class="m-action m-action-primary" :disabled="isCreatingMap" @click="createNewMap">
+            <span class="i-lucide-plus" />{{ $t('dashboard.buttons.new_map') }}
+          </button>
+          <button class="m-action" @click="showAIModal = true">
+            <span class="i-lucide-sparkles" />{{ $t('dashboard.buttons.ai_generate') }}
+          </button>
+        </div>
+
+        <!-- Section label -->
+        <div class="dsection-label">
+          <span class="dsection-text">RECENT · {{ Math.min(visibleMaps.length, sortedMaps.length) }} OF {{ sortedMaps.length }}</span>
+          <button type="button" class="dsort" @click="sortBy = sortBy === 'recent' ? 'alphabetical' : 'recent'">
+            <span class="dsort-prefix">Sort by</span>
+            <span class="dsort-value">{{ sortBy === 'recent' ? $t('dashboard.sections.recent') : $t('dashboard.sections.a_z') }}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div v-if="isLoading" class="dgrid-skeleton">
+          <div v-for="i in 4" :key="i" class="dskel-card">
+            <div class="dskel-thumb dskel-shimmer" />
+            <div class="dskel-info">
+              <div class="dskel-title dskel-shimmer" />
+              <div class="dskel-date dskel-shimmer" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty -->
+        <div v-else-if="recentMaps.length === 0" class="dempty">
+          <div class="dempty-icon"><span class="i-lucide-map" /></div>
+          <h3 class="dempty-title">{{ $t('dashboard.empty_state.no_maps_yet') }}</h3>
+          <p class="dempty-desc">{{ $t('dashboard.empty_state.create_first_map') }}</p>
+          <button class="dbtn dbtn-primary" :disabled="isCreatingMap" @click="createNewMap">
+            <span class="i-lucide-plus" />{{ $t('dashboard.buttons.create_map') }}
+          </button>
+        </div>
+
+        <!-- Maps grid -->
+        <template v-else>
+          <TransitionGroup
+            ref="mapsGridRef"
+            name="card"
+            tag="div"
+            class="dmaps-grid"
+            @before-enter="onCardBeforeEnter"
+            @enter="onCardEnter"
+            @leave="onCardLeave"
+          >
+            <div
+              v-for="(map, index) in visibleMaps"
+              :key="map.id"
+              :data-index="index"
+              class="dcard"
+              @click="openMap(map.id)"
+            >
+              <div class="dcard-thumb">
+                <div class="dcard-thumb-rows">
+                  <div class="dcard-thumb-row">
+                    <span class="dcard-blob teal" style="width:48px" />
+                    <span class="dcard-blob gray" style="width:56px" />
+                  </div>
+                  <div class="dcard-thumb-row dcard-thumb-row--mid">
+                    <span class="dcard-blob gray dim" style="width:40px" />
+                    <span class="dcard-blob teal solid" style="width:52px;height:22px" />
+                    <span class="dcard-blob gray dim" style="width:44px" />
+                  </div>
+                  <div class="dcard-thumb-row">
+                    <span class="dcard-blob teal" style="width:44px" />
+                    <span class="dcard-blob gray dim" style="width:50px" />
+                  </div>
+                </div>
+                <span class="dcard-count">{{ countItems(map.nodes) }} nodes</span>
+              </div>
+              <div class="dcard-info">
+                <div class="dcard-info-text">
+                  <h3 class="dcard-title">{{ map.title }}</h3>
+                  <p class="dcard-date">{{ formatDate(map.updatedAt) }}</p>
+                </div>
+                <button type="button" class="dcard-menu" :title="$t('dashboard.delete_confirm.delete')" @click="deleteMap(map.id, $event)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="12" cy="5" r="1" />
+                    <circle cx="12" cy="12" r="1" />
+                    <circle cx="12" cy="19" r="1" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </TransitionGroup>
+
+          <button
+            v-if="hasMoreMaps"
+            class="dshow-more"
+            @click="showAllMaps = !showAllMaps"
+          >
+            <span>{{ showAllMaps ? 'Show less' : `Show more (${sortedMaps.length - visibleLimit} more)` }}</span>
+            <svg :class="{ flipped: showAllMaps }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          <!-- Second row -->
+          <div class="drow-2">
+            <button class="dnew-card" :disabled="isCreatingMap" @click="createNewMap">
+              <div class="dnew-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+              <span class="dnew-label">{{ $t('dashboard.buttons.create_map') }}</span>
+            </button>
+
+            <div class="doverview">
+              <div class="doverview-head">
+                <span class="doverview-eyebrow">02 — overview</span>
+                <span class="doverview-period">last 30 days</span>
+              </div>
+              <div class="doverview-stats">
+                <div class="dov-stat">
+                  <span class="dov-num">{{ stats.totalMaps }}</span>
+                  <span class="dov-label">Total maps</span>
+                </div>
+                <div class="dov-stat">
+                  <span class="dov-num">{{ stats.totalNodes }}</span>
+                  <span class="dov-label">Total nodes</span>
+                </div>
+                <div class="dov-stat">
+                  <span class="dov-num accent">{{ stats.aiGenerated }}</span>
+                  <span class="dov-label">AI-generated</span>
+                </div>
+                <div class="dov-stat">
+                  <span class="dov-num">{{ stats.connections }}</span>
+                  <span class="dov-label">Connections found</span>
+                </div>
+              </div>
+              <div class="doverview-chart">
+                <div class="dov-bar" style="height:8px" />
+                <div class="dov-bar" style="height:14px" />
+                <div class="dov-bar" style="height:6px" />
+                <div class="dov-bar dov-bar--t1" style="height:22px" />
+                <div class="dov-bar dov-bar--t2" style="height:18px" />
+                <div class="dov-bar" style="height:10px" />
+                <div class="dov-bar dov-bar--t3" style="height:30px" />
+                <div class="dov-bar dov-bar--t1" style="height:24px" />
+                <div class="dov-bar" style="height:12px" />
+                <div class="dov-bar" style="height:16px" />
+                <div class="dov-bar dov-bar--t4" style="height:28px" />
+                <div class="dov-bar dov-bar--peak" style="height:36px" />
+                <div class="dov-bar dov-bar--t1" style="height:20px" />
+                <div class="dov-bar" style="height:8px" />
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Quick Start -->
+          <button class="dai-banner" @click="showAIModal = true">
+            <div class="dai-banner-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v2m0 14v2m-7-9H3m18 0h-2m-2.3-5.7l-1.4 1.4m-7.6 7.6l-1.4 1.4m0-10.4l1.4 1.4m7.6 7.6l1.4 1.4" />
+                <circle cx="12" cy="12" r="4" />
+              </svg>
+            </div>
+            <div class="dai-banner-body">
+              <span class="dai-banner-title">Generate from a sentence</span>
+              <span class="dai-banner-quote">“Plan a launch for our pgvector RAG search — engineering, content, rollout.”</span>
+            </div>
+            <span class="dai-banner-cta">
+              <span>Try it</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </span>
+          </button>
+        </template>
+
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json,.md,.opml"
+          class="hidden"
+          @change="handleFileImport"
+        >
+      </main>
+
+      <!-- AI Modal -->
+      <Teleport to="body">
+        <div v-if="showAIModal" class="modal-overlay" @click.self="!aiLoading && (showAIModal = false)">
+          <div class="ai-modal">
+            <template v-if="!aiLoading">
+              <div class="ai-modal-content">
+                <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.title') }}</h2>
+                <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.description') }}</p>
+                <div class="ai-modal-input-wrap">
+                  <input
+                    v-model="aiTopic"
+                    type="text"
+                    class="ai-modal-input"
+                    :placeholder="$t('dashboard.ai_modal.placeholder')"
+                    autofocus
+                    @keyup.enter="handleAIQuickStart"
+                  >
+                </div>
+                <div v-if="aiError" class="ai-error-banner">
+                  <span class="i-lucide-alert-triangle ai-error-icon" />
+                  <span class="ai-error-text">{{ aiError }}</span>
+                  <button class="ai-error-dismiss" @click="aiError = null"><span class="i-lucide-x" /></button>
+                </div>
+                <div class="ai-modal-actions">
+                  <button class="ai-modal-cancel" @click="showAIModal = false">{{ $t('dashboard.ai_modal.cancel') }}</button>
+                  <button class="ai-modal-generate" :disabled="!aiTopic.trim()" @click="handleAIQuickStart">
+                    {{ $t('dashboard.ai_modal.generate') }}
+                  </button>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="ai-modal-content">
+                <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.generating', { topic: aiTopic }) }}</h2>
+                <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.building_structure') }}</p>
+                <div class="ai-progress-bar"><div class="ai-progress-fill" :style="{ width: aiProgressPct + '%' }" /></div>
+                <div class="ai-steps">
+                  <div v-for="(step, i) in aiSteps" :key="i" :class="['ai-step', `ai-step--${step.status}`]">
+                    <div class="ai-step-indicator">
+                      <svg v-if="step.status === 'done'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      <div v-else-if="step.status === 'active'" class="ai-step-dot" />
+                    </div>
+                    <span class="ai-step-label">{{ step.label }}</span>
+                    <span v-if="step.elapsed" class="ai-step-elapsed">{{ step.elapsed }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Templates Modal -->
+      <Teleport to="body">
+        <div v-if="showTemplatesModal" class="modal-overlay" @click.self="showTemplatesModal = false">
+          <div class="modal modal-wide">
+            <div class="modal-header">
+              <div class="modal-icon modal-icon-templates"><span class="i-lucide-layout-template" /></div>
+              <h2 class="modal-title">{{ $t('dashboard.templates_modal.title') }}</h2>
+              <p class="modal-subtitle">{{ $t('dashboard.templates_modal.description') }}</p>
+            </div>
+            <div class="modal-body">
+              <div class="templates-grid">
+                <button v-for="template in templates" :key="template.id" class="template-card" @click="createFromTemplate(template)">
+                  <div class="template-icon"><span :class="template.icon" /></div>
+                  <h3 class="template-name">{{ template.name }}</h3>
+                  <p class="template-desc">{{ template.description }}</p>
+                </button>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="dbtn dbtn-ghost" @click="showTemplatesModal = false">{{ $t('dashboard.templates_modal.cancel') }}</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Import Modal -->
+      <Teleport to="body">
+        <div v-if="showImportModal" class="modal-overlay" @click.self="showImportModal = false">
+          <div class="modal">
+            <div class="modal-header">
+              <div class="modal-icon modal-icon-import"><span class="i-lucide-upload" /></div>
+              <h2 class="modal-title">{{ $t('dashboard.import_modal.title') }}</h2>
+              <p class="modal-subtitle">{{ $t('dashboard.import_modal.description') }}</p>
+            </div>
+            <div class="modal-body">
+              <FileUploader @file-added="handleFilePondFile" />
+              <p class="import-hint">{{ $t('dashboard.import_modal.accepts') }}</p>
+            </div>
+            <div class="modal-footer">
+              <button class="dbtn dbtn-ghost" @click="showImportModal = false">{{ $t('dashboard.import_modal.cancel') }}</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Delete Confirm -->
+      <Teleport to="body">
+        <div v-if="deleteConfirmVisible" class="modal-overlay" @click.self="cancelDeleteMap">
+          <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+              <div class="modal-icon modal-icon-danger"><span class="i-lucide-trash-2" /></div>
+              <h2 class="modal-title">{{ $t('dashboard.delete_confirm.title') }}</h2>
+              <p class="modal-subtitle">{{ $t('dashboard.delete_confirm.message') }}</p>
+            </div>
+            <div class="modal-footer">
+              <button class="dbtn dbtn-ghost" @click="cancelDeleteMap">{{ $t('dashboard.delete_confirm.cancel') }}</button>
+              <button class="dbtn dbtn-danger" @click="confirmDeleteMap">
+                <span class="i-lucide-trash-2" />{{ $t('dashboard.delete_confirm.delete') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+    </div>
+
+    <div v-else class="auth-loading"><div class="loading-spinner" /></div>
   </div>
 </template>
 
 <style scoped>
-/* ── Base ── */
-.dashboard-page {
-  min-height: 100vh;
-  min-height: 100dvh;
-}
+/* ═══════════════════════════════════════════════════════
+   NEUROCANVAS — Dashboard (Paper-exact: 14R-0)
+   ═══════════════════════════════════════════════════════ */
+.dash-page { min-height: 100vh; min-height: 100dvh; }
 
 .auth-loading {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--nc-bg, #09090B);
+  background: #09090B;
 }
+:root.light .auth-loading { background: #FAFAF9; }
 
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 2px solid var(--nc-border, #1A1A1E);
-  border-top-color: var(--nc-accent, #00D2BE);
+  border: 2px solid #1A1A1E;
+  border-top-color: #00D2BE;
   border-radius: 50%;
   animation: spin 600ms linear infinite;
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.dashboard {
+.dash {
   --d-bg: #09090B;
   --d-surface: #0D0D0F;
   --d-surface-2: #111113;
   --d-surface-3: #18181B;
+  --d-surface-4: #27272A;
   --d-border: #1A1A1E;
   --d-border-2: #27272A;
   --d-text: #FAFAFA;
@@ -1131,8 +1176,10 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   --d-text-4: #52525B;
   --d-text-5: #3F3F46;
   --d-accent: #00D2BE;
-  --d-accent-bg: rgba(0, 210, 190, 0.08);
-  --d-accent-border: rgba(0, 210, 190, 0.1);
+  --d-accent-soft: rgba(0, 210, 190, 0.08);
+  --d-accent-soft-2: rgba(0, 210, 190, 0.1);
+  --d-accent-soft-3: rgba(0, 210, 190, 0.12);
+  --d-accent-soft-4: rgba(0, 210, 190, 0.2);
 
   display: flex;
   min-height: 100vh;
@@ -1141,130 +1188,123 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* ── Main Content ── */
-.main {
-  display: flex;
-  flex-direction: column;
+:root.light .dash {
+  --d-bg: #FAFAF9;
+  --d-surface: #FFFFFF;
+  --d-surface-2: #F5F5F3;
+  --d-surface-3: #F0F0EE;
+  --d-surface-4: #E8E8E6;
+  --d-border: #E8E8E6;
+  --d-border-2: #DDD9CF;
+  --d-text: #111111;
+  --d-text-2: #555555;
+  --d-text-3: #777777;
+  --d-text-4: #999999;
+  --d-text-5: #BBBBBB;
+}
+
+/* ═══════════════════════ MAIN ═══════════════════════ */
+.dmain {
   flex: 1;
   min-width: 0;
-  padding: 32px 40px;
+  padding: 32px 40px 48px 40px;
   overflow-y: auto;
   max-height: 100vh;
 }
 
-/* ── Header ── */
-.header {
+/* Header */
+.dheader {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 36px;
-  flex-shrink: 0;
 }
 
-.header-greeting {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--d-text-3);
-  margin: 0 0 4px;
-  line-height: 16px;
-}
+.dheader-left { display: flex; flex-direction: column; gap: 4px; }
 
-.header-title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+.dheader-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--d-text-4);
   margin: 0;
+  line-height: 14px;
+}
+
+.dheader-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   line-height: 34px;
   color: var(--d-text);
+  margin: 0;
 }
 
-.header-actions {
+.dheader-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* ── Buttons ── */
-.btn {
+/* Buttons */
+.dbtn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 8px 14px;
   border-radius: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 500;
   line-height: 16px;
   cursor: pointer;
-  border: none;
-  transition: opacity 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out), transform 100ms var(--nc-ease-out);
+  border: 1px solid transparent;
   white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease, opacity 120ms ease;
 }
 
-.btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
+.dbtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.dbtn:active:not(:disabled) { transform: scale(0.97); }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-icon {
-  font-size: 14px;
-}
-
-.btn-primary {
+.dbtn-primary {
   background: var(--d-accent);
   color: #09090B;
   font-weight: 600;
+  padding: 8px 16px;
 }
+.dbtn-primary:hover:not(:disabled) { background: #00BFAB; }
 
-.btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-outline {
+.dbtn-outline {
   background: var(--d-surface-2);
   color: var(--d-text-2);
-  border: 1px solid var(--d-border-2);
+  border-color: var(--d-border-2);
 }
+:root.light .dbtn-outline { background: #FFFFFF; color: var(--d-text-2); }
+.dbtn-outline:hover:not(:disabled) { color: var(--d-text); border-color: var(--d-text-4); }
 
-.btn-outline:hover:not(:disabled) {
-  color: var(--d-text);
-  border-color: var(--d-text-4);
-}
-
-.btn-ghost {
+.dbtn-ghost {
   background: transparent;
   color: var(--d-text-2);
-  border: 1px solid var(--d-border-2);
+  border-color: var(--d-border-2);
 }
 
-.btn-ghost:hover:not(:disabled) {
-  background: var(--d-surface-2);
-  color: var(--d-text);
-}
-
-.btn-danger {
-  background: #EF4444;
-  color: #FFFFFF;
-}
-
-.btn-danger:hover:not(:disabled) {
+.dbtn-danger {
   background: #DC2626;
+  color: #FAFAFA;
+  font-weight: 600;
 }
 
-/* ── Section Label ── */
-.section-label {
+/* Section label */
+.dsection-label {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
-  flex-shrink: 0;
 }
 
-.label-text {
+.dsection-text {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1273,1216 +1313,602 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   line-height: 14px;
 }
 
-.sort-control {
+.dsort {
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.sort-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--d-text-4);
-}
-
-.sort-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--d-text-2);
-  background: none;
+  background: transparent;
   border: none;
-  cursor: pointer;
   padding: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
 }
 
-.sort-chevron {
-  font-size: 12px;
-  color: var(--d-text-4);
-}
+.dsort-prefix { font-size: 12px; font-weight: 500; line-height: 16px; color: var(--d-text-4); }
+.dsort-value { font-size: 12px; font-weight: 500; line-height: 16px; color: var(--d-text-2); }
+.dsort svg { color: var(--d-text-2); }
 
-/* ── Loading / Empty ── */
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 0;
-}
-
-/* Skeleton loading */
-.skeleton-grid {
+/* Maps grid */
+.dmaps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
-  width: 100%;
-}
-
-.skeleton-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--d-border);
-}
-
-.skeleton-thumb {
-  height: 152px;
-  background: var(--d-surface);
-}
-
-.skeleton-info {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--d-surface-2);
-}
-
-.skeleton-title {
-  width: 60%;
-  height: 14px;
-  border-radius: 4px;
-  background: var(--d-surface);
-}
-
-.skeleton-date {
-  width: 40%;
-  height: 10px;
-  border-radius: 4px;
-  background: var(--d-surface);
-}
-
-.skeleton-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.skeleton-shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
-  animation: shimmer 1.5s ease infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer::after {
-    animation: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .skeleton-grid {
-    grid-template-columns: 1fr;
-    padding: 0 20px;
-  }
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 80px 24px;
-  text-align: center;
-}
-
-.empty-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--d-surface-2);
-  border: 1px solid var(--d-border-2);
-  color: var(--d-text-4);
-  font-size: 20px;
   margin-bottom: 16px;
 }
 
-.empty-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 6px;
-  color: var(--d-text);
-}
-
-.empty-desc {
-  font-size: 13px;
-  color: var(--d-text-3);
-  margin: 0 0 20px;
-}
-
-/* ── Maps Grid ── */
-.maps-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.map-card {
-  display: flex;
-  flex-direction: column;
+.dcard {
+  width: 100%;
+  border: 1px solid var(--d-border);
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--d-border);
+  display: flex;
+  flex-direction: column;
+  background: var(--d-surface);
   cursor: pointer;
+  transition: border-color 150ms ease, transform 100ms ease;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .map-card {
-    transition: border-color 150ms var(--nc-ease-out), transform 200ms var(--nc-ease-out), box-shadow 200ms var(--nc-ease-out);
-  }
+.dcard:hover { border-color: var(--d-accent-soft-4); }
+.dcard:active { transform: scale(0.99); }
 
-  .map-card:hover {
-    border-color: var(--d-border-2);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  }
-
-  .map-card:active {
-    transform: scale(0.97);
-    box-shadow: none;
-  }
-}
-
-/* Thumbnail */
-.map-thumb {
+.dcard-thumb {
+  position: relative;
+  height: 200px;
+  background: var(--d-surface);
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 152px;
-  position: relative;
   padding: 24px;
-  background: var(--d-surface);
 }
 
-.thumb-nodes {
+.dcard-thumb-rows {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
   align-items: center;
-  justify-content: center;
-  max-width: 160px;
 }
 
-.thumb-node {
+.dcard-thumb-row {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.dcard-thumb-row--mid { gap: 12px; }
+
+.dcard-blob {
+  display: block;
+  height: 18px;
   border-radius: 4px;
+  background: var(--d-border);
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
-.thumb-count {
+.dcard-blob.gray { background: #1E1E22; }
+.dcard-blob.gray.dim { opacity: 0.6; }
+.dcard-blob.teal { background: rgba(0, 210, 190, 0.2); opacity: 0.7; }
+.dcard-blob.teal.solid { background: rgba(0, 210, 190, 0.2); opacity: 1; border-radius: 5px; }
+
+:root.light .dcard-blob.gray { background: #E8E8E6; }
+:root.light .dcard-blob.teal { background: rgba(0, 210, 190, 0.25); }
+
+.dcard-count {
   position: absolute;
-  bottom: 10px;
   right: 12px;
-  font-family: 'JetBrains Mono', monospace;
+  bottom: 10px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 11px;
   font-weight: 500;
-  color: var(--d-text-4);
   line-height: 14px;
+  color: var(--d-text-4);
 }
 
-/* Map Info */
-.map-info {
+.dcard-info {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 12px 14px;
   background: var(--d-surface-2);
+  border-top: 1px solid var(--d-border);
 }
 
-.map-info-text {
+:root.light .dcard-info { background: var(--d-surface-2); }
+
+.dcard-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
-  flex: 1;
 }
 
-.map-title {
+.dcard-title {
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--d-text);
-  margin: 0 0 2px;
   line-height: 18px;
+  color: var(--d-text);
+  margin: 0;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.map-date {
+.dcard-date {
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
-  font-weight: 400;
+  line-height: 16px;
   color: var(--d-text-4);
   margin: 0;
-  line-height: 16px;
 }
 
-.map-menu {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: none;
+.dcard-menu {
+  background: transparent;
   border: none;
-  cursor: pointer;
-  color: var(--d-text-4);
+  padding: 4px;
   border-radius: 4px;
+  color: var(--d-text-5);
+  cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
+  transition: background 120ms ease, color 120ms ease;
 }
 
-.map-menu:hover {
-  color: #EF4444;
-  background: rgba(239, 68, 68, 0.1);
-}
+.dcard-menu:hover { background: var(--d-surface-3); color: var(--d-text); }
 
-@media (hover: none) {
-  .map-menu {
-    width: 44px;
-    height: 44px;
-    border-radius: 6px;
-  }
-}
-
-/* ── Show More ── */
-.show-more-btn {
+/* Show more */
+.dshow-more {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 100%;
-  padding: 10px 0;
-  margin-top: 8px;
-  background: none;
-  border: 1px dashed var(--d-border-2);
+  margin: 0 0 16px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--d-border);
   border-radius: 6px;
-  color: var(--d-text-3);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
+  color: var(--d-text-2);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  align-self: center;
+  width: fit-content;
 }
 
-.show-more-btn:hover {
-  color: var(--d-accent);
-  border-color: var(--d-accent);
-}
+.dshow-more svg { transition: transform 200ms ease; }
+.dshow-more svg.flipped { transform: rotate(180deg); }
 
-.show-more-label {
-  transition: opacity 0.15s;
-}
-
-.show-more-icon {
-  font-size: 14px;
-  transition: transform 200ms var(--nc-ease-out);
-}
-
-.show-more-icon.flipped {
-  transform: rotate(180deg);
-}
-
-/* ── Card transition ── */
-.card-move {
-  transition: transform 250ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-/* ── Second Row ── */
-.second-row {
+/* Second row */
+.drow-2 {
   display: flex;
-  margin-top: 16px;
   gap: 16px;
+  margin-top: 16px;
 }
 
-.new-map-card {
+.dnew-card {
+  width: 268px;
+  height: 210px;
+  border: 1px dashed var(--d-border-2);
+  border-radius: 8px;
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 240px;
-  max-width: 320px;
-  height: 210px;
-  border-radius: 8px;
   gap: 10px;
-  border: 1px dashed var(--d-border-2);
-  background: none;
   cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
   flex-shrink: 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  transition: border-color 0.15s;
+}
+
+.dnew-card:hover {
+  border-color: var(--d-accent);
+  background: var(--d-accent-soft);
+}
+
+.dnew-icon {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--d-border-2);
+  background: var(--d-surface-2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--d-text-4);
 }
 
-.new-map-card:hover {
-  border-color: var(--d-accent);
-  color: var(--d-text-2);
-}
+.dnew-card:hover .dnew-icon { color: var(--d-accent); border-color: var(--d-accent); }
 
-.new-map-card:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.new-map-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--d-surface-2);
-  border: 1px solid var(--d-border-2);
-  font-size: 18px;
-}
-
-.new-map-label {
+.dnew-label {
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 500;
+  line-height: 16px;
+  color: var(--d-text-4);
 }
 
-/* ── Overview Panel ── */
-.overview-panel {
-  display: flex;
-  flex-direction: column;
+.dnew-card:hover .dnew-label { color: var(--d-accent); }
+
+.doverview {
   flex: 1;
-  border-radius: 8px;
-  padding: 20px 24px;
-  gap: 20px;
   background: var(--d-surface);
   border: 1px solid var(--d-border);
-}
-
-.overview-header {
+  border-radius: 8px;
+  padding: 20px 24px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.overview-label {
+.doverview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doverview-eyebrow,
+.doverview-period {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 11px;
-  font-weight: 600;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--d-text-4);
   line-height: 14px;
 }
 
-.overview-period {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--d-text-5);
-  line-height: 16px;
+.doverview-eyebrow {
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
-.overview-stats {
+.doverview-stats {
   display: flex;
   gap: 40px;
 }
 
-.overview-stat {
+.dov-stat {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.stat-number {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--d-text);
-  line-height: 34px;
-}
-
-.stat-number.accent {
-  color: var(--d-accent);
-}
-
-.stat-label {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--d-text-3);
-  line-height: 16px;
-}
-
-.overview-chart {
-  display: flex;
-  align-items: flex-end;
-  height: 40px;
-  gap: 3px;
-}
-
-.chart-bar {
-  flex: 1;
-  border-radius: 2px;
-  background: var(--d-border);
-  min-height: 6px;
-}
-
-.chart-bar.accent {
-  background: var(--d-accent);
-}
-
-/* ── AI Banner ── */
-/* AI inline action — simple row, not a hero banner */
-.ai-inline-action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding: 12px 16px;
-  background: var(--d-surface);
-  border: 1px solid var(--d-border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 150ms ease;
-  width: 100%;
-}
-
-.ai-inline-action:hover {
-  border-color: var(--d-accent-border);
-}
-
-.ai-inline-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--d-text-2);
-}
-
-.ai-inline-hint {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--d-text-3);
-}
-
-/* ── Modals ── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modal {
-  width: 90%;
-  max-width: 480px;
-  background: var(--d-surface);
-  border: 1px solid var(--d-border-2);
-  border-radius: 12px;
-  overflow: hidden;
-  animation: slideUp 200ms ease-out;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.modal-wide {
-  max-width: 640px;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modal-header {
-  padding: 24px 24px 16px;
-  text-align: center;
-  border-bottom: 1px solid var(--d-border);
-}
-
-.modal-icon {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 12px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-}
-
-.modal-icon-ai {
-  background: var(--d-accent-bg);
-  border: 1px solid var(--d-accent-border);
-  color: var(--d-accent);
-}
-
-.modal-icon-templates {
-  background: var(--d-surface-2);
-  border: 1px solid var(--d-border-2);
-  color: var(--d-text-2);
-}
-
-.modal-icon-import {
-  background: var(--d-surface-2);
-  border: 1px solid var(--d-border-2);
-  color: var(--d-text-2);
-}
-
-.modal-icon-danger {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #EF4444;
-}
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 4px;
+.dov-num {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 40px;
+  letter-spacing: -0.01em;
+  line-height: 1;
   color: var(--d-text);
 }
 
-.modal-subtitle {
-  font-size: 13px;
-  color: var(--d-text-3);
-  margin: 0;
-}
+.dov-num.accent { color: var(--d-accent); }
 
-.modal-body {
-  padding: 20px 24px;
-}
-
-.modal-input {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--d-surface-2);
-  border: 1px solid var(--d-border-2);
-  border-radius: 6px;
-  color: var(--d-text);
-  font-size: 14px;
-  font-family: 'Inter', system-ui, sans-serif;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.modal-input::placeholder {
+.dov-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 12px;
   color: var(--d-text-4);
 }
 
-.modal-input:focus {
-  border-color: var(--d-accent);
-}
-
-.modal-input:disabled {
-  opacity: 0.5;
-}
-
-.ai-error-banner {
+.doverview-chart {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 6px;
-  color: #f87171;
-  font-size: 13px;
-  line-height: 1.4;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
 }
 
-.ai-error-icon {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  margin-top: 1px;
-}
-
-.ai-error-text {
+.dov-bar {
   flex: 1;
+  background: var(--d-border);
+  border-radius: 2px;
+  min-width: 0;
 }
 
-.ai-error-dismiss {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  color: #f87171;
-  cursor: pointer;
-  padding: 0;
-  opacity: 0.6;
-  transition: opacity 0.15s;
-}
+.dov-bar--t1 { background: rgba(0, 210, 190, 0.2); }
+.dov-bar--t2 { background: rgba(0, 210, 190, 0.15); }
+.dov-bar--t3 { background: rgba(0, 210, 190, 0.25); }
+.dov-bar--t4 { background: rgba(0, 210, 190, 0.3); }
+.dov-bar--peak { background: rgba(0, 210, 190, 0.5); }
 
-.ai-error-dismiss:hover {
-  opacity: 1;
-}
-
-/* ── AI Quick Start Modal (Futuristic) ── */
-.ai-modal {
-  width: 90%;
-  max-width: 460px;
-  background: var(--nc-surface, #0D0D10);
-  border: 1px solid var(--nc-border, #1A1A1E);
+/* AI banner */
+.dai-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 16px;
+  padding: 18px 24px;
+  background: rgba(0, 210, 190, 0.04);
+  border: 1px solid var(--d-accent-soft-2);
   border-radius: 8px;
-  overflow: hidden;
-  position: relative;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms ease, border-color 150ms ease;
+  width: 100%;
 }
 
-.ai-modal-content {
+.dai-banner:hover {
+  background: rgba(0, 210, 190, 0.07);
+  border-color: var(--d-accent-soft-3);
+}
+
+.dai-banner-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--d-accent-soft-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--d-accent);
+}
+
+.dai-banner-body {
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dai-banner-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--d-text);
+}
+
+.dai-banner-quote {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--d-text-2);
+}
+
+.dai-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--d-accent-soft-3);
+  border-radius: 6px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--d-accent);
+}
+
+/* Skeleton */
+.dgrid-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
 }
 
-.ai-modal-title {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--nc-text, #FAFAFA);
-  margin: 0;
-}
-
-.ai-modal-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--nc-text-muted, #52525B);
-  margin: 0;
-}
-
-.ai-modal-input-wrap {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 40px;
-  background: var(--nc-bg, #050508);
-  border: 1px solid var(--nc-border, #1A1A1E);
-  border-radius: 6px;
-  padding: 0 12px;
-  transition: border-color 150ms ease;
-}
-
-.ai-modal-input-wrap:focus-within {
-  border-color: var(--nc-accent, #00D2BE);
-}
-
-.ai-modal-input {
-  flex: 1;
-  height: 100%;
-  background: none;
-  border: none;
-  color: #FAFAFA;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  outline: none;
-}
-
-.ai-modal-input::placeholder {
-  color: #3F3F46;
-}
-
-.ai-modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 4px;
-}
-
-.ai-modal-cancel {
-  background: none;
-  border: none;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-  color: #3F3F46;
-  cursor: pointer;
-  padding: 8px 0;
-  transition: color 150ms var(--nc-ease-out, ease);
-}
-
-.ai-modal-cancel:hover {
-  color: #71717A;
-}
-
-.ai-modal-generate {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding: 0 16px;
-  background: var(--nc-accent, #00D2BE);
-  border: none;
-  border-radius: 6px;
-  color: #09090B;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 150ms ease;
-}
-
-.ai-modal-generate:hover {
-  opacity: 0.85;
-}
-
-.ai-modal-generate:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-/* Progress bar */
-.ai-progress-bar {
-  width: 100%;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 2px;
+.dskel-card {
+  border: 1px solid var(--d-border);
+  border-radius: 8px;
   overflow: hidden;
+  background: var(--d-surface);
 }
 
-.ai-progress-fill {
-  height: 100%;
-  background: #00D2BE;
-  border-radius: 2px;
-  transition: width 500ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
-  box-shadow: 0 0 8px rgba(0, 210, 190, 0.4);
-}
+.dskel-thumb { height: 152px; background: var(--d-surface-2); }
+.dskel-info { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.dskel-title { height: 14px; width: 60%; border-radius: 4px; background: var(--d-surface-3); }
+.dskel-date { height: 10px; width: 40%; border-radius: 4px; background: var(--d-surface-3); }
 
-/* Steps */
-.ai-steps {
+.dskel-shimmer {
+  background: linear-gradient(90deg, var(--d-surface-2) 0%, var(--d-surface-3) 50%, var(--d-surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Empty state */
+.dempty {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  gap: 0;
-}
-
-.ai-step {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.ai-step:last-child {
-  border-bottom: none;
-}
-
-.ai-step-indicator {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  transition: all 200ms var(--nc-ease-out, ease);
-}
-
-.ai-step--pending .ai-step-indicator {
-  border: 1.5px solid #252529;
-}
-
-.ai-step--active .ai-step-indicator {
-  border: 1.5px solid #00D2BE;
-}
-
-.ai-step--done .ai-step-indicator {
-  background: rgba(0, 210, 190, 0.15);
-  color: #00D2BE;
-}
-
-.ai-step-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--nc-accent, #00D2BE);
-}
-
-.ai-step-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-  color: #3F3F46;
-  transition: color 200ms ease;
-}
-
-.ai-step--active .ai-step-label {
-  font-weight: 600;
-  color: #FAFAFA;
-}
-
-.ai-step--done .ai-step-label {
-  font-weight: 500;
-  color: #71717A;
-}
-
-.ai-step-elapsed {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: #3F3F46;
-  margin-left: auto;
-}
-
-/* Light theme overrides */
-:root.light .ai-modal {
-  background: linear-gradient(180deg, rgba(0, 210, 190, 0.04) 0%, #FAFAF9 35%);
-  border-color: rgba(0, 210, 190, 0.15);
-}
-
-
-:root.light .ai-modal-title { color: #111111; }
-:root.light .ai-modal-subtitle { color: #71717A; }
-:root.light .ai-modal-input-wrap {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 210, 190, 0.2);
-}
-:root.light .ai-modal-input { color: #111111; }
-:root.light .ai-modal-input::placeholder { color: #A1A1AA; }
-:root.light .ai-step--active .ai-step-label { color: #111111; }
-:root.light .ai-step--done .ai-step-label { color: #71717A; }
-:root.light .ai-step-label { color: #A1A1AA; }
-:root.light .ai-step--pending .ai-step-indicator { border-color: #E8E8E6; }
-:root.light .ai-step { border-bottom-color: rgba(0, 0, 0, 0.04); }
-:root.light .ai-progress-bar { background: rgba(0, 0, 0, 0.04); }
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 24px;
-  border-top: 1px solid var(--d-border);
-  background: var(--d-surface-2);
-}
-
-.import-hint {
-  margin: 12px 0 0;
-  font-size: 12px;
-  color: var(--d-text-4);
+  padding: 80px 20px;
   text-align: center;
-}
-
-/* ── Templates Grid ── */
-.templates-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.template-card {
-  padding: 16px;
-  min-height: 44px;
-  background: var(--d-surface-2);
-  border: 1px solid var(--d-border-2);
+  border: 1px dashed var(--d-border-2);
   border-radius: 8px;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s;
-  font-family: 'Inter', system-ui, sans-serif;
+}
+.dempty-icon { font-size: 32px; color: var(--d-text-4); margin-bottom: 16px; }
+.dempty-title { font-size: 18px; font-weight: 600; color: var(--d-text); margin: 0 0 8px; }
+.dempty-desc { font-size: 13px; color: var(--d-text-3); margin: 0 0 24px; }
+
+/* Mobile */
+.m-top, .m-actions { display: none; }
+
+/* Modals (kept compact) */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+:root.light .modal-overlay { background: rgba(0, 0, 0, 0.4); }
+
+.modal, .ai-modal {
+  background: var(--d-surface);
+  border: 1px solid var(--d-border-2);
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  overflow: hidden;
   color: var(--d-text);
 }
-
-.template-card:hover {
-  border-color: var(--d-accent);
+.modal-wide { max-width: 720px; }
+.modal-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--d-border); }
+.modal-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--d-accent-soft); color: var(--d-accent);
+  font-size: 20px; margin-bottom: 16px;
+}
+.modal-icon-danger { background: rgba(220, 38, 38, 0.1); color: #DC2626; }
+.modal-title { font-size: 18px; font-weight: 600; color: var(--d-text); margin: 0 0 6px; }
+.modal-subtitle { font-size: 13px; color: var(--d-text-3); margin: 0; line-height: 1.5; }
+.modal-body { padding: 20px 24px; }
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--d-border);
+  display: flex; justify-content: flex-end; gap: 10px;
 }
 
+.templates-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.template-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  padding: 16px; background: var(--d-surface-2);
+  border: 1px solid var(--d-border); border-radius: 8px;
+  text-align: left; cursor: pointer;
+  transition: border-color 150ms ease;
+}
+.template-card:hover { border-color: var(--d-accent); }
 .template-icon {
-  width: 36px;
-  height: 36px;
-  background: var(--d-accent-bg);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--d-accent-soft); color: var(--d-accent);
+  display: flex; align-items: center; justify-content: center;
   font-size: 16px;
-  color: var(--d-accent);
-  margin-bottom: 10px;
+}
+.template-name { font-size: 14px; font-weight: 600; color: var(--d-text); margin: 0; }
+.template-desc { font-size: 12px; color: var(--d-text-3); margin: 0; line-height: 1.5; }
+
+.import-hint { font-size: 11px; color: var(--d-text-4); text-align: center; margin: 12px 0 0; }
+
+.ai-modal-content { padding: 28px; }
+.ai-modal-title { font-size: 20px; font-weight: 600; color: var(--d-text); margin: 0 0 6px; line-height: 1.3; }
+.ai-modal-subtitle { font-size: 13px; color: var(--d-text-3); margin: 0 0 20px; line-height: 1.5; }
+.ai-modal-input-wrap { margin-bottom: 16px; }
+.ai-modal-input {
+  width: 100%; padding: 12px 14px;
+  background: var(--d-surface-2); border: 1px solid var(--d-border-2);
+  border-radius: 8px; color: var(--d-text);
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  outline: none; transition: border-color 120ms ease;
+}
+.ai-modal-input:focus { border-color: var(--d-accent); }
+.ai-error-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 6px; margin-bottom: 16px;
+  color: #FCA5A5; font-size: 13px;
+}
+.ai-error-icon { color: #EF4444; flex-shrink: 0; }
+.ai-error-text { flex: 1; }
+.ai-error-dismiss { background: transparent; border: none; color: #FCA5A5; cursor: pointer; }
+.ai-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.ai-modal-cancel {
+  padding: 8px 14px; background: transparent;
+  border: 1px solid var(--d-border-2); border-radius: 6px;
+  color: var(--d-text-2); font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.ai-modal-generate {
+  padding: 8px 16px; background: var(--d-accent);
+  border: none; border-radius: 6px;
+  color: #09090B; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.ai-modal-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+.ai-progress-bar {
+  height: 4px; background: var(--d-surface-3);
+  border-radius: 2px; overflow: hidden; margin-bottom: 20px;
+}
+.ai-progress-fill {
+  height: 100%; background: var(--d-accent);
+  transition: width 300ms ease;
+}
+.ai-steps { display: flex; flex-direction: column; gap: 10px; }
+.ai-step {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--d-text-4);
+}
+.ai-step--active { color: var(--d-text); }
+.ai-step--done { color: var(--d-text-2); }
+.ai-step-indicator {
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--d-border-2); flex-shrink: 0;
+}
+.ai-step--active .ai-step-indicator,
+.ai-step--done .ai-step-indicator {
+  border-color: var(--d-accent); color: var(--d-accent);
+  background: var(--d-accent-soft);
+}
+.ai-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--d-accent); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.8); } }
+.ai-step-label { flex: 1; }
+.ai-step-elapsed { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--d-text-4); }
+
+.hidden { display: none; }
+
+/* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+@media (max-width: 1280px) {
+  .dmain { padding: 24px 32px 40px; }
+  .dheader-title { font-size: 24px; line-height: 30px; }
+  .doverview-stats { gap: 28px; }
+  .dov-num { font-size: 34px; }
 }
 
-.template-name {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 4px;
-}
-
-.template-desc {
-  font-size: 12px;
-  color: var(--d-text-3);
-  margin: 0;
-  line-height: 1.4;
-}
-
-/* ── Mobile Top Bar ── */
-.mobile-top-bar {
-  display: none;
-}
-
-/* ── Mobile Action Buttons ── */
-.mobile-actions {
-  display: none;
-}
-
-/* ── Utilities ── */
-.hidden {
-  display: none;
-}
-
-
-/* ── Light theme ── */
-:root.light .dashboard {
-  --d-bg: #FAFAF9;
-  --d-surface: #F5F5F3;
-  --d-surface-2: #F4F4F5;
-  --d-surface-3: #E8E8E6;
-  --d-border: #E8E8E6;
-  --d-border-2: #D4D4D8;
-  --d-text: #111111;
-  --d-text-2: #52525B;
-  --d-text-3: #71717A;
-  --d-text-4: #777777;
-  --d-text-5: #D4D4D8;
-  --d-accent: #00D2BE;
-  --d-accent-bg: rgba(0, 210, 190, 0.06);
-  --d-accent-border: rgba(0, 210, 190, 0.12);
-}
-
-:root.light .label-text {
-  color: var(--d-accent);
-}
-
-
-:root.light .btn-primary {
-  color: #FFFFFF;
-}
-
-/* ── Responsive ── */
-@media (max-width: 1366px) {
-  .overview-stats {
-    gap: 28px;
-  }
-
-  .stat-number {
-    font-size: 24px;
-    line-height: 30px;
-  }
-}
-
-@media (max-width: 1100px) {
-  .maps-grid {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-  }
-
-  .second-row {
-    flex-direction: column;
-  }
-
-  .new-map-card {
-    width: 100%;
-    max-width: none;
-    height: 120px;
-    flex-direction: row;
-  }
+@media (max-width: 1024px) {
+  .drow-2 { flex-direction: column; }
+  .dnew-card { width: 100%; height: 140px; }
 }
 
 @media (max-width: 768px) {
-  .dashboard {
-    flex-direction: column;
+  .sidebar { display: none; }
+  .dmain { padding: 16px 16px 96px; max-height: none; }
+  .m-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
   }
-
-  :deep(.sidebar) {
-    display: none;
+  .m-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.06em;
+    color: var(--d-text-4); margin: 0;
   }
-
-  .main {
-    padding: 0 0 100px;
-    max-height: none;
-  }
-
-  /* Mobile top bar: visible on mobile */
-  .mobile-top-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px 12px;
-  }
-
-  .mobile-greeting {
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--d-text-3);
-    margin: 0;
-    line-height: 20px;
-  }
-
-  .mobile-top-right {
-    display: flex;
-    align-items: center;
-  }
-
-  .mobile-avatar-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    padding: 4px 10px 4px 4px;
-    border-radius: 6px;
-    transition: background 0.15s;
-  }
-
-  .mobile-avatar-link:hover {
-    background: var(--d-surface-2);
-  }
-
-  .mobile-avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .mobile-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--d-accent);
-    color: #09090B;
-    font-size: 12px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .m-avatar-link { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+  .m-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--d-accent); color: #09090B;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
     overflow: hidden;
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
-    flex-shrink: 0;
   }
+  .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+  .m-cog { color: var(--d-text-3); font-size: 18px; }
 
-  .mobile-settings-icon {
-    font-size: 16px;
-    color: var(--d-text-4);
-  }
+  .dheader { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 16px; }
+  .dheader-actions { display: none; }
+  .dheader-title { font-family: 'Instrument Serif', Georgia, serif; font-size: 32px; line-height: 1; font-weight: 400; }
 
-  /* Hide desktop header parts on mobile */
-  .header {
-    padding: 0 20px;
-    margin-bottom: 16px;
-  }
-
-  .header-greeting {
-    display: none;
-  }
-
-  .header-title {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 32px;
-  }
-
-  .header-actions {
-    display: none;
-  }
-
-  /* Mobile action buttons: visible on mobile */
-  .mobile-actions {
-    display: flex;
-    gap: 10px;
-    padding: 0 20px;
-    margin-bottom: 24px;
-  }
-
-  .mobile-action-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 44px;
-    border-radius: 8px;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 14px;
-    font-weight: 500;
+  .m-actions { display: flex; gap: 8px; margin-bottom: 24px; }
+  .m-action {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 12px 14px; border-radius: 8px;
+    background: var(--d-surface-2); border: 1px solid var(--d-border-2);
+    color: var(--d-text); font-size: 13px; font-weight: 500;
     cursor: pointer;
-    border: 1px solid var(--d-border-2);
-    background: var(--d-surface-2);
-    color: var(--d-text-2);
-    transition: border-color 0.15s, color 0.15s;
   }
+  .m-action-primary { background: var(--d-accent); color: #09090B; border-color: transparent; font-weight: 600; }
 
-  .mobile-action-btn:hover {
-    border-color: var(--d-text-4);
-    color: var(--d-text);
-  }
+  .dmaps-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dcard-thumb { height: 110px; padding: 16px; }
+  .dcard-info { padding: 10px 12px; }
+  .dcard-title { font-size: 13px; }
+  .dcard-date { font-size: 11px; }
 
-  .mobile-action-btn.primary {
-    background: var(--d-accent);
-    border: none;
-    color: #09090B;
-    font-weight: 600;
-  }
+  .doverview { padding: 16px; }
+  .doverview-stats { gap: 20px; }
+  .dov-num { font-size: 28px; }
 
-  .mobile-action-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .mobile-action-icon {
-    font-size: 16px;
-  }
-
-  /* Section label */
-  .section-label {
-    padding: 0 20px;
-    margin-bottom: 16px;
-  }
-
-  /* Map cards: single column, full width */
-  .maps-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 0 20px;
-  }
-
-  .map-card {
-    border-radius: 8px;
-  }
-
-  .overview-stats {
-    flex-wrap: wrap;
-    gap: 20px;
-  }
-
-  .templates-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-content {
-    flex-direction: column;
-  }
-
-  .settings-tabs {
-    flex-direction: row;
-    width: 100%;
-    overflow-x: auto;
-  }
-}
-
-/* Light theme mobile overrides */
-@media (max-width: 768px) {
-  :root.light .mobile-avatar {
-    color: #FFFFFF;
-  }
-
-  :root.light .mobile-action-btn.primary {
-    color: #FFFFFF;
-  }
+  .dai-banner { flex-direction: column; align-items: flex-start; gap: 12px; padding: 14px 16px; }
+  .dai-banner-cta { align-self: stretch; justify-content: center; }
 }
 </style>

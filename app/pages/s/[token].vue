@@ -9,7 +9,8 @@ definePageMeta({
 
 const route = useRoute()
 const token = computed(() => route.params.token as string)
-const isMobile = ref(false)
+const platform = usePlatform()
+const isMobile = computed(() => platform.isMobile.value)
 
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -62,11 +63,6 @@ const outlineItems = computed(() => {
 })
 
 onMounted(async () => {
-  isMobile.value = window.innerWidth < 768
-  window.addEventListener('resize', () => {
-    isMobile.value = window.innerWidth < 768
-  })
-
   try {
     const res = await $fetch<{
       id: string

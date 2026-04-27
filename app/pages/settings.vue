@@ -742,8 +742,11 @@ function handleAccountClose() {
 
       <main class="settings-main">
         <div class="settings-header">
+          <span class="settings-eyebrow">04 — settings</span>
           <div class="settings-title-row">
-            <h1 class="settings-title">{{ $t('settings.page.title') }}</h1>
+            <h1 class="settings-title">
+              {{ $t('settings.page.title') }}<span class="settings-title-italic">.</span>
+            </h1>
             <Transition name="nc-fade">
               <span v-if="saveStatus === 'saved'" class="save-badge">
                 <span class="save-badge-icon i-lucide-check" />
@@ -769,7 +772,7 @@ function handleAccountClose() {
           <!-- ═══ GENERAL TAB ═══ -->
           <div v-if="activeTab === 'general'" key="general" class="tab-content">
             <div class="settings-section">
-              <span class="section-label">Appearance</span>
+              <span class="section-label">01 — appearance</span>
 
               <div class="setting-row">
                 <div class="setting-info">
@@ -821,7 +824,7 @@ function handleAccountClose() {
             </div>
 
             <div class="settings-section">
-              <span class="section-label">Canvas</span>
+              <span class="section-label">02 — canvas</span>
 
               <div class="setting-row">
                 <div class="setting-info">
@@ -867,7 +870,7 @@ function handleAccountClose() {
           <!-- ═══ AI PROVIDERS TAB ═══ -->
           <div v-else-if="activeTab === 'ai-providers'" key="ai-providers" class="tab-content">
             <div class="settings-section">
-              <span class="section-label">Default Provider</span>
+              <span class="section-label">01 — default provider</span>
 
               <div class="setting-row">
                 <div class="setting-info">
@@ -909,7 +912,7 @@ function handleAccountClose() {
             </div>
 
             <div class="settings-section">
-              <span class="section-label">API Keys</span>
+              <span class="section-label">02 — api keys</span>
 
               <div class="setting-row">
                 <div class="setting-info">
@@ -961,7 +964,7 @@ function handleAccountClose() {
             </div>
 
             <div class="settings-section">
-              <span class="section-label">Local Models</span>
+              <span class="section-label">03 — local models</span>
 
               <div class="setting-row">
                 <div class="setting-info">
@@ -1676,7 +1679,14 @@ button.m-row { text-align: left; }
 .settings-header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+}
+
+.settings-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--s-muted, #555560);
 }
 
 .settings-title-row {
@@ -1711,11 +1721,19 @@ button.m-row { text-align: left; }
 
 .settings-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 34px;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
   color: var(--s-text, #FAFAFA);
+  margin: 0;
+}
+
+.settings-title-italic {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--nc-accent, #00D2BE);
 }
 
 .settings-subtitle {
@@ -1770,13 +1788,13 @@ button.m-row { text-align: left; }
 }
 
 .section-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 16px;
-  color: var(--s-accent, #00D2BE);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.06em;
+  line-height: 14px;
+  color: var(--s-muted, #52525B);
   padding-bottom: 4px;
 }
 
@@ -1832,8 +1850,12 @@ button.m-row { text-align: left; }
   border: none;
   background: none;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.segment:active { transform: scale(0.96); }
 
 .segment.active { background: var(--s-seg-active, #09090B); }
 
@@ -1860,34 +1882,39 @@ button.m-row { text-align: left; }
 
 /* Toggle Switch */
 .toggle-switch {
+  position: relative;
   width: 44px;
   height: 24px;
-  display: flex;
-  align-items: center;
   padding: 2px;
   border-radius: 12px;
   border: none;
   background: var(--s-toggle-off, #1A1A1E);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s, justify-content 0.2s;
+  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toggle-switch.on {
   background: var(--s-accent, #00D2BE);
-  justify-content: flex-end;
 }
 
 .toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
   width: 20px;
   height: 20px;
   border-radius: 10px;
   background: var(--s-knob-off, #555560);
-  flex-shrink: 0;
-  transition: background 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
+              background 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.toggle-switch.on .toggle-knob { background: var(--s-knob-on, #FAFAFA); }
+.toggle-switch.on .toggle-knob {
+  background: var(--s-knob-on, #FAFAFA);
+  transform: translateX(20px);
+}
 
 /* Select (model dropdown) */
 .setting-select {

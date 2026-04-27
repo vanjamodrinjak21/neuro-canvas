@@ -57,7 +57,10 @@ export async function mintCollabToken(input: MintInput): Promise<MintResult> {
     if (share.revokedAt) throw new TokenError(410, 'Share link revoked')
     if (share.expiresAt && share.expiresAt.getTime() < Date.now()) throw new TokenError(410, 'Share link expired')
 
-    const wantedRole: CollabRole = share.role === 'EDITOR' ? 'editor' : 'viewer'
+    const wantedRole: CollabRole =
+      share.role === 'EDITOR' ? 'editor'
+      : share.role === 'COMMENTER' ? 'commenter'
+      : 'viewer'
     if (wantedRole === 'editor' && !authedUserId) {
       throw new TokenError(401, 'Editor links require sign-in')
     }
