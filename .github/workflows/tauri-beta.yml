@@ -53,18 +53,20 @@ jobs:
 
       - run: npx prisma generate
 
+      - name: Force dynamic CRT on Windows (ort + esaxx-rs link compat)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "RUSTFLAGS=-C target-feature=-crt-static" >> "$GITHUB_ENV"
+          echo "CFLAGS=/MD" >> "$GITHUB_ENV"
+          echo "CXXFLAGS=/MD" >> "$GITHUB_ENV"
+
       - name: Build Tauri + upload to beta release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_OPTIONS: '--max-old-space-size=6144'
           NUXT_PUBLIC_COLLAB_ENABLED: 'false'
-          # Force /MD CRT for the whole tree on Windows so ort (dynamic) and
-          # esaxx-rs/tokenizers (default static) link cleanly. Setting via env
-          # ensures both rustc AND the cc crate see -crt-static.
-          RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=-crt-static' || '' }}
-          CFLAGS: ${{ runner.os == 'Windows' && '/MD' || '' }}
-          CXXFLAGS: ${{ runner.os == 'Windows' && '/MD' || '' }}
         with:
           args: --target ${{ matrix.target }}
           tagName: beta
