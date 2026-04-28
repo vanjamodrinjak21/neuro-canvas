@@ -290,7 +290,7 @@ export function useDesktopAuth() {
       // session cookie lands in the same native cookie jar as the rest of
       // the desktop app's authenticated requests.
       const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
-      const exchangeRes = await tauriFetch(`${AUTH_BASE_URL}/api/auth/desktop-google`, {
+      const exchangeRes = await tauriFetch(`${AUTH_BASE_URL}/api/desktop-google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, codeVerifier, redirectUri }),

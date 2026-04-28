@@ -15,8 +15,8 @@
  */
 import { encode as encodeJwt } from 'next-auth/jwt'
 import { z } from 'zod'
-import { prisma } from '../../utils/prisma'
-import { checkRateLimit } from '../../utils/redis'
+import { prisma } from '../utils/prisma'
+import { checkRateLimit } from '../utils/redis'
 
 // Two shapes accepted:
 //   1. Desktop (Tauri) PKCE flow → { code, codeVerifier, redirectUri }
