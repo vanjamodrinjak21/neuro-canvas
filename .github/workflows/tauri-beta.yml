@@ -1,8 +1,9 @@
 name: Tauri Beta
 
 on:
-  push:
-    branches: [main]
+  # GitHub-hosted runners are paid on private repos. Self-hosted is the
+  # default path now (see tauri-selfhosted.yml). Keep this workflow as a
+  # manual fallback only — no automatic push trigger.
   workflow_dispatch:
 
 concurrency:

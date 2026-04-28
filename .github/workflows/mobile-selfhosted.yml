@@ -1,0 +1,87 @@
+name: Mobile Verify (self-hosted)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-selfhosted-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android (debug unsigned) advisory
+    runs-on: [self-hosted, macOS, ARM64]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure toolchain
+        run: |
+          if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -c2- | cut -d. -f1)" -lt 22 ]; then
+            brew install node@22 && brew link --overwrite --force node@22
+          fi
+          if ! /usr/libexec/java_home -v 21 >/dev/null 2>&1; then
+            brew install --cask temurin@21
+          fi
+          export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+          echo "JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+          if [ ! -d "$ANDROID_HOME/platform-tools" ]; then
+            brew install --cask android-commandlinetools || true
+            mkdir -p "$ANDROID_HOME"
+            yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+            "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
+          fi
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+      - name: Install dependencies and sync
+        env:
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+          NODE_OPTIONS: '--max-old-space-size=8192'
+        run: |
+          npm ci --legacy-peer-deps
+          npx prisma generate
+          npm run generate
+          npx cap sync android
+
+      - name: Assemble debug
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug
+
+  ios:
+    name: iOS (build no sign) advisory
+    runs-on: [self-hosted, macOS, ARM64]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure toolchain
+        run: |
+          if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -c2- | cut -d. -f1)" -lt 22 ]; then
+            brew install node@22 && brew link --overwrite --force node@22
+          fi
+          xcode-select -p
+
+      - name: Install dependencies and sync
+        env:
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+          NODE_OPTIONS: '--max-old-space-size=8192'
+        run: |
+          npm ci --legacy-peer-deps
+          npx prisma generate
+          npm run generate
+          npx cap sync ios
+
+      - name: Build for simulator
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build

@@ -1,0 +1,131 @@
+name: Tauri (self-hosted)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: tauri-selfhosted-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    name: Desktop (macOS Apple Silicon)
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node 22
+        run: |
+          if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -c2- | cut -d. -f1)" -lt 22 ]; then
+            brew install node@22
+            brew link --overwrite --force node@22
+          fi
+          node --version
+
+      - name: Install Rust toolchain
+        run: |
+          if ! command -v rustup >/dev/null 2>&1; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+            echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          fi
+          rustup target add aarch64-apple-darwin
+
+      - name: Install dependencies
+        run: |
+          npm ci --legacy-peer-deps
+          npx prisma generate
+
+      - name: Build Tauri
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+        run: npm run tauri:build:mac-arm
+
+      - name: Upload to beta release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          DMG=$(ls src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg | head -1)
+          TARBALL=$(ls src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz 2>/dev/null | head -1 || true)
+          gh release view beta --repo "$GH_REPO" >/dev/null 2>&1 \
+            || gh release create beta --repo "$GH_REPO" \
+                 --title "NeuroCanvas Beta" \
+                 --notes "Rolling beta release. Unsigned — see README for first-launch instructions." \
+                 --prerelease
+          if [ -n "$TARBALL" ]; then
+            gh release upload beta "$DMG" "$TARBALL" --repo "$GH_REPO" --clobber
+          else
+            gh release upload beta "$DMG" --repo "$GH_REPO" --clobber
+          fi
+
+  windows:
+    name: Desktop (Windows x86_64)
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node 22 (Chocolatey)
+        shell: pwsh
+        run: |
+          if (-not (Get-Command node -ErrorAction SilentlyContinue) -or
+              [int]((node -v).Substring(1).Split('.')[0]) -lt 22) {
+            choco install -y nodejs-lts --version=22.11.0
+          }
+          node --version
+
+      - name: Install Rust toolchain
+        shell: pwsh
+        run: |
+          if (-not (Get-Command rustup -ErrorAction SilentlyContinue)) {
+            Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
+            .\rustup-init.exe -y --default-toolchain stable
+            "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          }
+          rustup target add x86_64-pc-windows-msvc
+
+      - name: Set Windows CRT flags
+        shell: bash
+        run: |
+          echo "RUSTFLAGS=-C target-feature=-crt-static" >> "$GITHUB_ENV"
+          echo "CFLAGS=/MD" >> "$GITHUB_ENV"
+          echo "CXXFLAGS=/MD" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          npm ci --legacy-peer-deps
+          npx prisma generate
+
+      - name: Build Tauri
+        shell: pwsh
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+        run: npm run tauri:build:win-x86
+
+      - name: Upload to beta release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $msi = Get-ChildItem src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi -ErrorAction SilentlyContinue | Select-Object -First 1
+          $exe = Get-ChildItem src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not (gh release view beta --repo $env:GH_REPO 2>$null)) {
+            gh release create beta --repo $env:GH_REPO `
+              --title "NeuroCanvas Beta" `
+              --notes "Rolling beta release. Unsigned." `
+              --prerelease
+          }
+          $files = @()
+          if ($msi) { $files += $msi.FullName }
+          if ($exe) { $files += $exe.FullName }
+          if ($files.Count -gt 0) {
+            gh release upload beta @files --repo $env:GH_REPO --clobber
+          }

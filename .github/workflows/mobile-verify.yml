@@ -4,10 +4,9 @@ name: Mobile Verify
 # Capacitor sync or Gradle config never reaches a release tag.
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # GitHub-hosted runners are paid on private repos. Self-hosted is the
+  # default path now (see mobile-selfhosted.yml). Keep as manual fallback.
+  workflow_dispatch:
 
 concurrency:
   group: mobile-verify-${{ github.ref }}
