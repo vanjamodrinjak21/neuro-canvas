@@ -70,8 +70,8 @@ export default defineEventHandler(async (event) => {
 
   const desktopClientId = process.env.GOOGLE_DESKTOP_CLIENT_ID
   const desktopClientSecret = process.env.GOOGLE_DESKTOP_CLIENT_SECRET
-  const androidClientId = process.env.NUXT_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
-  const iosClientId = process.env.NUXT_PUBLIC_GOOGLE_IOS_CLIENT_ID
+  const androidClientId = process.env.GOOGLE_ANDROID_CLIENT_ID
+  const iosClientId = process.env.GOOGLE_IOS_CLIENT_ID
 
   // Audiences allowed to authenticate via this endpoint. We refuse anything
   // signed for a different OAuth client to avoid token replay across apps.
