@@ -69,14 +69,14 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.4.app
 
-      - name: Cache CocoaPods
+      - name: Cache SPM
         uses: actions/cache@v4
         with:
           path: |
-            ios/App/Pods
-            ~/Library/Caches/CocoaPods
-          key: ${{ runner.os }}-pods-${{ hashFiles('ios/App/Podfile.lock') }}
-          restore-keys: ${{ runner.os }}-pods-
+            ios/App/CapApp-SPM/.build
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-spm-${{ hashFiles('ios/App/CapApp-SPM/Package.swift', 'ios/App/CapApp-SPM/Package.resolved') }}
+          restore-keys: ${{ runner.os }}-spm-
 
       - run: npm ci --legacy-peer-deps
 
@@ -86,15 +86,13 @@ jobs:
           NUXT_PUBLIC_COLLAB_ENABLED: 'false'
           NODE_OPTIONS: '--max-old-space-size=6144'
 
-      - name: Sync Capacitor + install Pods
-        run: |
-          npx cap sync ios
-          (cd ios/App && pod install --repo-update)
+      - name: Sync Capacitor (SPM)
+        run: npx cap sync ios
 
       - name: Build for simulator (no signing)
         working-directory: ios/App
         run: |
-          xcodebuild -workspace App.xcworkspace -scheme App \
+          xcodebuild -project App.xcodeproj -scheme App \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \

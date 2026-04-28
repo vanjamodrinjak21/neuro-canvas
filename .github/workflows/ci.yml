@@ -86,3 +86,4 @@ jobs:
         run: npx nuxi build
         env:
           NITRO_PRESET: node-server
+          NODE_OPTIONS: '--max-old-space-size=6144'
