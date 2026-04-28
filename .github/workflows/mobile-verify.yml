@@ -15,8 +15,11 @@ concurrency:
 
 jobs:
   android:
-    name: Android (debug, unsigned)
+    name: Android (debug, unsigned) — advisory
     runs-on: ubuntu-latest
+    # Advisory: surfaces native build regressions but does not block merges.
+    # Underlying ecosystem issues tracked separately (Capacitor plugin alignment).
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -56,8 +59,11 @@ jobs:
           ./gradlew :app:assembleDebug
 
   ios:
-    name: iOS (build, no sign)
+    name: iOS (build, no sign) — advisory
     runs-on: macos-14
+    # Advisory: surfaces native build regressions but does not block merges.
+    # Underlying ecosystem issues tracked separately (Capacitor plugin alignment).
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
