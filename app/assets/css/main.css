@@ -9,6 +9,19 @@ html[data-font-size="small"] { font-size: 14px; zoom: 0.9375; }
 html[data-font-size="medium"] { font-size: 16px; zoom: 1; }
 html[data-font-size="large"] { font-size: 16px; zoom: 1.0625; }
 
+/* When `zoom` shrinks the document below the viewport, viewport units (100vh)
+   resolve against the *unzoomed* viewport — leaving an empty band at the
+   bottom of the window. Compensate so any 100vh-anchored layer still fills
+   the visible window. The 1.067 factor = 1 / 0.9375. */
+html[data-font-size="small"] body,
+html[data-font-size="small"] #neurocanvas-app,
+html[data-font-size="small"] #__nuxt {
+  min-height: calc(100vh / 0.9375);
+}
+html[data-font-size="small"] { background: #0A0A0C; }
+:root.light html[data-font-size="small"],
+html.light[data-font-size="small"] { background: #ffffff; }
+
 /* Reduced motion — kill animations / transitions everywhere when enabled */
 html.reduce-motion *,
 html.reduce-motion *::before,
