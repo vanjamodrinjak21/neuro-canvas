@@ -236,43 +236,79 @@ export function useDesktopAuth() {
         userAgent: desktopUserAgent,
       })
 
-      // Wait for the child window to navigate to our redirect URI; pull `code`.
+      // Listen for the redirect to our loopback URL. Two parallel signals:
+      //   (a) the child window's `tauri://destroyed` event = real cancellation
+      //   (b) URL polling = ignores transient errors (loading remote pages, etc.)
+      // This is more forgiving than the naive "any url() error = cancel" rule.
       const code: string = await new Promise<string>((resolve, reject) => {
         let settled = false
+        let unlistenDestroyed: (() => void) | null = null
         const cleanup = () => {
           settled = true
           clearInterval(poll)
           clearTimeout(timer)
-        }
-        const timer = setTimeout(() => {
-          if (!settled) {
-            cleanup()
-            reject(new Error('Sign-in timed out.'))
+          if (unlistenDestroyed) {
+            try { unlistenDestroyed() } catch {}
           }
+        }
+
+        const timer = setTimeout(() => {
+          if (!settled) { cleanup(); reject(new Error('Sign-in timed out.')) }
         }, 5 * 60 * 1000)
+
+        // Real cancel signal: window destroyed / closed by user.
+        ;(authWindow as unknown as { once: (e: string, h: () => void) => Promise<() => void> })
+          .once('tauri://destroyed', () => {
+            if (!settled) { cleanup(); reject(new Error('Sign-in window closed.')) }
+          })
+          .then((fn) => { if (!settled) unlistenDestroyed = fn })
+          .catch(() => {})
+
+        let lastSeenUrl = ''
         const poll = setInterval(async () => {
           if (settled || !authWindow) return
+          let current: URL | string | null = null
           try {
             const w = authWindow as unknown as { url: () => Promise<URL | string> }
-            const current = await w.url()
-            if (!current) return
-            const u = new URL(current.toString())
-            if (u.origin === 'http://localhost:53782' && u.pathname === '/auth/desktop-callback') {
-              const err = u.searchParams.get('error')
-              if (err) { cleanup(); reject(new Error(`Google: ${err}`)); return }
-              const returnedState = u.searchParams.get('state')
-              const returnedCode = u.searchParams.get('code')
-              if (returnedState !== state || !returnedCode) {
-                cleanup(); reject(new Error('OAuth state mismatch.')); return
-              }
-              cleanup()
-              resolve(returnedCode)
+            current = await w.url()
+          } catch (err) {
+            // url() can throw transiently while the webview navigates. Don't
+            // treat that as cancel — that's what tauri://destroyed is for.
+            if ((globalThis as { console?: { debug?: (...a: unknown[]) => void } })
+              .console?.debug) {
+              console.debug('[desktop-auth] url() poll error (continuing):', err)
             }
-          } catch {
-            // Window closed by user or url() failed → cancel.
-            if (!settled) { cleanup(); reject(new Error('Sign-in cancelled.')) }
+            return
           }
-        }, 250)
+          if (!current) return
+          const urlStr = current.toString()
+          if (urlStr === lastSeenUrl) return
+          lastSeenUrl = urlStr
+          console.debug('[desktop-auth] webview navigated →', urlStr)
+
+          let u: URL
+          try {
+            u = new URL(urlStr)
+          } catch { return }
+
+          // Match the redirect by host:port + path so a navigation away from
+          // Google (even one that hits a "site can't be reached" error page)
+          // still triggers code extraction.
+          if (
+            (u.origin === 'http://localhost:53782' || u.host === 'localhost:53782')
+            && u.pathname === '/auth/desktop-callback'
+          ) {
+            const err = u.searchParams.get('error')
+            if (err) { cleanup(); reject(new Error(`Google returned error: ${err}`)); return }
+            const returnedState = u.searchParams.get('state')
+            const returnedCode = u.searchParams.get('code')
+            if (returnedState !== state || !returnedCode) {
+              cleanup(); reject(new Error('OAuth state mismatch.')); return
+            }
+            cleanup()
+            resolve(returnedCode)
+          }
+        }, 200)
       })
 
       // Hand the code to our backend through the Tauri HTTP plugin so the
