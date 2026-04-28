@@ -203,10 +203,13 @@ export function useDesktopAuth() {
       crypto.getRandomValues(stateBytes)
       const state = base64Url(stateBytes)
 
-      // The OS routes neurocanvas:// URLs back to the running Tauri app via
-      // tauri-plugin-deep-link. Add this exact URI to Google's "Authorized
-      // redirect URIs" list for the desktop OAuth client.
-      const redirectUri = 'neurocanvas://auth/desktop-callback'
+      // Google's "Desktop" OAuth clients reject custom schemes added via
+      // console, but auto-allow a reverse-client-ID scheme of the form
+      //   com.googleusercontent.apps.<CLIENT_ID_PREFIX>:/oauthredirect
+      // No console changes needed. The matching scheme is registered with
+      // Tauri's deep-link plugin so the OS routes it back to the running app.
+      const reverseClientId = clientId.replace(/\.apps\.googleusercontent\.com$/, '')
+      const redirectUri = `com.googleusercontent.apps.${reverseClientId}:/oauthredirect`
 
       const params = new URLSearchParams({
         client_id: clientId,
@@ -254,13 +257,17 @@ export function useDesktopAuth() {
               try {
                 u = new URL(raw)
               } catch { continue }
-              // Accept either neurocanvas://auth/desktop-callback?... or
-              // neurocanvas:/auth/desktop-callback (single slash variant some
-              // OSes hand back).
-              const matches = u.protocol === 'neurocanvas:'
-                && (u.host === 'auth' || u.pathname.startsWith('/auth'))
-                && raw.includes('desktop-callback')
-              if (!matches) continue
+              // Match Google's reverse-client-ID redirect:
+              //   com.googleusercontent.apps.<CID>:/oauthredirect?code=...
+              // (Also accept a generic neurocanvas://auth/desktop-callback in
+              // case the user ever switches to a Web client + custom scheme.)
+              const isReverseClientCallback
+                = u.protocol.startsWith('com.googleusercontent.apps.')
+                  && raw.includes('oauthredirect')
+              const isLegacyCallback
+                = u.protocol === 'neurocanvas:'
+                  && raw.includes('desktop-callback')
+              if (!isReverseClientCallback && !isLegacyCallback) continue
 
               const err = u.searchParams.get('error')
               if (err) { cleanup(); reject(new Error(`Google returned error: ${err}`)); return }

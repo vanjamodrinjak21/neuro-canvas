@@ -78,7 +78,10 @@
     },
     "deep-link": {
       "desktop": {
-        "schemes": ["neurocanvas"]
+        "schemes": [
+          "neurocanvas",
+          "com.googleusercontent.apps.1025021574887-effk89v1d8s52cjgc4m7mi4nmipruk6c"
+        ]
       },
       "mobile": [
         { "host": "neuro-canvas.com", "pathPrefix": ["/auth"] }
