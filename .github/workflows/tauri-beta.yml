@@ -1,0 +1,68 @@
+name: Tauri Beta
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: tauri-beta-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Desktop (${{ matrix.label }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macOS (Apple Silicon)
+            os: macos-14
+            target: aarch64-apple-darwin
+          - label: Windows (x86_64)
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-${{ matrix.target }}-
+
+      - run: npm ci --legacy-peer-deps
+
+      - run: npx prisma generate
+
+      - name: Build Tauri + upload to beta release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: '--max-old-space-size=6144'
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+        with:
+          args: --target ${{ matrix.target }}
+          tagName: beta
+          releaseName: NeuroCanvas Beta
+          releaseBody: Rolling beta release. Unsigned — see README for first-launch instructions.
+          releaseDraft: false
+          prerelease: true
