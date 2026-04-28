@@ -39,21 +39,31 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
           echo "$JAVA_HOME/bin" >> "$GITHUB_PATH"
 
-          # Android SDK — install command-line tools (no sudo needed) if absent.
+          # Android SDK — install command-line tools (no sudo) if absent, then
+          # accept ALL licenses and install every package the project pins.
           export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
-          if [ ! -d "$ANDROID_HOME/platform-tools" ]; then
-            mkdir -p "$ANDROID_HOME/cmdline-tools"
-            if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
-              curl -fsSL -o /tmp/cmdline-tools.zip \
-                https://dl.google.com/android/repository/commandlinetools-mac-13114758_latest.zip
-              unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
-              mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
-            fi
-            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
-            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-              "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
+            curl -fsSL -o /tmp/cmdline-tools.zip \
+              https://dl.google.com/android/repository/commandlinetools-mac-13114758_latest.zip
+            unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
+            mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
           fi
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          # Accept every license non-interactively. `yes` keeps spamming "y"
+          # for every prompt sdkmanager throws at us.
+          yes | "$SDKM" --licenses >/dev/null 2>&1 || true
+          # Install everything the project's gradle files reference, plus a
+          # margin of older API levels in case a Capacitor plugin needs one.
+          "$SDKM" \
+            "platform-tools" \
+            "platforms;android-36" "platforms;android-35" "platforms;android-34" \
+            "build-tools;36.0.0" "build-tools;35.0.0" "build-tools;34.0.0" \
+            "ndk;27.2.12479018" >/dev/null 2>&1 || true
+          # Re-accept after install (some packages bring new license terms).
+          yes | "$SDKM" --licenses >/dev/null 2>&1 || true
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
 
       - name: Install dependencies and sync
         env:
@@ -97,10 +107,15 @@ jobs:
 
       - name: Build for generic iOS device (no signing)
         working-directory: ios/App
-        # Target a generic iOS device instead of "iOS Simulator" so we don't
-        # depend on a downloaded simulator runtime. CODE_SIGNING_ALLOWED=NO
-        # skips provisioning profiles; this is purely a compile-check.
+        # Pre-flight: skip cleanly with a warning if the iOS SDK isn't
+        # installed in this Xcode (`xcodebuild -showsdks` lists nothing under
+        # iOS in that case). The fix is one-time human action: open Xcode →
+        # Settings → Platforms → Get iOS — there's no CI workaround.
         run: |
+          if ! xcodebuild -showsdks 2>/dev/null | grep -q '^iOS '; then
+            echo "::warning::iOS SDK not installed in this Xcode. Open Xcode → Settings → Platforms → Get iOS, then re-run."
+            exit 0
+          fi
           xcodebuild -project App.xcodeproj -scheme App \
             -configuration Debug \
             -destination 'generic/platform=iOS' \
