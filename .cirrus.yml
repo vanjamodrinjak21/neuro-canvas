@@ -1,0 +1,140 @@
+# Cirrus CI — full pipeline mirror of GitHub Actions, but free on
+# private repos under the Community Cluster.
+#
+# Tasks:
+#   ci             Linux  — lint, typecheck (advisory), test, web build
+#   tauri_macos    macOS  — Tauri arm64 build, uploads .dmg + .app.tar.gz
+#   tauri_windows  Windows — Tauri x86_64 build, uploads .msi + .exe
+#
+# Usage:
+#   1. Sign in at https://cirrus-ci.com with your GitHub account
+#   2. Authorise the Cirrus CI app for your repo
+#   3. Set repo secrets in Cirrus → Settings:
+#        GITHUB_TOKEN  (a PAT with `contents:write` for the beta release uploads)
+#        DATABASE_URL  (only if test suite needs it; otherwise leave unset)
+#   4. Push a commit — Cirrus picks up this file automatically.
+#
+# Note: macOS and Windows tasks burn Cirrus credits. The Community plan
+# includes limited free compute; check your billing dashboard.
+
+env:
+  NODE_OPTIONS: '--max-old-space-size=6144'
+  NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+  CIRRUS_CLONE_DEPTH: 1
+
+# ──────────────────────────────────────────────────────────────────────────
+# Linux — lint / typecheck / test / web build
+# ──────────────────────────────────────────────────────────────────────────
+ci_task:
+  name: CI (lint · test · build)
+  only_if: $CIRRUS_BRANCH == 'main' || $CIRRUS_PR != ''
+  container:
+    image: node:22-bookworm
+    cpu: 4
+    memory: 8G
+  npm_cache:
+    folder: ~/.npm
+    fingerprint_script: cat package-lock.json
+  install_script:
+    - apt-get update && apt-get install -y python3 make g++ openssl
+    - npm ci --legacy-peer-deps --ignore-scripts
+    - npm rebuild better-sqlite3 bcrypt
+    - npx prisma generate
+    - npx nuxi prepare
+  lint_script: npm run lint
+  typecheck_script: npm run typecheck || echo "advisory — known pre-existing errors"
+  test_script: npm run test
+  build_script:
+    - npx nuxi build
+  build_env:
+    NITRO_PRESET: node-server
+
+# ──────────────────────────────────────────────────────────────────────────
+# Tauri Desktop — macOS arm64 (.dmg + .app.tar.gz → beta release)
+# ──────────────────────────────────────────────────────────────────────────
+tauri_macos_task:
+  name: Desktop (macOS arm64)
+  only_if: $CIRRUS_BRANCH == 'main'
+  depends_on:
+    - CI (lint · test · build)
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-runner:sonoma
+  env:
+    PATH: $HOME/.cargo/bin:$PATH
+  cargo_cache:
+    folder: $HOME/.cargo/registry
+    fingerprint_script: cat src-tauri/Cargo.lock
+  target_cache:
+    folder: src-tauri/target
+    fingerprint_script: cat src-tauri/Cargo.lock
+  setup_rust_script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target aarch64-apple-darwin
+  install_script:
+    - npm ci --legacy-peer-deps
+    - npx prisma generate
+  build_script:
+    - npm run tauri:build:mac-arm
+  upload_script:
+    - |
+      ARTIFACTS=$(ls src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz 2>/dev/null)
+      gh release upload beta $ARTIFACTS --clobber || \
+        gh release create beta $ARTIFACTS \
+          --title "NeuroCanvas Beta" \
+          --notes "Rolling beta. Unsigned — see README for first-launch instructions." \
+          --prerelease
+  upload_env:
+    GITHUB_TOKEN: ENCRYPTED[!set-this-in-cirrus-ui-as-a-pat-with-contents-write!]
+  bundle_artifacts:
+    path: 'src-tauri/target/aarch64-apple-darwin/release/bundle/**'
+
+# ──────────────────────────────────────────────────────────────────────────
+# Tauri Desktop — Windows x86_64 (.msi + .exe → beta release)
+# ──────────────────────────────────────────────────────────────────────────
+tauri_windows_task:
+  name: Desktop (Windows x86_64)
+  only_if: $CIRRUS_BRANCH == 'main'
+  depends_on:
+    - CI (lint · test · build)
+  windows_container:
+    image: cirrusci/windowsservercore:2022
+    os_version: 2022
+    cpu: 4
+    memory: 8G
+  env:
+    # Force /MD CRT so ort (dynamic) and esaxx-rs/tokenizers (default static)
+    # link cleanly. Mirrors the GitHub Actions workaround.
+    RUSTFLAGS: '-C target-feature=-crt-static'
+    CFLAGS: '/MD'
+    CXXFLAGS: '/MD'
+  cargo_cache:
+    folder: $USERPROFILE\.cargo\registry
+    fingerprint_script: type src-tauri\Cargo.lock
+  target_cache:
+    folder: src-tauri\target
+    fingerprint_script: type src-tauri\Cargo.lock
+  setup_node_script:
+    - choco install -y nodejs-lts --version=22.11.0
+  setup_rust_script:
+    - curl --proto "=https" --tlsv1.2 -sSf https://win.rustup.rs/x86_64 -o rustup-init.exe
+    - .\rustup-init.exe -y --default-toolchain stable --target x86_64-pc-windows-msvc
+  install_script:
+    - npm ci --legacy-peer-deps
+    - npx prisma generate
+  build_script:
+    - npm run tauri:build:win-x86
+  upload_script:
+    - |
+      gh release upload beta `
+        src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi `
+        src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe `
+        --clobber || `
+      gh release create beta `
+        src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi `
+        src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe `
+        --title "NeuroCanvas Beta" `
+        --notes "Rolling beta. Unsigned — Windows SmartScreen will warn on first launch." `
+        --prerelease
+  upload_env:
+    GITHUB_TOKEN: ENCRYPTED[!set-this-in-cirrus-ui-as-a-pat-with-contents-write!]
+  bundle_artifacts:
+    path: 'src-tauri\target\x86_64-pc-windows-msvc\release\bundle\**'
