@@ -92,7 +92,7 @@ jobs:
     name: Desktop (${{ matrix.label }}) — advisory
     needs: [lint, test]
     # Advisory: surfaces native build regressions without blocking merges.
-    # On push to main, built bundles are uploaded to the rolling `nightly`
+    # On push to main, built bundles are uploaded to the rolling `beta`
     # GitHub Release. Signing & notarization happen in release.yml on tag push.
     continue-on-error: true
     permissions:
@@ -141,7 +141,7 @@ jobs:
 
       - run: npx prisma generate
 
-      - name: Build Tauri + upload to "nightly" release
+      - name: Build Tauri + upload to "beta" release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -149,10 +149,10 @@ jobs:
           NUXT_PUBLIC_COLLAB_ENABLED: 'false'
         with:
           args: --target ${{ matrix.target }}
-          tagName: nightly
-          releaseName: 'NeuroCanvas Nightly'
+          tagName: beta
+          releaseName: 'NeuroCanvas Beta'
           releaseBody: |
-            Rolling pre-release. Built automatically from the latest `main` commit.
+            Rolling beta release. Built automatically from the latest `main` commit.
             Unsigned — desktop OSes will warn on first launch. For signed builds, use a tagged release.
           releaseDraft: false
           prerelease: true
