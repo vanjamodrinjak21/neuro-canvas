@@ -59,6 +59,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_OPTIONS: '--max-old-space-size=6144'
           NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+          # Force /MD CRT for the whole tree on Windows so ort (dynamic) and
+          # esaxx-rs/tokenizers (default static) link cleanly. Setting via env
+          # ensures both rustc AND the cc crate see -crt-static.
+          RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=-crt-static' || '' }}
+          CFLAGS: ${{ runner.os == 'Windows' && '/MD' || '' }}
+          CXXFLAGS: ${{ runner.os == 'Windows' && '/MD' || '' }}
         with:
           args: --target ${{ matrix.target }}
           tagName: beta
