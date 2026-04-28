@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -67,7 +67,7 @@ jobs:
           cache: npm
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+        run: sudo xcode-select -s /Applications/Xcode_16.1.app || sudo xcode-select -s /Applications/Xcode.app
 
       - name: Cache SPM
         uses: actions/cache@v4
