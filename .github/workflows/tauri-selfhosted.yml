@@ -65,11 +65,12 @@ jobs:
           fi
 
   windows:
-    name: Desktop (Windows x86_64)
-    # No self-hosted Windows runner available, so use GitHub-hosted.
-    # Public repo = unlimited free minutes; on private, this is the only
-    # job that costs anything (~10-15 min Windows time per push).
+    name: Desktop (Windows x86_64) — advisory
+    # GitHub-hosted Windows is blocked by account billing failures; once
+    # cleared, this just starts working. Marked advisory so it doesn't
+    # poison the overall workflow status while billing is unresolved.
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

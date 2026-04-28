@@ -4,10 +4,8 @@ name: Mobile Verify
 # Capacitor sync or Gradle config never reaches a release tag.
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # GitHub-hosted blocked by account billing — self-hosted is the active path
+  # (see mobile-selfhosted.yml). This file stays as a manual fallback only.
   workflow_dispatch:
 
 concurrency:
