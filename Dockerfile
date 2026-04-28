@@ -13,7 +13,9 @@ COPY prisma ./prisma/
 COPY prisma.config.ts ./
 
 # Install dependencies
-RUN npm ci --legacy-peer-deps
+# --omit=optional: skip onnxruntime-node — only used in desktop/mobile shells.
+# Server inference goes through pgvector + JS embeddings, not native ONNX.
+RUN npm ci --legacy-peer-deps --omit=optional
 
 # Generate Prisma client
 RUN npx prisma generate
@@ -39,7 +41,7 @@ COPY prisma ./prisma/
 COPY prisma.config.ts ./
 
 # Install production dependencies only
-RUN npm ci --legacy-peer-deps --omit=dev
+RUN npm ci --legacy-peer-deps --omit=dev --omit=optional
 
 # Generate Prisma client for production
 RUN npx prisma generate
