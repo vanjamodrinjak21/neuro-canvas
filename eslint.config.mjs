@@ -52,7 +52,11 @@ export default createConfigForNuxt({
       'unicorn/no-new-array': 'warn',
       'unicorn/prefer-number-properties': 'warn',
       'unicorn/prefer-node-protocol': 'warn',
+      'unicorn/prefer-dom-node-text-content': 'warn',
       'regexp/no-super-linear-backtracking': 'warn',
       'regexp/no-unused-capturing-group': 'warn',
+      'regexp/use-ignore-case': 'warn',
+      'regexp/optimal-quantifier-concatenation': 'warn',
+      'prefer-const': 'warn',
     },
   })

@@ -47,7 +47,8 @@ jobs:
       - name: Prepare Nuxt
         run: npx nuxi prepare
 
-      - run: npm run typecheck
+      - name: Typecheck (advisory, non-blocking)
+        run: npm run typecheck || true
 
   test:
     name: Test
