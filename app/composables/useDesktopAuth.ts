@@ -154,18 +154,22 @@ export function useDesktopAuth() {
   }
 
   /**
-   * Google sign-in for the Tauri desktop shell. Never leaves the app.
+   * Google sign-in for the Tauri desktop shell.
    *
-   * Pattern:
+   * Pattern (matches Slack / Linear / Notion):
    *   1. Generate PKCE verifier + SHA-256 challenge.
-   *   2. Open a child WebviewWindow at Google's OAuth URL with a normal Safari
-   *      User-Agent (Google blocks obvious embedded webviews).
-   *   3. Poll the child window's URL until it lands on the loopback redirect
-   *      with `?code=...`. Validate `state`, extract the code, close the window.
-   *   4. POST { code, codeVerifier, redirectUri } to /api/auth/desktop-google
-   *      via the Tauri HTTP plugin so the next-auth session cookie lands in
-   *      the native cookie jar (matches loginWithCredentials).
-   *   5. Fetch /api/auth/session to confirm + persist the user locally.
+   *   2. Open Google's OAuth URL in the *system browser* (reliable cookies,
+   *      no embedded-webview disallowed-useragent rejection).
+   *   3. Google redirects to `neurocanvas://auth/desktop-callback?code=...`.
+   *      The OS routes that URL back to the Tauri app via tauri-plugin-deep-link.
+   *   4. Listener captures the URL, validates state, posts {code, codeVerifier,
+   *      redirectUri} to /api/auth/desktop-google via the Tauri HTTP plugin so
+   *      the session cookie lands in the same native cookie jar as the
+   *      email/password flow.
+   *   5. Fetch /api/auth/session to confirm + persist locally.
+   *
+   * Add `neurocanvas://auth/desktop-callback` under "Authorized redirect URIs"
+   * in your Google OAuth client (Desktop or Web type) for this to work.
    */
   async function loginWithGoogle(): Promise<void> {
     if (typeof window === 'undefined' || !('__TAURI_INTERNALS__' in window)) {
@@ -180,8 +184,6 @@ export function useDesktopAuth() {
 
     _isLoggingIn.value = true
     _loginError.value = null
-
-    let authWindow: { close: () => Promise<void> } | null = null
 
     try {
       // PKCE — verifier (43-128 url-safe chars), challenge = base64url(sha256(verifier)).
@@ -201,11 +203,10 @@ export function useDesktopAuth() {
       crypto.getRandomValues(stateBytes)
       const state = base64Url(stateBytes)
 
-      // Fixed loopback port (Google's web client treats any localhost port
-      // as a valid redirect, but pinning one means we don't need to register
-      // dynamic ports). The window never actually loads the localhost page —
-      // we intercept the navigation before that happens.
-      const redirectUri = 'http://localhost:53782/auth/desktop-callback'
+      // The OS routes neurocanvas:// URLs back to the running Tauri app via
+      // tauri-plugin-deep-link. Add this exact URI to Google's "Authorized
+      // redirect URIs" list for the desktop OAuth client.
+      const redirectUri = 'neurocanvas://auth/desktop-callback'
 
       const params = new URLSearchParams({
         client_id: clientId,
@@ -220,35 +221,22 @@ export function useDesktopAuth() {
       })
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
 
-      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-      const desktopUserAgent
-        = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 '
-          + '(KHTML, like Gecko) Version/17.5 Safari/605.1.15'
+      // Open Google in the system browser. This is the standard, reliable
+      // pattern for desktop OAuth — Google never blocks system browsers.
+      const { open: openUrl } = await import('@tauri-apps/plugin-shell')
+      await openUrl(authUrl)
 
-      authWindow = new WebviewWindow(`nc-google-auth-${Date.now()}`, {
-        url: authUrl,
-        title: 'Sign in to NeuroCanvas',
-        width: 480,
-        height: 720,
-        resizable: false,
-        center: true,
-        focus: true,
-        userAgent: desktopUserAgent,
-      })
-
-      // Listen for the redirect to our loopback URL. Two parallel signals:
-      //   (a) the child window's `tauri://destroyed` event = real cancellation
-      //   (b) URL polling = ignores transient errors (loading remote pages, etc.)
-      // This is more forgiving than the naive "any url() error = cancel" rule.
+      // Listen for the OS handing the neurocanvas:// callback back to us via
+      // tauri-plugin-deep-link. The plugin emits `onOpenUrl` for any registered
+      // scheme; we resolve as soon as a matching URL arrives.
       const code: string = await new Promise<string>((resolve, reject) => {
         let settled = false
-        let unlistenDestroyed: (() => void) | null = null
+        let unlisten: (() => void) | null = null
         const cleanup = () => {
           settled = true
-          clearInterval(poll)
           clearTimeout(timer)
-          if (unlistenDestroyed) {
-            try { unlistenDestroyed() } catch {}
+          if (unlisten) {
+            try { unlisten() } catch {}
           }
         }
 
@@ -256,59 +244,39 @@ export function useDesktopAuth() {
           if (!settled) { cleanup(); reject(new Error('Sign-in timed out.')) }
         }, 5 * 60 * 1000)
 
-        // Real cancel signal: window destroyed / closed by user.
-        ;(authWindow as unknown as { once: (e: string, h: () => void) => Promise<() => void> })
-          .once('tauri://destroyed', () => {
-            if (!settled) { cleanup(); reject(new Error('Sign-in window closed.')) }
+        ;(async () => {
+          const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link')
+          unlisten = await onOpenUrl((urls: string[]) => {
+            if (settled) return
+            for (const raw of urls) {
+              console.debug('[desktop-auth] deep-link received →', raw)
+              let u: URL
+              try {
+                u = new URL(raw)
+              } catch { continue }
+              // Accept either neurocanvas://auth/desktop-callback?... or
+              // neurocanvas:/auth/desktop-callback (single slash variant some
+              // OSes hand back).
+              const matches = u.protocol === 'neurocanvas:'
+                && (u.host === 'auth' || u.pathname.startsWith('/auth'))
+                && raw.includes('desktop-callback')
+              if (!matches) continue
+
+              const err = u.searchParams.get('error')
+              if (err) { cleanup(); reject(new Error(`Google returned error: ${err}`)); return }
+              const returnedState = u.searchParams.get('state')
+              const returnedCode = u.searchParams.get('code')
+              if (returnedState !== state || !returnedCode) {
+                cleanup(); reject(new Error('OAuth state mismatch.')); return
+              }
+              cleanup()
+              resolve(returnedCode)
+              return
+            }
           })
-          .then((fn) => { if (!settled) unlistenDestroyed = fn })
-          .catch(() => {})
-
-        let lastSeenUrl = ''
-        const poll = setInterval(async () => {
-          if (settled || !authWindow) return
-          let current: URL | string | null = null
-          try {
-            const w = authWindow as unknown as { url: () => Promise<URL | string> }
-            current = await w.url()
-          } catch (err) {
-            // url() can throw transiently while the webview navigates. Don't
-            // treat that as cancel — that's what tauri://destroyed is for.
-            if ((globalThis as { console?: { debug?: (...a: unknown[]) => void } })
-              .console?.debug) {
-              console.debug('[desktop-auth] url() poll error (continuing):', err)
-            }
-            return
-          }
-          if (!current) return
-          const urlStr = current.toString()
-          if (urlStr === lastSeenUrl) return
-          lastSeenUrl = urlStr
-          console.debug('[desktop-auth] webview navigated →', urlStr)
-
-          let u: URL
-          try {
-            u = new URL(urlStr)
-          } catch { return }
-
-          // Match the redirect by host:port + path so a navigation away from
-          // Google (even one that hits a "site can't be reached" error page)
-          // still triggers code extraction.
-          if (
-            (u.origin === 'http://localhost:53782' || u.host === 'localhost:53782')
-            && u.pathname === '/auth/desktop-callback'
-          ) {
-            const err = u.searchParams.get('error')
-            if (err) { cleanup(); reject(new Error(`Google returned error: ${err}`)); return }
-            const returnedState = u.searchParams.get('state')
-            const returnedCode = u.searchParams.get('code')
-            if (returnedState !== state || !returnedCode) {
-              cleanup(); reject(new Error('OAuth state mismatch.')); return
-            }
-            cleanup()
-            resolve(returnedCode)
-          }
-        }, 200)
+        })().catch((e) => {
+          if (!settled) { cleanup(); reject(new Error(`Deep-link listener failed: ${e?.message || e}`)) }
+        })
       })
 
       // Hand the code to our backend through the Tauri HTTP plugin so the
@@ -348,7 +316,6 @@ export function useDesktopAuth() {
       _loginError.value = msg
       throw e
     } finally {
-      try { await authWindow?.close() } catch {}
       _isLoggingIn.value = false
     }
   }

@@ -75,6 +75,14 @@
     "updater": {
       "endpoints": [],
       "pubkey": ""
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["neurocanvas"]
+      },
+      "mobile": [
+        { "host": "neuro-canvas.com", "pathPrefix": ["/auth"] }
+      ]
     }
   }
 }
