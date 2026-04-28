@@ -22,17 +22,36 @@ jobs:
           if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -c2- | cut -d. -f1)" -lt 22 ]; then
             brew install node@22 && brew link --overwrite --force node@22
           fi
-          if ! /usr/libexec/java_home -v 21 >/dev/null 2>&1; then
-            brew install --cask temurin@21
+
+          # Find Java 21. Prefer /usr/libexec/java_home (registered JDKs),
+          # then fall back to brew formula install paths so we don't have to
+          # sudo-install Temurin .pkg on a non-interactive runner.
+          if /usr/libexec/java_home -v 21 >/dev/null 2>&1; then
+            JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+          elif [ -d /opt/homebrew/opt/openjdk@21 ]; then
+            JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+          elif [ -d /usr/local/opt/openjdk@21 ]; then
+            JAVA_HOME="/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+          else
+            brew install openjdk@21
+            JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
           fi
-          export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
           echo "JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME/bin" >> "$GITHUB_PATH"
+
+          # Android SDK — install command-line tools (no sudo needed) if absent.
           export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
           if [ ! -d "$ANDROID_HOME/platform-tools" ]; then
-            brew install --cask android-commandlinetools || true
-            mkdir -p "$ANDROID_HOME"
-            yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-            "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
+              curl -fsSL -o /tmp/cmdline-tools.zip \
+                https://dl.google.com/android/repository/commandlinetools-mac-13114758_latest.zip
+              unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
+              mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+            fi
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+              "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
           fi
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
 
@@ -76,12 +95,17 @@ jobs:
           npm run generate
           npx cap sync ios
 
-      - name: Build for simulator
+      - name: Build for generic iOS device (no signing)
         working-directory: ios/App
+        # Target a generic iOS device instead of "iOS Simulator" so we don't
+        # depend on a downloaded simulator runtime. CODE_SIGNING_ALLOWED=NO
+        # skips provisioning profiles; this is purely a compile-check.
         run: |
           xcodebuild -project App.xcodeproj -scheme App \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY= \
             build
