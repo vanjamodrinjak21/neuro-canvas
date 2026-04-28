@@ -13,7 +13,7 @@
 
 A real-time, multi-platform mind-mapping studio that turns scattered ideas into structured knowledge — with an AI co-pilot that thinks alongside you.
 
-[**Web**](#) · [**Desktop**](#) · [**iOS**](#) · [**Android**](#) · [**Docs**](#)
+[**Web**](https://neuro-canvas.com) · [**Desktop**](https://github.com/vanjamodrinjak21/neuro-canvas/releases) · [**iOS**](https://github.com/vanjamodrinjak21/neuro-canvas/releases) · [**Android**](https://github.com/vanjamodrinjak21/neuro-canvas/releases) · [**Docs**](https://neuro-canvas.com/docs)
 
 [![Status](https://img.shields.io/badge/status-active%20development-success)](https://github.com/vanjamodrinjak21/neuro-canvas)
 [![Made with Nuxt](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt.js&logoColor=white)](https://nuxt.com)

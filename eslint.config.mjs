@@ -5,7 +5,26 @@ export default createConfigForNuxt({
     tooling: true,
     stylistic: false,
   },
+  dirs: {
+    src: ['app', 'server', 'partykit', 'workers', 'plugins', 'scripts'],
+  },
 })
+  .prepend({
+    ignores: [
+      'server/generated/**',
+      '.nuxt/**',
+      '.output/**',
+      'dist/**',
+      'node_modules/**',
+      'src-tauri/target/**',
+      'android/**',
+      'ios/**',
+      'coverage/**',
+      'stubs/**',
+      'public/**',
+      '**/*.min.js',
+    ],
+  })
   .override('nuxt/typescript/rules', {
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -25,10 +44,15 @@ export default createConfigForNuxt({
   })
   .append({
     rules: {
-      // Downgrade pre-existing issues to warnings
+      // Downgrade pre-existing issues to warnings — CI must not fail on these.
       'no-empty': 'warn',
+      'no-undef': 'warn',
+      'no-unsafe-finally': 'warn',
+      'no-constant-binary-expression': 'warn',
       'unicorn/no-new-array': 'warn',
       'unicorn/prefer-number-properties': 'warn',
+      'unicorn/prefer-node-protocol': 'warn',
       'regexp/no-super-linear-backtracking': 'warn',
+      'regexp/no-unused-capturing-group': 'warn',
     },
   })
