@@ -13,12 +13,14 @@ COPY prisma ./prisma/
 COPY prisma.config.ts ./
 
 # Install dependencies
-# --omit=optional: skip onnxruntime-node — only used in desktop/mobile shells.
-# Server inference goes through pgvector + JS embeddings, not native ONNX.
-RUN npm ci --legacy-peer-deps --omit=optional
+# --ignore-scripts: skips ALL postinstall hooks including onnxruntime-node's
+# NuGet download (server uses pgvector + JS embeddings, not native ONNX).
+# We can't use --omit=optional — it triggers an npm bug that drops required
+# optional native bindings like @oxc-parser/binding-linux-x64-musl.
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
-# Generate Prisma client
-RUN npx prisma generate
+# Run the postinstall steps we DO need, manually.
+RUN npx prisma generate && npx nuxi prepare
 
 # Copy source code
 COPY . .
@@ -41,9 +43,9 @@ COPY prisma ./prisma/
 COPY prisma.config.ts ./
 
 # Install production dependencies only
-RUN npm ci --legacy-peer-deps --omit=dev --omit=optional
+RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts
 
-# Generate Prisma client for production
+# Generate Prisma client for production (postinstall scripts were skipped above)
 RUN npx prisma generate
 
 # Copy built application from builder
