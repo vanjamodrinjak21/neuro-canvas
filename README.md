@@ -133,6 +133,31 @@ npm run dev                     # → http://localhost:3000
 
 ---
 
+## Download the app (beta)
+
+Pre-built desktop bundles are published to [**Releases**](https://github.com/vanjamodrinjak21/neuro-canvas/releases) on every push to `main`:
+
+- **macOS** (Apple Silicon) — `NeuroCanvas_*_aarch64.dmg`
+- **Windows** (x86_64) — `NeuroCanvas_*_x64-setup.exe` / `.msi`
+
+> Beta builds are **unsigned** — production code-signing & Apple notarization are reserved for tagged releases. The first launch will trigger an OS warning. Open as follows:
+
+**macOS — first-launch fix.** Apple's Gatekeeper blocks unsigned apps and may also report the bundle as "damaged." Strip the quarantine attribute once and it'll open every time after:
+
+```bash
+# After dragging NeuroCanvas.app to /Applications
+xattr -cr /Applications/NeuroCanvas.app
+open /Applications/NeuroCanvas.app
+```
+
+Alternatively: right-click `NeuroCanvas.app` → **Open** → confirm in the dialog. macOS remembers the choice.
+
+**Windows — SmartScreen.** The installer runs as-is. On first launch, Microsoft Defender SmartScreen may show *"Windows protected your PC"*: click **More info** → **Run anyway**. Subsequent launches open silently.
+
+**Linux & iOS / Android.** Native packaging for these platforms ships with the public 1.0 launch — see the [Roadmap](#roadmap).
+
+---
+
 ## Scripts you'll use
 
 ```bash
