@@ -92,18 +92,51 @@ jobs:
           npm run generate
           npx cap sync ios
 
-      - name: Build for generic iOS device (no signing)
+      - name: Build + bundle unsigned .ipa
         working-directory: ios/App
+        # Produces a real .ipa (zip of /Payload/App.app) without code signing.
+        # CAVEAT: an unsigned .ipa cannot install on a stock iPhone — needs a
+        # sideloader (AltStore, Sideloadly) or jailbroken device. For a signed
+        # TestFlight build, an Apple Developer Program account ($99/yr) is
+        # required and we'd add provisioning + export options here.
         run: |
           if ! xcodebuild -showsdks 2>/dev/null | grep -q '^iOS '; then
             echo "::warning::iOS SDK not installed in this Xcode. Open Xcode → Settings → Platforms → Get iOS, then re-run."
             exit 0
           fi
+          set -euo pipefail
+          rm -rf build
           xcodebuild -project App.xcodeproj -scheme App \
-            -configuration Debug \
+            -configuration Release \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY= \
             build
+          APP_PATH="$(find build/Build/Products -type d -name 'App.app' | head -1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "::error::App.app not found after build."
+            exit 1
+          fi
+          mkdir -p build/Payload
+          cp -R "$APP_PATH" build/Payload/
+          (cd build && zip -qr "NeuroCanvas-unsigned-iOS.ipa" Payload)
+          ls -lh "build/NeuroCanvas-unsigned-iOS.ipa"
+
+      - name: Upload .ipa to beta release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          IPA="ios/App/build/NeuroCanvas-unsigned-iOS.ipa"
+          if [ ! -f "$IPA" ]; then
+            echo "::warning::No .ipa produced (likely missing iOS SDK)."
+            exit 0
+          fi
+          gh release view beta --repo "$GH_REPO" >/dev/null 2>&1 \
+            || gh release create beta --repo "$GH_REPO" \
+                 --title "NeuroCanvas Beta" \
+                 --notes "Rolling beta. Unsigned — see README for first-launch instructions." \
+                 --prerelease
+          gh release upload beta "$IPA" --repo "$GH_REPO" --clobber
