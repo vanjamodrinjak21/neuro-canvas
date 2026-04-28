@@ -12,12 +12,17 @@ COPY .npmrc ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
 
-# Install dependencies
-# --ignore-scripts: skips ALL postinstall hooks including onnxruntime-node's
-# NuGet download (server uses pgvector + JS embeddings, not native ONNX).
-# We can't use --omit=optional — it triggers an npm bug that drops required
+# Install dependencies with all postinstall scripts skipped.
+# Why: onnxruntime-node's postinstall pulls Microsoft NuGet binaries, which
+# routinely time out from Railway's europe-west4 region. We don't need the
+# native ONNX runtime on the server (pgvector + JS embeddings cover it).
+# Why not --omit=optional: triggers npm bug #4828 that drops required
 # optional native bindings like @oxc-parser/binding-linux-x64-musl.
 RUN npm ci --legacy-peer-deps --ignore-scripts
+
+# Manually rebuild the native deps we DO need (Nuxt Content uses better-sqlite3
+# during `nuxt build` for the docs cache; bcrypt is used at runtime by auth).
+RUN npm rebuild better-sqlite3 bcrypt
 
 # Run the postinstall steps we DO need, manually.
 RUN npx prisma generate && npx nuxi prepare
@@ -44,6 +49,10 @@ COPY prisma.config.ts ./
 
 # Install production dependencies only
 RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts
+
+# Rebuild the native runtime deps we need (better-sqlite3 not needed in prod —
+# Nuxt Content's runtime uses the prebuilt artifacts in /app/.output).
+RUN npm rebuild bcrypt
 
 # Generate Prisma client for production (postinstall scripts were skipped above)
 RUN npx prisma generate
