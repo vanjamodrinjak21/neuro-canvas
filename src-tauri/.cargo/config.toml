@@ -1,0 +1,18 @@
+# Force the dynamic C runtime (/MD) on MSVC so Rust + C++ deps link cleanly.
+#
+# Background: ONNX Runtime's vendored C++ libs (pulled in by `ort` →
+# `ort-sys`) are built with `/MD` (multithread DLL CRT). Other native deps
+# in our tree — notably `esaxx-rs` (sentencepiece tokenizer used by the
+# `tokenizers` crate) — default to `/MT` (static CRT) when invoked through
+# the `cc` crate. The two link models are incompatible and produce LNK2038
+# `mismatch detected for 'RuntimeLibrary'` errors at the final link step.
+#
+# Disabling crt-static at the rustc level forces /MD across the board: rustc
+# itself, all Rust crates, AND the `cc` crate (which reads this target
+# feature to pick its `/MD` vs `/MT` flag). This is the official Tauri /
+# Rust workaround documented for projects mixing ONNX with cc-built deps.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=-crt-static"]
