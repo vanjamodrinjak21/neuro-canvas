@@ -65,6 +65,17 @@ async function openInBrowser() {
   }
 }
 
+async function handleGoogle() {
+  localError.value = null
+  try {
+    await desktopAuth.loginWithGoogle()
+    emit('authenticated')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Google sign-in failed.'
+    localError.value = msg
+  }
+}
+
 // Focus email input when modal opens
 watch(() => props.visible, (visible) => {
   if (visible) {
@@ -185,10 +196,25 @@ watch(() => props.visible, (visible) => {
             <span>or</span>
           </div>
 
-          <!-- OAuth fallback — opens in system browser -->
+          <!-- Google sign-in inside the desktop app (no browser hop) -->
+          <button
+            class="auth-google-btn"
+            :disabled="desktopAuth.isLoggingIn.value"
+            @click="handleGoogle"
+          >
+            <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.5-5.9 7.5-11.3 7.5-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 5.6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z" />
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.4 16.1 18.8 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.6 29.3 5 24 5 16.3 5 9.6 9.4 6.3 14.7z" />
+              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.4-4.5 2.4-7.2 2.4-5.4 0-10-3.6-11.6-8.6l-6.5 5C9.4 39.5 16.1 44 24 44z" />
+              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.1 5.4l6.2 5.2c-.4.4 6.6-4.8 6.6-14.6 0-1.2-.1-2.4-.4-3.5z" />
+            </svg>
+            <span>{{ desktopAuth.isLoggingIn.value ? 'Opening Google…' : 'Continue with Google' }}</span>
+          </button>
+
+          <!-- Final fallback if Google ever blocks the embedded webview -->
           <button class="auth-browser-btn" @click="openInBrowser">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-            Sign in with Google or GitHub in browser
+            Use system browser instead
           </button>
 
           <button class="auth-close-btn" @click="handleClose">
@@ -449,6 +475,44 @@ watch(() => props.visible, (visible) => {
   background: rgba(255, 255, 255, 0.04);
   color: rgba(250, 250, 250, 0.8);
   border-color: #333;
+}
+
+.auth-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  border: 1px solid #2a2a2f;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(250, 250, 250, 0.92);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, transform 80ms ease;
+}
+
+.auth-google-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: #3a3a40;
+}
+
+.auth-google-btn:active:not(:disabled) { transform: translateY(1px); }
+.auth-google-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+:root.light .auth-google-btn {
+  background: #fff;
+  border-color: #d8d8dc;
+  color: #1a1a1f;
+}
+
+:root.light .auth-google-btn:hover:not(:disabled) {
+  background: #f7f7f9;
+  border-color: #c4c4c8;
 }
 
 .auth-close-btn {

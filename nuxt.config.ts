@@ -76,6 +76,10 @@ export default defineNuxtConfig({
     authSecret: process.env.AUTH_SECRET,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    // Desktop (Tauri) — separate Web-application OAuth client; secret is
+    // never bundled in the binary, only used by the server endpoint.
+    googleDesktopClientId: process.env.GOOGLE_DESKTOP_CLIENT_ID || '',
+    googleDesktopClientSecret: process.env.GOOGLE_DESKTOP_CLIENT_SECRET || '',
     githubClientId: process.env.GITHUB_CLIENT_ID,
     githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     resendApiKey: process.env.RESEND_API_KEY,
@@ -98,7 +102,16 @@ export default defineNuxtConfig({
       partykitHost: process.env.NUXT_PUBLIC_PARTYKIT_HOST || '',
       // Public read-only for the /download page; if unset the client falls
       // back to /api/releases/latest, which derives the repo server-side.
-      releasesRepo: process.env.NUXT_PUBLIC_RELEASES_REPO || ''
+      releasesRepo: process.env.NUXT_PUBLIC_RELEASES_REPO || '',
+      // Desktop (Tauri) Google client — public so the in-app WebviewWindow
+      // can build the auth URL. The matching client *secret* stays server-side.
+      googleDesktopClientId: process.env.GOOGLE_DESKTOP_CLIENT_ID || '',
+      // Native (Android / iOS) Google client IDs — public, used by the
+      // platform's Google Sign-In SDK on device. The audience check in
+      // /api/auth/desktop-google guarantees only these specific clients
+      // can mint a NeuroCanvas session.
+      googleAndroidClientId: process.env.NUXT_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
+      googleIosClientId: process.env.NUXT_PUBLIC_GOOGLE_IOS_CLIENT_ID || ''
     }
   },
 
