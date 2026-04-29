@@ -67,7 +67,7 @@ onMounted(() => {
           <a href="#how-it-works" @click.prevent="scrollToId('how-it-works')">Product</a>
           <a href="#templates" @click.prevent="scrollToId('templates')">Templates</a>
           <NuxtLink to="/docs">Docs</NuxtLink>
-          <a href="#" @click.prevent="">Changelog</a>
+          <NuxtLink to="/download">Download</NuxtLink>
         </div>
       </div>
       <div class="nav-right">
@@ -472,7 +472,7 @@ onMounted(() => {
         <div class="footer-col">
           <span class="footer-col-head">Product</span>
           <NuxtLink to="/templates">Templates</NuxtLink>
-          <a href="#" @click.prevent="">Changelog</a>
+          <NuxtLink to="/download">Download</NuxtLink>
           <a href="#" @click.prevent="">Roadmap</a>
         </div>
         <div class="footer-col">
