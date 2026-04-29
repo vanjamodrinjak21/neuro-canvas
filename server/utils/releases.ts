@@ -73,14 +73,19 @@ function classify(name: string): { platform: Platform; arch: Arch | null; format
 
 /**
  * Build the canonical CDN URL for an asset given the release tag.
- * Pattern: {cdnBaseUrl}/v{version}/<filename> (the bucket is keyed by the
- * tag without the leading `v` is also tolerated — we always emit `v{tag}`
- * so the tag like `v1.4.2` doesn't double-prefix).
+ *
+ * During the unsigned-beta phase the bucket uses a single rolling channel
+ * (`{cdnBaseUrl}/beta/<filename>`) — every push to the beta tag overwrites
+ * the prior artifacts. Set RELEASES_CHANNEL=stable (and write per-version
+ * folders in the workflow) once we're shipping signed builds.
  */
 function buildCdnUrl(cdnBaseUrl: string, tag: string, filename: string): string {
   const base = cdnBaseUrl.replace(/\/+$/, '')
-  const versionPath = tag.startsWith('v') ? tag : `v${tag}`
-  return `${base}/${versionPath}/${encodeURIComponent(filename)}`
+  const channel = (process.env.RELEASES_CHANNEL || 'beta').toLowerCase()
+  const dir = channel === 'stable'
+    ? (tag.startsWith('v') ? tag : `v${tag}`)
+    : channel
+  return `${base}/${dir}/${encodeURIComponent(filename)}`
 }
 
 function normalise(

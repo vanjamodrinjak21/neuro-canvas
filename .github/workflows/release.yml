@@ -169,9 +169,9 @@ jobs:
 
             ---
 
-            **CDN downloads:** also mirrored at `https://cdn.neuro-canvas.com/v${{ needs.resolve-version.outputs.version }}/`. The [/download](https://neuro-canvas.com/download) page detects your platform and links straight to it.
+            **CDN downloads:** also mirrored at `https://cdn.neuro-canvas.com/beta/`. The [/download](https://neuro-canvas.com/download) page detects your platform and links straight to it.
           releaseDraft: true
-          prerelease: ${{ needs.resolve-version.outputs.prerelease == 'true' }}
+          prerelease: true
           args: --target ${{ matrix.target }}
 
       # Mirror this build's outputs to R2 so /download serves CDN URLs.
@@ -206,7 +206,7 @@ jobs:
           r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           r2-bucket:            ${{ secrets.R2_BUCKET }}
           source-dir:           ./r2-upload
-          destination-dir:      v${{ needs.resolve-version.outputs.version }}
+          destination-dir:      beta
 
       - name: Upload SHA-256 sidecars to GitHub Release
         env:
@@ -238,12 +238,13 @@ jobs:
           {
             "version": "${VERSION}",
             "tag": "${TAG}",
+            "channel": "beta",
             "published_at": "${PUBLISHED_AT}",
             "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
             "platforms": {
-              "macos-arm64": "https://cdn.neuro-canvas.com/v${VERSION}/NeuroCanvas_${VERSION}_aarch64.dmg",
-              "macos-x64":   "https://cdn.neuro-canvas.com/v${VERSION}/NeuroCanvas_${VERSION}_x64.dmg",
-              "windows-x64": "https://cdn.neuro-canvas.com/v${VERSION}/NeuroCanvas_${VERSION}_x64-setup.exe"
+              "macos-arm64": "https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_aarch64.dmg",
+              "macos-x64":   "https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64.dmg",
+              "windows-x64": "https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64-setup.exe"
             }
           }
           JSON
@@ -490,14 +491,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ needs.resolve-version.outputs.tag }}
-      PRERELEASE: ${{ needs.resolve-version.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Mark release published
+      - name: Mark release published (beta channel)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release edit "$TAG" \
             --draft=false \
-            --prerelease="$PRERELEASE"
+            --prerelease
