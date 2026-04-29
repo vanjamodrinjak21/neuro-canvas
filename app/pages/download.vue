@@ -159,7 +159,7 @@ const noteRows = computed<NoteRow[]>(() => {
   return out
 })
 
-const versionLabel = computed(() => release.value?.tag ?? release.value?.name ?? 'v1.4.2')
+const versionLabel = computed(() => release.value?.tag ?? release.value?.name ?? 'v1.0.0')
 </script>
 
 <template>
@@ -343,49 +343,59 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   --text-faint: #A1A1AA;
 }
 
-/* ═══════════════════════ NAV ═══════════════════════ */
+/* ═══════════════════════ NAV (matches landing .nav exactly) ═══════════════════════ */
 .dl-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 64px;
+  padding: 24px 56px;
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  background: rgba(9, 9, 11, 0.85);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   z-index: 100;
 }
-.dl-nav-left { display: flex; align-items: center; gap: 42px; }
+:root.light .dl-nav { background: rgba(250, 250, 249, 0.85); }
+
+.dl-nav-left { display: flex; align-items: center; gap: 40px; }
 .dl-brand {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
   text-decoration: none; color: var(--text);
 }
-.dl-brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-.dl-nav-links { display: flex; align-items: center; gap: 28px; }
+.dl-brand-name {
+  font-size: 15px; font-weight: 600; line-height: 18px;
+  letter-spacing: -0.01em; color: var(--text);
+}
+.dl-nav-links { display: flex; gap: 28px; }
 .dl-nav-links a {
-  font-size: 14px; color: var(--text-3); text-decoration: none;
+  font-size: 14px; font-weight: 500; line-height: 18px;
+  color: var(--text-2); text-decoration: none;
   transition: color 120ms ease;
 }
 .dl-nav-links a:hover { color: var(--text); }
 .dl-nav-active {
-  font-size: 14px; color: var(--text); font-weight: 500;
+  font-size: 14px; font-weight: 500; line-height: 18px;
+  color: var(--text);
 }
-.dl-nav-right { display: flex; align-items: center; gap: 14px; }
+.dl-nav-right { display: flex; align-items: center; gap: 12px; }
 .dl-nav-signin {
-  font-size: 14px; color: var(--text-3); text-decoration: none;
+  padding: 8px 12px;
+  font-size: 14px; font-weight: 500; line-height: 18px;
+  color: var(--text-2); text-decoration: none;
   transition: color 120ms ease;
 }
 .dl-nav-signin:hover { color: var(--text); }
 .dl-nav-dash {
   display: inline-flex; align-items: center;
-  padding: 9px 18px;
+  padding: 8px 16px;
   border: 1px solid var(--border-active);
-  border-radius: 8px;
-  font-size: 14px; font-weight: 500; color: var(--text);
+  border-radius: 10px;
+  font-size: 14px; font-weight: 500; line-height: 18px;
+  color: var(--text);
   text-decoration: none;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: border-color 120ms ease, background 120ms ease;
 }
 .dl-nav-dash:hover { background: var(--surface); border-color: var(--text-2); }
 
@@ -393,7 +403,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 .dl-hero {
   display: flex; flex-direction: column; align-items: flex-start;
   gap: 20px;
-  padding: 120px 64px 64px;
+  padding: 120px 56px 64px;
 }
 .dl-headline {
   display: flex; flex-direction: column;
@@ -466,7 +476,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 
 /* ═══════════════════════ SECTIONS ═══════════════════════ */
 .dl-section {
-  padding: 24px 64px 32px;
+  padding: 24px 56px 32px;
   display: flex; flex-direction: column;
   gap: 20px;
 }
@@ -586,12 +596,13 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   color: var(--text-3);
 }
 
-/* ═══════════════════════ FOOTER ═══════════════════════ */
+/* ═══════════════════════ FOOTER (matches landing .footer padding) ═══════════════════════ */
 .dl-footer {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 64px;
-  padding: 64px 64px 64px;
+  padding: 48px 56px;
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
 }
