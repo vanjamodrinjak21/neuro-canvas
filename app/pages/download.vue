@@ -210,7 +210,11 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
           <path d="M13.333 4.667L6 12l-3.333-3.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span v-if="recommended">
-          No invitation. No card. {{ chipLabel(recommended) }} · {{ fmtSize(recommended.size) }} · Signed &amp; notarized.
+          No invitation. No card. {{ chipLabel(recommended) }} · {{ fmtSize(recommended.size) }} · Unsigned —
+          <NuxtLink
+            :to="recommended.platform === 'macos' ? '/install?os=mac' : recommended.platform === 'windows' ? '/install?os=windows' : '/install'"
+            class="dl-receipt-link"
+          >first-launch guide</NuxtLink>.
         </span>
         <span v-else>No invitation. No card. Direct from our CDN.</span>
       </p>
@@ -473,6 +477,8 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   font-size: 13px; color: var(--text-3);
 }
 .dl-receipt svg { color: var(--text-3); flex-shrink: 0; }
+.dl-receipt-link { color: var(--accent); text-decoration: none; }
+.dl-receipt-link:hover { text-decoration: underline; }
 
 /* ═══════════════════════ SECTIONS ═══════════════════════ */
 .dl-section {

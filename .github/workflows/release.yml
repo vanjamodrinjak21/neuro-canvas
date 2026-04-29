@@ -2,10 +2,15 @@ name: Release
 
 # Push a tag of the form v1.2.3 (or v1.2.3-rc.1) to publish a release.
 # CI verifies tests/lint, then a fan-out matrix builds:
-#   - Tauri desktop binaries (macOS arm/x86, Windows x86_64, Linux x86_64)
-#   - Android APK + AAB (signed if keystore secrets present, unsigned otherwise)
-#   - iOS .ipa (signed if Apple secrets present, archive only otherwise)
-# Every artifact is uploaded to a single GitHub Release.
+#   - macOS Apple Silicon (.dmg, unsigned)
+#   - macOS Intel         (.dmg, unsigned)
+#   - Windows x86_64      (.msi + .exe NSIS, unsigned)
+# Every artifact is uploaded to a single GitHub Release AND mirrored to
+# Cloudflare R2 (cdn.neuro-canvas.com) so /download serves direct CDN URLs.
+# A latest.json manifest is written to the bucket root for in-app updaters.
+#
+# Linux / Android / iOS are intentionally not built for the initial v1.0.0
+# release. Add them back when packaging stabilises.
 
 on:
   push:
@@ -83,15 +88,6 @@ jobs:
           - label: Windows (x86_64)
             os: windows-latest
             target: x86_64-pc-windows-msvc
-          - label: Windows (x86, 32-bit)
-            os: windows-latest
-            target: i686-pc-windows-msvc
-          - label: Windows (ARM64)
-            os: windows-latest
-            target: aarch64-pc-windows-msvc
-          - label: Linux (x86_64)
-            os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.os }}
     env:
       CARGO_TERM_COLOR: always
@@ -127,48 +123,147 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-target-${{ hashFiles('src-tauri/Cargo.lock') }}-
 
-      - name: Install Linux deps
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            patchelf
-
       - run: npm ci --legacy-peer-deps
 
       - run: npx prisma generate
 
-      - name: Build with Tauri
+      # UNSIGNED build — we deliberately omit APPLE_* and TAURI_SIGNING_*
+      # env. macOS shows Gatekeeper, Windows shows SmartScreen on first run;
+      # the release body explains the one-time bypass.
+      - name: Build with Tauri (unsigned)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.resolve-version.outputs.tag }}
           releaseName: 'NeuroCanvas ${{ needs.resolve-version.outputs.version }}'
           releaseBody: |
-            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+            ## NeuroCanvas v${{ needs.resolve-version.outputs.version }}
 
-            **Verify your download:** every artifact ships a matching `.sig` file produced by the Tauri updater key.
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for the full change list.
+
+            ---
+
+            ## Install
+
+            > **These builds are unsigned.** macOS and Windows will warn on first launch — see the bypass steps below, or use the in-app installer guide at [neuro-canvas.com/install](https://neuro-canvas.com/install).
+
+            ### macOS
+
+            1. Download the `.dmg` for your chip (Apple Silicon = M1 / M2 / M3 / M4; Intel = pre-2020 Macs).
+            2. Open the `.dmg` and drag **NeuroCanvas** into **Applications**.
+            3. **First launch:** open Terminal.app and paste the one-liner below. This removes the quarantine flag macOS attaches to anything downloaded from the web. (Right-click → Open does **not** bypass Gatekeeper on macOS Sequoia or newer.)
+
+               ```
+               xattr -d com.apple.quarantine /Applications/NeuroCanvas.app
+               ```
+
+            4. **No Terminal?** Double-click NeuroCanvas (it'll get blocked, that's fine), then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the NeuroCanvas message.
+
+            ### Windows
+
+            1. Download `NeuroCanvas_${{ needs.resolve-version.outputs.version }}_x64-setup.exe` (or the `.msi`).
+            2. Run it. SmartScreen says *"Windows protected your PC"*.
+            3. Click **More info** → **Run anyway**.
+            4. Follow the standard installer.
+
+            ---
+
+            **CDN downloads:** also mirrored at `https://cdn.neuro-canvas.com/v${{ needs.resolve-version.outputs.version }}/`. The [/download](https://neuro-canvas.com/download) page detects your platform and links straight to it.
           releaseDraft: true
           prerelease: ${{ needs.resolve-version.outputs.prerelease == 'true' }}
           args: --target ${{ matrix.target }}
 
-  # 4. Android — assemble release APK + AAB. Signs if keystore secrets are
-  # present; otherwise produces an unsigned build for manual signing.
-  build-android:
+      # Mirror this build's outputs to R2 so /download serves CDN URLs.
+      - name: Stage artifacts for R2
+        shell: bash
+        env:
+          MATRIX_TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p ./r2-upload
+          find "src-tauri/target/${MATRIX_TARGET}/release/bundle" -type f \
+            \( -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.app.tar.gz.sig' \
+               -o -name '*.msi' -o -name '*.exe' -o -name '*.nsis.zip' \
+               -o -name '*.sig' \) \
+            -exec cp {} ./r2-upload/ \; || true
+          # SHA-256 sidecars for verification.
+          ( cd ./r2-upload && for f in *; do
+              if [ -f "$f" ] && [[ "$f" != *.sha256 ]]; then
+                if command -v shasum >/dev/null 2>&1; then
+                  shasum -a 256 "$f" > "$f.sha256"
+                else
+                  sha256sum "$f" > "$f.sha256"
+                fi
+              fi
+            done )
+          ls -la ./r2-upload
+
+      - name: Upload to R2
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id:        ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket:            ${{ secrets.R2_BUCKET }}
+          source-dir:           ./r2-upload
+          destination-dir:      v${{ needs.resolve-version.outputs.version }}
+
+      - name: Upload SHA-256 sidecars to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+        shell: bash
+        run: |
+          for f in ./r2-upload/*.sha256; do
+            [ -f "$f" ] && gh release upload "$TAG" "$f" --clobber || true
+          done
+
+  # 4. Write latest.json to the R2 bucket root once every build is done.
+  # /api/releases/manifest passes this through; in-app updaters poll it.
+  write-manifest:
+    name: Write latest.json to R2
+    needs: [resolve-version, build-tauri]
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ needs.resolve-version.outputs.tag }}
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Compose latest.json
+        shell: bash
+        run: |
+          mkdir -p ./manifest
+          PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          cat > ./manifest/latest.json <<JSON
+          {
+            "version": "${VERSION}",
+            "tag": "${TAG}",
+            "published_at": "${PUBLISHED_AT}",
+            "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
+            "platforms": {
+              "macos-arm64": "https://cdn.neuro-canvas.com/v${VERSION}/NeuroCanvas_${VERSION}_aarch64.dmg",
+              "macos-x64":   "https://cdn.neuro-canvas.com/v${VERSION}/NeuroCanvas_${VERSION}_x64.dmg",
+              "windows-x64": "https://cdn.neuro-canvas.com/v${VERSION}/NeuroCanvas_${VERSION}_x64-setup.exe"
+            }
+          }
+          JSON
+          cat ./manifest/latest.json
+
+      - name: Upload latest.json to R2 bucket root
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id:        ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket:            ${{ secrets.R2_BUCKET }}
+          source-dir:           ./manifest
+          destination-dir:      ''
+          keep-file-fresh:      true
+
+  # 4b. Android — DISABLED for v1.0.0. Re-enable when packaging is ready.
+  _build-android-disabled:
+    if: false
+    name: Android (APK + AAB)
     name: Android (APK + AAB)
     needs: resolve-version
     runs-on: ubuntu-latest
@@ -260,9 +355,10 @@ jobs:
         run: |
           gh release upload "$TAG" artifacts/* --clobber
 
-  # 5. iOS — archive + (optionally) export a signed .ipa. Always uploads the
-  # archive zip; uploads the .ipa only when signing secrets are configured.
-  build-ios:
+  # 5. iOS — DISABLED for v1.0.0. Re-enable with a Developer Program account.
+  _build-ios-disabled:
+    if: false
+    name: iOS (.ipa)
     name: iOS (.ipa)
     needs: resolve-version
     runs-on: macos-14
@@ -386,11 +482,11 @@ jobs:
         run: |
           gh release upload "$TAG" artifacts/* --clobber
 
-  # 6. Once every artifact is in the draft release, flip it to published
-  # so the /download page can pick it up.
+  # 6. Once every artifact is in the draft release AND mirrored to R2, flip
+  # the GitHub release draft -> published so /download picks it up.
   publish:
     name: Publish release
-    needs: [resolve-version, build-tauri, build-android, build-ios]
+    needs: [resolve-version, build-tauri, write-manifest]
     runs-on: ubuntu-latest
     env:
       TAG: ${{ needs.resolve-version.outputs.tag }}
