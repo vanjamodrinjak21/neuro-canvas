@@ -110,8 +110,20 @@ function normalise(
 }
 
 function inferRepoFromConfig(serverConfigured: string | undefined): string | null {
-  if (serverConfigured && serverConfigured.includes('/')) return serverConfigured
+  if (!serverConfigured) return null
+  // Accept either a clean "owner/name" pair or a full GitHub URL like
+  // "https://github.com/owner/name" or ".../releases/tag/beta".
+  const urlMatch = serverConfigured.match(/github\.com\/([^/?#]+)\/([^/?#]+)/i)
+  if (urlMatch && urlMatch[1] && urlMatch[2]) {
+    return `${urlMatch[1]}/${urlMatch[2].replace(/\.git$/, '')}`
+  }
+  if (serverConfigured.includes('/')) return serverConfigured.replace(/^\/+|\/+$/g, '')
   return null
+}
+
+function channelTag(): string | null {
+  const c = (process.env.RELEASES_CHANNEL || 'beta').toLowerCase()
+  return c === 'stable' ? null : c
 }
 
 export async function fetchLatestRelease(
@@ -133,18 +145,22 @@ export async function fetchLatestRelease(
   }
   if (githubToken) headers.Authorization = `Bearer ${githubToken}`
 
-  // /releases/latest excludes prereleases — use /releases?per_page=1 so a
-  // pre-release (e.g. -rc.1) can still surface as the most recent build.
-  const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(repo).replace('%2F', '/')}/releases?per_page=1`, {
-    headers,
-    redirect: 'error',
-  })
+  // When RELEASES_CHANNEL is a rolling-tag channel (default: "beta"), fetch
+  // that tag deterministically. Otherwise fall back to "most recent release"
+  // semantics so semver tags surface as latest.
+  const tag = channelTag()
+  const repoPath = repo.replace(/\.\.|^\/+|\/+$/g, '')
+  const url = tag
+    ? `https://api.github.com/repos/${repoPath}/releases/tags/${encodeURIComponent(tag)}`
+    : `https://api.github.com/repos/${repoPath}/releases?per_page=1`
+
+  const res = await fetch(url, { headers, redirect: 'error' })
   if (!res.ok) {
     if (res.status === 404) return null
     throw new Error(`GitHub releases fetch failed: ${res.status}`)
   }
 
-  const arr = (await res.json()) as Array<{
+  type RawRelease = {
     tag_name: string
     name: string | null
     published_at: string | null
@@ -153,9 +169,11 @@ export async function fetchLatestRelease(
     prerelease: boolean
     draft: boolean
     assets: Array<{ name: string; browser_download_url: string; size: number; content_type: string }>
-  }>
-
-  const live = arr.find(r => !r.draft) ?? null
+  }
+  const payload = await res.json()
+  const live: RawRelease | null = tag
+    ? (payload as RawRelease).draft ? null : (payload as RawRelease)
+    : ((payload as RawRelease[]).find(r => !r.draft) ?? null)
   if (!live) return null
 
   const ctx = { tag: live.tag_name, cdnBaseUrl: cdnBaseUrl ?? null }

@@ -15,13 +15,15 @@ name: Release
 on:
   push:
     tags:
+      - 'beta'
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+-*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to (re-)build, e.g. v1.2.3'
-        required: true
+        description: 'Tag to (re-)build (use "beta" for the rolling channel)'
+        required: false
+        default: 'beta'
         type: string
 
 concurrency:
@@ -60,13 +62,22 @@ jobs:
       INPUT_TAG: ${{ inputs.tag }}
       REF_NAME: ${{ github.ref_name }}
     steps:
+      - uses: actions/checkout@v4
       - id: r
         shell: bash
         run: |
           TAG="${INPUT_TAG:-$REF_NAME}"
-          VERSION="${TAG#v}"
-          PRERELEASE=false
-          if [[ "$VERSION" == *-* ]]; then PRERELEASE=true; fi
+          # Rolling-channel tag (e.g. "beta") → keep the literal tag, but pull
+          # the human-readable version from package.json so artifact filenames
+          # stay stable (NeuroCanvas_1.0.0_*.dmg, never NeuroCanvas_beta_*.dmg).
+          if [[ "$TAG" =~ ^v[0-9] ]]; then
+            VERSION="${TAG#v}"
+            PRERELEASE=false
+            [[ "$VERSION" == *-* ]] && PRERELEASE=true
+          else
+            VERSION="$(node -p "require('./package.json').version")"
+            PRERELEASE=true
+          fi
           echo "tag=$TAG"               >> "$GITHUB_OUTPUT"
           echo "version=$VERSION"       >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
@@ -126,6 +137,21 @@ jobs:
       - run: npm ci --legacy-peer-deps
 
       - run: npx prisma generate
+
+      # When the rolling channel tag (`beta`) is pushed, wipe the prior
+      # release+assets so tauri-action can recreate it cleanly. Idempotent —
+      # a missing release is fine. Skipped for semver tags.
+      - name: Reset rolling beta release (rolling channel only)
+        if: matrix.label == 'macOS (Apple Silicon)' && needs.resolve-version.outputs.tag == 'beta'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+        shell: bash
+        run: |
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          # Recreate the tag pointing at this commit so the release is anchored.
+          git tag -f "$TAG"
+          git push origin "$TAG" --force
 
       # UNSIGNED build — we deliberately omit APPLE_* and TAURI_SIGNING_*
       # env. macOS shows Gatekeeper, Windows shows SmartScreen on first run;
