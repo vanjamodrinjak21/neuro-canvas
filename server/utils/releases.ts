@@ -184,7 +184,11 @@ export async function fetchLatestRelease(
     notesMarkdown: live.body ?? '',
     htmlUrl: live.html_url,
     prerelease: live.prerelease,
-    assets: live.assets.map(a => normalise(a, ctx)),
+    // iOS sideload .ipa is hidden until provisioning is sorted out — the file
+    // is still on R2/GitHub if anyone needs it, just not surfaced on /download.
+    assets: live.assets
+      .map(a => normalise(a, ctx))
+      .filter(a => a.platform !== 'ios'),
   }
 
   await cache.set(cacheKey, summary, CACHE_TTL_SECONDS)
