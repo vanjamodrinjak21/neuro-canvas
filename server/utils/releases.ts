@@ -71,11 +71,31 @@ function classify(name: string): { platform: Platform; arch: Arch | null; format
   return { platform, arch, format }
 }
 
-function normalise(asset: { name: string; browser_download_url: string; size: number; content_type: string }): NormalisedAsset {
+/**
+ * Build the canonical CDN URL for an asset given the release tag.
+ * Pattern: {cdnBaseUrl}/v{version}/<filename> (the bucket is keyed by the
+ * tag without the leading `v` is also tolerated — we always emit `v{tag}`
+ * so the tag like `v1.4.2` doesn't double-prefix).
+ */
+function buildCdnUrl(cdnBaseUrl: string, tag: string, filename: string): string {
+  const base = cdnBaseUrl.replace(/\/+$/, '')
+  const versionPath = tag.startsWith('v') ? tag : `v${tag}`
+  return `${base}/${versionPath}/${encodeURIComponent(filename)}`
+}
+
+function normalise(
+  asset: { name: string; browser_download_url: string; size: number; content_type: string },
+  ctx: { tag: string; cdnBaseUrl: string | null },
+): NormalisedAsset {
   const { platform, arch, format } = classify(asset.name)
+  // When a CDN base URL is configured, point downloads at R2 instead of
+  // GitHub. The R2 bucket mirrors the release contents under /v{tag}/<file>.
+  const url = ctx.cdnBaseUrl
+    ? buildCdnUrl(ctx.cdnBaseUrl, ctx.tag, asset.name)
+    : asset.browser_download_url
   return {
     name: asset.name,
-    url: asset.browser_download_url,
+    url,
     size: asset.size,
     contentType: asset.content_type,
     platform,
@@ -92,8 +112,12 @@ function inferRepoFromConfig(serverConfigured: string | undefined): string | nul
 export async function fetchLatestRelease(
   repo: string,
   githubToken: string | undefined,
+  cdnBaseUrl?: string | null,
 ): Promise<ReleaseSummary | null> {
-  const cacheKey = `releases:latest:${repo}`
+  // Cache key includes CDN base so a config flip (e.g. enable/disable CDN)
+  // doesn't serve a stale URL set.
+  const cacheTag = cdnBaseUrl ? `cdn:${cdnBaseUrl}` : 'gh'
+  const cacheKey = `releases:latest:${repo}:${cacheTag}`
   const cached = await cache.get<ReleaseSummary>(cacheKey)
   if (cached) return cached
 
@@ -129,6 +153,7 @@ export async function fetchLatestRelease(
   const live = arr.find(r => !r.draft) ?? null
   if (!live) return null
 
+  const ctx = { tag: live.tag_name, cdnBaseUrl: cdnBaseUrl ?? null }
   const summary: ReleaseSummary = {
     tag: live.tag_name,
     name: live.name || live.tag_name,
@@ -136,7 +161,7 @@ export async function fetchLatestRelease(
     notesMarkdown: live.body ?? '',
     htmlUrl: live.html_url,
     prerelease: live.prerelease,
-    assets: live.assets.map(normalise),
+    assets: live.assets.map(a => normalise(a, ctx)),
   }
 
   await cache.set(cacheKey, summary, CACHE_TTL_SECONDS)

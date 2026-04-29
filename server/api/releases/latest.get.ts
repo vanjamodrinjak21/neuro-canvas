@@ -27,7 +27,11 @@ export default defineEventHandler(async (event) => {
 
   const cfg = useRuntimeConfig()
   try {
-    const release = await fetchLatestRelease(repo, cfg.githubToken as string)
+    const release = await fetchLatestRelease(
+      repo,
+      cfg.githubToken as string,
+      (cfg.cdnBaseUrl as string) || null,
+    )
     if (!release) {
       throw createError({ statusCode: 404, statusMessage: 'No releases yet' })
     }

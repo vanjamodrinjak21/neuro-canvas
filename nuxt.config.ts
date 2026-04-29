@@ -99,6 +99,10 @@ export default defineNuxtConfig({
     // to 5000-req/hr; safe to leave empty in dev.
     githubReleasesRepo: process.env.GITHUB_RELEASES_REPO || '',
     githubToken: process.env.GITHUB_TOKEN || '',
+    // CDN base URL for release downloads. Server rewrites GitHub asset URLs
+    // to point here so apps download direct from R2, not GitHub. Pattern:
+    //   {cdnBaseUrl}/v{tag}/<filename>
+    cdnBaseUrl: process.env.CDN_BASE_URL || 'https://cdn.neuro-canvas.com',
     // Public (exposed to client)
     public: {
       authOrigin: process.env.AUTH_ORIGIN || 'http://localhost:3000',
@@ -107,6 +111,9 @@ export default defineNuxtConfig({
       // Public read-only for the /download page; if unset the client falls
       // back to /api/releases/latest, which derives the repo server-side.
       releasesRepo: process.env.NUXT_PUBLIC_RELEASES_REPO || '',
+      // Public CDN base — exposed for in-app updaters that need direct CDN
+      // links without going through the API.
+      cdnBaseUrl: process.env.NUXT_PUBLIC_CDN_BASE_URL || 'https://cdn.neuro-canvas.com',
       // Desktop (Tauri) Google client — public so the in-app WebviewWindow
       // can build the auth URL. The matching client *secret* stays server-side.
       googleDesktopClientId: process.env.GOOGLE_DESKTOP_CLIENT_ID || ''
