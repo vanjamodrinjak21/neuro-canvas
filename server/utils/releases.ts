@@ -192,6 +192,13 @@ export async function fetchLatestRelease(
 }
 
 export function resolveRepo(): string | null {
+  // Read process.env first so a Railway "Add variable + Redeploy" (no rebuild)
+  // takes effect immediately. Fall back to the build-time runtime config.
+  const fromEnv = process.env.GITHUB_RELEASES_REPO
+  if (fromEnv && fromEnv.trim()) {
+    const inferred = inferRepoFromConfig(fromEnv)
+    if (inferred) return inferred
+  }
   const cfg = useRuntimeConfig()
   return inferRepoFromConfig(cfg.githubReleasesRepo as string | undefined)
 }
