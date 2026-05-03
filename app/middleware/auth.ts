@@ -13,22 +13,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (isTauri || isCapacitor) return
   }
 
-  // Guest mode: allow access to their one map only
   const guest = useGuestMode()
-  if (guest.isGuest.value) {
-    if (to.path.startsWith('/map/')) {
-      const mapId = to.params.id as string
-      if (mapId === 'new' || mapId === guest.guestMapId.value) {
-        return
-      }
-      return navigateTo(`/map/${guest.guestMapId.value || 'new'}`)
-    }
-    if (!to.path.startsWith('/auth/') && to.path !== '/') {
-      return navigateTo(`/map/${guest.guestMapId.value || 'new'}`)
-    }
-    return
-  }
-
   const { data, getSession } = useAuth()
 
   if (import.meta.client) {
@@ -41,8 +26,37 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const session = data.value
 
+  // Authenticated session always wins over guest mode.
+  // If the user worked as a guest then signed in, claim the in-progress map
+  // for their account before clearing guest state.
   if (session?.user) {
+    if (guest.isGuest.value) {
+      const claimedId = import.meta.client ? await guest.claimGuestMap() : null
+      guest.exitGuestMode()
+      // If they were being routed to /dashboard (the default post-sign-in landing),
+      // send them straight back to their newly-saved map so they can keep working.
+      if (claimedId && to.path === '/dashboard') {
+        return navigateTo(`/map/${claimedId}`)
+      }
+    }
     return
+  }
+
+  // Guest mode: allow access to their one map; landing and auth pages are escape hatches
+  if (guest.isGuest.value) {
+    if (to.path.startsWith('/map/')) {
+      const mapId = to.params.id as string
+      if (mapId === 'new' || mapId === guest.guestMapId.value) {
+        return
+      }
+      // Trying to access a different map — bounce to landing rather than locking back
+      return navigateTo('/')
+    }
+    if (to.path.startsWith('/auth/') || to.path === '/') {
+      return
+    }
+    // Any other protected page — let them out to the landing page
+    return navigateTo('/')
   }
 
   if (!to.path.startsWith('/auth/')) {

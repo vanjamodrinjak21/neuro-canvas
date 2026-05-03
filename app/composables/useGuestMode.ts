@@ -74,6 +74,27 @@ export function useGuestMode() {
     state.upgradeFeature = null
   }
 
+  /**
+   * Push the in-progress guest map (saved in IndexedDB under the random guest id)
+   * up to the server under the now-authenticated user. Returns the map id on success.
+   * Safe to call even if there is no guest map — it will no-op.
+   */
+  async function claimGuestMap(): Promise<string | null> {
+    if (!import.meta.client) return null
+    const id = state.guestMapId
+    if (!id) return null
+    try {
+      const { useSyncEngine } = await import('~/composables/useSyncEngine')
+      const sync = useSyncEngine()
+      if (!sync.isSyncEnabled.value) return null
+      await sync.pushMap(id)
+      return id
+    } catch (e) {
+      console.error('[guest] claimGuestMap failed:', e)
+      return null
+    }
+  }
+
   const upgradeInfo = computed(() => {
     if (!state.upgradeFeature) return null
     return FEATURE_LABELS[state.upgradeFeature]
@@ -92,5 +113,6 @@ export function useGuestMode() {
     completeOnboarding,
     requireFeature,
     dismissUpgradeModal,
+    claimGuestMap,
   }
 }
