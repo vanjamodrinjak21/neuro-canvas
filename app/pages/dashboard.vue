@@ -8,6 +8,7 @@ import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 
 const { t, locale: currentLocale } = useI18n()
+const { isMobile } = usePlatform()
 
 definePageMeta({
   layout: false,
@@ -779,19 +780,46 @@ async function createFromTemplate(template: typeof templates.value[0]) {
       <MobileTabBar />
 
       <!-- ══════ MAIN ══════ -->
-      <main class="dmain">
-        <!-- Mobile top bar -->
-        <div class="m-top">
-          <p class="m-eyebrow">01 — workspace</p>
-          <NuxtLink to="/settings" class="m-avatar-link">
-            <div class="m-avatar">
-              <img v-if="user?.image" :src="user.image" :alt="userName" class="m-avatar-img">
-              <template v-else>{{ userInitials }}</template>
-            </div>
-            <span class="i-lucide-settings m-cog" />
-          </NuxtLink>
-        </div>
+      <main class="dmain" :class="{ 'dmain--mobile': isMobile }">
+        <!-- Mobile dashboard (Paper G13-0 / GJJ-0 — Try-Free editorial dark) -->
+        <ClientOnly>
+          <MobileDashboardDark
+            v-if="isMobile"
+            :user="user"
+            :user-initials="userInitials"
+            :recent-maps="sortedMaps"
+            :total-maps="sortedMaps.length"
+            :total-nodes="stats.totalNodes"
+            :is-creating-map="isCreatingMap"
+            @new-map="createNewMap"
+            @open-map="openMap"
+            @open-ai="showAIModal = true"
+            @see-all="router.push('/maps')"
+          />
+        </ClientOnly>
 
+        <!-- Desktop top bar (legacy; hidden on mobile) -->
+        <div v-if="!isMobile" class="m-top">
+          <h2 class="m-brand">NeuroCanvas</h2>
+          <div class="m-top-trailing">
+            <button class="m-top-search" aria-label="Search">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </button>
+            <NuxtLink to="/settings" class="m-avatar-link" aria-label="Settings">
+              <div class="m-avatar">
+                <img v-if="user?.image" :src="user.image" :alt="userName" class="m-avatar-img">
+                <template v-else>{{ userInitials }}</template>
+              </div>
+            </NuxtLink>
+          </div>
+        </div>
+        <h1 v-if="!isMobile" class="m-page-title">{{ $t('common.nav.home') }}</h1>
+
+        <!-- ══════ Desktop / tablet content (hidden on mobile — replaced by MobileDashboardDark) ══════ -->
+        <template v-if="!isMobile">
         <!-- Header -->
         <header class="dheader">
           <div class="dheader-left">
@@ -828,10 +856,16 @@ async function createFromTemplate(template: typeof templates.value[0]) {
         <!-- Mobile actions -->
         <div class="m-actions">
           <button class="m-action m-action-primary" :disabled="isCreatingMap" @click="createNewMap">
-            <span class="i-lucide-plus" />{{ $t('dashboard.buttons.new_map') }}
+            <svg class="m-action-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            {{ $t('dashboard.buttons.new_map') }}
           </button>
           <button class="m-action" @click="showAIModal = true">
-            <span class="i-lucide-sparkles" />{{ $t('dashboard.buttons.ai_generate') }}
+            <svg class="m-action-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 3v4M3 5h4M19 17v4M17 19h4M14 4l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" />
+            </svg>
+            {{ $t('dashboard.buttons.ai_generate') }}
           </button>
         </div>
 
@@ -1006,6 +1040,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
             </span>
           </button>
         </template>
+        </template> <!-- /v-if="!isMobile" desktop content -->
 
         <input
           ref="fileInput"
@@ -1863,52 +1898,236 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 @media (max-width: 768px) {
   .sidebar { display: none; }
-  .dmain { padding: 16px 16px 96px; max-height: none; }
+  .dmain { padding: 8px 20px calc(env(safe-area-inset-bottom, 0px) + 96px); max-height: none; }
+
+  /* App bar: NeuroCanvas brand + (search icon Android) + avatar */
   .m-top {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 12px;
+    height: 44px; margin-bottom: 0;
   }
-  .m-eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; letter-spacing: 0.06em;
-    color: var(--d-text-4); margin: 0;
+  .m-top-trailing { display: flex; align-items: center; gap: 8px; }
+  .m-top-search {
+    display: none;
+    align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    background: none; border: none; padding: 0;
+    color: #FAFAFA; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
-  .m-avatar-link { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+  :root.light .m-top-search { color: #18181B; }
+  /* Show search ONLY on Android (Paper differentiates here) */
+  :root.platform-android .m-top-search { display: flex; }
+  :root.platform-android .m-top { height: 56px; }
+  .m-brand {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 17px; font-weight: 600; line-height: 22px;
+    letter-spacing: -0.01em; color: var(--d-text); margin: 0;
+  }
+  .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
   .m-avatar {
-    width: 32px; height: 32px; border-radius: 8px;
-    background: var(--d-accent); color: #09090B;
-    font-size: 13px; font-weight: 700;
+    width: 32px; height: 32px; border-radius: 16px;
+    background: #1A1A1E; border: 1px solid #1E1E22;
+    color: #00D2BE;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; line-height: 16px;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
+  :root.light .m-avatar { background: #F5F5F4; border-color: #E8E8E6; color: #00A89A; }
   .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }
-  .m-cog { color: var(--d-text-3); font-size: 18px; }
 
-  .dheader { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 16px; }
-  .dheader-actions { display: none; }
-  .dheader-title { font-family: 'Instrument Serif', Georgia, serif; font-size: 32px; line-height: 1; font-weight: 400; }
+  /* Page title */
+  .m-page-title {
+    display: block;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 28px; font-weight: 700; line-height: 34px;
+    letter-spacing: -0.02em; color: var(--d-text);
+    margin: 12px 0 16px;
+  }
 
-  .m-actions { display: flex; gap: 8px; margin-bottom: 24px; }
+  /* Hide desktop header on mobile (mobile uses m-top + m-page-title) */
+  .dheader { display: none; }
+
+  /* Quick actions row */
+  .m-actions { display: flex; gap: 10px; margin: 0 0 20px; }
   .m-action {
-    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 12px 14px; border-radius: 8px;
-    background: var(--d-surface-2); border: 1px solid var(--d-border-2);
-    color: var(--d-text); font-size: 13px; font-weight: 500;
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px; border-radius: 10px;
+    background: #111114; border: 1px solid #1E1E22;
+    color: var(--d-text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px; font-weight: 500; line-height: 18px;
     cursor: pointer;
   }
-  .m-action-primary { background: var(--d-accent); color: #09090B; border-color: transparent; font-weight: 600; }
+  :root.light .m-action { background: #FFFFFF; border-color: #E8E8E6; color: #18181B; }
+  .m-action-primary { background: #00D2BE; color: #0A0A0C; border-color: transparent; font-weight: 600; }
+  :root.light .m-action-primary { background: #00D2BE; color: #0A0A0C; }
 
-  .dmaps-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .dcard-thumb { height: 110px; padding: 16px; }
-  .dcard-info { padding: 10px 12px; }
-  .dcard-title { font-size: 13px; }
-  .dcard-date { font-size: 11px; }
+  /* Section label: "Recent maps" / "See all" — matches Paper Android Dashboard */
+  .dsection-label {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 0 12px; margin: 0; border: none;
+  }
+  .dsection-text {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0; /* hide original "RECENT · X OF Y" */
+    color: #FAFAFA;
+  }
+  :root.light .dsection-text { color: #18181B; }
+  .dsection-text::after {
+    content: 'Recent maps';
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; font-weight: 600; line-height: 18px;
+    letter-spacing: 0; text-transform: none;
+    color: inherit;
+  }
+  .dsort {
+    background: none; border: none; padding: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px; font-weight: 500; line-height: 18px;
+    color: #00D2BE; cursor: pointer;
+  }
+  :root.light .dsection-text { color: #6B6E74; }
+  :root.light .dcard-date { color: #6B6E74; }
+  :root.light .dcard-menu {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA0A6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
+  }
+  .dsort svg, .dsort-prefix { display: none; }
+  .dsort-value { color: #00D2BE; }
+  .dsort-value::before { content: 'See all'; }
+  .dsort-value { font-size: 0; }
+  .dsort-value::before { font-size: 14px; }
 
-  .doverview { padding: 16px; }
-  .doverview-stats { gap: 20px; }
-  .dov-num { font-size: 28px; }
+  /* Map list rows */
+  .dmaps-grid {
+    display: flex; flex-direction: column; gap: 8px;
+    grid-template-columns: none;
+  }
+  .dcard {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px;
+    background: #111114; border: 1px solid #1E1E22; border-radius: 10px;
+    box-shadow: none;
+  }
+  :root.light .dcard { background: #FFFFFF; border-color: #E8E8E6; }
+  .dcard-thumb {
+    flex-shrink: 0; width: 44px; height: 44px;
+    background: #1A1A1E; border-radius: 8px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  :root.light .dcard-thumb { background: #F5F5F4; }
+  .dcard-thumb-rows { display: none; }
+  .dcard-thumb::before {
+    content: '';
+    width: 32px; height: 32px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><rect x='4' y='3' width='8' height='3' rx='1' fill='%2300D2BE' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='%233F3F45'/><rect x='3' y='10' width='5' height='4' rx='1' fill='%233F3F45'/><rect x='9' y='10' width='7' height='4' rx='1' fill='%2300D2BE'/><rect x='17' y='10' width='4' height='4' rx='1' fill='%233F3F45'/><rect x='4' y='18' width='6' height='3' rx='1' fill='%2300D2BE' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='%233F3F45'/></svg>");
+    background-size: contain; background-repeat: no-repeat;
+  }
+  :root.light .dcard-thumb::before {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><rect x='4' y='3' width='8' height='3' rx='1' fill='%2300A89A' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='%23D4D4D2'/><rect x='3' y='10' width='5' height='4' rx='1' fill='%23D4D4D2'/><rect x='9' y='10' width='7' height='4' rx='1' fill='%2300A89A'/><rect x='17' y='10' width='4' height='4' rx='1' fill='%23D4D4D2'/><rect x='4' y='18' width='6' height='3' rx='1' fill='%2300A89A' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='%23D4D4D2'/></svg>");
+  }
+  .dcard-count { display: none; }
+  .dcard-info {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 0;
+    background: transparent; border: none;
+  }
+  .dcard-info-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .dcard-title {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; font-weight: 600; line-height: 18px;
+    color: var(--d-text); margin: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dcard-date {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px; line-height: 16px;
+    color: #888890; margin: 0;
+  }
+  .dcard-menu {
+    flex-shrink: 0; width: 16px; height: 16px;
+    background: none; border: none; padding: 0;
+    color: #555558; cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555558' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
+    background-size: contain; background-repeat: no-repeat;
+  }
+  .dcard-menu svg { display: none; }
 
-  .dai-banner { flex-direction: column; align-items: flex-start; gap: 12px; padding: 14px 16px; }
-  .dai-banner-cta { align-self: stretch; justify-content: center; }
+  /* Hide AI banner / drow-2 on mobile, KEEP overview */
+  .dai-banner, .drow-2 { display: none; }
+
+  /* === Mobile Overview card (Paper "02 — OVERVIEW") === */
+  .doverview {
+    display: flex; flex-direction: column;
+    margin: 16px 0 0;
+    padding: 20px 16px 16px;
+    background: #111114; border: 1px solid #1E1E22;
+    border-radius: 10px;
+    gap: 16px;
+  }
+  :root.light .doverview { background: #FFFFFF; border-color: #E8E8E6; }
+  .doverview-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 0;
+  }
+  .doverview-eyebrow,
+  .doverview-period {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.06em; line-height: 12px;
+    text-transform: uppercase;
+    color: #888890;
+  }
+  .doverview-stats {
+    display: flex; align-items: flex-end;
+    gap: 24px; margin: 0;
+  }
+  .doverview-stats > div {
+    display: flex; flex-direction: column; gap: 4px;
+    flex: 1; min-width: 0;
+  }
+  .dov-num {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 36px; font-weight: 400; line-height: 1;
+    letter-spacing: -0.01em;
+    color: #FAFAFA;
+  }
+  :root.light .dov-num { color: #18181B; }
+  .dov-num.accent { color: #00D2BE; }
+  :root.light .dov-num.accent { color: #00A89A; }
+  .doverview-stats > div > span:last-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.04em; line-height: 12px;
+    color: #888890;
+  }
+  .doverview-chart {
+    display: flex; align-items: flex-end; gap: 4px;
+    height: 28px; margin: 0;
+  }
+  .doverview-chart > * { flex: 1; min-width: 0; border-radius: 2px; }
+
+  /* Platform corner radius split applies to overview too */
+  :root.platform-android .doverview { border-radius: 16px; }
+
+  /* === iOS-specific === */
+  :root.platform-ios .m-action,
+  :root.platform-ios .dcard { border-radius: 10px; }
+  :root.platform-ios .dmain {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
+  }
+
+  /* === Android (Material 3) === */
+  :root.platform-android .m-action,
+  :root.platform-android .dcard { border-radius: 16px; }
+  :root.platform-android .dcard-thumb { border-radius: 12px; }
+  :root.platform-android .m-action-primary {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.30), 0 1px 3px 1px rgba(0,0,0,0.15);
+  }
+  :root.platform-android .dmain {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  }
 }
 </style>

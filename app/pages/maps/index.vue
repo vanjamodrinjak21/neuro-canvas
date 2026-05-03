@@ -15,6 +15,7 @@ const router = useRouter()
 const syncEngine = useSyncEngine()
 const { confirm, ConfirmDialog } = useConfirmDialog()
 const { t } = useI18n()
+const { isMobile } = usePlatform()
 
 // State
 const allMaps = ref<DBMapDocument[]>([])
@@ -116,6 +117,20 @@ const _isNative = _isTauri || _isCapacitor
 const _session = _isNative ? { data: ref({ user: { id: 'native-user' } }) } : useAuth()
 const _mobileAuth = _isCapacitor ? useMobileAuth() : null
 const _desktopAuth = _isTauri ? useDesktopAuth() : null
+
+const userInitials = computed(() => {
+  const u = (_session as { data?: { value?: { user?: { name?: string | null; email?: string | null } } } })?.data?.value?.user
+  const name = u?.name || u?.email || ''
+  if (!name) return 'V'
+  const parts = name.split(/[\s@]+/).filter(Boolean)
+  if (parts.length === 0) return 'V'
+  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase()
+  return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase()
+})
+const userImage = computed(() => {
+  const u = (_session as { data?: { value?: { user?: { image?: string | null } } } })?.data?.value?.user
+  return u?.image || null
+})
 
 function mapResponse(m: any): DBMapDocument {
   return {
@@ -222,6 +237,37 @@ function formatDate(timestamp: number): string {
     <MobileTabBar />
 
     <main class="maps-main">
+      <!-- Mobile All Maps (Paper G46-0 / GMP-0) — only the list scrolls, dock fixed -->
+      <ClientOnly>
+        <MobileMapsDark
+          v-if="isMobile"
+          :user="{ name: userInitials, image: userImage }"
+          :user-initials="userInitials"
+          :maps="filteredMaps"
+          :total-count="allMaps.length"
+          :pinned-count="0"
+          :search-query="searchQuery"
+          :sort-label="sortBy"
+          @update:search-query="searchQuery = $event"
+          @open-map="openMap"
+          @change-sort="sortBy = sortBy === 'recent' ? 'alphabetical' : sortBy === 'alphabetical' ? 'nodes' : 'recent'"
+        />
+      </ClientOnly>
+
+      <!-- Desktop top bar (legacy; hidden on mobile) -->
+      <div v-if="!isMobile" class="m-top">
+        <h2 class="m-brand">NeuroCanvas</h2>
+        <NuxtLink to="/settings" class="m-avatar-link" aria-label="Settings">
+          <div class="m-avatar">
+            <img v-if="userImage" :src="userImage" :alt="userInitials" class="m-avatar-img">
+            <template v-else>{{ userInitials }}</template>
+          </div>
+        </NuxtLink>
+      </div>
+      <h1 v-if="!isMobile" class="m-page-title">{{ $t('common.nav.maps') }}</h1>
+      <p v-if="!isMobile" class="m-count">{{ filteredMaps.length }} {{ filteredMaps.length === 1 ? 'map' : 'maps' }}</p>
+
+      <template v-if="!isMobile">
       <!-- Header -->
       <div class="maps-header">
         <div class="header-left">
@@ -258,7 +304,10 @@ function formatDate(timestamp: number): string {
 
       <!-- Mobile search (outside header-actions so it stays visible) -->
       <div class="search-box search-box--mobile">
-        <span class="i-lucide-search search-icon" />
+        <svg class="search-icon search-icon--svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
         <input
           v-model="searchQuery"
           type="text"
@@ -351,6 +400,7 @@ function formatDate(timestamp: number): string {
           </div>
         </div>
       </div>
+      </template> <!-- /v-if="!isMobile" -->
     </main>
 
     <component :is="ConfirmDialog" />
@@ -879,118 +929,156 @@ function formatDate(timestamp: number): string {
   }
 }
 
-@media (max-width: 768px) {
-  .maps-layout {
-    flex-direction: column;
-  }
+/* Mobile brand bar + title (shown only on mobile) */
+.m-top, .m-page-title, .m-count { display: none; }
 
-  :deep(.sidebar) {
-    display: none;
-  }
+@media (max-width: 768px) {
+  .maps-layout { flex-direction: column; }
+  :deep(.sidebar) { display: none; }
 
   .maps-main {
-    padding: 48px 0 100px;
+    padding: 8px 20px calc(env(safe-area-inset-bottom, 0px) + 96px);
     max-height: none;
   }
 
-  /* Header: title left, sort right */
-  .maps-header {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0;
-    padding: 8px 24px 16px;
-    margin-bottom: 0;
-  }
-
-  .header-left {
-    flex-direction: column;
-  }
-
-  .header-title {
-    font-size: 24px;
-    letter-spacing: -0.02em;
-  }
-
-  .header-count {
-    display: none;
-  }
-
-  /* Hide grid actions on mobile */
-  .header-actions {
-    display: none;
-  }
-
-  /* Mobile search bar: visible on mobile */
-  .search-box--mobile {
-    display: flex;
-    margin: 0 24px 20px;
+  /* App bar */
+  .m-top {
+    display: flex; align-items: center; justify-content: space-between;
     height: 44px;
-    border-radius: 8px;
-    background: #111114;
-    border: 1px solid #1E1E22;
+  }
+  .m-brand {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 17px; font-weight: 600; line-height: 22px;
+    letter-spacing: -0.01em; color: #FAFAFA; margin: 0;
+  }
+  :root.light .m-brand { color: #18181B; }
+  .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
+  .m-avatar {
+    width: 32px; height: 32px; border-radius: 16px;
+    background: #1A1A1E; border: 1px solid #1E1E22;
+    color: #00D2BE;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; line-height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  :root.light .m-avatar { background: #F5F5F4; border-color: #E8E8E6; color: #00A89A; }
+  .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* Page title */
+  .m-page-title {
+    display: block;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 28px; font-weight: 700; line-height: 34px;
+    letter-spacing: -0.02em; color: #FAFAFA;
+    margin: 12px 0 16px;
+  }
+  :root.light .m-page-title { color: #18181B; }
+
+  /* Hide desktop header on mobile */
+  .maps-header { display: none; }
+
+  /* Search box */
+  .search-box--mobile {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #111114; border: 1px solid #1E1E22;
+  }
+  :root.light .search-box--mobile { background: #FFFFFF; border-color: #E8E8E6; }
+  .search-box--mobile .search-icon { color: #888890; flex-shrink: 0; width: 16px; height: 16px; }
+  .search-box--mobile .search-input {
+    flex: 1; background: none; border: none; outline: none;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; line-height: 18px;
+    color: #FAFAFA; padding: 0;
+  }
+  :root.light .search-box--mobile .search-input { color: #18181B; }
+  .search-box--mobile .search-input::placeholder { color: #555558; }
+
+  /* Count label */
+  .m-count {
+    display: block;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px; font-weight: 500; line-height: 16px;
+    color: #888890;
+    padding: 8px 0 12px;
+    margin: 0;
   }
 
-  :root.light .search-box--mobile {
-    background: #FFFFFF;
-    border-color: #E8E8E6;
-  }
-
-  /* Map cards: list rows instead of grid */
+  /* Map list rows */
   .maps-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+    display: flex; flex-direction: column; gap: 8px;
     padding: 0;
   }
-
   .map-card {
-    width: 100%;
-    min-width: 0;
-    border-radius: 0;
-    border: none;
-    border-bottom: 1px solid #1E1E22;
-    padding: 14px 24px;
-    min-height: 48px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 14px;
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; min-width: 0;
+    padding: 12px;
+    background: #111114; border: 1px solid #1E1E22; border-radius: 10px;
+    box-shadow: none;
   }
-
-  /* Always show card actions on mobile */
+  :root.light .map-card { background: #FFFFFF; border-color: #E8E8E6; }
+  .map-card .card-preview {
+    flex-shrink: 0; width: 44px; height: 44px;
+    background: #1A1A1E; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  :root.light .map-card .card-preview { background: #F5F5F4; }
+  .map-card .preview-img { width: 100%; height: 100%; object-fit: cover; }
+  .map-card .preview-placeholder {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+  }
+  .map-card .preview-placeholder::before {
+    content: '';
+    width: 20px; height: 20px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300D2BE' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='6' r='2'/><circle cx='18' cy='6' r='2'/><circle cx='6' cy='18' r='2'/><circle cx='18' cy='18' r='2'/><path d='M8 6h8M6 8v8M18 8v8M8 18h8'/></svg>");
+    background-size: contain; background-repeat: no-repeat;
+  }
+  .map-card .preview-placeholder > span { display: none; }
+  .map-card .card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .map-card .card-top { display: flex; align-items: center; gap: 8px; }
+  .map-card .card-title {
+    flex: 1; min-width: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; font-weight: 600; line-height: 18px;
+    color: #FAFAFA;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  :root.light .map-card .card-title { color: #18181B; }
+  .map-card .card-meta {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px; font-weight: 400; line-height: 16px;
+    color: #888890;
+    display: flex; gap: 4px;
+  }
+  :root.light .map-card .card-meta { color: #6B6E74; }
+  :root.light .m-count { color: #6B6E74; }
+  :root.light .search-box--mobile .search-icon { color: #9CA0A6; }
   .map-card .card-menu {
-    opacity: 1;
-    width: 44px;
-    height: 44px;
+    flex-shrink: 0; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; padding: 0;
+    color: #555558; cursor: pointer; opacity: 1;
     border-radius: 6px;
   }
 
-  :root.light .map-card {
-    border-bottom-color: #E8E8E6;
+  /* iOS */
+  :root.platform-ios .search-box--mobile,
+  :root.platform-ios .map-card { border-radius: 10px; }
+  :root.platform-ios .maps-main {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
   }
 
-  /* Hide card previews on mobile — list view only */
-  .map-card .card-preview,
-  .map-card .canvas-preview {
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
-    border-radius: 10px;
-  }
-
-  .map-card .card-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .map-card .card-title {
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .map-card .card-meta {
-    font-size: 12px;
+  /* Android (MD3) */
+  :root.platform-android .search-box--mobile { border-radius: 28px; padding: 12px 16px; }
+  :root.platform-android .map-card { border-radius: 16px; }
+  :root.platform-android .map-card .card-preview { border-radius: 12px; }
+  :root.platform-android .maps-main {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
   }
 }
 </style>

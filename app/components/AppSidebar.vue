@@ -1156,4 +1156,9 @@ onMounted(() => {
     font-size: 15px;
   }
 }
+
+/* Mobile: hide desktop sidebar entirely — Paper design has no sidebar on mobile */
+@media (max-width: 768px) {
+  .sidebar { display: none !important; }
+}
 </style>

@@ -285,6 +285,7 @@ const showGenerateMapDialog = ref(false)
 // Sidebar visibility (desktop always visible, mobile as sheet)
 const showSidebarSheet = ref(false)
 const showMobileAISheet = ref(false)
+const showMobileMenu = ref(false)
 const sidebarCollapsed = ref(false)
 
 // Zoom presets (managed by ZoomControls component internally)
@@ -1627,8 +1628,14 @@ function handleClearHighlights() {
 }
 
 // ═══════════════ MOBILE BACK HANDLER ═══════════════
+const { status: authStatus } = useAuth()
 function handleMobileBack() {
-  router.push('/dashboard')
+  // Signed in → dashboard; pure guest → landing
+  if (authStatus.value === 'authenticated') {
+    router.push('/dashboard')
+    return
+  }
+  router.push(guest.isGuest.value ? '/' : '/dashboard')
 }
 
 const saveStatusText = computed(() => {
@@ -1667,17 +1674,7 @@ useHead({
       </div>
     </div>
 
-    <!-- ═══════════════ MOBILE FAB (Editor view only) ═══════════════ -->
-    <template v-if="isMobile && viewMode === 'editor' && !isLoading && !loadError">
-      <!-- AI Suggestions FAB -->
-      <button
-        class="fixed top-16 right-3 z-40 w-10 h-10 rounded-xl flex items-center justify-center bg-nc-surface-3 text-nc-ink border border-nc-surface-3 shadow-lg active:scale-95 transition-all"
-        title="AI Suggestions"
-        @click="showMobileAISheet = true"
-      >
-        <span class="i-lucide-sparkles text-lg" />
-      </button>
-    </template>
+    <!-- (Mobile AI FAB lives inside MobileEditorChrome — bottom-right mint) -->
 
     <!-- ═══════════════ LEFT SIDEBAR (Desktop only) ═══════════════ -->
     <template v-if="!isMobile">
@@ -1728,25 +1725,18 @@ useHead({
         @generate-map="showGenerateMapDialog = true"
       />
 
-      <!-- Mobile Segmented Control (Editor | Graph) -->
-      <div v-if="isMobile && !isLoading && !loadError" class="nc-mobile-segmented-wrapper">
-        <div class="nc-mobile-segmented">
-          <button
-            :class="['nc-segment', { active: viewMode === 'editor' }]"
-            @click="viewMode = 'editor'; platform.haptics.selection()"
-          >
-            <span class="i-lucide-file-text nc-segment-icon" />
-            <span class="nc-segment-label">Editor</span>
-          </button>
-          <button
-            :class="['nc-segment', { active: viewMode === 'graph' }]"
-            @click="viewMode = 'graph'; platform.haptics.selection()"
-          >
-            <span class="i-lucide-git-fork nc-segment-icon" />
-            <span class="nc-segment-label">Graph</span>
-          </button>
-        </div>
-      </div>
+      <!-- Mobile Editor Chrome (Paper GHM-0 / GW7-0) -->
+      <MobileEditorChrome
+        v-if="isMobile && !isLoading && !loadError"
+        :title="mapStore.title || 'Untitled'"
+        :node-count="mapStore.nodes.size"
+        :view-mode="viewMode"
+        :is-synced="!!collabSession"
+        @back="$router.push('/maps')"
+        @more="showMobileMenu = !showMobileMenu"
+        @ai="showMobileAISheet = true"
+        @set-view="(v: 'editor' | 'graph') => { viewMode = v; platform.haptics.selection() }"
+      />
 
       <!-- Canvas View (desktop only) -->
       <CanvasInfiniteCanvas
@@ -1826,8 +1816,9 @@ useHead({
         />
       </Transition>
 
-      <!-- Top Bar -->
+      <!-- Top Bar (desktop only — mobile uses MobileEditorChrome) -->
       <CanvasTopBar
+        v-if="!isMobile"
         ref="topBarRef"
         :is-editing-title="isEditingTitle"
         :edited-title="editedTitle"
@@ -1922,6 +1913,21 @@ useHead({
       :rich-suggestions="richSuggestions"
       @action="handleSidebarAction"
       @close="showMobileAISheet = false"
+    />
+
+    <!-- Mobile More sheet (replaces desktop ••• overflow menu) -->
+    <MobileMoreSheet
+      :visible="isMobile && showMobileMenu"
+      @close="showMobileMenu = false"
+      @save="handleSave"
+      @share="handleShare"
+      @version-history="showVersionHistory = true"
+      @comments="showComments = true"
+      @export-png="handleExportPng"
+      @export-json="handleExportJson"
+      @export-markdown="handleExportMarkdown"
+      @open-shortcuts="showShortcutsModal = true"
+      @settings="$router.push('/settings')"
     />
 
     <!-- Panels (UNTOUCHED) -->
@@ -2048,40 +2054,101 @@ useHead({
 }
 
 
-/* ═══ Mobile Segmented Control ═══ */
+/* ═══ Mobile Top App Bar ═══ */
+.nc-mobile-topbar {
+  position: relative; z-index: 31;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px 10px;
+  border-bottom: 1px solid var(--nc-border, #1E1E22);
+  background: var(--nc-bg, #0A0A0C);
+  flex-shrink: 0;
+}
+.nc-mobile-topbtn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: none; border: none; padding: 0;
+  color: var(--nc-ink, #FAFAFA);
+  cursor: pointer; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.nc-mobile-titleblock {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.nc-mobile-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px; font-weight: 600; line-height: 18px;
+  color: var(--nc-ink, #FAFAFA);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+}
+.nc-mobile-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px; font-weight: 500; line-height: 14px;
+  color: var(--nc-text-secondary, #888890);
+}
+.nc-mobile-aibtn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 8px 12px;
+  background: #00D2BE; border: none; border-radius: 8px;
+  color: #0A0A0C;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px; font-weight: 600; line-height: 16px;
+  cursor: pointer; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Light mode */
+:root.light .nc-mobile-topbar {
+  background: #FAFAF9;
+  border-bottom-color: #E8E8E6;
+}
+:root.light .nc-mobile-topbtn { color: #18181B; }
+:root.light .nc-mobile-title { color: #18181B; }
+:root.light .nc-mobile-subtitle { color: #6B6E74; }
+:root.light .nc-mobile-aibtn { background: #00D2BE; color: #0A0A0C; }
+
+/* iOS / Android refinements */
+:root.platform-ios .nc-mobile-aibtn { border-radius: 8px; }
+:root.platform-android .nc-mobile-aibtn { border-radius: 999px; padding: 8px 14px; }
+:root.platform-android .nc-mobile-topbar { padding: 8px 8px 10px; }
+
+/* ═══ Mobile Segmented Control — matches Paper Editor (individual bordered pills) ═══ */
 .nc-mobile-segmented-wrapper {
   position: relative;
   z-index: 30;
-  padding: 0 16px 12px;
+  padding: 12px 20px 16px;
   flex-shrink: 0;
 }
 
 .nc-mobile-segmented {
   display: flex;
-  background: var(--nc-surface-2, #111114);
-  border-radius: 10px;
-  padding: 4px;
-  border: 1px solid var(--nc-border, #1E1E22);
-  gap: 4px;
+  gap: 8px;
+  background: transparent;
+  padding: 0;
+  border: none;
 }
 
 .nc-segment {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  height: 28px;
-  border-radius: 8px;
   gap: 6px;
-  border: none;
+  padding: 9px 12px;
+  border: 1px solid var(--nc-border, #1E1E22);
+  border-radius: 8px;
   background: transparent;
   cursor: pointer;
-  transition: background-color 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nc-segment-icon {
-  font-size: 14px;
+  width: 14px;
+  height: 14px;
   color: var(--nc-text-secondary, #888890);
+  flex-shrink: 0;
 }
 
 .nc-segment-label {
@@ -2092,17 +2159,26 @@ useHead({
   color: var(--nc-text-secondary, #888890);
 }
 
+/* Active: filled card with brighter border (matches Paper "Editor" pill) */
 .nc-segment.active {
-  background: var(--nc-surface-3, #1E1E22);
+  background: var(--nc-surface-2, #111114);
+  border-color: #2A2A30;
 }
-
-.nc-segment.active .nc-segment-icon {
-  color: var(--nc-ink, #FAFAFA);
-}
-
+.nc-segment.active .nc-segment-icon { color: var(--nc-ink, #FAFAFA); }
 .nc-segment.active .nc-segment-label {
   font-weight: 600;
   color: var(--nc-ink, #FAFAFA);
 }
+
+/* Light mode */
+:root.light .nc-segment { border-color: #E8E8E6; }
+:root.light .nc-segment-icon,
+:root.light .nc-segment-label { color: #6B6E74; }
+:root.light .nc-segment.active { background: #FFFFFF; border-color: #D4D4D2; }
+:root.light .nc-segment.active .nc-segment-icon,
+:root.light .nc-segment.active .nc-segment-label { color: #18181B; }
+
+/* Platform tweaks */
+:root.platform-android .nc-segment { border-radius: 999px; }
 </style>
 

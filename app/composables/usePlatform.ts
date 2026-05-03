@@ -26,11 +26,47 @@ export function usePlatform() {
   const isCapacitor = computed(() => platform.value === 'capacitor')
   const isWeb = computed(() => platform.value === 'web')
   const isNative = computed(() => isTauri.value || isCapacitor.value)
+
+  // Reactive viewport-width check so resizing the browser flips the layout
+  // without a refresh. SSR-safe: starts false until mounted.
+  const isNarrowViewport = ref(false)
+  if (typeof window !== 'undefined') {
+    const mql = window.matchMedia('(max-width: 768px)')
+    isNarrowViewport.value = mql.matches
+    const onChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      isNarrowViewport.value = 'matches' in e ? e.matches : (e as MediaQueryList).matches
+    }
+    if ('addEventListener' in mql) {
+      mql.addEventListener('change', onChange as (e: MediaQueryListEvent) => void)
+    } else {
+      // Safari < 14
+      ;(mql as unknown as { addListener: (cb: (e: MediaQueryListEvent) => void) => void }).addListener(onChange as (e: MediaQueryListEvent) => void)
+    }
+  }
+
   const isMobile = computed(() => {
     if (isCapacitor.value) return true
     if (typeof window === 'undefined') return false
+    if (isNarrowViewport.value) return true
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   })
+
+  // OS-level differentiation (iOS vs Android) — used for platform-tuned UI
+  const mobileOS = computed<'ios' | 'android' | null>(() => {
+    if (typeof window === 'undefined') return null
+    const cap = (window as any).Capacitor
+    if (cap?.getPlatform) {
+      const p = cap.getPlatform()
+      if (p === 'ios') return 'ios'
+      if (p === 'android') return 'android'
+    }
+    const ua = navigator.userAgent || ''
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'
+    if (/Android/i.test(ua)) return 'android'
+    return null
+  })
+  const isIOS = computed(() => mobileOS.value === 'ios')
+  const isAndroid = computed(() => mobileOS.value === 'android')
 
   // File System API
   const fs = {
@@ -360,6 +396,9 @@ export function usePlatform() {
     isWeb,
     isNative,
     isMobile,
+    mobileOS,
+    isIOS,
+    isAndroid,
     fs,
     dialog,
     haptics,

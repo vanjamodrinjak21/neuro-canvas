@@ -410,6 +410,171 @@ function sprintRetro() {
   }
 }
 
+/**
+ * Compact 3-level tree factory used for the bulk catalog templates.
+ * - 1 root, N mids, M leaves per mid (auto-laid out).
+ */
+type TplCategory = 'education' | 'business' | 'creative' | 'planning' | 'research'
+
+interface SimpleTreeSpec {
+  slug: string
+  title: string
+  description: string
+  category: TplCategory
+  tags: string[]
+  aiEnhanced?: boolean
+  root: string
+  mids: string[]
+  leavesPerMid: string[][]
+  /** mint, blue, purple, green, red, amber */
+  accent: 'mint' | 'blue' | 'purple' | 'green' | 'red' | 'amber'
+}
+
+const ACCENT_PALETTE: Record<SimpleTreeSpec['accent'], { fill: string; border: string; text: string; mid: { fill: string; border: string; text: string }; leafFill: string }> = {
+  mint:   { fill: '#0F3D38', border: '#00D2BE', text: '#00D2BE', mid: { fill: '#0F2D28', border: '#2DD4BF', text: '#2DD4BF' }, leafFill: '#0C201D' },
+  blue:   { fill: '#1A2040', border: '#3B82F6', text: '#3B82F6', mid: { fill: '#152238', border: '#60A5FA', text: '#60A5FA' }, leafFill: '#111828' },
+  purple: { fill: '#1F1A2E', border: '#8B5CF6', text: '#8B5CF6', mid: { fill: '#1A1530', border: '#A78BFA', text: '#A78BFA' }, leafFill: '#141020' },
+  green:  { fill: '#0F2E1F', border: '#22C55E', text: '#22C55E', mid: { fill: '#152318', border: '#34D399', text: '#34D399' }, leafFill: '#0F1E14' },
+  red:    { fill: '#2E1F1F', border: '#EF4444', text: '#EF4444', mid: { fill: '#231515', border: '#F87171', text: '#F87171' }, leafFill: '#1A1010' },
+  amber:  { fill: '#2E2A1F', border: '#F59E0B', text: '#F59E0B', mid: { fill: '#201E15', border: '#FBBF24', text: '#FBBF24' }, leafFill: '#1A1810' },
+}
+
+function simpleTree(spec: SimpleTreeSpec) {
+  const p = ACCENT_PALETTE[spec.accent]
+  const nodes: SeedNode[] = []
+  const edges: SeedEdge[] = []
+  const slug = spec.slug.replace(/[^a-z0-9-]/g, '')
+  const cx = 370
+  const midGap = 200
+  const leafGap = 140
+
+  nodes.push(makeNode(`${slug}-root`, spec.root, cx, 40, { isRoot: true, fillColor: p.fill, borderColor: p.border, textColor: p.text }))
+
+  const midCount = spec.mids.length
+  const midStartX = cx - ((midCount - 1) * midGap) / 2
+
+  spec.mids.forEach((midLabel, i) => {
+    const midId = `${slug}-m${i}`
+    const midX = midStartX + i * midGap
+    nodes.push(makeNode(midId, midLabel, midX, 150, { fillColor: p.mid.fill, borderColor: p.mid.border, textColor: p.mid.text, width: 132 }))
+    edges.push(makeEdge(`${slug}-e-m${i}`, `${slug}-root`, midId, p.mid.border))
+
+    const leaves = spec.leavesPerMid[i] ?? []
+    const leafCount = leaves.length
+    const leafStartX = midX - ((leafCount - 1) * leafGap) / 2
+    leaves.forEach((leafLabel, j) => {
+      const leafId = `${slug}-m${i}-l${j}`
+      const leafX = leafStartX + j * leafGap
+      nodes.push(makeNode(leafId, leafLabel, leafX, 270, { fillColor: p.leafFill, width: 124 }))
+      edges.push(makeEdge(`${slug}-e-m${i}-l${j}`, midId, leafId, p.mid.border))
+    })
+  })
+
+  const nodeCount = nodes.length
+  const levelCount = 3
+  return {
+    slug: spec.slug,
+    title: spec.title,
+    description: spec.description,
+    category: spec.category,
+    tags: spec.tags,
+    aiEnhanced: spec.aiEnhanced ?? true,
+    nodes, edges, nodeCount, levelCount,
+  }
+}
+
+const CATALOG_SPECS: SimpleTreeSpec[] = [
+  // ── Education (4 more) ─────────────────────────────────────────────
+  { slug: 'cornell-notes', title: 'Cornell Notes', accent: 'blue',
+    description: 'The classic Cornell note-taking layout — cues on the left, detailed notes on the right, summary at the bottom. Designed for retention, not just transcription.',
+    category: 'education', tags: ['notes', 'study', 'cornell', 'method'], aiEnhanced: true,
+    root: 'Topic', mids: ['Cues', 'Notes', 'Summary'],
+    leavesPerMid: [['Question 1', 'Question 2'], ['Detail 1', 'Detail 2'], ['Key takeaway', 'Action']] },
+  { slug: 'concept-map', title: 'Concept Map', accent: 'blue',
+    description: 'Connect concepts with labelled relationships. Used in education research to expose understanding, not just facts.',
+    category: 'education', tags: ['concepts', 'learning', 'relationships'], aiEnhanced: true,
+    root: 'Concept', mids: ['Cause', 'Effect', 'Example'],
+    leavesPerMid: [['Driver A', 'Driver B'], ['Outcome 1', 'Outcome 2'], ['Case 1', 'Case 2']] },
+  { slug: 'lesson-plan', title: 'Lesson Plan', accent: 'blue',
+    description: 'Structure a class around objectives, activities, and assessment — explicit, sequenced, and time-boxed.',
+    category: 'education', tags: ['teaching', 'lesson', 'classroom'], aiEnhanced: true,
+    root: 'Lesson', mids: ['Objectives', 'Activities', 'Assessment'],
+    leavesPerMid: [['Skill', 'Knowledge'], ['Warm-up', 'Practice'], ['Quiz', 'Reflection']] },
+  { slug: 'flashcard-set', title: 'Flashcard Set', accent: 'blue',
+    description: 'Build a study set as a tree — categories at level one, term/definition pairs as leaves. Export to Anki-style review later.',
+    category: 'education', tags: ['flashcards', 'memorize', 'spaced-repetition'], aiEnhanced: true,
+    root: 'Subject', mids: ['Chapter 1', 'Chapter 2', 'Chapter 3'],
+    leavesPerMid: [['Term A', 'Term B'], ['Term C', 'Term D'], ['Term E', 'Term F']] },
+
+  // ── Business (3 more) ──────────────────────────────────────────────
+  { slug: 'okr-tree', title: 'OKR Tree', accent: 'mint',
+    description: 'One company-level objective, supporting team objectives, and measurable key results under each. Ladder up to strategy, not vanity metrics.',
+    category: 'business', tags: ['okr', 'goals', 'metrics', 'strategy'], aiEnhanced: true,
+    root: 'Objective', mids: ['Team A', 'Team B', 'Team C'],
+    leavesPerMid: [['KR 1', 'KR 2'], ['KR 3', 'KR 4'], ['KR 5', 'KR 6']] },
+  { slug: 'business-model-canvas', title: 'Business Model Canvas', accent: 'mint',
+    description: 'Nine building blocks of a business — value, customers, channels, costs. The Osterwalder canvas, hierarchical for fast iteration.',
+    category: 'business', tags: ['business-model', 'canvas', 'startup', 'strategy'], aiEnhanced: true,
+    root: 'Business', mids: ['Value Prop', 'Customers', 'Revenue', 'Costs'],
+    leavesPerMid: [['Pain solved', 'Gain made'], ['Segment A', 'Segment B'], ['Stream 1', 'Stream 2'], ['Fixed', 'Variable']] },
+  { slug: 'go-to-market', title: 'Go-to-Market Plan', accent: 'mint',
+    description: 'Position, target, channels, pricing — a launch plan that survives contact with a real market.',
+    category: 'business', tags: ['gtm', 'launch', 'marketing', 'sales'], aiEnhanced: true,
+    root: 'Launch', mids: ['Positioning', 'Channels', 'Pricing'],
+    leavesPerMid: [['Audience', 'Message'], ['Inbound', 'Outbound'], ['Tier 1', 'Tier 2']] },
+
+  // ── Creative (3 more) ──────────────────────────────────────────────
+  { slug: 'story-arc', title: 'Story Arc', accent: 'amber',
+    description: 'Three-act story structure with rising action, climax, and resolution. Map plot beats before you write a word of prose.',
+    category: 'creative', tags: ['writing', 'story', 'plot', 'arc'], aiEnhanced: true,
+    root: 'Story', mids: ['Setup', 'Confrontation', 'Resolution'],
+    leavesPerMid: [['Hook', 'Inciting'], ['Rising', 'Climax'], ['Falling', 'Ending']] },
+  { slug: 'character-bible', title: 'Character Bible', accent: 'amber',
+    description: 'Build a character from the inside out — backstory, motivation, voice, arc. The bible you never break.',
+    category: 'creative', tags: ['character', 'writing', 'fiction'], aiEnhanced: true,
+    root: 'Character', mids: ['Backstory', 'Motivation', 'Arc'],
+    leavesPerMid: [['Origin', 'Wound'], ['Want', 'Need'], ['Start', 'End']] },
+  { slug: 'songwriting', title: 'Song Structure', accent: 'amber',
+    description: 'Verse, chorus, bridge, hook — sketch a song as a tree before recording. Genre-agnostic skeleton.',
+    category: 'creative', tags: ['music', 'song', 'lyrics', 'composition'], aiEnhanced: true,
+    root: 'Song', mids: ['Verse', 'Chorus', 'Bridge'],
+    leavesPerMid: [['Lyric A', 'Lyric B'], ['Hook', 'Refrain'], ['Twist', 'Outro']] },
+
+  // ── Planning (3 more) ──────────────────────────────────────────────
+  { slug: 'eisenhower-matrix', title: 'Eisenhower Matrix', accent: 'purple',
+    description: 'Urgent vs important — sort tasks into Do, Schedule, Delegate, Drop. Cuts through the false-urgency trap.',
+    category: 'planning', tags: ['priorities', 'productivity', 'matrix'], aiEnhanced: false,
+    root: 'Tasks', mids: ['Do', 'Schedule', 'Delegate', 'Drop'],
+    leavesPerMid: [['Task 1', 'Task 2'], ['Task 3', 'Task 4'], ['Task 5', 'Task 6'], ['Task 7', 'Task 8']] },
+  { slug: 'weekly-review', title: 'Weekly Review', accent: 'purple',
+    description: 'GTD-style weekly review — what shipped, what stalled, what next. Process before you plan.',
+    category: 'planning', tags: ['weekly', 'review', 'gtd', 'productivity'], aiEnhanced: false,
+    root: 'Week', mids: ['Wins', 'Stalled', 'Next'],
+    leavesPerMid: [['Win 1', 'Win 2'], ['Block 1', 'Block 2'], ['Priority 1', 'Priority 2']] },
+  { slug: 'event-planner', title: 'Event Planner', accent: 'purple',
+    description: 'Logistics, content, and attendees mapped into one place. Catch the dependency you forgot in the spreadsheet.',
+    category: 'planning', tags: ['event', 'logistics', 'planning'], aiEnhanced: true,
+    root: 'Event', mids: ['Logistics', 'Content', 'Attendees'],
+    leavesPerMid: [['Venue', 'A/V'], ['Speakers', 'Agenda'], ['Invites', 'RSVP']] },
+
+  // ── Research (3 more) ──────────────────────────────────────────────
+  { slug: 'literature-review', title: 'Literature Review', accent: 'red',
+    description: 'Group sources by theme, surface gaps, and trace the conversation across papers. The map your supervisor actually wants.',
+    category: 'research', tags: ['research', 'literature', 'sources'], aiEnhanced: true,
+    root: 'Topic', mids: ['Theme A', 'Theme B', 'Gap'],
+    leavesPerMid: [['Source 1', 'Source 2'], ['Source 3', 'Source 4'], ['Open Q1', 'Open Q2']] },
+  { slug: 'user-interview', title: 'User Interview', accent: 'red',
+    description: 'Plan a research interview — goals, questions, follow-ups. The script that doesn\'t feel like a script.',
+    category: 'research', tags: ['user-research', 'interview', 'ux'], aiEnhanced: true,
+    root: 'Interview', mids: ['Context', 'Behavior', 'Goals'],
+    leavesPerMid: [['Background', 'Tools'], ['Workflow', 'Pain'], ['Outcome', 'Success']] },
+  { slug: 'experiment-design', title: 'Experiment Design', accent: 'red',
+    description: 'Hypothesis, variables, controls, metrics. Frame an experiment so the result actually changes a decision.',
+    category: 'research', tags: ['experiment', 'science', 'hypothesis'], aiEnhanced: true,
+    root: 'Hypothesis', mids: ['Variables', 'Method', 'Metrics'],
+    leavesPerMid: [['Independent', 'Dependent'], ['Control', 'Treatment'], ['Primary', 'Secondary']] },
+]
+
 const usageCounts: Record<string, number> = {
   'swot-analysis': 2400,
   'brainstorm': 5100,
@@ -419,10 +584,40 @@ const usageCounts: Record<string, number> = {
   'research-paper': 890,
   'pros-and-cons': 3200,
   'sprint-retro': 2100,
+  // Catalog (16 more — synthetic counts so the gallery feels lived-in)
+  'cornell-notes': 1800,
+  'concept-map': 1450,
+  'lesson-plan': 1100,
+  'flashcard-set': 980,
+  'okr-tree': 2700,
+  'business-model-canvas': 2200,
+  'go-to-market': 1650,
+  'story-arc': 1900,
+  'character-bible': 1300,
+  'songwriting': 720,
+  'eisenhower-matrix': 3400,
+  'weekly-review': 2050,
+  'event-planner': 860,
+  'literature-review': 760,
+  'user-interview': 1400,
+  'experiment-design': 640,
+}
+
+interface SeededTemplate {
+  slug: string
+  title: string
+  description: string
+  category: TplCategory
+  tags: string[]
+  aiEnhanced: boolean
+  nodes: SeedNode[]
+  edges: SeedEdge[]
+  nodeCount: number
+  levelCount: number
 }
 
 export async function seedTemplates() {
-  const templateFns = [
+  const templateFns: Array<() => SeededTemplate> = [
     swotAnalysis,
     brainstorm,
     studyNotes,
@@ -431,6 +626,8 @@ export async function seedTemplates() {
     researchPaper,
     prosCons,
     sprintRetro,
+    // Catalog templates (16) generated from compact specs
+    ...CATALOG_SPECS.map(spec => () => simpleTree(spec)),
   ]
 
   for (const fn of templateFns) {

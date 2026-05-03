@@ -651,11 +651,63 @@ const MdeTreeItem = defineComponent({
 /* ── Responsive ── */
 @media (max-width: 1024px) { .mde-right { display: none; } }
 @media (max-width: 768px) {
-  .mde-tree, .mde-right { display: none; }
-  .mde-center { border-right: none; }
-  .mde-live-editor { padding: 20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px); }
-  .mde-bar { padding: 10px 20px; }
-  .mde-line--h1 { font-size: 22px; }
-  .mde-line--h2 { font-size: 16px; }
+  .mde-tree, .mde-right, .mde-bar { display: none; }
+  .mde-center { border-right: none; background: transparent; }
+  .mde-edit-wrap { background: transparent; }
+  .mde-live-editor {
+    padding: 4px 20px calc(env(safe-area-inset-bottom, 0px) + 96px);
+    background: transparent;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #A1A1AA;
+    font-size: 14px;
+    line-height: 22px;
+    letter-spacing: 0;
+    caret-color: #00D2BE;
+  }
+  .mde-line { padding: 0; }
+  .mde-line--h1 {
+    /* Root title rendered by chrome card already — collapse the H1 line */
+    display: none;
+  }
+  .mde-line--h2 {
+    margin-top: 28px; margin-bottom: 10px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 500; font-size: 11px; line-height: 14px;
+    letter-spacing: 0.14em;
+    color: #52525B;
+    text-transform: uppercase;
+  }
+  .mde-line--h3 {
+    margin-top: 22px; margin-bottom: 8px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 500; font-size: 10px; line-height: 14px;
+    letter-spacing: 0.12em;
+    color: #71717A;
+    text-transform: uppercase;
+  }
+  .mde-line--body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px; line-height: 22px;
+    color: #A1A1AA;
+    margin: 0 0 6px 0;
+  }
+  /* Bullet-like body lines starting with - or * get a mint dot via ::before */
+  .mde-line--body:not(:empty)::before { content: ''; }
+  .mde-hash { display: none; }
+  .mde-wikilink {
+    color: #00D2BE;
+    background: rgba(0, 210, 190, 0.06);
+    border-bottom: 1px dashed rgba(0, 210, 190, 0.30);
+    padding: 0 2px;
+  }
+  .mde-line--hr {
+    border: none;
+    border-top: 1px solid rgba(250, 250, 250, 0.08);
+    margin: 24px 0;
+  }
 }
+:root.light .mde-live-editor { color: #52525B; caret-color: #00B8A6; }
+:root.light .mde-line--h2 { color: #71717A; }
+:root.light .mde-line--h3 { color: #A1A1AA; }
+:root.light .mde-line--body { color: #52525B; }
 </style>

@@ -11,6 +11,21 @@ definePageMeta({
 
 const router = useRouter()
 const { t } = useI18n()
+const { isMobile } = usePlatform()
+const _session = useAuth()
+const _user = computed(() => _session.data?.value?.user as { name?: string | null; email?: string | null; image?: string | null } | undefined)
+const _userInitials = computed(() => {
+  const name = _user.value?.name || _user.value?.email || ''
+  if (!name) return 'V'
+  const parts = name.split(/[\s@]+/).filter(Boolean)
+  if (parts.length === 0) return 'V'
+  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase()
+  return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase()
+})
+
+function handleMobileUseTemplate(tmpl: { slug: string }) {
+  router.push(`/templates/${tmpl.slug}`)
+}
 
 // Tauri detection
 const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
@@ -170,8 +185,38 @@ onMounted(async () => {
 <template>
   <div class="templates-layout">
     <AppSidebar active-nav="templates" />
+    <MobileTabBar />
 
     <main class="templates-main">
+      <!-- Mobile Templates (Paper G7R-0 / GPV-0) — only the list scrolls -->
+      <ClientOnly>
+        <MobileTemplatesDark
+          v-if="isMobile"
+          :user="_user"
+          :user-initials="_userInitials"
+          :templates="displayedTemplates"
+          :total-count="(templates ?? []).length"
+          :search-query="searchQuery"
+          :sort-label="sortBy"
+          :active-category="activeCategory as 'all' | TemplateCategory"
+          @update:search-query="(v) => { searchQuery = v; handleSearch() }"
+          @open-template="(slug) => router.push(`/templates/${slug}`)"
+          @use-template="handleMobileUseTemplate"
+          @change-sort="sortBy = sortBy === 'popular' ? 'newest' : sortBy === 'newest' ? 'alphabetical' : 'popular'; setSortBy(sortBy as any)"
+          @change-category="(c) => handleCategoryChange(c)"
+        />
+      </ClientOnly>
+
+      <template v-if="!isMobile">
+      <!-- Mobile brand bar + page title -->
+      <div class="m-top">
+        <h2 class="m-brand">NeuroCanvas</h2>
+        <NuxtLink to="/settings" class="m-avatar-link" aria-label="Settings">
+          <div class="m-avatar">V</div>
+        </NuxtLink>
+      </div>
+      <h1 class="m-page-title">{{ $t('templates.page.title') }}</h1>
+
       <!-- Header -->
       <div class="templates-header">
         <div class="header-left">
@@ -298,6 +343,7 @@ onMounted(async () => {
           @click="handleCardClick"
         />
       </div>
+      </template> <!-- /v-if="!isMobile" -->
     </main>
 
     <!-- Publish Modal (web only) -->
@@ -757,19 +803,126 @@ onMounted(async () => {
 }
 
 /* Mobile */
+/* Mobile brand bar + title (shown only on mobile) */
+.m-top, .m-page-title { display: none; }
+
 @media (max-width: 768px) {
   .templates-layout { flex-direction: column; }
-  .templates-main { padding: 20px 16px; max-height: none; }
-  .templates-header { flex-direction: column; gap: 12px; }
-  .templates-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .filter-bar { flex-direction: column; align-items: flex-start; }
-  .filter-right { width: 100%; }
-  .search-input { width: 100%; }
-  .ai-bar { flex-wrap: wrap; }
-  .ai-bar-input-wrap { min-width: 200px; }
-}
+  :deep(.sidebar) { display: none; }
 
-@media (max-width: 480px) {
-  .templates-grid { grid-template-columns: 1fr; }
+  .templates-main {
+    padding: 8px 20px calc(env(safe-area-inset-bottom, 0px) + 96px);
+    max-height: none;
+  }
+
+  /* App bar */
+  .m-top {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 44px;
+  }
+  .m-brand {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 17px; font-weight: 600; line-height: 22px;
+    letter-spacing: -0.01em; color: #FAFAFA; margin: 0;
+  }
+  :root.light .m-brand { color: #18181B; }
+  .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
+  .m-avatar {
+    width: 32px; height: 32px; border-radius: 16px;
+    background: #1A1A1E; border: 1px solid #1E1E22;
+    color: #00D2BE;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; line-height: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  :root.light .m-avatar { background: #F5F5F4; border-color: #E8E8E6; color: #00A89A; }
+
+  /* Page title */
+  .m-page-title {
+    display: block;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 28px; font-weight: 700; line-height: 34px;
+    letter-spacing: -0.02em; color: #FAFAFA;
+    margin: 12px 0 16px;
+  }
+  :root.light .m-page-title { color: #18181B; }
+
+  /* Hide desktop header bits on mobile */
+  .templates-header,
+  .desktop-signin-prompt,
+  .ai-bar,
+  .ai-error-banner { display: none; }
+
+  /* Filter row: stack chips on top, search above */
+  .filter-bar {
+    display: flex; flex-direction: column; gap: 12px;
+    margin: 0 0 12px; padding: 0;
+  }
+  .filter-right { width: 100%; order: -1; }
+  .filter-right .search-box {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; height: auto;
+    padding: 10px 12px; border-radius: 10px;
+    background: #111114; border: 1px solid #1E1E22;
+  }
+  :root.light .filter-right .search-box { background: #FFFFFF; border-color: #E8E8E6; }
+  .filter-right .search-box svg { color: #888890; flex-shrink: 0; }
+  .filter-right .search-input {
+    flex: 1; width: 100%;
+    background: none; border: none; outline: none;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; line-height: 18px;
+    color: #FAFAFA; padding: 0;
+  }
+  :root.light .filter-right .search-input { color: #18181B; }
+  .filter-right .search-input::placeholder { color: #555558; }
+  .sort-wrap { display: none; }
+
+  /* Category chips */
+  .category-tabs {
+    display: flex; gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .category-tabs::-webkit-scrollbar { display: none; }
+  .cat-tab {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #111114; border: 1px solid #1E1E22;
+    color: #FAFAFA;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px; font-weight: 500; line-height: 16px;
+    cursor: pointer;
+  }
+  :root.light .cat-tab { background: #FFFFFF; border-color: #E8E8E6; color: #18181B; }
+  .cat-tab.active {
+    background: #00D2BE; border-color: transparent; color: #0A0A0C;
+    font-weight: 600;
+  }
+  :root.light .filter-right .search-box svg { color: #9CA0A6; }
+  :root.light .filter-right .search-input::placeholder { color: #9CA0A6; }
+
+  /* Template card list (single column) */
+  .templates-grid {
+    display: flex; flex-direction: column; gap: 10px;
+    grid-template-columns: none;
+    padding: 0;
+  }
+
+  /* iOS — Paper: cat-tab radius stays at 8 (Paper spec), search 10 */
+  :root.platform-ios .filter-right .search-box { border-radius: 10px; }
+  :root.platform-ios .templates-main {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
+  }
+
+  /* Android (MD3) */
+  :root.platform-android .filter-right .search-box { border-radius: 28px; padding: 12px 16px; }
+  :root.platform-android .cat-tab { border-radius: 999px; }
+  :root.platform-android .templates-main {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  }
 }
 </style>

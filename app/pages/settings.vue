@@ -327,6 +327,10 @@ async function updateOllamaEndpoint() {
 const mobileSettingsScreen = ref<'home' | 'general' | 'ai-providers' | 'personal' | 'account' | 'signin-email'>('home')
 const platformRef = usePlatform()
 
+const connectedProvidersCount = computed(() =>
+  [...providerKeyStatus.value.values()].filter(v => v).length
+)
+
 // ─── Mobile ───────────────────────────────────────────────────────
 const themeLabel = computed(() => {
   const map: Record<string, string> = { light: 'Light', dark: 'Dark', system: 'System' }
@@ -416,89 +420,18 @@ function handleAccountClose() {
       <div class="m-scroll">
         <!-- ── Home Screen ── -->
         <template v-if="mobileSettingsScreen === 'home'">
-          <div class="m-header">
-            <h1 class="m-title">{{ $t('settings.page.title') }}</h1>
-          </div>
-
-          <!-- Signed-in account card -->
-          <button v-if="!isLocalUser" class="m-account" @click="mobileSettingsScreen = 'account'">
-            <div class="m-avatar">
-              <img v-if="user?.image" :src="user.image" :alt="user?.name || 'Profile'" class="m-avatar-img">
-              <span v-else class="m-avatar-letter">{{ userInitial }}</span>
-            </div>
-            <div class="m-account-info">
-              <span class="m-account-name">{{ user?.name || 'User' }}</span>
-              <span class="m-account-email">{{ user?.email || '' }}</span>
-            </div>
-            <span class="m-chevron i-lucide-chevron-right" />
-          </button>
-
-          <!-- Sign-in prompt (not signed in on native) -->
-          <div v-else-if="platformRef.isNative.value" class="m-signin-section">
-            <div class="m-signin-card">
-              <div class="m-signin-icon-wrap">
-                <span class="m-signin-icon i-lucide-cloud" />
-              </div>
-              <div class="m-signin-text">
-                <span class="m-signin-title">Sign in to sync</span>
-                <span class="m-signin-desc">Access your maps across all devices</span>
-              </div>
-            </div>
-            <button class="m-oauth-btn m-oauth-google" :disabled="mobileAuth.isLoggingIn.value" @click="handleMobileOAuth('google')">
-              <svg class="m-oauth-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-              <span>{{ mobileAuth.isLoggingIn.value ? 'Signing in...' : 'Continue with Google' }}</span>
-            </button>
-            <button class="m-oauth-btn m-oauth-email" @click="mobileSettingsScreen = 'signin-email'">
-              <span class="m-oauth-email-icon i-lucide-mail" />
-              <span>Sign in with Email</span>
-            </button>
-          </div>
-
-          <!-- Web fallback -->
-          <button v-else class="m-account" @click="mobileSettingsScreen = 'account'">
-            <div class="m-avatar">
-              <span class="m-avatar-letter">{{ userInitial }}</span>
-            </div>
-            <div class="m-account-info">
-              <span class="m-account-name">{{ user?.name || 'User' }}</span>
-              <span class="m-account-email">{{ user?.email || '' }}</span>
-            </div>
-            <span class="m-chevron i-lucide-chevron-right" />
-          </button>
-
-          <div class="m-group">
-            <button class="m-row m-row--nav" @click="mobileSettingsScreen = 'general'">
-              <div class="m-row-icon-box"><span class="m-row-icon i-lucide-settings" /></div>
-              <span class="m-row-text">{{ $t('settings.tabs.general') }}</span>
-              <span class="m-row-hint">{{ locale === 'hr' ? 'Tema, font, spremanje' : 'Theme, font, auto-save' }}</span>
-              <span class="m-row-chevron i-lucide-chevron-right" />
-            </button>
-            <button class="m-row m-row--nav" @click="mobileSettingsScreen = 'ai-providers'">
-              <div class="m-row-icon-box"><span class="m-row-icon i-lucide-sparkles" /></div>
-              <span class="m-row-text">{{ $t('settings.tabs.ai_providers') }}</span>
-              <div class="m-row-status">
-                <span v-if="[...providerKeyStatus.values()].some(v => v)" class="m-dot" />
-                <span class="m-row-hint">{{ $t('settings.mobile.connected_providers', { count: [...providerKeyStatus.values()].filter(v => v).length }) }}</span>
-              </div>
-              <span class="m-row-chevron i-lucide-chevron-right" />
-            </button>
-            <button class="m-row m-row--nav" @click="mobileSettingsScreen = 'personal'">
-              <div class="m-row-icon-box"><span class="m-row-icon i-lucide-user" /></div>
-              <span class="m-row-text">{{ $t('settings.tabs.personal') }}</span>
-              <span class="m-row-hint">{{ locale === 'hr' ? 'Profil, jezik, postavke' : 'Profile, language, prefs' }}</span>
-              <span class="m-row-chevron i-lucide-chevron-right" />
-            </button>
-            <button class="m-row m-row--nav m-row--last" @click="mobileSettingsScreen = 'account'">
-              <div class="m-row-icon-box"><span class="m-row-icon i-lucide-lock" /></div>
-              <span class="m-row-text">{{ $t('settings.tabs.account') }}</span>
-              <span class="m-row-hint">{{ locale === 'hr' ? 'Sigurnost, podaci, sesije' : 'Security, data, sessions' }}</span>
-              <span class="m-row-chevron i-lucide-chevron-right" />
-            </button>
-          </div>
-
-          <button v-if="!isLocalUser" class="m-signout" :disabled="signOutLoading" @click="handleMobileSignOut">
-            {{ signOutLoading ? 'Signing out...' : 'Sign Out' }}
-          </button>
+          <MobileSettingsDark
+            :user="user"
+            :user-initial="userInitial"
+            :is-local-user="isLocalUser"
+            :connected-providers-count="connectedProvidersCount"
+            :sign-out-loading="signOutLoading"
+            @open-account="mobileSettingsScreen = 'account'"
+            @open-general="mobileSettingsScreen = 'general'"
+            @open-ai-providers="mobileSettingsScreen = 'ai-providers'"
+            @open-personal="mobileSettingsScreen = 'personal'"
+            @sign-out="handleMobileSignOut"
+          />
         </template>
 
         <!-- ── Email Sign-In Screen (mobile native only) ── -->
@@ -1089,14 +1022,34 @@ function handleAccountClose() {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
 }
 
-.m-header { padding: 8px 24px 24px; }
+.m-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 20px 0;
+  height: 44px;
+}
+.m-brand {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 17px; font-weight: 600; line-height: 22px;
+  letter-spacing: -0.01em; color: var(--ms-text); margin: 0;
+}
+.m-topbar-avatar {
+  width: 32px; height: 32px; border-radius: 16px;
+  background: #1A1A1E; border: 1px solid var(--ms-border);
+  color: var(--ms-accent);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px; font-weight: 600; line-height: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+:root.light .m-topbar-avatar { background: #F5F5F4; }
+
+.m-header { padding: 12px 20px 20px; }
 
 .m-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 30px;
+  line-height: 34px;
   color: var(--ms-text);
   margin: 0;
 }
@@ -1104,13 +1057,15 @@ function handleAccountClose() {
 .m-account {
   display: flex;
   align-items: center;
-  margin: 0 24px 24px;
+  margin: 0 20px 20px;
   padding: 16px;
   gap: 14px;
   border-radius: 10px;
   background: var(--ms-card);
   border: 1px solid var(--ms-border);
 }
+:root.platform-ios .m-account { border-radius: 10px; }
+:root.platform-android .m-account { border-radius: 16px; }
 
 .m-avatar {
   width: 48px;
@@ -1331,12 +1286,14 @@ function handleAccountClose() {
 }
 
 .m-group {
-  margin: 0 24px 24px;
+  margin: 0 20px 20px;
   border-radius: 10px;
   overflow: hidden;
   background: var(--ms-card);
   border: 1px solid var(--ms-border);
 }
+:root.platform-ios .m-group { border-radius: 10px; }
+:root.platform-android .m-group { border-radius: 16px; }
 
 .m-row {
   display: flex;
@@ -1431,8 +1388,8 @@ button.m-row { text-align: left; }
   align-items: center;
   justify-content: center;
   height: 50px;
-  margin: 8px 24px 0;
-  border-radius: 12px;
+  margin: 8px 20px 0;
+  border-radius: 10px;
   border: 1px solid rgba(239, 68, 68, 0.2);
   background: none;
   font-family: 'Inter', system-ui, sans-serif;
@@ -1444,6 +1401,8 @@ button.m-row { text-align: left; }
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s ease;
 }
+:root.platform-ios .m-signout { border-radius: 10px; }
+:root.platform-android .m-signout { border-radius: 28px; }
 
 .m-signout:active { background: rgba(239, 68, 68, 0.08); }
 .m-signout:disabled { opacity: 0.5; cursor: not-allowed; }
