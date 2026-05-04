@@ -43,6 +43,11 @@ function hashKey(input: string): string {
   return Math.abs(hash).toString(36)
 }
 
+function isCapacitorEnvironment(): boolean {
+  if (typeof window === 'undefined') return false
+  return 'Capacitor' in window && !!(window as any).Capacitor?.isNativePlatform?.()
+}
+
 function isTauriEnvironment(): boolean {
   if (typeof window === 'undefined') return false
   return '__TAURI__' in window || '__TAURI_INTERNALS__' in window
@@ -54,7 +59,7 @@ export class SemanticCache {
   private useRedis: boolean
 
   constructor() {
-    this.useRedis = !isTauriEnvironment()
+    this.useRedis = !isTauriEnvironment() && !isCapacitorEnvironment()
   }
 
   /**

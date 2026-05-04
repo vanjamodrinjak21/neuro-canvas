@@ -260,7 +260,10 @@ export class MemoryEngine {
 
   private isTauri(): boolean {
     if (typeof window === 'undefined') return false
-    return '__TAURI__' in window || '__TAURI_INTERNALS__' in window
+    if ('__TAURI__' in window || '__TAURI_INTERNALS__' in window) return true
+    // Capacitor mobile shells also have no server session — treat them
+    // as native so we use localStorage instead of the /api/ai/memory route.
+    return 'Capacitor' in window && !!(window as any).Capacitor?.isNativePlatform?.()
   }
 }
 

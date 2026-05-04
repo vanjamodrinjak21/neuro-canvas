@@ -36,6 +36,15 @@ function _isTauri(): boolean {
   return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 }
 
+function _isCapacitor(): boolean {
+  return typeof window !== 'undefined' && 'Capacitor' in window
+    && !!(window as any).Capacitor?.isNativePlatform?.()
+}
+
+function _isNativeShell(): boolean {
+  return _isTauri() || _isCapacitor()
+}
+
 /**
  * Deep clone data to make it serializable for postMessage
  * Vue's reactive system adds non-cloneable properties that break structured cloning
@@ -174,7 +183,7 @@ export function useAI() {
 
     try {
       // ── Native (Tauri) path ──
-      if (_isTauri()) {
+      if (_isNativeShell()) {
         tauriML = useTauriML()
         const aiSettings = useAISettings()
         const modelVariant = aiSettings.settings.value.preferences.embeddingModel || 'quantized'
@@ -511,7 +520,7 @@ export function useAI() {
       const cached = await cache.get(system, user)
       if (cached) {
         const parsed = parseJson<Record<string, unknown>>(cached.response)
-        return validateMapStructure(parsed)
+        return validateMapStructure(parsed, topic)
       }
 
       const content = await executeWithRetry(async () => {
@@ -525,7 +534,7 @@ export function useAI() {
               model: provider.selectedModelId,
               systemPrompt: system,
               messages: [{ role: 'user', content: user }],
-              maxTokens: 4000,
+              maxTokens: _isNativeShell() ? 3000 : 4000,
               temperature: 0.7
             },
             { onDelta: (_chunk, accumulated) => streamOptions.onPartialResult?.(accumulated) }
@@ -549,7 +558,7 @@ export function useAI() {
       await cache.set(system, user, content, null, 'generate')
 
       const parsed = parseJson<Record<string, unknown>>(content)
-      return validateMapStructure(parsed)
+      return validateMapStructure(parsed, topic)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Map structure generation failed'
       throw e
@@ -992,7 +1001,7 @@ export function useAI() {
   ): Promise<Map<string, number[]>> {
     const cachedEmbeddings = new Map<string, number[]>()
 
-    if (nodeIds.length === 0 || _isTauri()) return cachedEmbeddings
+    if (nodeIds.length === 0 || _isNativeShell()) return cachedEmbeddings
 
     try {
       const response = await $fetch<{
@@ -1025,7 +1034,7 @@ export function useAI() {
     mapId: string,
     embeddings: Array<{ nodeId: string; text: string; embedding: number[] }>
   ): Promise<void> {
-    if (embeddings.length === 0 || _isTauri()) return
+    if (embeddings.length === 0 || _isNativeShell()) return
 
     try {
       await $fetch('/api/embeddings', {
@@ -1171,7 +1180,7 @@ export function useAI() {
    * Clear cached embeddings for a map
    */
   async function clearEmbeddingCache(mapId: string): Promise<void> {
-    if (_isTauri()) return
+    if (_isNativeShell()) return
     try {
       await $fetch(`/api/embeddings/${mapId}`, {
         method: 'DELETE'

@@ -7,64 +7,113 @@ import { parseRelationshipType, parseNodeCategory } from '~/utils/ai-prompts'
  * Parse JSON from LLM response (handles markdown code blocks and various formats)
  */
 export function parseJsonResponse<T>(content: string): T {
-  // Try to extract JSON from markdown code block
-  const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-  let jsonStr: string = jsonMatch ? (jsonMatch[1] || content) : content
-
-  // Also try to find raw JSON object or array
-  if (!jsonMatch) {
-    const objectMatch = content.match(/\{[\s\S]*\}/)
-    const arrayMatch = content.match(/\[[\s\S]*\]/)
-    jsonStr = objectMatch ? objectMatch[0] : (arrayMatch ? arrayMatch[0] : content)
+  if (!content || !content.trim()) {
+    throw new Error('AI returned an empty response. Try again — the model may have timed out.')
   }
 
-  jsonStr = jsonStr.trim()
+  // Build the candidate list of JSON substrings, in priority order.
+  const candidates: string[] = []
+
+  // 1. Markdown ```json fenced blocks (Claude often wraps even when told not to)
+  const fenceMatches = [...content.matchAll(/```(?:json|JSON)?\s*([\s\S]*?)```/g)]
+  for (const m of fenceMatches) {
+    if (m[1]) candidates.push(m[1])
+  }
+
+  // 2. Largest brace-balanced object substring
+  const braced = extractBalanced(content, '{', '}')
+  if (braced) candidates.push(braced)
+
+  // 3. Largest bracket-balanced array substring
+  const bracketed = extractBalanced(content, '[', ']')
+  if (bracketed) candidates.push(bracketed)
+
+  // 4. Greedy fallbacks (first { … last }, first [ … last ])
+  const objectGreedy = content.match(/\{[\s\S]*\}/)?.[0]
+  const arrayGreedy = content.match(/\[[\s\S]*\]/)?.[0]
+  if (objectGreedy) candidates.push(objectGreedy)
+  if (arrayGreedy) candidates.push(arrayGreedy)
+
+  // 5. Raw content as last resort
+  candidates.push(content)
+
+  // Try each candidate through the repair pipeline.
+  for (const raw of candidates) {
+    const result = tryParse<T>(raw)
+    if (result !== undefined) return result
+  }
+
+  // Final salvage attempt
+  const partial = extractPartialJson<T>(content)
+  if (partial !== null) return partial
+
+  if (typeof console !== 'undefined') {
+    console.error('[parseJsonResponse] could not parse AI output:', content.slice(0, 500))
+  }
+  const preview = content.length > 120 ? content.slice(0, 120) + '…' : content
+  throw new Error(`Failed to parse AI response. The model returned malformed output — try again or use a larger model. Got: "${preview.replace(/\s+/g, ' ').trim()}"`)
+}
+
+function tryParse<T>(jsonStr: string): T | undefined {
+  const trimmed = jsonStr.trim()
+  if (!trimmed) return undefined
 
   // Attempt 1: parse as-is
-  try {
-    return JSON.parse(jsonStr)
-  } catch {
-    // continue to cleanup
-  }
+  try { return JSON.parse(trimmed) } catch { /* keep trying */ }
 
   // Attempt 2: fix common LLM JSON issues
-  let cleaned = jsonStr
-    // Remove trailing commas before } or ]
+  let cleaned = trimmed
     .replace(/,\s*\}/g, '}')
     .replace(/,\s*\]/g, ']')
-    // Replace single quotes used as string delimiters (but not apostrophes inside words)
     .replace(/(?<=[[{,:])\s*'/g, ' "')
     .replace(/'\s*(?=[,\]}])/g, '"')
-    // Remove JS-style comments
     .replace(/\/\/[^\n]*/g, '')
     .replace(/\/\*[\s\S]*?\*\//g, '')
-    // Fix unescaped newlines inside string values
     .replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match) => {
       return match.replace(/(?<!\\)\n/g, '\\n').replace(/(?<!\\)\r/g, '\\r').replace(/(?<!\\)\t/g, '\\t')
     })
-
-  try {
-    return JSON.parse(cleaned)
-  } catch {
-    // continue to more aggressive repair
-  }
+  try { return JSON.parse(cleaned) } catch { /* keep trying */ }
 
   // Attempt 3: repair truncated JSON (LLM hit token limit)
   cleaned = repairTruncatedJson(cleaned)
+  try { return JSON.parse(cleaned) } catch { /* keep trying */ }
 
-  try {
-    return JSON.parse(cleaned)
-  } catch {
-    // continue to progressive extraction
+  return undefined
+}
+
+/**
+ * Find the longest balanced substring between the given open/close characters.
+ * Skips characters inside strings.
+ */
+function extractBalanced(source: string, open: string, close: string): string | null {
+  let best: string | null = null
+  let bestLen = 0
+  for (let start = 0; start < source.length; start++) {
+    if (source[start] !== open) continue
+    let depth = 0
+    let inString = false
+    let escaped = false
+    for (let i = start; i < source.length; i++) {
+      const ch = source[i]
+      if (escaped) { escaped = false; continue }
+      if (ch === '\\') { escaped = true; continue }
+      if (ch === '"') { inString = !inString; continue }
+      if (inString) continue
+      if (ch === open) depth++
+      else if (ch === close) {
+        depth--
+        if (depth === 0) {
+          const len = i - start + 1
+          if (len > bestLen) {
+            best = source.slice(start, i + 1)
+            bestLen = len
+          }
+          break
+        }
+      }
+    }
   }
-
-  // Attempt 4: progressive extraction — try salvaging partial JSON
-  const partial = extractPartialJson<T>(content)
-  if (partial !== null) {
-    return partial
-  }
-
-  throw new Error('Failed to parse AI response. The model returned malformed output — try again or use a larger model.')
+  return best
 }
 
 /**
@@ -203,13 +252,23 @@ export function validateRichNodeSuggestions(
 /**
  * Validate and normalize MapStructure from LLM response
  */
-export function validateMapStructure(raw: Record<string, unknown>): MapStructure {
-  if (!raw.rootTopic || !Array.isArray(raw.branches)) {
+export function validateMapStructure(
+  raw: Record<string, unknown>,
+  fallbackTopic?: string
+): MapStructure {
+  // Some models truncate or omit the top-level rootTopic. As long as we can
+  // recover at least one branch, fall back to the user's prompt as the root.
+  const branchesRaw = Array.isArray(raw.branches)
+    ? raw.branches
+    : (Array.isArray((raw as { children?: unknown[] }).children)
+        ? (raw as { children: unknown[] }).children
+        : [])
+  if (branchesRaw.length === 0 && !raw.rootTopic && !fallbackTopic) {
     throw new Error('Invalid map structure response')
   }
 
   return {
-    rootTopic: String(raw.rootTopic),
+    rootTopic: String(raw.rootTopic || fallbackTopic || 'Untitled Map'),
     rootDescription: {
       summary: String((raw.rootDescription as Record<string, unknown>)?.summary || ''),
       keywords: Array.isArray((raw.rootDescription as Record<string, unknown>)?.keywords)
@@ -217,7 +276,7 @@ export function validateMapStructure(raw: Record<string, unknown>): MapStructure
         : [],
       generatedAt: Date.now()
     },
-    branches: normalizeBranches(raw.branches as unknown[]),
+    branches: normalizeBranches(branchesRaw),
     crossConnections: raw.crossConnections as MapStructure['crossConnections']
   }
 }

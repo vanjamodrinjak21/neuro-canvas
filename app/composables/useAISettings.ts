@@ -107,6 +107,41 @@ export function useAISettings() {
           }
           await save()
         }
+
+        // Self-heal: refresh Anthropic provider models so the latest IDs
+        // (Opus 4.7, Sonnet 4.6, …) become available even on accounts
+        // that were created before the model list was bumped.
+        for (const p of state.settings.providers) {
+          if (p.type === 'anthropic') {
+            const template = PROVIDER_TEMPLATES['anthropic']
+            if (template?.models) {
+              p.models = [...template.models]
+              if (!p.selectedModelId || !template.models.some(m => m.id === p.selectedModelId)) {
+                p.selectedModelId = template.models[0]!.id
+              }
+            }
+          }
+        }
+
+        // Self-heal: if the current default is an unreachable provider
+        // (Ollama on a phone with no localhost server, or local without a key),
+        // promote the first enabled provider that actually has a key to default.
+        const currentDefault = state.settings.providers.find(p => p.id === state.settings.defaultProviderId)
+        const defaultIsBroken = !currentDefault
+          || (currentDefault.type === 'ollama' && !currentDefault.localApiKey && (!currentDefault.baseUrl || currentDefault.baseUrl.includes('localhost') || currentDefault.baseUrl.includes('127.0.0.1')))
+        if (defaultIsBroken) {
+          const usable = state.settings.providers.find(p =>
+            p.isEnabled
+            && p.type !== 'ollama'
+            && p.type !== 'local'
+            && (p.localApiKey || p.credentialId)
+          )
+          if (usable) {
+            state.settings.defaultProviderId = usable.id
+            for (const p of state.settings.providers) p.isDefault = (p.id === usable.id)
+            await save()
+          }
+        }
       }
     } catch (e) {
       state.error = e instanceof Error ? e.message : 'Failed to load AI settings'
@@ -164,8 +199,10 @@ export function useAISettings() {
     }
 
     if (apiKey) {
-      if (_isTauri()) {
-        // Tauri desktop: store API key locally in IndexedDB (no server vault)
+      if (_isTauri() || _isCapacitor()) {
+        // Native shells (Tauri / Capacitor): store API key locally in IndexedDB.
+        // Server vault is web-only and gates on next-auth session, which mobile
+        // doesn't always have hydrated.
         provider.localApiKey = apiKey
         provider.credentialId = `local-${id}`
       } else if (vault.isVaultAvailable.value) {
@@ -233,10 +270,11 @@ export function useAISettings() {
     const provider = state.settings.providers.find(p => p.id === id)
     if (!provider) throw new Error('Provider not found')
 
-    if (_isTauri()) {
-      // Tauri desktop: store API key locally in IndexedDB
+    if (_isTauri() || _isCapacitor()) {
+      // Native shells (Tauri / Capacitor): store API key locally in IndexedDB.
+      // Avoids the web vault, which gates on a fresh next-auth session.
       provider.localApiKey = apiKey
-      provider.credentialId = `local-${id}`
+      provider.credentialId = apiKey ? `local-${id}` : ''
     } else if (vault.isVaultAvailable.value) {
       // Web: send raw key to server vault (server-only encryption v4)
       try {
@@ -468,8 +506,8 @@ export function useAISettings() {
         ? getProviderCredentialId(providerIdOrConfig)
         : null
 
-      // In Tauri: use localApiKey or the test key directly
-      const effectiveApiKey = _isTauri()
+      // In Tauri / Capacitor: use localApiKey or the test key directly
+      const effectiveApiKey = (_isTauri() || _isCapacitor())
         ? (apiKey || provider.localApiKey || undefined)
         : undefined
 

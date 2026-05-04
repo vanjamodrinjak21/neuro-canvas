@@ -89,11 +89,11 @@ export const PROVIDER_TEMPLATES: Record<AIProviderType, Partial<AIProviderConfig
     name: 'Anthropic',
     baseUrl: 'https://api.anthropic.com/v1',
     models: [
-      { id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
-      { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
+      { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', contextLength: 1000000, maxOutputTokens: 64000, isVision: true },
+      { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
       { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
-      { id: 'claude-opus-4-1-20250805', name: 'Claude Opus 4.1', contextLength: 200000, maxOutputTokens: 32000, isVision: true },
-      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', contextLength: 200000, maxOutputTokens: 64000, isVision: true }
+      { id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
+      { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true }
     ]
   },
   ollama: {

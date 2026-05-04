@@ -21,6 +21,11 @@ function isTauriEnvironment(): boolean {
   return '__TAURI__' in window || '__TAURI_INTERNALS__' in window
 }
 
+function isCapacitorEnvironment(): boolean {
+  if (typeof window === 'undefined') return false
+  return 'Capacitor' in window && !!(window as any).Capacitor?.isNativePlatform?.()
+}
+
 /**
  * Stream an AI completion, calling onDelta as each chunk arrives.
  * Falls back to non-streaming if streaming is not available.
@@ -41,8 +46,10 @@ export async function streamCompletion(
 ): Promise<string> {
   const { onDelta, onDone, onError, signal } = options
 
-  // In Tauri, use direct streaming via plugin-http
-  if (isTauriEnvironment()) {
+  // Native shells (Tauri / Capacitor): call provider directly with the
+  // locally-stored API key. The web /api/ai/stream endpoint requires a
+  // server-side session that mobile doesn't always have, and would 401.
+  if (isTauriEnvironment() || isCapacitorEnvironment()) {
     return streamViaTauri(params, options)
   }
 
@@ -136,18 +143,39 @@ async function streamViaTauri(
 ): Promise<string> {
   // Fallback: use non-streaming and simulate chunked delivery
   // Real streaming via Tauri requires plugin-http streaming support
-  const response = await aiComplete({
-    provider: params.provider,
-    apiKey: params.apiKey || '',
-    baseUrl: params.baseUrl,
-    model: params.model,
-    systemPrompt: params.systemPrompt,
-    messages: params.messages,
-    maxTokens: params.maxTokens,
-    temperature: params.temperature
-  })
+
+  // Tell the UI we've started talking to the provider — without this the
+  // sheet sits at "Connecting to model…" the entire time the request is
+  // in flight (which can be 30–90s for large Opus completions).
+  const t0 = Date.now()
+  const placeholder = (sec: number) =>
+    `Calling ${params.provider}… ${sec}s elapsed (full map can take 30–90s on Opus)`
+  options.onDelta?.('', placeholder(0))
+  const tick = setInterval(() => {
+    const sec = Math.floor((Date.now() - t0) / 1000)
+    options.onDelta?.('', placeholder(sec))
+  }, 1000)
+
+  let response: { content: string; usage?: unknown }
+  try {
+    response = await aiComplete({
+      provider: params.provider,
+      apiKey: params.apiKey || '',
+      baseUrl: params.baseUrl,
+      model: params.model,
+      systemPrompt: params.systemPrompt,
+      messages: params.messages,
+      maxTokens: params.maxTokens,
+      temperature: params.temperature
+    })
+  } finally {
+    clearInterval(tick)
+  }
 
   const content = response.content
+  // Reset the placeholder before replaying the real content.
+  options.onDelta?.('', '')
+
   // Simulate progressive delivery for UI consistency
   const chunkSize = 20
   let accumulated = ''

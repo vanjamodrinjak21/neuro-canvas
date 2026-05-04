@@ -10,6 +10,12 @@ const config: CapacitorConfig = {
     // cleartext: true
   },
   plugins: {
+    // Route fetch() / XHR through native HTTP so direct calls to
+    // api.anthropic.com / api.openai.com from the Capacitor origin
+    // bypass WKWebView CORS preflight and don't fail silently.
+    CapacitorHttp: {
+      enabled: true
+    },
     CapacitorSQLite: {
       iosDatabaseLocation: 'Library/CapacitorDatabase',
       iosIsEncryption: false,

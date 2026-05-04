@@ -50,6 +50,15 @@ function isTauriEnvironment(): boolean {
   return '__TAURI__' in window || '__TAURI_INTERNALS__' in window
 }
 
+function isCapacitorEnvironment(): boolean {
+  if (typeof window === 'undefined') return false
+  return 'Capacitor' in window && !!(window as any).Capacitor?.isNativePlatform?.()
+}
+
+function isNativeShell(): boolean {
+  return isTauriEnvironment() || isCapacitorEnvironment()
+}
+
 // ─── Tauri-aware fetch ───────────────────────────────────────────────
 
 /**
@@ -61,6 +70,9 @@ async function getTauriFetch(): Promise<typeof globalThis.fetch> {
     const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
     return tauriFetch
   }
+  // On Capacitor: rely on CapacitorHttp.enabled monkey-patching the global
+  // fetch — Capacitor's own implementation knows how to encode the JSON body
+  // and routes through native NSURLSession, bypassing WKWebView CORS.
   return globalThis.fetch
 }
 
@@ -141,17 +153,26 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
 
     case 'anthropic': {
       const baseUrl = req.baseUrl || 'https://api.anthropic.com/v1'
+      const useModel = model || 'claude-haiku-4-5-20251001'
+
+      // Visible in iOS console — confirms which model is actually being requested.
+      if (typeof console !== 'undefined') {
+        console.info('[anthropic] POST', `${baseUrl}/messages`, 'model:', useModel, 'maxTokens:', maxTokens)
+      }
 
       const response = await fetch(`${baseUrl}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Connection': 'close',
           'x-api-key': apiKey || '',
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true',
+          'User-Agent': 'NeuroCanvas/1.0 (Capacitor)'
         },
         body: JSON.stringify({
-          model: model || 'claude-sonnet-4-20250514',
+          model: useModel,
           max_tokens: maxTokens,
           system: systemPrompt,
           messages
@@ -316,7 +337,9 @@ async function directTestConnection(req: AITestConnectionRequest): Promise<AITes
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
             'anthropic-dangerous-direct-browser-access': 'true',
-            'content-type': 'application/json'
+            'content-type': 'application/json',
+            'accept': 'application/json',
+            'connection': 'close'
           },
           body: JSON.stringify({
             model: 'claude-haiku-4-5-20251001',
@@ -377,7 +400,7 @@ async function directTestConnection(req: AITestConnectionRequest): Promise<AITes
  * In web: calls /api/ai/completions server route.
  */
 export async function aiComplete(req: AICompletionRequest): Promise<AICompletionResponse> {
-  if (isTauriEnvironment()) {
+  if (isNativeShell()) {
     return directComplete(req)
   }
 
@@ -420,7 +443,7 @@ export { streamCompletion } from '~/ai/pipeline/StreamingPipeline'
  * In web: calls /api/ai/test-connection server route.
  */
 export async function aiTestConnection(req: AITestConnectionRequest): Promise<AITestConnectionResponse> {
-  if (isTauriEnvironment()) {
+  if (isNativeShell()) {
     return directTestConnection(req)
   }
 

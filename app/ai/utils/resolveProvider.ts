@@ -48,18 +48,23 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     throw new Error('No AI provider configured. Please configure an AI provider in settings.')
   }
 
-  // Tauri desktop: use locally stored API key
-  if (_isTauri()) {
-    if (!defaultProvider.localApiKey && defaultProvider.type !== 'ollama') {
-      // Provider exists but key was stored in server vault (pre-desktop fix).
-      // User needs to re-enter their key so it's stored locally.
-      throw new Error('API key needs to be re-entered for desktop use. Go to Settings > AI Providers and update your API key.')
+  // Tauri desktop / Capacitor mobile: use locally stored API key
+  if (_isTauri() || _isCapacitor()) {
+    // Phones can't reach an Ollama server running on the dev machine's localhost.
+    if (_isCapacitor() && defaultProvider.type === 'ollama') {
+      const url = defaultProvider.baseUrl || ''
+      if (!url || url.includes('localhost') || url.includes('127.0.0.1')) {
+        throw new Error('Ollama at localhost isn\'t reachable from your phone. Open Settings → AI Providers and tap USE on a cloud provider, or set Ollama\'s baseUrl to your computer\'s LAN IP.')
+      }
+    }
+    if (!defaultProvider.localApiKey && defaultProvider.type !== 'ollama' && defaultProvider.type !== 'local') {
+      throw new Error('API key needs to be entered. Go to Settings > AI Providers and add your key.')
     }
     return {
       type: defaultProvider.type,
       apiKey: defaultProvider.localApiKey || undefined,
       baseUrl: defaultProvider.baseUrl,
-      selectedModelId: defaultProvider.type === 'ollama' ? undefined : defaultProvider.selectedModelId
+      selectedModelId: (defaultProvider.type === 'ollama' || defaultProvider.type === 'local') ? undefined : defaultProvider.selectedModelId
     }
   }
 
