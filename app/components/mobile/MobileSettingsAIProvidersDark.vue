@@ -4,23 +4,88 @@
  * Paper artboard KPL-0 ("Mobile iOS — Settings: AI Providers").
  * Active provider card + Available list + vault note.
  */
-import { computed } from 'vue'
-import { useAISettings } from '~/composables/useAISettings'
+import { computed, ref, watch } from 'vue'
+
+interface ProviderLike {
+  id: string
+  type: string
+  name?: string
+  selectedModelId?: string
+  isDefault?: boolean
+  isEnabled?: boolean
+  baseUrl?: string
+  models?: Array<{ id: string; name?: string }>
+}
 
 const props = defineProps<{
-  providers: any[]
+  providers: ProviderLike[]
   providerKeyStatus: Map<string, boolean>
+  defaultProviderType?: string | null
+  keySaving?: string | null
+  keyError?: string | null
+  keySaved?: number
+  keyTestSuccess?: string | null
 }>()
 
 const emit = defineEmits<{
   back: []
-  'open-provider': [type: string]
-  'rotate-key': [type: string]
+  'save-key': [payload: { type: string, key: string }]
   'remove-key': [type: string]
   'test-key': [type: string]
+  'set-default': [type: string]
+  'set-model': [payload: { type: string, modelId: string }]
 }>()
 
-const aiSettings = useAISettings()
+// Inline key-entry sheet
+const sheetOpen = ref(false)
+const sheetType = ref<string | null>(null)
+const sheetMode = ref<'connect' | 'rotate'>('connect')
+const sheetKey = ref('')
+const sheetReveal = ref(false)
+
+function openSheet(type: string, mode: 'connect' | 'rotate' = 'connect') {
+  sheetType.value = type
+  sheetMode.value = mode
+  sheetKey.value = ''
+  sheetReveal.value = false
+  sheetOpen.value = true
+}
+
+function closeSheet() {
+  sheetOpen.value = false
+  sheetType.value = null
+  sheetKey.value = ''
+}
+
+function saveSheet() {
+  if (!sheetType.value) return
+  const k = sheetKey.value.trim()
+  if (!k) return
+  emit('save-key', { type: sheetType.value, key: k })
+}
+
+// Auto-close sheet when parent reports a successful save (keySaved bumps).
+watch(() => props.keySaved, (next, prev) => {
+  if (next && next !== prev && sheetOpen.value) closeSheet()
+})
+
+const sheetTitle = computed(() => {
+  const map: Record<string, string> = {
+    anthropic: 'Anthropic',
+    openai: 'OpenAI',
+    openrouter: 'OpenRouter',
+    ollama: 'Ollama'
+  }
+  const name = sheetType.value ? map[sheetType.value] : ''
+  return sheetMode.value === 'rotate' ? `Rotate ${name} key` : `Connect ${name}`
+})
+
+const sheetPrefix = computed(() => {
+  if (sheetType.value === 'anthropic') return 'sk-ant-...'
+  if (sheetType.value === 'openrouter') return 'sk-or-...'
+  if (sheetType.value === 'openai') return 'sk-...'
+  return 'http://localhost:11434'
+})
 
 interface ProviderRow {
   type: 'anthropic' | 'openai' | 'openrouter' | 'ollama'
@@ -56,6 +121,14 @@ const liveLabel = computed(() => {
 const vaultLabel = computed(() => liveCount.value > 0 ? 'VAULT OK' : 'NO KEYS')
 
 // Stub stats for active card (real numbers would come from backend telemetry)
+function getProviderModels(type: string) {
+  const provider = props.providers.find(p => p.type === type)
+  return provider?.models || []
+}
+function getSelectedModelId(type: string): string | undefined {
+  return props.providers.find(p => p.type === type)?.selectedModelId
+}
+
 function maskKey(type: string): string {
   const provider = props.providers.find(p => p.type === type)
   if (!provider) return '—'
@@ -113,7 +186,6 @@ function maskKey(type: string): string {
         >
           <div class="map-active-top">
             <div class="map-prov-tile map-prov-tile--lg">
-              <component :is="`Icon${provider.iconKey}`" />
               <svg v-if="provider.iconKey === 'anthropic'" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M9 4L4 18H7L8 15H14L15 18H18L13 4H9Z M9 12L11 6L13 12H9Z" fill="#00D2BE" />
               </svg>
@@ -136,14 +208,22 @@ function maskKey(type: string): string {
             <div class="map-active-info">
               <div class="map-active-titlebar">
                 <span class="map-active-title">{{ provider.name }}</span>
-                <span class="map-active-italic">primary</span>
+                <span v-if="defaultProviderType === provider.type" class="map-active-italic">primary</span>
               </div>
               <span class="map-active-sub">{{ provider.caption }}</span>
             </div>
-            <div class="map-status-pill">
+            <div v-if="defaultProviderType === provider.type" class="map-status-pill">
               <span class="map-status-dot" />
-              <span class="map-status-text">LIVE</span>
+              <span class="map-status-text">DEFAULT</span>
             </div>
+            <button
+              v-else
+              type="button"
+              class="map-status-pill map-status-pill--cta"
+              @click="emit('set-default', provider.type)"
+            >
+              <span class="map-status-text">USE</span>
+            </button>
           </div>
 
           <div class="map-stats">
@@ -163,18 +243,43 @@ function maskKey(type: string): string {
             </div>
           </div>
 
+          <div v-if="getProviderModels(provider.type).length > 0" class="map-model-row">
+            <span class="map-model-label">MODEL</span>
+            <div class="map-model-pills">
+              <button
+                v-for="m in getProviderModels(provider.type)"
+                :key="m.id"
+                type="button"
+                class="map-model-pill"
+                :class="{ 'map-model-pill--on': getSelectedModelId(provider.type) === m.id }"
+                @click="emit('set-model', { type: provider.type, modelId: m.id })"
+              >{{ m.name.replace(/^Claude\s+/, '') }}</button>
+            </div>
+          </div>
+
+          <div v-if="keyTestSuccess === provider.type" class="map-test-result map-test-result--ok">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 13L9 17L19 7" stroke="#00D2BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Key verified · provider responded</span>
+          </div>
+          <div v-else-if="keyError && keySaving !== provider.type" class="map-test-result map-test-result--err">
+            <span>{{ keyError }}</span>
+          </div>
+
           <div class="map-actions">
             <button
               class="map-action map-action--primary"
               type="button"
+              :disabled="keySaving === provider.type"
               @click="emit('test-key', provider.type)"
             >
-              TEST KEY
+              {{ keySaving === provider.type ? 'TESTING…' : 'TEST KEY' }}
             </button>
             <button
               class="map-action"
               type="button"
-              @click="emit('rotate-key', provider.type)"
+              @click="openSheet(provider.type, 'rotate')"
             >
               ROTATE
             </button>
@@ -197,7 +302,7 @@ function maskKey(type: string): string {
 
       <div class="map-card">
         <template v-for="(provider, idx) in availableProviders" :key="provider.type">
-          <button class="map-row" type="button" @click="emit('open-provider', provider.type)">
+          <button class="map-row" type="button" @click="openSheet(provider.type, 'connect')">
             <div class="map-icon">
               <svg v-if="provider.iconKey === 'anthropic'" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M9 4L4 18H7L8 15H14L15 18H18L13 4H9Z M9 12L11 6L13 12H9Z" fill="#A1A1AA" />
@@ -245,10 +350,86 @@ function maskKey(type: string): string {
 
       <div class="map-spacer" />
     </div>
+
+    <!-- Key entry sheet -->
+    <Transition name="map-sheet">
+      <div v-if="sheetOpen" class="map-sheet-backdrop" @click.self="closeSheet">
+        <div class="map-sheet" role="dialog" aria-modal="true">
+          <div class="map-sheet-grab" />
+          <div class="map-sheet-eyebrow">{{ sheetMode === 'rotate' ? 'ROTATE KEY' : 'CONNECT PROVIDER' }}</div>
+          <h2 class="map-sheet-title">{{ sheetTitle }}<span class="map-sheet-title-dot">.</span></h2>
+          <p class="map-sheet-meta">
+            Paste your API key. Sealed in the server vault — never logged, never bundled.
+          </p>
+
+          <label class="map-sheet-field">
+            <span class="map-sheet-label">{{ sheetType === 'ollama' ? 'ENDPOINT URL' : 'API KEY' }}</span>
+            <div class="map-sheet-input-wrap">
+              <input
+                v-model="sheetKey"
+                :type="sheetReveal ? 'text' : 'password'"
+                class="map-sheet-input"
+                :placeholder="sheetPrefix"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+              >
+              <button
+                class="map-sheet-reveal"
+                type="button"
+                :aria-label="sheetReveal ? 'Hide key' : 'Show key'"
+                @click="sheetReveal = !sheetReveal"
+              >
+                <svg v-if="sheetReveal" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M3 3L21 21" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M10.6 6.2C11.06 6.07 11.53 6 12 6C18 6 22 12 22 12C21.4 13 20.7 14 19.9 14.8M14 14.2C13.45 14.7 12.75 15 12 15C10.34 15 9 13.66 9 12C9 11.25 9.3 10.55 9.8 10" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M6.5 7.5C3.6 9.4 2 12 2 12C2 12 6 18 12 18C13.36 18 14.62 17.74 15.74 17.32" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M2 12C2 12 6 6 12 6C18 6 22 12 22 12C22 12 18 18 12 18C6 18 2 12 2 12Z" stroke="#A1A1AA" stroke-width="1.6" />
+                  <circle cx="12" cy="12" r="3" stroke="#A1A1AA" stroke-width="1.6" />
+                </svg>
+              </button>
+            </div>
+            <span v-if="keyError && keySaving === sheetType" class="map-sheet-error">{{ keyError }}</span>
+            <span v-else class="map-sheet-hint">VAULTED · AES-256-GCM</span>
+          </label>
+
+          <div class="map-sheet-actions">
+            <button class="map-sheet-btn" type="button" @click="closeSheet">CANCEL</button>
+            <button
+              class="map-sheet-btn map-sheet-btn--primary"
+              type="button"
+              :disabled="!sheetKey.trim() || keySaving === sheetType"
+              @click="saveSheet"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>{{ keySaving === sheetType ? 'SAVING…' : 'SAVE KEY' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </section>
 </template>
 
 <style scoped>
+.map button {
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.map input, .map select {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
 .map {
   --map-bg: #09090B;
   --map-ink: #FAFAFA;
@@ -436,6 +617,12 @@ function maskKey(type: string): string {
   font-weight: 600; font-size: 9px; letter-spacing: 0.08em;
   color: var(--map-mint);
 }
+.map-status-pill--cta {
+  cursor: pointer;
+  background: var(--map-mint);
+  border-color: var(--map-mint);
+}
+.map-status-pill--cta .map-status-text { color: #09090B; }
 
 .map-stats { display: flex; gap: 12px; }
 .map-stat {
@@ -453,6 +640,61 @@ function maskKey(type: string): string {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .map-stat-divider { width: 1px; background: var(--map-stroke-soft); }
+
+.map-model-row {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.map-model-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 9px; letter-spacing: 0.12em;
+  color: var(--map-mute);
+}
+.map-model-pills {
+  display: flex; gap: 6px;
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 0 16px 2px 16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.map-model-pills::-webkit-scrollbar { display: none; }
+.map-model-pill {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  background: var(--map-surface);
+  border: 1px solid var(--map-stroke);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500; font-size: 12px; letter-spacing: -0.005em;
+  color: var(--map-body);
+  white-space: nowrap;
+}
+.map-model-pill--on {
+  background: rgba(0, 210, 190, 0.10);
+  border-color: rgba(0, 210, 190, 0.45);
+  color: var(--map-mint);
+  font-weight: 600;
+}
+
+.map-test-result {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 11px; letter-spacing: 0.02em;
+  line-height: 14px;
+}
+.map-test-result--ok {
+  background: rgba(0, 210, 190, 0.10);
+  border: 1px solid rgba(0, 210, 190, 0.30);
+  color: var(--map-mint);
+}
+.map-test-result--err {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.30);
+  color: #FCA5A5;
+}
 
 .map-actions { display: flex; gap: 8px; }
 .map-action {
@@ -552,5 +794,136 @@ function maskKey(type: string): string {
 .map-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
+}
+
+/* Key entry sheet */
+.map-sheet-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end;
+  justify-content: center;
+  padding-bottom: var(--kbd-h, 0px);
+  transition: padding-bottom 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+}
+.map-sheet {
+  width: 100%;
+  display: flex; flex-direction: column;
+  padding: 14px 20px calc(28px + env(safe-area-inset-bottom, 0px)) 20px;
+  background: #0E0E11;
+  border-top: 1px solid var(--map-stroke);
+  border-radius: 22px 22px 0 0;
+}
+.map-sheet-grab {
+  align-self: center;
+  width: 40px; height: 4px; border-radius: 999px;
+  background: var(--map-stroke);
+  margin-bottom: 18px;
+}
+.map-sheet-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  color: var(--map-mute);
+}
+.map-sheet-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500; font-size: 28px; line-height: 32px;
+  letter-spacing: -0.02em;
+  color: var(--map-ink);
+  margin: 10px 0 0 0;
+}
+.map-sheet-title-dot {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  color: var(--map-mint);
+  margin-left: 2px;
+}
+.map-sheet-meta {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px; line-height: 19px;
+  color: var(--map-body);
+  margin: 8px 0 18px 0;
+}
+.map-sheet-field {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.map-sheet-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 10px; letter-spacing: 0.12em;
+  color: var(--map-mute);
+}
+.map-sheet-input-wrap {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px;
+  background: var(--map-surface);
+  border: 1px solid var(--map-stroke);
+  border-radius: 12px;
+}
+.map-sheet-input {
+  flex: 1 1 0;
+  background: none; border: none;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 13px; letter-spacing: 0.02em;
+  color: var(--map-ink);
+  outline: none;
+  min-width: 0;
+}
+.map-sheet-input::placeholder { color: var(--map-mute); }
+.map-sheet-reveal {
+  background: none; border: none; cursor: pointer;
+  padding: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.map-sheet-hint {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 9px; letter-spacing: 0.12em;
+  color: var(--map-mute);
+}
+.map-sheet-error {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 11px; letter-spacing: 0.04em;
+  color: var(--map-red, #EF4444);
+}
+.map-sheet-actions {
+  display: flex; gap: 10px;
+  margin-top: 22px;
+}
+.map-sheet-btn {
+  flex: 1 1 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px;
+  background: var(--map-surface);
+  border: 1px solid var(--map-stroke);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 600; font-size: 11px; letter-spacing: 0.10em;
+  color: var(--map-body);
+}
+.map-sheet-btn--primary {
+  flex: 2 1 0;
+  background: var(--map-mint);
+  border-color: var(--map-mint);
+  color: #09090B;
+}
+.map-sheet-btn--primary:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+.map-sheet-btn--primary:active:not(:disabled) {
+  background: #00b8a6;
+  border-color: #00b8a6;
+}
+
+.map-sheet-enter-active, .map-sheet-leave-active {
+  transition: opacity 200ms ease;
+}
+.map-sheet-enter-active .map-sheet, .map-sheet-leave-active .map-sheet {
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.map-sheet-enter-from, .map-sheet-leave-to { opacity: 0; }
+.map-sheet-enter-from .map-sheet, .map-sheet-leave-to .map-sheet {
+  transform: translateY(100%);
 }
 </style>

@@ -296,12 +296,14 @@ async function saveApiKey(type: 'openai' | 'anthropic') {
 // ─── Mobile AI Provider key flows (used by MobileSettingsAIProvidersDark) ──
 const keySavingType = ref<string | null>(null)
 const keyError = ref<string | null>(null)
+const keySavedTick = ref(0)
 
 async function handleMobileSaveKey(payload: { type: string, key: string }) {
   const { type, key } = payload
   if (!key) return
   keySavingType.value = type
   keyError.value = null
+
   try {
     if (type === 'ollama') {
       // Ollama uses an endpoint URL, not an API key
@@ -325,8 +327,10 @@ async function handleMobileSaveKey(payload: { type: string, key: string }) {
         ollamaEndpoint.value = key
         ollamaEnabled.value = true
         providerKeyStatus.value.set(provider.id, true)
+        await aiSettings.setDefaultProvider(provider.id)
       }
       flashSaved()
+      keySavedTick.value++
       return
     }
 
@@ -340,14 +344,31 @@ async function handleMobileSaveKey(payload: { type: string, key: string }) {
       await aiSettings.addProvider(type as any, nameMap[type] || type)
       provider = aiSettings.providers.value.find(p => p.type === type)
     }
-    if (provider) {
-      await aiSettings.updateProviderApiKey(provider.id, key)
-      providerKeyStatus.value.set(provider.id, true)
-      // Mirror in legacy refs so desktop tab stays in sync
-      if (type === 'openai') openaiKey.value = KEY_MASK
-      if (type === 'anthropic') anthropicKey.value = KEY_MASK
-      flashSaved()
+    if (!provider) {
+      keyError.value = 'Could not create provider'
+      return
     }
+
+    await aiSettings.updateProviderApiKey(provider.id, key)
+
+    // Verify the key was actually persisted. On Capacitor without a fresh
+    // next-auth session, the vault gate falls through and the key is dropped.
+    const persisted = await aiSettings.hasProviderApiKey(provider.id)
+    if (!persisted) {
+      keyError.value = 'Sign in required to save keys to the vault.'
+      return
+    }
+
+    // Promote the freshly-saved provider to default — otherwise the
+    // auto-registered local/Ollama provider keeps the default slot and
+    // AI calls hit localhost instead of the user's chosen API.
+    await aiSettings.setDefaultProvider(provider.id)
+
+    providerKeyStatus.value.set(provider.id, true)
+    if (type === 'openai') openaiKey.value = KEY_MASK
+    if (type === 'anthropic') anthropicKey.value = KEY_MASK
+    flashSaved()
+    keySavedTick.value++
   } catch (e: any) {
     keyError.value = e?.message || 'Could not save key'
   } finally {
@@ -369,13 +390,43 @@ async function handleMobileRemoveKey(type: string) {
   }
 }
 
-async function handleMobileTestKey(type: string) {
-  // Placeholder for future ping endpoint. For now, flash the saved indicator
-  // so the user sees feedback that the action was received.
-  const provider = aiSettings.providers.value.find(p => p.type === type)
+async function handleMobileSetModel(payload: { type: string, modelId: string }) {
+  const provider = aiSettings.providers.value.find(p => p.type === payload.type)
   if (!provider) return
+  await aiSettings.updateProvider(provider.id, { selectedModelId: payload.modelId })
   flashSaved()
 }
+
+async function handleMobileSetDefault(type: string) {
+  const provider = aiSettings.providers.value.find(p => p.type === type)
+  if (!provider) return
+  await aiSettings.setDefaultProvider(provider.id)
+  flashSaved()
+}
+
+async function handleMobileTestKey(type: string) {
+  const provider = aiSettings.providers.value.find(p => p.type === type)
+  if (!provider) return
+  keySavingType.value = type
+  keyError.value = null
+  try {
+    const result = await aiSettings.testConnection(provider.id)
+    if (result.success) {
+      flashSaved()
+      keyError.value = null
+      keyTestSuccessType.value = type
+      setTimeout(() => { if (keyTestSuccessType.value === type) keyTestSuccessType.value = null }, 3000)
+    } else {
+      keyError.value = result.message || 'Test failed.'
+    }
+  } catch (e: any) {
+    keyError.value = e?.message || 'Test failed — could not reach the provider.'
+  } finally {
+    keySavingType.value = null
+  }
+}
+
+const keyTestSuccessType = ref<string | null>(null)
 
 // Toggle Ollama
 async function toggleOllama() {
@@ -584,12 +635,17 @@ function handleAccountClose() {
           <MobileSettingsAIProvidersDark
             :providers="aiSettings.providers.value"
             :provider-key-status="providerKeyStatus"
+            :default-provider-type="aiSettings.defaultProvider.value?.type || null"
             :key-saving="keySavingType"
             :key-error="keyError"
+            :key-saved="keySavedTick"
+            :key-test-success="keyTestSuccessType"
             @back="mobileSettingsScreen = 'home'"
             @save-key="handleMobileSaveKey"
             @remove-key="handleMobileRemoveKey"
             @test-key="handleMobileTestKey"
+            @set-default="handleMobileSetDefault"
+            @set-model="handleMobileSetModel"
           />
         </template>
 

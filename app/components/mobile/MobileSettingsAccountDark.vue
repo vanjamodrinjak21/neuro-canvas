@@ -260,6 +260,19 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 </template>
 
 <style scoped>
+.macc button {
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.macc input, .macc select {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
 .macc {
   --macc-bg: #09090B;
   --macc-ink: #FAFAFA;
@@ -430,19 +443,23 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 .macc-toggle {
   position: relative;
   width: 44px; height: 26px;
-  border: none; border-radius: 999px;
+  padding: 0;
+  border: 1px solid rgba(250, 250, 250, 0.06);
+  border-radius: 999px;
   background: rgba(250, 250, 250, 0.10);
   cursor: pointer; flex-shrink: 0;
-  transition: background 150ms ease;
+  transition: background 150ms ease, border-color 150ms ease;
+  display: inline-block;
 }
 .macc-toggle-knob {
-  position: absolute; left: 3px; top: 3px;
+  position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
   background: #52525B;
   transition: transform 180ms ease, background 150ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
 }
-.macc-toggle--on { background: var(--macc-mint); }
-.macc-toggle--on .macc-toggle-knob { transform: translateX(18px); background: #FAFAFA; }
+.macc-toggle--on { background: var(--macc-mint); border-color: var(--macc-mint); }
+.macc-toggle--on .macc-toggle-knob { transform: translateX(18px); background: #FAFAFA; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40); }
 
 .macc-pill {
   padding: 5px 9px;

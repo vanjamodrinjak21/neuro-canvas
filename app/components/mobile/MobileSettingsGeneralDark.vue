@@ -210,7 +210,7 @@ const themeStatus = computed(() => {
           </div>
           <button
             class="mgen-toggle"
-            :class="{ 'mgen-toggle--on': prefs.value.autoSave }"
+            :class="{ 'mgen-toggle--on': prefs.autoSave }"
             type="button"
             @click="toggle('autoSave')"
           >
@@ -233,7 +233,7 @@ const themeStatus = computed(() => {
           </div>
           <button
             class="mgen-toggle"
-            :class="{ 'mgen-toggle--on': prefs.value.reducedMotion }"
+            :class="{ 'mgen-toggle--on': prefs.reducedMotion }"
             type="button"
             @click="toggle('reducedMotion')"
           >
@@ -256,7 +256,7 @@ const themeStatus = computed(() => {
           </div>
           <button
             class="mgen-toggle"
-            :class="{ 'mgen-toggle--on': prefs.value.showGrid }"
+            :class="{ 'mgen-toggle--on': prefs.showGrid }"
             type="button"
             @click="toggle('showGrid')"
           >
@@ -282,7 +282,7 @@ const themeStatus = computed(() => {
           </div>
           <button
             class="mgen-toggle"
-            :class="{ 'mgen-toggle--on': prefs.value.showMinimap }"
+            :class="{ 'mgen-toggle--on': prefs.showMinimap }"
             type="button"
             @click="toggle('showMinimap')"
           >
@@ -297,6 +297,19 @@ const themeStatus = computed(() => {
 </template>
 
 <style scoped>
+.mgen button {
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mgen input, .mgen select {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
 .mgen {
   --mgen-bg: #09090B;
   --mgen-ink: #FAFAFA;
@@ -547,22 +560,30 @@ const themeStatus = computed(() => {
 .mgen-toggle {
   position: relative;
   width: 44px; height: 26px;
-  border: none; border-radius: 999px;
+  padding: 0;
+  border: 1px solid rgba(250, 250, 250, 0.06);
+  border-radius: 999px;
   background: rgba(250, 250, 250, 0.10);
   cursor: pointer;
-  transition: background 150ms ease;
+  transition: background 150ms ease, border-color 150ms ease;
   flex-shrink: 0;
+  display: inline-block;
 }
 .mgen-toggle-knob {
-  position: absolute; left: 3px; top: 3px;
+  position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
   background: #52525B;
   transition: transform 180ms ease, background 150ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
 }
-.mgen-toggle--on { background: var(--mgen-mint); }
+.mgen-toggle--on {
+  background: var(--mgen-mint);
+  border-color: var(--mgen-mint);
+}
 .mgen-toggle--on .mgen-toggle-knob {
   transform: translateX(18px);
   background: #FAFAFA;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40);
 }
 
 /* Slider */

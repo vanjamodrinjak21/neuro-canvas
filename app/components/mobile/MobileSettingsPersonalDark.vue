@@ -277,6 +277,19 @@ const layout = ref<'radial' | 'tree'>('radial')
 </template>
 
 <style scoped>
+.mper button {
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mper input, .mper select {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
 .mper {
   --mper-bg: #09090B;
   --mper-ink: #FAFAFA;
@@ -550,19 +563,23 @@ const layout = ref<'radial' | 'tree'>('radial')
 .mper-toggle {
   position: relative;
   width: 44px; height: 26px;
-  border: none; border-radius: 999px;
+  padding: 0;
+  border: 1px solid rgba(250, 250, 250, 0.06);
+  border-radius: 999px;
   background: rgba(250, 250, 250, 0.10);
   cursor: pointer; flex-shrink: 0;
-  transition: background 150ms ease;
+  transition: background 150ms ease, border-color 150ms ease;
+  display: inline-block;
 }
 .mper-toggle-knob {
-  position: absolute; left: 3px; top: 3px;
+  position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
   background: #52525B;
   transition: transform 180ms ease, background 150ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
 }
-.mper-toggle--on { background: var(--mper-mint); }
-.mper-toggle--on .mper-toggle-knob { transform: translateX(18px); background: #FAFAFA; }
+.mper-toggle--on { background: var(--mper-mint); border-color: var(--mper-mint); }
+.mper-toggle--on .mper-toggle-knob { transform: translateX(18px); background: #FAFAFA; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40); }
 
 .mper-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
