@@ -27,7 +27,33 @@ const emit = defineEmits<{
   'set-view': [view: 'editor' | 'graph']
   ai: []
   'generate-map': []
+  rename: [name: string]
 }>()
+
+const editingTitle = ref(false)
+const titleDraft = ref('')
+const titleInputRef = ref<HTMLInputElement | null>(null)
+
+function startRename() {
+  titleDraft.value = (props.title || '').trim()
+  editingTitle.value = true
+  nextTick(() => {
+    titleInputRef.value?.focus()
+    titleInputRef.value?.select()
+  })
+}
+function commitRename() {
+  if (!editingTitle.value) return
+  const next = titleDraft.value.trim()
+  editingTitle.value = false
+  if (next && next !== props.title.trim()) {
+    emit('rename', next)
+  }
+}
+function cancelRename() {
+  editingTitle.value = false
+  titleDraft.value = ''
+}
 
 function splitTitle(t: string): { head: string; tail: string } {
   const trimmed = (t || '').trim()
@@ -111,10 +137,26 @@ onBeforeUnmount(() => {
     <!-- Editorial header card -->
     <div class="medc-card">
       <span class="medc-eyebrow">MAP — {{ nodeCount }} NODES · LIVE</span>
-      <h1 class="medc-title">
+      <h1 v-if="!editingTitle" class="medc-title" @click="startRename">
         <span class="medc-title-sans">{{ titleParts.head }}</span>
         <span v-if="titleParts.tail" class="medc-title-serif">{{ titleParts.tail }}</span>
       </h1>
+      <input
+        v-else
+        ref="titleInputRef"
+        v-model="titleDraft"
+        class="medc-title-input"
+        type="text"
+        :placeholder="'Untitled map'"
+        autocomplete="off"
+        autocapitalize="words"
+        spellcheck="false"
+        maxlength="120"
+        enterkeyhint="done"
+        @keydown.enter.prevent="commitRename"
+        @keydown.esc.prevent="cancelRename"
+        @blur="commitRename"
+      >
       <span v-if="metaLine" class="medc-meta">{{ metaLine }}</span>
     </div>
 
@@ -286,11 +328,29 @@ onBeforeUnmount(() => {
   letter-spacing: 0.12em;
   color: var(--medc-mint);
 }
+.medc-title-input {
+  width: 100%;
+  margin: 0; padding: 4px 0;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed rgba(0, 210, 190, 0.4);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500; font-size: 28px; line-height: 32px;
+  letter-spacing: -0.025em;
+  color: #FAFAFA;
+  caret-color: #00D2BE;
+}
+.medc-title-input::placeholder { color: rgba(250, 250, 250, 0.30); }
 .medc-title {
   display: flex; align-items: baseline; flex-wrap: wrap;
   gap: 8px;
   margin: 0; padding: 0;
   font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .medc-title-sans {
   font-family: 'Inter', system-ui, sans-serif;

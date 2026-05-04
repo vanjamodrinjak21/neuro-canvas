@@ -1530,8 +1530,11 @@ async function handleMobileGenerateMap(topic: string, depth: 'shallow' | 'medium
 
     showMobileGenerateSheet.value = false
   } catch (e: any) {
-    console.error('[Mobile] AI generate failed', e)
-    mobileGenError.value = e?.message || 'Generation failed. Try a different topic.'
+    // Capacitor's native bridge serialises Error as `{}` so spell out the
+    // useful fields explicitly — otherwise the iOS console just shows `{}`.
+    const msg = e?.message || (typeof e === 'string' ? e : '')
+    console.error('[Mobile] AI generate failed:', msg, e?.name, e?.stack)
+    mobileGenError.value = msg || 'Generation failed. Check your API key and try again.'
   } finally {
     mobileGenIsRunning.value = false
     isAILoading.value = false
@@ -1782,6 +1785,7 @@ useHead({
       @ai="showMobileAISheet = true"
       @generate-map="showMobileGenerateSheet = true"
       @set-view="(v: 'editor' | 'graph') => { viewMode = v; platform.haptics.selection() }"
+      @rename="(name: string) => mapStore.setTitle(name)"
     >
       <CanvasMarkdownEditorView v-if="viewMode === 'editor'" />
       <CanvasForceGraphCanvas

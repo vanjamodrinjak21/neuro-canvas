@@ -22,6 +22,7 @@ defineEmits<{
   ai: []
   'set-view': [view: 'editor' | 'graph']
   'generate-map': []
+  rename: [name: string]
 }>()
 </script>
 
@@ -37,6 +38,7 @@ defineEmits<{
       @ai="$emit('ai')"
       @set-view="(v) => $emit('set-view', v)"
       @generate-map="$emit('generate-map')"
+      @rename="(name) => $emit('rename', name)"
     />
     <div class="mme-body">
       <slot />

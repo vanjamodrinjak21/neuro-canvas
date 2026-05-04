@@ -169,13 +169,14 @@ watch(() => props.streamingText, () => {
 
 .mgs {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
+  left: 0; right: 0; bottom: var(--kbd-h, 0px);
   z-index: 201;
   display: flex; flex-direction: column;
   width: 100%;
   max-height: 90dvh;
   padding: 0 18px;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  transition: bottom 220ms cubic-bezier(0.16, 1, 0.3, 1);
   background: #09090B;
   border-top: 1px solid rgba(250, 250, 250, 0.10);
   border-radius: 24px 24px 0 0;
