@@ -17,6 +17,31 @@ const _isLoggingIn = ref(false)
 const _loginError = ref<string | null>(null)
 const _user = ref<{ id?: string; name?: string; email?: string; image?: string } | null>(null)
 
+async function revalidateSession() {
+  try {
+    const { CapacitorHttp } = await import('@capacitor/core')
+    const res = await CapacitorHttp.get({ url: `${AUTH_BASE_URL}/api/auth/session` })
+    const sessionData = typeof res.data === 'string' ? tryParseJSON(res.data) : res.data
+    if (sessionData?.user?.email) {
+      _user.value = sessionData.user
+      _isSignedIn.value = true
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: 1,
+        origin: AUTH_BASE_URL,
+        authenticatedAt: Date.now(),
+        user: sessionData.user,
+      }))
+    } else {
+      // Server says not signed in — clear local state.
+      _isSignedIn.value = false
+      _user.value = null
+      localStorage.removeItem(STORAGE_KEY)
+    }
+  } catch {
+    // Network failure — keep cached state so offline use still works.
+  }
+}
+
 export function useMobileAuth() {
   // Initialize from localStorage once
   if (!_initialized.value && typeof window !== 'undefined') {
@@ -34,6 +59,11 @@ export function useMobileAuth() {
       } catch {
         localStorage.removeItem(STORAGE_KEY)
       }
+    }
+    // Re-validate against server in the background so a stale/expired cookie
+    // flips isSignedIn back to false and the sync engine watcher reacts.
+    if ('Capacitor' in (window as any) && (window as any).Capacitor?.isNativePlatform?.()) {
+      void revalidateSession()
     }
   }
 
@@ -98,12 +128,30 @@ export function useMobileAuth() {
         throw new Error('Invalid email or password.')
       }
 
-      // Step 4: Store session locally
+      // Step 4: Pull the raw JWT so we can attach it as an explicit Cookie
+      // header on subsequent calls (CapacitorHttp's cookie jar is unreliable
+      // across plugin/native boundaries on iOS).
+      let token = ''
+      let cookieName = ''
+      try {
+        const tokenRes = await CapacitorHttp.get({
+          url: `${AUTH_BASE_URL}/api/auth/mobile-token`,
+        })
+        const tokenData = typeof tokenRes.data === 'string' ? tryParseJSON(tokenRes.data) : tokenRes.data
+        if (tokenData?.token && tokenData?.cookieName) {
+          token = tokenData.token
+          cookieName = tokenData.cookieName
+        }
+      } catch { /* fall back to cookie-jar mode */ }
+
+      // Step 5: Store session locally
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version: 1,
         origin: AUTH_BASE_URL,
         authenticatedAt: Date.now(),
         user: sessionData.user,
+        token,
+        cookieName,
       }))
 
       _user.value = sessionData.user
@@ -120,14 +168,32 @@ export function useMobileAuth() {
 
   /**
    * Make an authenticated fetch to the remote server using native HTTP.
+   * Attaches the persisted JWT as an explicit Cookie header so authentication
+   * does not depend on CapacitorHttp's native cookie jar (which is unreliable
+   * for cookies set via CapacitorCookies/Set-Cookie boundary on iOS).
    */
   async function remoteFetch<T = unknown>(path: string, options?: { method?: string; headers?: Record<string, string>; data?: unknown }): Promise<T> {
     const { CapacitorHttp } = await import('@capacitor/core')
     const url = path.startsWith('http') ? path : `${AUTH_BASE_URL}${path}`
+
+    const headers: Record<string, string> = { ...(options?.headers || {}) }
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        const data = JSON.parse(stored)
+        if (data?.token && data?.cookieName) {
+          // Don't clobber an explicit Cookie passed by the caller.
+          if (!headers.Cookie && !headers.cookie) {
+            headers.Cookie = `${data.cookieName}=${data.token}`
+          }
+        }
+      }
+    } catch { /* malformed localStorage — ignore */ }
+
     const res = await CapacitorHttp.request({
       url,
       method: options?.method || 'GET',
-      headers: options?.headers,
+      headers,
       data: options?.data,
     })
     if (res.status < 200 || res.status >= 300) {
@@ -162,7 +228,7 @@ export function useMobileAuth() {
       // Listen for the custom URL scheme callback from the mobile-callback page.
       // The callback contains user data AND the JWT session cookie, which we
       // set in CapacitorHttp's cookie jar so sync API calls are authenticated.
-      const sessionData = await new Promise<{ user: { id?: string; name?: string; email?: string; image?: string } }>((resolve, reject) => {
+      const sessionData = await new Promise<{ user: { id?: string; name?: string; email?: string; image?: string }; token?: string; cookieName?: string }>((resolve, reject) => {
         let browserClosed = false
 
         const urlListener = App.addListener('appUrlOpen', async (event) => {
@@ -176,8 +242,9 @@ export function useMobileAuth() {
                 browserListener.then(l => l.remove())
                 Browser.close().catch(() => {})
 
-                // Set the JWT cookie in CapacitorHttp's native cookie jar
-                // so sync API calls are authenticated
+                // Best-effort cookie-jar push for any code path that still
+                // relies on it. The explicit Cookie header in remoteFetch is
+                // the actual auth carrier.
                 if (callbackData.token && callbackData.cookieName) {
                   try {
                     const { CapacitorCookies } = await import('@capacitor/core')
@@ -186,12 +253,16 @@ export function useMobileAuth() {
                       key: callbackData.cookieName,
                       value: callbackData.token,
                       path: '/',
-                      expires: new Date(Date.now() + 6 * 60 * 60 * 1000).toUTCString(), // 6h like server
+                      expires: new Date(Date.now() + 6 * 60 * 60 * 1000).toUTCString(),
                     })
                   } catch {}
                 }
 
-                resolve({ user: callbackData.user })
+                resolve({
+                  user: callbackData.user,
+                  token: callbackData.token,
+                  cookieName: callbackData.cookieName,
+                })
                 return
               }
             }
@@ -222,12 +293,15 @@ export function useMobileAuth() {
         }, 120000)
       })
 
-      // Step 5: Store session locally
+      // Step 5: Store session locally — including the raw JWT so remoteFetch
+      // can attach it as an explicit Cookie header.
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version: 1,
         origin: AUTH_BASE_URL,
         authenticatedAt: Date.now(),
         user: sessionData.user,
+        token: sessionData.token || '',
+        cookieName: sessionData.cookieName || '',
       }))
 
       _user.value = sessionData.user

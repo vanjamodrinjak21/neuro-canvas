@@ -74,8 +74,9 @@ const totalEdges = computed(() =>
   <section class="mmaps" aria-label="All maps">
     <!-- Top bar -->
     <header class="mmaps-top">
-      <div class="mmaps-mark">
-        <div class="mmaps-mark-dot" />
+      <div class="mmaps-brand" aria-label="NeuroCanvas">
+        <img class="mmaps-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <span class="mmaps-wordmark">Neuro<span class="mmaps-wordmark-em">Canvas</span></span>
       </div>
       <div class="mmaps-top-right">
         <div class="mmaps-live">
@@ -254,18 +255,29 @@ const totalEdges = computed(() =>
 .mmaps-top {
   display: flex; align-items: center; justify-content: space-between;
   width: 100%;
-  height: 44px;
-  padding: 4px 20px 0 20px;
+  min-height: 56px;
+  padding: calc(env(safe-area-inset-top, 0px) + 26px) 20px 0 20px;
   box-sizing: border-box;
 }
+.mmaps-brand { display: flex; align-items: center; gap: 10px; }
 .mmaps-mark {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  background: var(--mmaps-mint);
-  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: block;
   flex-shrink: 0;
 }
-.mmaps-mark-dot { width: 9px; height: 9px; border-radius: 2px; background: var(--mmaps-bg); }
+.mmaps-wordmark {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--mmaps-ink, #FAFAFA);
+}
+.mmaps-wordmark-em {
+  font-style: italic;
+  color: var(--mmaps-mint, #00D2BE);
+}
 .mmaps-top-right { display: flex; align-items: center; gap: 10px; }
 
 .mmaps-live {
@@ -304,7 +316,7 @@ const totalEdges = computed(() =>
 .mmaps-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Editorial hero */
-.mmaps-hero { display: flex; flex-direction: column; padding: 18px 20px 0 20px; box-sizing: border-box; }
+.mmaps-hero { display: flex; flex-direction: column; padding: 28px 20px 0 20px; box-sizing: border-box; }
 .mmaps-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 500; font-size: 11px; line-height: 14px;

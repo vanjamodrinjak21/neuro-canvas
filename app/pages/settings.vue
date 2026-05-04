@@ -366,13 +366,26 @@ const mobileSignInPassword = ref('')
 const mobileSignInLoading = ref(false)
 const mobileSignInError = ref('')
 
+async function pullAndGoToDashboard() {
+  // Settings doesn't keep a syncEngine alive, so the isSignedIn watcher
+  // there never fires after login. Kick off a pull in the background and
+  // navigate immediately — the dashboard renders skeletons while it loads.
+  try {
+    const sync = useSyncEngine()
+    void sync.initialize().catch(e => console.error('[Settings] post-login sync failed', e))
+  } catch (e) {
+    console.error('[Settings] post-login sync init failed', e)
+  }
+  await router.push('/dashboard')
+}
+
 async function handleMobileOAuth(provider: 'google' | 'github') {
   try {
     await mobileAuth.loginWithOAuth(provider)
-    // Refresh nuxt-auth session
     try { const { getSession } = useAuth(); await getSession({ force: true }) } catch {}
-  } catch (e: any) {
-    // Error is already in mobileAuth.loginError
+    await pullAndGoToDashboard()
+  } catch {
+    // Error is surfaced via mobileAuth.loginError
   }
 }
 
@@ -384,11 +397,20 @@ async function handleMobileEmailSignIn() {
     await mobileAuth.loginWithCredentials(mobileSignInEmail.value, mobileSignInPassword.value)
     try { const { getSession } = useAuth(); await getSession({ force: true }) } catch {}
     mobileSettingsScreen.value = 'home'
+    await pullAndGoToDashboard()
   } catch (e: any) {
     mobileSignInError.value = e.message || 'Sign in failed'
   } finally {
     mobileSignInLoading.value = false
   }
+}
+
+function handleMobileSettingsSignIn(provider: 'google' | 'github' | 'email') {
+  if (provider === 'email') {
+    mobileSettingsScreen.value = 'signin-email'
+    return
+  }
+  void handleMobileOAuth(provider)
 }
 
 async function handleMobileSignOut() {
@@ -431,6 +453,7 @@ function handleAccountClose() {
             @open-ai-providers="mobileSettingsScreen = 'ai-providers'"
             @open-personal="mobileSettingsScreen = 'personal'"
             @sign-out="handleMobileSignOut"
+            @sign-in="handleMobileSettingsSignIn"
           />
         </template>
 
@@ -465,8 +488,44 @@ function handleAccountClose() {
           </button>
         </template>
 
-        <!-- ── General Screen ── -->
+        <!-- ── General Screen (Paper KL8-0) ── -->
         <template v-else-if="mobileSettingsScreen === 'general'">
+          <MobileSettingsGeneralDark @back="mobileSettingsScreen = 'home'" />
+        </template>
+
+        <!-- ── AI Providers Screen (Paper KPL-0) ── -->
+        <template v-else-if="mobileSettingsScreen === 'ai-providers'">
+          <MobileSettingsAIProvidersDark
+            :providers="aiSettings.providers.value"
+            :provider-key-status="providerKeyStatus"
+            @back="mobileSettingsScreen = 'home'"
+            @open-provider="(t) => selectEngine(t === 'anthropic' ? 'Claude' : t === 'openai' ? 'OpenAI' : 'Ollama')"
+          />
+        </template>
+
+        <!-- ── Personal Screen (Paper KTB-0) ── -->
+        <template v-else-if="mobileSettingsScreen === 'personal'">
+          <MobileSettingsPersonalDark
+            :user="user"
+            :user-initial="userInitial"
+            :locale="locale"
+            :i18n-locales="i18nLocales as Array<{ code: string; name: string }>"
+            @back="mobileSettingsScreen = 'home'"
+            @set-locale="(c) => { setLocale(c); if (typeof localStorage !== 'undefined') localStorage.setItem('i18n_locale', c) }"
+          />
+        </template>
+
+        <!-- ── Account Screen (Paper KXU-0) ── -->
+        <template v-else-if="mobileSettingsScreen === 'account'">
+          <MobileSettingsAccountDark
+            :user="user"
+            :provider="(session as any)?.provider || 'Credentials'"
+            @back="mobileSettingsScreen = 'home'"
+          />
+        </template>
+
+        <!-- ── Legacy inline templates (replaced; kept disabled) ── -->
+        <template v-if="false">
           <div class="m-subheader">
             <button class="m-back-btn" @click="mobileSettingsScreen = 'home'">
               <span class="i-lucide-arrow-left" />

@@ -20,9 +20,10 @@ const emit = defineEmits<{
   'export-markdown': []
   'open-shortcuts': []
   settings: []
+  'generate-map': []
 }>()
 
-type DispatchEvent = 'save' | 'share' | 'version-history' | 'comments' | 'export-png' | 'export-json' | 'export-markdown' | 'open-shortcuts' | 'settings'
+type DispatchEvent = 'save' | 'share' | 'version-history' | 'comments' | 'export-png' | 'export-json' | 'export-markdown' | 'open-shortcuts' | 'settings' | 'generate-map'
 
 function dispatch(event: DispatchEvent) {
   switch (event) {
@@ -35,6 +36,7 @@ function dispatch(event: DispatchEvent) {
     case 'export-markdown': emit('export-markdown'); break
     case 'open-shortcuts': emit('open-shortcuts'); break
     case 'settings': emit('settings'); break
+    case 'generate-map': emit('generate-map'); break
   }
   emit('close')
 }
@@ -56,9 +58,24 @@ watch(() => props.visible, (v) => {
         <button class="mms-handle" type="button" :aria-label="'Close'" @click="emit('close')">
           <span class="mms-handle-bar" />
         </button>
-        <span class="mms-eyebrow">MORE — 8 OPTIONS</span>
+        <span class="mms-eyebrow">MORE — 9 OPTIONS</span>
 
         <div class="mms-group">
+          <button class="mms-row" type="button" @click="dispatch('generate-map')">
+            <div class="mms-icon mms-icon--mint">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
+                <path d="M19 17L19.7 19L21.5 19.5L19.7 20L19 22L18.3 20L16.5 19.5L18.3 19L19 17Z" />
+              </svg>
+            </div>
+            <div class="mms-text">
+              <span class="mms-title">Generate map with AI</span>
+              <span class="mms-hint">TOPIC · BRANCHES · STREAMING</span>
+            </div>
+          </button>
+
+          <div class="mms-divider" />
+
           <button class="mms-row" type="button" @click="dispatch('save')">
             <div class="mms-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">

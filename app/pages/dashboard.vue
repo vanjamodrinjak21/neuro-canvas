@@ -791,6 +791,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
             :total-maps="sortedMaps.length"
             :total-nodes="stats.totalNodes"
             :is-creating-map="isCreatingMap"
+            :is-loading="isLoading"
             @new-map="createNewMap"
             @open-map="openMap"
             @open-ai="showAIModal = true"

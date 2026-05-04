@@ -27,6 +27,7 @@ const props = defineProps<{
   totalMaps: number
   totalNodes: number
   isCreatingMap?: boolean
+  isLoading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -96,10 +97,9 @@ function onRow(id: string) {
   <section class="mdash" aria-label="Dashboard">
     <!-- 01. Top bar — brand mark + LIVE chip + avatar -->
     <header class="mdash-top">
-      <div class="mdash-brand">
-        <div class="mdash-mark">
-          <div class="mdash-mark-dot" />
-        </div>
+      <div class="mdash-brand" aria-label="NeuroCanvas">
+        <img class="mdash-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <span class="mdash-wordmark">Neuro<span class="mdash-wordmark-em">Canvas</span></span>
       </div>
       <div class="mdash-top-right">
         <div class="mdash-live-chip">
@@ -138,9 +138,36 @@ function onRow(id: string) {
       </div>
     </div>
 
+    <!-- 03a. Skeleton state — server pull in flight -->
+    <template v-if="isLoading && !continueMap">
+      <div class="mdash-skel mdash-skel-continue" aria-hidden="true">
+        <div class="mdash-skel-thumb mdash-skel-shimmer" />
+        <div class="mdash-skel-meta">
+          <div class="mdash-skel-line mdash-skel-shimmer" style="width: 35%;" />
+          <div class="mdash-skel-line mdash-skel-shimmer" style="width: 70%; height: 16px;" />
+          <div class="mdash-skel-line mdash-skel-shimmer" style="width: 45%;" />
+        </div>
+      </div>
+      <div class="mdash-section">
+        <div class="mdash-section-eyebrow">
+          <span class="mdash-eyebrow-strong">02 — RECENT</span>
+          <span class="mdash-eyebrow-faint">· loading</span>
+        </div>
+      </div>
+      <div class="mdash-list">
+        <div v-for="n in 3" :key="`sk-${n}`" class="mdash-skel-row">
+          <div class="mdash-skel-thumb mdash-skel-shimmer" style="width: 44px; height: 44px;" />
+          <div class="mdash-skel-meta">
+            <div class="mdash-skel-line mdash-skel-shimmer" style="width: 60%;" />
+            <div class="mdash-skel-line mdash-skel-shimmer" style="width: 30%; height: 9px;" />
+          </div>
+        </div>
+      </div>
+    </template>
+
     <!-- 03. Mint "Currently editing" card -->
     <button
-      v-if="continueMap"
+      v-if="!isLoading && continueMap"
       type="button"
       class="mdash-continue"
       @click="onResume"
@@ -173,7 +200,7 @@ function onRow(id: string) {
     </button>
 
     <!-- 04. Section header — RECENT · X of Y · See all -->
-    <div class="mdash-section">
+    <div v-if="!isLoading" class="mdash-section">
       <div class="mdash-section-eyebrow">
         <span class="mdash-eyebrow-strong">02 — RECENT</span>
         <span class="mdash-eyebrow-faint">· {{ Math.min(recentRows.length, totalMaps) }} of {{ totalMaps }}</span>
@@ -182,7 +209,7 @@ function onRow(id: string) {
     </div>
 
     <!-- 05. Recent list — soft surface cards -->
-    <div class="mdash-list">
+    <div v-if="!isLoading" class="mdash-list">
       <button
         v-for="m in recentRows"
         :key="m.id"
@@ -270,22 +297,28 @@ function onRow(id: string) {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 44px;
-  padding: 4px 20px 0 20px;
+  min-height: 56px;
+  padding: calc(env(safe-area-inset-top, 0px) + 26px) 20px 0 20px;
   box-sizing: border-box;
 }
-.mdash-brand { display: flex; align-items: center; gap: 8px; }
+.mdash-brand { display: flex; align-items: center; gap: 10px; }
 .mdash-mark {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  background: var(--mdash-mint);
-  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: block;
   flex-shrink: 0;
 }
-.mdash-mark-dot {
-  width: 9px; height: 9px;
-  border-radius: 2px;
-  background: var(--mdash-bg);
+.mdash-wordmark {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--mdash-ink);
+}
+.mdash-wordmark-em {
+  font-style: italic;
+  color: var(--mdash-mint);
 }
 .mdash-top-right { display: flex; align-items: center; gap: 10px; }
 
@@ -332,7 +365,7 @@ function onRow(id: string) {
 .mdash-hero {
   display: flex; flex-direction: column;
   width: 100%;
-  padding: 18px 20px 0 20px;
+  padding: 36px 20px 0 20px;
   box-sizing: border-box;
 }
 .mdash-eyebrow {
@@ -539,6 +572,53 @@ function onRow(id: string) {
   letter-spacing: 0.06em;
   color: var(--mdash-mute);
   text-align: center;
+}
+
+/* ── Skeleton (loading) state ────────────────────────────────────────── */
+.mdash-skel-continue {
+  display: flex; align-items: center; gap: 14px;
+  margin: 28px 20px 0 20px;
+  padding: 14px 16px;
+  background: var(--mdash-surface);
+  border: 1px solid var(--mdash-stroke-soft);
+  border-radius: 18px;
+}
+.mdash-skel-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px;
+  background: var(--mdash-surface);
+  border: 1px solid var(--mdash-stroke-soft);
+  border-radius: 16px;
+}
+.mdash-skel-thumb {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.mdash-skel-meta {
+  display: flex; flex-direction: column;
+  flex: 1 1 0;
+  gap: 6px;
+  min-width: 0;
+}
+.mdash-skel-line {
+  height: 11px;
+  border-radius: 4px;
+}
+.mdash-skel-shimmer {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(250, 250, 250, 0.04) 0%,
+      rgba(250, 250, 250, 0.10) 50%,
+      rgba(250, 250, 250, 0.04) 100%
+    );
+  background-size: 200% 100%;
+  animation: mdash-shimmer 1.4s linear infinite;
+}
+@keyframes mdash-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ── 06. Floating FAB ────────────────────────────────────────────────── */

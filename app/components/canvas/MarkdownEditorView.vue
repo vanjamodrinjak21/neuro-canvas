@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { useMapStore } from '~/stores/mapStore'
 import { useMarkdownSync } from '~/composables/useMarkdownSync'
+import { useAutoSave } from '~/composables/useAutoSave'
 import type { Node } from '~/types/canvas'
 
 const mapStore = useMapStore()
 const mdSync = useMarkdownSync()
+const autoSave = useAutoSave()
+// Boot the periodic timer so the 30s safety net runs alongside the
+// per-keystroke flush below — covers cases where the user hops away
+// without triggering the debounce (selection moves, blur).
+autoSave.start()
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -250,6 +256,9 @@ function onEditorInput() {
   if (editingIdleTimer) clearTimeout(editingIdleTimer)
   editingIdleTimer = setTimeout(() => { isUserEditing.value = false }, 2000)
 
+  // Track interaction so the periodic auto-save defers until the user pauses.
+  autoSave.notifyInteraction()
+
   // Use innerText which correctly handles line breaks from contenteditable
   // regardless of how the browser structures the child elements.
   // This avoids the bug where backspace merges divs and el.children
@@ -262,6 +271,9 @@ function onEditorInput() {
   debounceTimer = setTimeout(() => {
     debounceTimer = null
     mdSync.fromMarkdown(text.value)
+    // Flush to local DB + cloud immediately after parsing the markdown.
+    // Don't wait 30s for the periodic timer.
+    autoSave.save().catch(err => console.error('[Editor] save failed', err))
   }, 1500)
 }
 

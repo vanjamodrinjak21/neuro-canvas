@@ -86,10 +86,25 @@ async function syncFetch<T>(path: string, options?: { method?: string; body?: un
       const qsStr = qs.toString()
       if (qsStr) url += `?${qsStr}`
     }
+
+    // Attach the JWT as an explicit Cookie header — CapacitorHttp's cookie
+    // jar can't be relied on for cookies that crossed the WebView boundary.
+    const headers: Record<string, string> = {}
+    if (options?.body) headers['Content-Type'] = 'application/json'
+    try {
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('nc-mobile-session') : null
+      if (stored) {
+        const data = JSON.parse(stored)
+        if (data?.token && data?.cookieName) {
+          headers.Cookie = `${data.cookieName}=${data.token}`
+        }
+      }
+    } catch { /* ignore malformed storage */ }
+
     const res = await CapacitorHttp.request({
       url,
       method: options?.method || 'GET',
-      headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
+      headers,
       data: options?.body,
     })
     if (res.status < 200 || res.status >= 300) {
@@ -498,11 +513,12 @@ export function useSyncEngine() {
   // ─── Initialize ──────────────────────────────────────────────────
 
   async function initialize(): Promise<void> {
-    if (state.isInitialized) return
+    if (state.isInitialized && isSyncEnabled.value) return
 
     if (!isSyncEnabled.value) {
+      // Don't mark as initialized — when the user signs in later we want
+      // the watcher's re-init to actually run (pull maps, open SSE).
       state.syncStatus = 'disabled'
-      state.isInitialized = true
       return
     }
 

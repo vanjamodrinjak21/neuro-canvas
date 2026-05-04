@@ -24,6 +24,7 @@ const emit = defineEmits<{
   'open-ai-providers': []
   'open-personal': []
   'sign-out': []
+  'sign-in': [provider: 'google' | 'github' | 'email']
 }>()
 
 const displayName = computed(() => props.user?.name || 'Guest')
@@ -34,8 +35,9 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   <section class="mset" aria-label="Settings">
     <!-- Top bar -->
     <header class="mset-top">
-      <div class="mset-mark">
-        <div class="mset-mark-dot" />
+      <div class="mset-brand" aria-label="NeuroCanvas">
+        <img class="mset-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <span class="mset-wordmark">Neuro<span class="mset-wordmark-em">Canvas</span></span>
       </div>
       <div class="mset-live">
         <span class="mset-live-dot" />
@@ -55,8 +57,41 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 
     <!-- Scrollable body -->
     <div class="mset-scroll">
-      <!-- Profile card -->
-      <button class="mset-profile" type="button" @click="emit('open-account')">
+      <!-- Sign-in panel (guest / local user) -->
+      <div v-if="isLocalUser" class="mset-signin">
+        <div class="mset-signin-head">
+          <span class="mset-signin-eyebrow">SIGN IN</span>
+          <span class="mset-signin-title">Sync across devices.</span>
+          <span class="mset-signin-sub">Save your maps, settings and AI keys to your account.</span>
+        </div>
+        <div class="mset-signin-grid">
+          <button class="mset-signin-btn mset-signin-btn--primary" type="button" @click="emit('sign-in', 'google')">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83C6.71 7.31 9.14 5.38 12 5.38z"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+          <button class="mset-signin-btn" type="button" @click="emit('sign-in', 'github')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.2.7-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.9-.39.98 0 1.97.13 2.9.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
+            </svg>
+            <span>Continue with GitHub</span>
+          </button>
+          <button class="mset-signin-btn" type="button" @click="emit('sign-in', 'email')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M3 7L12 13L21 7" />
+            </svg>
+            <span>Sign in with email</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Profile card (signed in) -->
+      <button v-else class="mset-profile" type="button" @click="emit('open-account')">
         <div class="mset-profile-avatar">
           <img v-if="user?.image" :src="user.image" :alt="displayName" class="mset-profile-img">
           <span v-else>{{ userInitial }}</span>
@@ -211,19 +246,30 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 .mset-top {
   display: flex; align-items: center; justify-content: space-between;
   width: 100%;
-  height: 44px;
-  padding: 4px 20px 0 20px;
+  min-height: 56px;
+  padding: calc(env(safe-area-inset-top, 0px) + 26px) 20px 0 20px;
   box-sizing: border-box;
   flex-shrink: 0;
 }
+.mset-brand { display: flex; align-items: center; gap: 10px; }
 .mset-mark {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  background: var(--mset-mint);
-  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: block;
   flex-shrink: 0;
 }
-.mset-mark-dot { width: 9px; height: 9px; border-radius: 2px; background: var(--mset-bg); }
+.mset-wordmark {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--mset-ink, #FAFAFA);
+}
+.mset-wordmark-em {
+  font-style: italic;
+  color: var(--mset-mint, #00D2BE);
+}
 .mset-live {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 9px;
@@ -248,7 +294,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 /* Hero */
 .mset-hero {
   display: flex; flex-direction: column;
-  padding: 18px 20px 0 20px;
+  padding: 28px 20px 0 20px;
   box-sizing: border-box;
   flex-shrink: 0;
 }
@@ -290,6 +336,60 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   scrollbar-width: none;
 }
 .mset-scroll::-webkit-scrollbar { display: none; }
+
+/* Sign-in panel (guest) */
+.mset-signin {
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 22px 20px;
+  background: var(--mset-surface);
+  border: 1px solid var(--mset-stroke);
+  border-radius: 16px;
+}
+.mset-signin-head {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mset-signin-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 10px; line-height: 12px;
+  letter-spacing: 0.14em;
+  color: var(--mset-mint);
+}
+.mset-signin-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic; font-weight: 400;
+  font-size: 24px; line-height: 28px;
+  letter-spacing: -0.01em;
+  color: var(--mset-ink);
+}
+.mset-signin-sub {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400; font-size: 13px; line-height: 18px;
+  color: var(--mset-body);
+}
+.mset-signin-grid {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.mset-signin-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(250, 250, 250, 0.04);
+  border: 1px solid var(--mset-stroke);
+  border-radius: 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500; font-size: 14px; line-height: 18px;
+  color: var(--mset-ink);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.mset-signin-btn:active { background: rgba(250, 250, 250, 0.08); }
+.mset-signin-btn--primary {
+  background: var(--mset-mint);
+  border-color: var(--mset-mint);
+  color: #09090B;
+  font-weight: 600;
+}
+.mset-signin-btn--primary:active { background: #00b8a6; }
 
 /* Profile card */
 .mset-profile {

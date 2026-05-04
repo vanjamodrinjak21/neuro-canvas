@@ -286,6 +286,11 @@ const showGenerateMapDialog = ref(false)
 const showSidebarSheet = ref(false)
 const showMobileAISheet = ref(false)
 const showMobileMenu = ref(false)
+const showMobileGenerateSheet = ref(false)
+const mobileGenIsRunning = ref(false)
+const mobileGenStreamingText = ref('')
+const mobileGenError = ref<string | null>(null)
+const mobileGenCancelRequested = ref(false)
 const sidebarCollapsed = ref(false)
 
 // Zoom presets (managed by ZoomControls component internally)
@@ -1472,6 +1477,67 @@ async function handleGenerateDescription() {
   }
 }
 
+async function handleMobileGenerateMap(topic: string, depth: 'shallow' | 'medium' | 'deep') {
+  if (mobileGenIsRunning.value) return
+  mobileGenIsRunning.value = true
+  mobileGenStreamingText.value = ''
+  mobileGenError.value = null
+  mobileGenCancelRequested.value = false
+  isAILoading.value = true
+
+  try {
+    const branchCount = depth === 'shallow' ? 3 : depth === 'deep' ? 7 : 5
+    const maxDepth = depth === 'shallow' ? 1 : depth === 'deep' ? 3 : 2
+
+    const structure = await ai.generateMapStructure(
+      topic,
+      {
+        branchCount,
+        maxDepth,
+        style: 'concise',
+        includeCrossConnections: depth !== 'shallow',
+        locale: currentLocale.value,
+      },
+      {
+        stream: true,
+        onPartialResult: (accumulated: string) => {
+          if (mobileGenCancelRequested.value) return
+          mobileGenStreamingText.value = accumulated
+        },
+      }
+    )
+
+    if (mobileGenCancelRequested.value) {
+      return
+    }
+
+    const startPosition = { x: 0, y: 0 }
+    const { nodeIds } = mapRenderer.renderMapStructure(structure, startPosition)
+
+    for (const nodeId of nodeIds) {
+      semanticStore.markDirty(nodeId)
+    }
+    ai.processQueue(
+      (nId) => mapStore.nodes.get(nId)?.content,
+      semanticStore.fieldSettings.similarityThreshold
+    )
+
+    springCamera.setTarget({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      zoom: 0.8,
+    }, 'navigation')
+
+    showMobileGenerateSheet.value = false
+  } catch (e: any) {
+    console.error('[Mobile] AI generate failed', e)
+    mobileGenError.value = e?.message || 'Generation failed. Try a different topic.'
+  } finally {
+    mobileGenIsRunning.value = false
+    isAILoading.value = false
+  }
+}
+
 async function handleGenerateMap(topic: string, options: { depth: string; style: string; domain?: string }) {
   isAILoading.value = true
   showGenerateMapDialog.value = false
@@ -1704,7 +1770,28 @@ useHead({
     </button>
     </template><!-- end desktop sidebar -->
 
-    <!-- ═══════════════ MAIN CANVAS AREA ═══════════════ -->
+    <!-- ═══════════════ MOBILE MAP EDITOR (isolated shell) ═══════════════ -->
+    <MobileMapEditor
+      v-if="isMobile && !isLoading && !loadError"
+      :title="mapStore.title || 'Untitled'"
+      :node-count="mapStore.nodes.size"
+      :view-mode="viewMode"
+      :is-synced="!!collabSession"
+      @back="$router.push('/maps')"
+      @more="showMobileMenu = !showMobileMenu"
+      @ai="showMobileAISheet = true"
+      @generate-map="showMobileGenerateSheet = true"
+      @set-view="(v: 'editor' | 'graph') => { viewMode = v; platform.haptics.selection() }"
+    >
+      <CanvasMarkdownEditorView v-if="viewMode === 'editor'" />
+      <CanvasForceGraphCanvas
+        v-else-if="viewMode === 'graph' && mapStore.nodes.size > 0"
+        @select-node="(id: string) => mapStore.selectNode(id)"
+        @deselect="mapStore.clearSelection()"
+      />
+    </MobileMapEditor>
+
+    <!-- ═══════════════ MAIN CANVAS AREA (desktop) ═══════════════ -->
     <div class="flex-1 relative">
       <!-- Canvas Background -->
       <div class="absolute inset-0 pointer-events-none z-0">
@@ -1723,19 +1810,6 @@ useHead({
         v-if="!isLoading && !loadError && mapStore.nodes.size === 0 && !isMobile && viewMode === 'canvas'"
         @add-node="handleAddNodeFromSidebar"
         @generate-map="showGenerateMapDialog = true"
-      />
-
-      <!-- Mobile Editor Chrome (Paper GHM-0 / GW7-0) -->
-      <MobileEditorChrome
-        v-if="isMobile && !isLoading && !loadError"
-        :title="mapStore.title || 'Untitled'"
-        :node-count="mapStore.nodes.size"
-        :view-mode="viewMode"
-        :is-synced="!!collabSession"
-        @back="$router.push('/maps')"
-        @more="showMobileMenu = !showMobileMenu"
-        @ai="showMobileAISheet = true"
-        @set-view="(v: 'editor' | 'graph') => { viewMode = v; platform.haptics.selection() }"
       />
 
       <!-- Canvas View (desktop only) -->
@@ -1760,16 +1834,16 @@ useHead({
         :camera="camera"
       />
 
-      <!-- Graph View (Obsidian-style force-directed) -->
+      <!-- Graph View (desktop only — mobile uses MobileMapEditor) -->
       <CanvasForceGraphCanvas
-        v-if="!isLoading && !loadError && viewMode === 'graph' && mapStore.nodes.size > 0"
+        v-if="!isLoading && !loadError && viewMode === 'graph' && mapStore.nodes.size > 0 && !isMobile"
         @select-node="(id: string) => mapStore.selectNode(id)"
         @deselect="mapStore.clearSelection()"
       />
 
-      <!-- Markdown Editor View — always available; typing here creates nodes -->
+      <!-- Markdown Editor View (desktop only — mobile uses MobileMapEditor) -->
       <CanvasMarkdownEditorView
-        v-if="!isLoading && !loadError && viewMode === 'editor'"
+        v-if="!isLoading && !loadError && viewMode === 'editor' && !isMobile"
       />
 
 
@@ -1896,14 +1970,6 @@ useHead({
       @close="showSidebarSheet = false"
     />
 
-    <!-- Mobile Node Properties Sheet -->
-    <CanvasMobileNodePropertiesSheet
-      :visible="isMobile && !!selectedNode && !showSidebarSheet"
-      :selected-node="selectedNode"
-      @action="handleSidebarAction"
-      @close="mapStore.clearSelection()"
-    />
-
     <!-- Mobile AI Suggestions Sheet -->
     <CanvasMobileAISuggestionsSheet
       :visible="isMobile && showMobileAISheet"
@@ -1928,6 +1994,19 @@ useHead({
       @export-markdown="handleExportMarkdown"
       @open-shortcuts="showShortcutsModal = true"
       @settings="$router.push('/settings')"
+      @generate-map="showMobileGenerateSheet = true"
+    />
+
+    <!-- Mobile AI Generate Map sheet (topic input + streaming progress) -->
+    <MobileGenerateMapSheet
+      v-if="isMobile"
+      :visible="showMobileGenerateSheet"
+      :is-generating="mobileGenIsRunning"
+      :streaming-text="mobileGenStreamingText"
+      :error-text="mobileGenError"
+      @close="showMobileGenerateSheet = false"
+      @cancel="mobileGenCancelRequested = true"
+      @generate="handleMobileGenerateMap"
     />
 
     <!-- Panels (UNTOUCHED) -->
@@ -2044,6 +2123,7 @@ useHead({
   z-index: 60;
   pointer-events: auto;
 }
+
 
 .minimap-wrapper {
   position: fixed;

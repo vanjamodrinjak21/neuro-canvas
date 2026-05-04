@@ -65,8 +65,9 @@ function categoryLabel(c: TemplateCategory): string {
   <section class="mtpl" aria-label="Templates">
     <!-- Top bar -->
     <header class="mtpl-top">
-      <div class="mtpl-mark">
-        <div class="mtpl-mark-dot" />
+      <div class="mtpl-brand" aria-label="NeuroCanvas">
+        <img class="mtpl-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <span class="mtpl-wordmark">Neuro<span class="mtpl-wordmark-em">Canvas</span></span>
       </div>
       <div class="mtpl-top-right">
         <div class="mtpl-live">
@@ -214,18 +215,29 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-top {
   display: flex; align-items: center; justify-content: space-between;
   width: 100%;
-  height: 44px;
-  padding: 4px 20px 0 20px;
+  min-height: 56px;
+  padding: calc(env(safe-area-inset-top, 0px) + 26px) 20px 0 20px;
   box-sizing: border-box;
 }
+.mtpl-brand { display: flex; align-items: center; gap: 10px; }
 .mtpl-mark {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  background: var(--mtpl-mint);
-  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: block;
   flex-shrink: 0;
 }
-.mtpl-mark-dot { width: 9px; height: 9px; border-radius: 2px; background: var(--mtpl-bg); }
+.mtpl-wordmark {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--mtpl-ink, #FAFAFA);
+}
+.mtpl-wordmark-em {
+  font-style: italic;
+  color: var(--mtpl-mint, #00D2BE);
+}
 .mtpl-top-right { display: flex; align-items: center; gap: 10px; }
 .mtpl-live {
   display: flex; align-items: center; gap: 6px;
@@ -262,7 +274,7 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Hero */
-.mtpl-hero { display: flex; flex-direction: column; padding: 18px 20px 0 20px; box-sizing: border-box; }
+.mtpl-hero { display: flex; flex-direction: column; padding: 28px 20px 0 20px; box-sizing: border-box; }
 .mtpl-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 500; font-size: 11px; line-height: 14px;
