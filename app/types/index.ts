@@ -43,7 +43,7 @@ export interface AISuggestion {
 export interface UserPreferences {
   theme: 'dark' | 'light' | 'system'
   reducedMotion: boolean
-  fontSize: 'small' | 'medium' | 'large'
+  fontSize: 'xs' | 'small' | 'medium' | 'large' | 'xl'
   autoSave: boolean
   autoSaveInterval: number
   showMinimap: boolean

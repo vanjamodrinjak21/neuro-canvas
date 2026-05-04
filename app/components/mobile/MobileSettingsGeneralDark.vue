@@ -24,22 +24,29 @@ const fontSize = computed(() => prefs.value.fontSize)
 function setTheme(value: 'light' | 'dark' | 'system') {
   userStore.setPreference('theme', value)
 }
-function setFontSize(value: 'small' | 'medium' | 'large') {
+type FontSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
+
+const FONT_SIZE_STEPS: ReadonlyArray<FontSize> = ['xs', 'small', 'medium', 'large', 'xl']
+const FONT_SIZE_PX: Record<FontSize, number> = {
+  xs: 13,
+  small: 14,
+  medium: 16,
+  large: 18,
+  xl: 20
+}
+
+function setFontSize(value: FontSize) {
   userStore.setPreference('fontSize', value)
 }
 function toggle(key: 'autoSave' | 'reducedMotion' | 'showGrid' | 'showMinimap') {
   userStore.setPreference(key, !prefs.value[key])
 }
 
-const fontSizePx = computed(() => {
-  if (fontSize.value === 'small') return 14
-  if (fontSize.value === 'large') return 18
-  return 16
-})
+const fontSizePx = computed(() => FONT_SIZE_PX[fontSize.value as FontSize] ?? 16)
 const sliderPercent = computed(() => {
-  if (fontSize.value === 'small') return 0
-  if (fontSize.value === 'large') return 100
-  return 50
+  const idx = FONT_SIZE_STEPS.indexOf(fontSize.value as FontSize)
+  if (idx < 0) return 50
+  return (idx / (FONT_SIZE_STEPS.length - 1)) * 100
 })
 
 const themeStatus = computed(() => {
@@ -152,15 +159,21 @@ const themeStatus = computed(() => {
             <span class="mgen-row-value">{{ fontSizePx }} PX</span>
           </div>
           <div class="mgen-slider">
-            <button class="mgen-slider-cap mgen-slider-cap--sm" type="button" @click="setFontSize('small')">A</button>
+            <button class="mgen-slider-cap mgen-slider-cap--sm" type="button" @click="setFontSize('xs')">A</button>
             <div class="mgen-slider-track">
               <div class="mgen-slider-fill" :style="{ width: sliderPercent + '%' }" />
               <div class="mgen-slider-knob" :style="{ left: 'calc(' + sliderPercent + '% - 8px)' }" />
-              <button class="mgen-slider-step" type="button" aria-label="Small" @click="setFontSize('small')" />
-              <button class="mgen-slider-step mgen-slider-step--mid" type="button" aria-label="Medium" @click="setFontSize('medium')" />
-              <button class="mgen-slider-step mgen-slider-step--end" type="button" aria-label="Large" @click="setFontSize('large')" />
+              <button
+                v-for="(step, i) in FONT_SIZE_STEPS"
+                :key="step"
+                class="mgen-slider-step"
+                :style="{ left: ((i / (FONT_SIZE_STEPS.length - 1)) * 100) + '%' }"
+                type="button"
+                :aria-label="step"
+                @click="setFontSize(step)"
+              />
             </div>
-            <button class="mgen-slider-cap mgen-slider-cap--lg" type="button" @click="setFontSize('large')">A</button>
+            <button class="mgen-slider-cap mgen-slider-cap--lg" type="button" @click="setFontSize('xl')">A</button>
           </div>
         </div>
 

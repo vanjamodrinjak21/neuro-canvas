@@ -1,0 +1,38 @@
+/* ══════════════════════════════════════════
+   GLOBAL FONT-SIZE PREFERENCE
+   Anchors the html font-size, which all rem-based tokens scale from.
+   No `zoom` — keeps 100vh, fixed positioning, and Safari layout sane.
+   ══════════════════════════════════════════ */
+html[data-font-size="xs"]     { font-size: 13px; }
+html[data-font-size="small"]  { font-size: 14px; }
+html[data-font-size="medium"] { font-size: 16px; }
+html[data-font-size="large"]  { font-size: 18px; }
+html[data-font-size="xl"]     { font-size: 20px; }
+
+/* Reduced motion — kill animations / transitions everywhere when enabled */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Theme switch — suppress transitions document-wide while the swap happens
+   so hundreds of color/background-color transitions don't fire at once and
+   cause visible jitter at the edges of the expanding overlay. The toggle
+   removes this attribute after the overlay finishes fading. */
+html[data-theme-switching] *,
+html[data-theme-switching] *::before,
+html[data-theme-switching] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+html[data-theme-switching] .theme-swipe-overlay,
+html[data-theme-switching] .theme-swipe-overlay::before,
+html[data-theme-switching] .theme-swipe-overlay::after {
+  transition: revert !important;
+}

@@ -133,9 +133,11 @@ const themeOptions = computed(() => [
 ])
 
 const fontSizeOptions = computed(() => [
+  { value: 'xs', label: t('settings.general.xs') },
   { value: 'small', label: t('settings.general.small') },
   { value: 'medium', label: t('settings.general.medium') },
-  { value: 'large', label: t('settings.general.large') }
+  { value: 'large', label: t('settings.general.large') },
+  { value: 'xl', label: t('settings.general.xl') }
 ])
 
 // ─── AI Providers Tab ─────────────────────────────────────────────
@@ -291,6 +293,90 @@ async function saveApiKey(type: 'openai' | 'anthropic') {
   }
 }
 
+// ─── Mobile AI Provider key flows (used by MobileSettingsAIProvidersDark) ──
+const keySavingType = ref<string | null>(null)
+const keyError = ref<string | null>(null)
+
+async function handleMobileSaveKey(payload: { type: string, key: string }) {
+  const { type, key } = payload
+  if (!key) return
+  keySavingType.value = type
+  keyError.value = null
+  try {
+    if (type === 'ollama') {
+      // Ollama uses an endpoint URL, not an API key
+      try {
+        const parsed = new URL(key)
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          keyError.value = 'Endpoint must be http:// or https://'
+          return
+        }
+      } catch {
+        keyError.value = 'Invalid URL'
+        return
+      }
+      let provider = aiSettings.providers.value.find(p => p.type === 'ollama')
+      if (!provider) {
+        await aiSettings.addProvider('ollama', 'Ollama', undefined, key)
+        provider = aiSettings.providers.value.find(p => p.type === 'ollama')
+      }
+      if (provider) {
+        await aiSettings.updateProvider(provider.id, { baseUrl: key, isEnabled: true })
+        ollamaEndpoint.value = key
+        ollamaEnabled.value = true
+        providerKeyStatus.value.set(provider.id, true)
+      }
+      flashSaved()
+      return
+    }
+
+    let provider = aiSettings.providers.value.find(p => p.type === type)
+    if (!provider) {
+      const nameMap: Record<string, string> = {
+        anthropic: 'Claude',
+        openai: 'OpenAI',
+        openrouter: 'OpenRouter'
+      }
+      await aiSettings.addProvider(type as any, nameMap[type] || type)
+      provider = aiSettings.providers.value.find(p => p.type === type)
+    }
+    if (provider) {
+      await aiSettings.updateProviderApiKey(provider.id, key)
+      providerKeyStatus.value.set(provider.id, true)
+      // Mirror in legacy refs so desktop tab stays in sync
+      if (type === 'openai') openaiKey.value = KEY_MASK
+      if (type === 'anthropic') anthropicKey.value = KEY_MASK
+      flashSaved()
+    }
+  } catch (e: any) {
+    keyError.value = e?.message || 'Could not save key'
+  } finally {
+    keySavingType.value = null
+  }
+}
+
+async function handleMobileRemoveKey(type: string) {
+  const provider = aiSettings.providers.value.find(p => p.type === type)
+  if (!provider) return
+  try {
+    await aiSettings.updateProviderApiKey(provider.id, '')
+    providerKeyStatus.value.set(provider.id, false)
+    if (type === 'openai') openaiKey.value = ''
+    if (type === 'anthropic') anthropicKey.value = ''
+    flashSaved()
+  } catch {
+    // swallow — UI already shows the row return to "Connect"
+  }
+}
+
+async function handleMobileTestKey(type: string) {
+  // Placeholder for future ping endpoint. For now, flash the saved indicator
+  // so the user sees feedback that the action was received.
+  const provider = aiSettings.providers.value.find(p => p.type === type)
+  if (!provider) return
+  flashSaved()
+}
+
 // Toggle Ollama
 async function toggleOllama() {
   ollamaEnabled.value = !ollamaEnabled.value
@@ -353,7 +439,7 @@ function cycleTheme(e: MouseEvent) {
 }
 
 function cycleFontSize() {
-  const order = ['small', 'medium', 'large'] as const
+  const order = ['xs', 'small', 'medium', 'large', 'xl'] as const
   const current = userStore.preferences.value.fontSize
   const idx = order.indexOf(current as typeof order[number])
   const next = order[(idx + 1) % order.length]
@@ -498,8 +584,12 @@ function handleAccountClose() {
           <MobileSettingsAIProvidersDark
             :providers="aiSettings.providers.value"
             :provider-key-status="providerKeyStatus"
+            :key-saving="keySavingType"
+            :key-error="keyError"
             @back="mobileSettingsScreen = 'home'"
-            @open-provider="(t) => selectEngine(t === 'anthropic' ? 'Claude' : t === 'openai' ? 'OpenAI' : 'Ollama')"
+            @save-key="handleMobileSaveKey"
+            @remove-key="handleMobileRemoveKey"
+            @test-key="handleMobileTestKey"
           />
         </template>
 
@@ -524,204 +614,6 @@ function handleAccountClose() {
           />
         </template>
 
-        <!-- ── Legacy inline templates (replaced; kept disabled) ── -->
-        <template v-if="false">
-          <div class="m-subheader">
-            <button class="m-back-btn" @click="mobileSettingsScreen = 'home'">
-              <span class="i-lucide-arrow-left" />
-            </button>
-            <h2 class="m-subtitle">{{ $t('settings.tabs.general') }}</h2>
-          </div>
-
-          <div class="m-label">{{ $t('settings.general.appearance') }}</div>
-          <div class="m-segmented-control">
-            <button v-for="opt in themeOptions" :key="opt.value" :class="['m-seg', { active: userStore.preferences.value.theme === opt.value }]" @click="cycleTheme($event)">
-              <span :class="['m-seg-icon', opt.icon]" />
-              <span class="m-seg-label">{{ opt.label }}</span>
-            </button>
-          </div>
-
-          <div class="m-label">{{ $t('settings.general.font_size') }}</div>
-          <div class="m-segmented-control">
-            <button v-for="opt in fontSizeOptions" :key="opt.value" :class="['m-seg', { active: userStore.preferences.value.fontSize === opt.value }]" @click="userStore.setPreference('fontSize', opt.value as any)">
-              <span class="m-seg-label">{{ opt.label }}</span>
-            </button>
-          </div>
-
-          <div class="m-group" style="margin-top: 24px;">
-            <div class="m-row">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-save" /><span class="m-row-text">{{ $t('settings.general.auto_save') }}</span></div>
-              <button class="m-toggle" :class="{ on: userStore.preferences.value.autoSave }" @click="userStore.setPreference('autoSave', !userStore.preferences.value.autoSave)"><span class="m-toggle-knob" /></button>
-            </div>
-            <div class="m-row">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-minimize-2" /><span class="m-row-text">{{ $t('settings.general.reduced_motion') }}</span></div>
-              <button class="m-toggle" :class="{ on: userStore.preferences.value.reducedMotion }" @click="userStore.setPreference('reducedMotion', !userStore.preferences.value.reducedMotion)"><span class="m-toggle-knob" /></button>
-            </div>
-            <div class="m-row">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-grid-3x3" /><span class="m-row-text">{{ $t('settings.general.show_grid') }}</span></div>
-              <button class="m-toggle" :class="{ on: userStore.preferences.value.showGrid }" @click="userStore.setPreference('showGrid', !userStore.preferences.value.showGrid)"><span class="m-toggle-knob" /></button>
-            </div>
-            <div class="m-row m-row--last">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-picture-in-picture-2" /><span class="m-row-text">{{ $t('settings.general.show_minimap') }}</span></div>
-              <button class="m-toggle" :class="{ on: userStore.preferences.value.showMinimap }" @click="userStore.setPreference('showMinimap', !userStore.preferences.value.showMinimap)"><span class="m-toggle-knob" /></button>
-            </div>
-          </div>
-        </template>
-
-        <!-- ── AI Providers Screen ── -->
-        <template v-else-if="mobileSettingsScreen === 'ai-providers'">
-          <div class="m-subheader">
-            <button class="m-back-btn" @click="mobileSettingsScreen = 'home'">
-              <span class="i-lucide-arrow-left" />
-            </button>
-            <h2 class="m-subtitle">{{ $t('settings.tabs.ai_providers') }}</h2>
-          </div>
-
-          <div class="m-group">
-            <div
-              v-for="(provider, idx) in aiSettings.providers.value"
-              :key="provider.id"
-              :class="['m-row', { 'm-row--last': idx === aiSettings.providers.value.length - 1 }]"
-            >
-              <div class="m-row-left">
-                <span class="m-row-icon i-lucide-bot" />
-                <div class="m-row-col">
-                  <span class="m-row-text">{{ provider.name }}</span>
-                  <span class="m-row-sub">{{ provider.selectedModelId || $t('settings.ai_providers.no_models') }}</span>
-                </div>
-              </div>
-              <div v-if="providerKeyStatus.get(provider.id)" class="m-row-right m-connected">
-                <span class="m-dot" />
-                <span class="m-connected-text">{{ $t('settings.mobile.connected') }}</span>
-              </div>
-              <div v-else class="m-row-right">
-                <span class="m-row-value">{{ $t('settings.mobile.add_key') }}</span>
-                <span class="m-row-chevron i-lucide-chevron-right" />
-              </div>
-            </div>
-          </div>
-
-          <!-- On-Device AI (Capacitor only) -->
-          <LocalModelCard v-if="platformRef.isCapacitor.value" style="margin: 0 24px 20px;" />
-
-          <div class="m-label">{{ $t('settings.mobile.default_model') }}</div>
-          <div class="m-group">
-            <button v-for="engine in aiEngines" :key="engine" :class="['m-row', { 'm-row--last': engine === aiEngines[aiEngines.length - 1] }]" @click="selectEngine(engine)">
-              <div class="m-row-left"><span class="m-row-text">{{ engine }}</span></div>
-              <span v-if="selectedEngine === engine" class="i-lucide-check m-row-check" />
-            </button>
-          </div>
-        </template>
-
-        <!-- ── Personal Screen ── -->
-        <template v-else-if="mobileSettingsScreen === 'personal'">
-          <div class="m-subheader">
-            <button class="m-back-btn" @click="mobileSettingsScreen = 'home'">
-              <span class="i-lucide-arrow-left" />
-            </button>
-            <h2 class="m-subtitle">{{ $t('settings.tabs.personal') }}</h2>
-          </div>
-
-          <div class="m-label">{{ $t('settings.personal.profile') }}</div>
-          <div class="m-group">
-            <div class="m-row m-row--profile">
-              <div class="m-avatar m-avatar--lg">
-                <img v-if="user?.image" :src="user.image" :alt="user?.name || 'Profile'" class="m-avatar-img">
-                <span v-else class="m-avatar-letter">{{ userInitial }}</span>
-              </div>
-              <div class="m-row-col">
-                <span class="m-account-name">{{ user?.name || 'User' }}</span>
-                <span class="m-row-action">Change avatar</span>
-              </div>
-            </div>
-            <div class="m-row m-row--field">
-              <label class="m-field-label">Display name</label>
-              <input class="m-field-input" :value="user?.name || ''" placeholder="Display name">
-            </div>
-            <div class="m-row m-row--field m-row--last">
-              <label class="m-field-label">Bio</label>
-              <input class="m-field-input" value="" placeholder="A short bio..." maxlength="280">
-            </div>
-          </div>
-
-          <div class="m-label">{{ $t('settings.personal.preferences') }}</div>
-          <div class="m-group">
-            <div class="m-row">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-globe" /><span class="m-row-text">{{ $t('settings.personal.language') }}</span></div>
-              <div class="m-row-right">
-                <select
-                  :value="locale"
-                  class="m-row-select"
-                  @change="setLocale(($event.target as HTMLSelectElement).value); if (typeof localStorage !== 'undefined') localStorage.setItem('i18n_locale', ($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="loc in (i18nLocales as Array<{code: string; name: string}>)" :key="loc.code" :value="loc.code">{{ loc.name }}</option>
-                </select>
-              </div>
-            </div>
-            <div class="m-row">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-bell" /><span class="m-row-text">{{ $t('settings.personal.email_notifications') }}</span></div>
-              <button class="m-toggle on"><span class="m-toggle-knob" /></button>
-            </div>
-            <div class="m-row m-row--last">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-bar-chart-3" /><span class="m-row-text">{{ $t('settings.personal.usage_analytics') }}</span></div>
-              <button class="m-toggle"><span class="m-toggle-knob" /></button>
-            </div>
-          </div>
-        </template>
-
-        <!-- ── Account Screen ── -->
-        <template v-else-if="mobileSettingsScreen === 'account'">
-          <div class="m-subheader">
-            <button class="m-back-btn" @click="mobileSettingsScreen = 'home'">
-              <span class="i-lucide-arrow-left" />
-            </button>
-            <h2 class="m-subtitle">{{ $t('settings.tabs.account') }}</h2>
-          </div>
-
-          <div class="m-label">{{ $t('settings.account.account_info') }}</div>
-          <div class="m-group">
-            <div class="m-row">
-              <span class="m-row-text">{{ $t('settings.account.email') }}</span>
-              <span class="m-row-value">{{ user?.email || '—' }}</span>
-            </div>
-            <div class="m-row">
-              <span class="m-row-text">{{ $t('settings.account.member_since') }}</span>
-              <span class="m-row-value">{{ (user as any)?.createdAt ? new Date((user as any).createdAt).toLocaleDateString(locale === 'hr' ? 'hr-HR' : 'en-US', { month: 'short', year: 'numeric' }) : '—' }}</span>
-            </div>
-            <div class="m-row m-row--last">
-              <span class="m-row-text">{{ $t('settings.account.sign_in_method') }}</span>
-              <span class="m-row-value">{{ (session as any)?.provider || 'Credentials' }}</span>
-            </div>
-          </div>
-
-          <div class="m-label">{{ $t('settings.account.security') }}</div>
-          <div class="m-group">
-            <button class="m-row">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-shield" /><span class="m-row-text">{{ $t('settings.account.two_factor_auth') }}</span></div>
-              <div class="m-row-right"><span class="m-row-value">{{ $t('settings.account.disabled') }}</span><span class="m-row-chevron i-lucide-chevron-right" /></div>
-            </button>
-            <button class="m-row m-row--last">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-lock" /><span class="m-row-text">{{ $t('settings.account.change_password') }}</span></div>
-              <span class="m-row-chevron i-lucide-chevron-right" />
-            </button>
-          </div>
-
-          <div class="m-label">{{ $t('settings.account.data') }}</div>
-          <div class="m-group">
-            <button class="m-row">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-download" /><span class="m-row-text">{{ $t('settings.account.export_data') }}</span></div>
-              <span class="m-row-action-text">{{ $t('settings.account.download') }}</span>
-            </button>
-            <button class="m-row m-row--last m-row--danger">
-              <div class="m-row-left"><span class="m-row-icon i-lucide-trash-2" /><span class="m-row-text">{{ $t('settings.account.delete_account') }}</span></div>
-              <span class="m-row-chevron i-lucide-chevron-right" />
-            </button>
-          </div>
-
-          <button class="m-signout" :disabled="signOutLoading" @click="handleMobileSignOut">
-            {{ signOutLoading ? 'Signing out...' : 'Sign Out' }}
-          </button>
-        </template>
       </div>
     </div>
 
