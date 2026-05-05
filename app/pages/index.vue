@@ -453,7 +453,7 @@ onMounted(() => {
             <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
-        <a href="https://github.com" target="_blank" rel="noopener" class="btn-outline btn-lg">View on GitHub</a>
+        <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener" class="btn-outline btn-lg">View on GitHub</a>
       </div>
       <p class="cta-receipt" data-reveal style="--reveal-delay: 160ms">Free, forever. No card. No invitation. Your work auto-saves to this browser.</p>
     </section>
@@ -465,7 +465,7 @@ onMounted(() => {
           <NcLogo :size="11" :container-size="18" :radius="5" />
           <span class="footer-brand-name">NeuroCanvas</span>
         </div>
-        <span class="footer-meta">v1.4.2 · pgvector RAG · MIT licensed</span>
+        <span class="footer-meta">v1.0.0 · pgvector RAG · MIT licensed</span>
         <span class="footer-meta footer-meta--credit">Made by Vanja Modrinjak</span>
       </div>
       <div class="footer-cols">
@@ -478,7 +478,7 @@ onMounted(() => {
         <div class="footer-col">
           <span class="footer-col-head">Resources</span>
           <NuxtLink to="/docs">Docs</NuxtLink>
-          <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener">GitHub</a>
         </div>
         <div class="footer-col">
           <span class="footer-col-head">Company</span>
@@ -1039,9 +1039,12 @@ onMounted(() => {
   flex-grow: 0;
   flex-shrink: 0;
   padding-top: 6px;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 24px;
+  padding-bottom: 32px;
 }
 
 .sec-aside .sec-eyebrow { flex-basis: auto; padding-top: 0; }

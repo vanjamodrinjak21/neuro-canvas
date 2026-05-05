@@ -117,6 +117,11 @@ const userInitials = computed(() => {
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
   return name.slice(0, 2).toUpperCase()
 })
+const userImage = computed<string | null>(() => {
+  const u = user.value as { image?: string | null; picture?: string | null } | undefined
+  const d = desktopUser.value as { image?: string | null; picture?: string | null } | undefined
+  return u?.image || u?.picture || d?.image || d?.picture || null
+})
 
 const currentNav = computed(() => {
   if (props.activeNav) return props.activeNav
@@ -343,9 +348,10 @@ onMounted(() => {
         @mouseleave="onUserLeave"
       >
         <div class="sidebar-user-row">
-          <NuxtLink to="/settings" class="sidebar-user-link">
+          <NuxtLink to="/settings" class="sidebar-user-link" :title="collapsed ? `${userName} — Settings` : undefined">
             <div class="user-avatar">
-              <span class="user-initials">{{ userInitials }}</span>
+              <img v-if="userImage" :src="userImage" :alt="userName" class="user-avatar-img" referrerpolicy="no-referrer">
+              <span v-else class="user-initials">{{ userInitials }}</span>
             </div>
             <template v-if="!collapsed">
               <div class="user-info">
@@ -949,6 +955,33 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.collapsed .sidebar-user-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+
+.collapsed .sidebar-user-link {
+  flex: none;
+  justify-content: center;
+  padding: 4px;
+}
+
+.collapsed .sidebar-theme-btn {
+  width: 100%;
+  height: 32px;
+  align-self: stretch;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
 }
 
 .sidebar-user-link {

@@ -375,8 +375,21 @@ function formatDate(timestamp: number): string {
           <!-- Preview -->
           <div class="card-preview">
             <img v-if="map.preview" :src="map.preview" :alt="map.title" class="preview-img">
-            <div v-else class="preview-placeholder">
-              <span class="i-lucide-map" />
+            <div v-else class="preview-mock" aria-hidden="true">
+              <div class="mock-row">
+                <span class="mock-blob teal" style="width:48px" />
+                <span class="mock-blob gray" style="width:56px" />
+              </div>
+              <div class="mock-row mock-row--mid">
+                <span class="mock-blob gray dim" style="width:40px" />
+                <span class="mock-blob teal solid" style="width:52px;height:22px" />
+                <span class="mock-blob gray dim" style="width:44px" />
+              </div>
+              <div class="mock-row">
+                <span class="mock-blob teal" style="width:44px" />
+                <span class="mock-blob gray dim" style="width:50px" />
+              </div>
+              <span class="mock-count">{{ map.nodes.length }} nodes</span>
             </div>
           </div>
 
@@ -648,6 +661,7 @@ function formatDate(timestamp: number): string {
 
 /* Card preview */
 .card-preview {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -655,6 +669,7 @@ function formatDate(timestamp: number): string {
   padding: 20px;
   background: #0D0D0F;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .preview-img {
@@ -667,6 +682,50 @@ function formatDate(timestamp: number): string {
   font-size: 32px;
   color: #27272A;
 }
+
+.preview-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+}
+
+.mock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mock-row--mid { gap: 12px; }
+
+.mock-blob {
+  height: 16px;
+  border-radius: 4px;
+}
+
+.mock-blob.gray { background: rgba(63, 63, 70, 0.55); }
+.mock-blob.gray.dim { background: rgba(63, 63, 70, 0.32); }
+.mock-blob.teal { background: rgba(0, 210, 190, 0.32); }
+.mock-blob.teal.solid { background: rgba(0, 210, 190, 0.85); }
+
+.mock-count {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  color: rgba(161, 161, 170, 0.7);
+  letter-spacing: 0.02em;
+}
+
+:root.light .mock-blob.gray { background: rgba(115, 115, 115, 0.45); }
+:root.light .mock-blob.gray.dim { background: rgba(115, 115, 115, 0.22); }
+:root.light .mock-blob.teal { background: rgba(0, 168, 152, 0.32); }
+:root.light .mock-blob.teal.solid { background: rgba(0, 168, 152, 0.85); }
+:root.light .mock-count { color: rgba(82, 82, 91, 0.7); }
 
 /* Card info */
 .card-info {

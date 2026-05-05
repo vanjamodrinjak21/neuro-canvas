@@ -248,27 +248,13 @@ const sortedMaps = computed(() => {
   return maps.sort((a, b) => b.updatedAt - a.updatedAt)
 })
 
-// Visible map limit — fill the viewport with rows of cards
+// Visible map limit — show 4 most-recent by default; "Show more" reveals the rest
 const showAllMaps = ref(false)
-const visibleLimit = ref(12)
+const visibleLimit = ref(4)
 const mapsGridRef = ref<HTMLElement | null>(null)
 
 function updateVisibleLimit() {
-  const el = mapsGridRef.value?.$el || mapsGridRef.value
-  if (!el) return
-  const gridWidth = el.clientWidth
-  const minCardWidth = 320
-  const gap = 16
-  const cols = Math.max(1, Math.floor((gridWidth + gap) / (minCardWidth + gap)))
-
-  // Fill remaining viewport height with rows of cards
-  const cardHeight = 240
-  const gridTop = el.getBoundingClientRect().top
-  const reservedBelow = 360
-  const available = Math.max(0, window.innerHeight - gridTop - reservedBelow)
-  const rows = Math.max(2, Math.floor((available + gap) / (cardHeight + gap)))
-
-  visibleLimit.value = Math.max(cols * 2, cols * rows)
+  visibleLimit.value = 4
 }
 
 const visibleMaps = computed(() => {
