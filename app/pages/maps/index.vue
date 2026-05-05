@@ -608,8 +608,8 @@ function formatDate(timestamp: number): string {
 
 /* Maps grid */
 .maps-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
 
@@ -617,13 +617,13 @@ function formatDate(timestamp: number): string {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 352px;
+  width: 100%;
+  min-width: 0;
   border-radius: 8px;
   overflow: hidden;
   background: #111113;
   border: 1px solid #1A1A1E;
   cursor: pointer;
-  flex-shrink: 0;
   transition: border-color 0.15s;
 }
 
