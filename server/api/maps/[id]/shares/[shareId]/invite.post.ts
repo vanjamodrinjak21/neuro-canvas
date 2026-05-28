@@ -75,10 +75,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 410, statusMessage: 'Share link has expired' })
   }
 
-  // Build the URL from the request's own origin so dev / preview / prod
-  // all produce links that point back at the host that minted them.
-  const origin = getRequestHeader(event, 'origin')
-    || `https://${getRequestHeader(event, 'x-forwarded-host') || getRequestHeader(event, 'host')}`
+  // Build the URL from server-side config, NOT request headers. Using
+  // Origin / X-Forwarded-Host / Host here would let an attacker forge a
+  // request that emails the recipient a phishing link on a domain they
+  // control. AUTH_ORIGIN is set at deploy time per environment.
+  const origin = useRuntimeConfig(event).public.authOrigin
+  if (!origin || !/^https?:\/\//.test(origin)) {
+    throw createError({ statusCode: 500, statusMessage: 'Server misconfigured: AUTH_ORIGIN missing' })
+  }
   const shareUrl = `${origin.replace(/\/+$/, '')}/s/${encodeURIComponent(share.token)}`
 
   // Look up the inviter's display name once.
