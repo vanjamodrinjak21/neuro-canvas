@@ -471,10 +471,11 @@ defineExpose({ focusTitleInput })
   font-weight: 500;
   cursor: pointer;
   transition:
-    color 150ms var(--nc-ease-out, ease),
-    background 150ms var(--nc-ease-out, ease),
-    padding 200ms var(--nc-ease-out, ease),
-    gap 200ms var(--nc-ease-out, ease);
+    color 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    background 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    padding 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    gap 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    transform 160ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .topbar-view-tab:hover {
@@ -511,9 +512,12 @@ defineExpose({ focusTitleInput })
   overflow: hidden;
   max-width: 80px;
   opacity: 1;
+  transform: translateX(0);
   transition:
-    max-width 200ms var(--nc-ease-out, ease),
-    opacity 160ms var(--nc-ease-out, ease);
+    max-width 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    opacity 160ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+    transform 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  will-change: max-width, opacity, transform;
 }
 
 @media (prefers-reduced-motion: reduce) {

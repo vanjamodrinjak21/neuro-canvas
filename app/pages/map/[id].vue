@@ -2321,13 +2321,19 @@ body:has(.detail-panel) .topbar-view-label,
 body:has(.cm-panel) .topbar-view-label,
 body:has(.vh-panel) .topbar-view-label,
 body:has(.overflow-panel) .topbar-view-label {
-  display: none;
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-2px);
+  /* Hide faster than show — labels yield instantly to the panel opening,
+     then return with a touch more presence when it closes. */
+  transition-duration: 160ms;
 }
 body:has(.detail-panel) .topbar-view-tab,
 body:has(.cm-panel) .topbar-view-tab,
 body:has(.vh-panel) .topbar-view-tab,
 body:has(.overflow-panel) .topbar-view-tab {
-  padding: 6px 8px;
+  padding: 0 6px;
+  gap: 0;
 }
 </style>
 
