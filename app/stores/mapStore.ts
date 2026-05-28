@@ -424,12 +424,27 @@ const actions: MapActions = {
     state.nodes = new Map(nodesArr.map(node => [node.id, node as Node]))
     state.edges = new Map(edgesArr.map(edge => [edge.id, edge as Edge]))
 
-    // Migration: auto-resize nodes that still have the old default 150x50
+    // Migration: auto-resize nodes that still have the old default 150x50,
+    // AND grow inflated shapes (circle / diamond / hexagon / star) whose
+    // stored size was computed by older code that didn't account for the
+    // shape's inscribed-rectangle penalty — these legacy rows have text
+    // that overflows the visible shape edge (e.g. a tiny circle with the
+    // label rendered horizontally past both sides).
+    const INFLATED_SHAPES = new Set(['circle', 'diamond', 'hexagon', 'star'])
     for (const [, node] of state.nodes) {
-      if (node.size.width === 150 && node.size.height === 50 && node.content) {
-        const measured = measureNodeSize(node.content, node.style.fontSize, node.style.fontWeight, node.style.shape)
-        if (measured.height > 50 || measured.width > 150) {
-          node.size = measured
+      if (!node.content) continue
+      const isLegacyDefault = node.size.width === 150 && node.size.height === 50
+      const isInflatedShape = node.style.shape && INFLATED_SHAPES.has(node.style.shape)
+      if (!isLegacyDefault && !isInflatedShape) continue
+
+      const measured = measureNodeSize(node.content, node.style.fontSize, node.style.fontWeight, node.style.shape)
+      if (isLegacyDefault) {
+        if (measured.height > 50 || measured.width > 150) node.size = measured
+      } else {
+        // Grow-only: respect any manual resize the user already did, but
+        // bump the stored size up to fit text when the shape needs more.
+        if (measured.width > node.size.width || measured.height > node.size.height) {
+          node.size = { width: Math.max(node.size.width, measured.width), height: Math.max(node.size.height, measured.height) }
         }
       }
     }
