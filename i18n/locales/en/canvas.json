@@ -510,6 +510,9 @@
     "agent": {
       "start_session": "Start Session"
     },
+    "ai": {
+      "select_node_first": "Select a node first to expand from."
+    },
     "semantic": {
       "title": "Semantic Field",
       "enable": "Enable",

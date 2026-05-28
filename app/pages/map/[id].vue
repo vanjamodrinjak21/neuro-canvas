@@ -1058,7 +1058,10 @@ function handleAddNode() {
 
 async function handleSmartExpand() {
   const node = contextMenuTargetNode.value || selectedNode.value
-  if (!node) return
+  if (!node) {
+    useToast().warning(t('canvas.ai.select_node_first'))
+    return
+  }
 
   isAILoading.value = true
   contextMenuVisible.value = false
@@ -1127,6 +1130,8 @@ async function handleSmartExpand() {
     }
   } catch (error) {
     console.error('Smart Expand failed:', error)
+    const { userFriendlyError } = await import('~/utils/userFriendlyError')
+    useToast().error(userFriendlyError(error, t))
   } finally {
     isAILoading.value = false
   }
@@ -1358,6 +1363,8 @@ async function handleGenerateSuggestions() {
     }
   } catch (error) {
     console.error('Failed to generate suggestions:', error)
+    const { userFriendlyError } = await import('~/utils/userFriendlyError')
+    useToast().error(userFriendlyError(error, t))
     if (isMobile.value) platform.haptics.notification('error')
   } finally {
     isAILoading.value = false
@@ -1474,6 +1481,8 @@ async function handleDeepExpand() {
     )
   } catch (error) {
     console.error('Deep expand failed:', error)
+    const { userFriendlyError } = await import('~/utils/userFriendlyError')
+    useToast().error(userFriendlyError(error, t))
   } finally {
     isAILoading.value = false
   }
@@ -1506,6 +1515,8 @@ async function handleGenerateDescription() {
     })
   } catch (error) {
     console.error('Failed to generate description:', error)
+    const { userFriendlyError } = await import('~/utils/userFriendlyError')
+    useToast().error(userFriendlyError(error, t))
   } finally {
     isAILoading.value = false
   }
@@ -1616,6 +1627,8 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
     }, 'navigation')
   } catch (error) {
     console.error('Failed to generate map:', error)
+    const { userFriendlyError } = await import('~/utils/userFriendlyError')
+    useToast().error(userFriendlyError(error, t))
   } finally {
     isAILoading.value = false
   }

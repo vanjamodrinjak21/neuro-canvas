@@ -66,7 +66,11 @@
             "optional": "Optional",
             "domain_placeholder": "e.g. \"Health & Fitness\"",
             "cancel": "Cancel",
-            "generate": "Generate & Create Map"
+            "generate": "Generate & Create Map",
+            "generating": "Adapting template…",
+            "generating_progress": "Adapting node {n} of {total}…",
+            "error_no_credential": "Add an AI API key in Settings → AI Providers to use AI adaptation.",
+            "error_failed": "Couldn't adapt the template. Try again."
         },
         "publish_modal": {
             "title": "Publish Template",

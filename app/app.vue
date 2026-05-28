@@ -78,6 +78,9 @@ useHead({
       @close="desktopAuth.closeAuthModal()"
       @authenticated="desktopAuth.completeSignIn()"
     />
+
+    <!-- Global toast stack -->
+    <Toast />
   </div>
 </template>
 

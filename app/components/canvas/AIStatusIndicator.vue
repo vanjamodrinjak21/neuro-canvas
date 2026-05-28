@@ -112,7 +112,7 @@ const tooltipText = computed(() => {
 
 <style scoped>
 .nc-ai-status {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 10px 4px 8px;
@@ -121,6 +121,8 @@ const tooltipText = computed(() => {
   border-radius: 6px;
   font-size: 11px;
   color: var(--status-color);
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: border-color var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
   cursor: default;
 }

@@ -510,6 +510,9 @@
     "agent": {
       "start_session": "Pokreni sesiju"
     },
+    "ai": {
+      "select_node_first": "Najprije odaberi čvor iz kojeg ćeš proširiti."
+    },
     "semantic": {
       "title": "Semantičko polje",
       "enable": "Omogući",

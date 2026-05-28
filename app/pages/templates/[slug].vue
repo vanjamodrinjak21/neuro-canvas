@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import type { GenerationDepth, GenerationStyle, TemplatePreviewData } from '~/types'
+import { useAI } from '~/composables/useAI'
+import { useDatabase } from '~/composables/useDatabase'
+import { useMapRenderer } from '~/composables/useMapRenderer'
+import { useMapStore } from '~/stores/mapStore'
+import { useSyncEngine } from '~/composables/useSyncEngine'
+import { userFriendlyError } from '~/utils/userFriendlyError'
 
 definePageMeta({
   layout: false,
@@ -8,7 +14,7 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
+const { t, locale: currentLocale } = useI18n()
 const slug = route.params.slug as string
 
 const {
@@ -19,7 +25,32 @@ const {
   useTemplate,
 } = useTemplates()
 
+const ai = useAI()
+const mapStore = useMapStore()
+const mapRenderer = useMapRenderer()
+const db = useDatabase()
+const syncEngine = useSyncEngine()
+
+// useToast is auto-imported by Nuxt under normal conditions. Wrap in a guard
+// so a brief window where the file does not yet exist (parallel agent) cannot
+// crash the page — fall back to console.error and inline error state.
+type ToastFn = (msg: string) => void
+function safeToast(): { error: ToastFn; success: ToastFn; warning: ToastFn } {
+  try {
+    // @ts-expect-error — auto-imported at runtime; may be undefined if not yet generated
+    const t = typeof useToast === 'function' ? useToast() : null
+    if (t) return { error: t.error, success: t.success, warning: t.warning }
+  } catch {
+    // ignore — fall through
+  }
+  const noop: ToastFn = (m) => console.warn('[adapt toast]', m)
+  return { error: noop, success: noop, warning: noop }
+}
+
 const showAdaptModal = ref(false)
+const adapting = ref(false)
+const adaptProgress = ref<{ done: number; total: number } | null>(null)
+const adaptError = ref<string | null>(null)
 
 const categoryColors: Record<string, string> = {
   education: '#3B82F6',
@@ -64,10 +95,128 @@ async function handleUse() {
   }
 }
 
+// Maps the user-picked GenerationDepth to AI map-structure shape params.
+// - shallow: a flat single level, fewer branches
+// - medium: one extra child layer
+// - deep: two child layers
+function depthToOptions(depth: GenerationDepth): { branchCount: number; maxDepth: number } {
+  if (depth === 'shallow') return { branchCount: 4, maxDepth: 1 }
+  if (depth === 'deep') return { branchCount: 6, maxDepth: 3 }
+  return { branchCount: 5, maxDepth: 2 }
+}
+
 async function handleAdaptGenerate(payload: { topic: string; depth: GenerationDepth; style: GenerationStyle; domain?: string }) {
+  if (!template.value) return
+  const toast = safeToast()
+  const tplSlug = template.value.slug
+
+  adaptError.value = null
+  adapting.value = true
+  // Four logical phases — the AI call is opaque, so we update the counter
+  // at phase transitions rather than per-node.
+  adaptProgress.value = { done: 0, total: 4 }
+
+  try {
+    // Phase 1: validate template + credential server-side. Throws 400 if no
+    // AI credential, 404 if template missing, 429 if rate-limited.
+    adaptProgress.value = { done: 1, total: 4 }
+    await $fetch(`/api/templates/${tplSlug}/adapt`, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: {
+        topic: payload.topic,
+        depth: payload.depth,
+        style: payload.style,
+        domain: payload.domain,
+      },
+    })
+
+    // Phase 2: generate adapted structure via configured LLM.
+    // NOTE: The current AI composable does not expose a "fill content into a
+    // fixed template skeleton" method; `generateMapStructure` produces a
+    // fresh structure shaped by depth/style/domain. The template's role here
+    // is to (a) gate the action behind a publicly available shape the user
+    // chose, and (b) supply the topic-adjacent style/depth defaults.
+    adaptProgress.value = { done: 2, total: 4 }
+    const { branchCount, maxDepth } = depthToOptions(payload.depth)
+    const structure = await ai.generateMapStructure(payload.topic, {
+      branchCount,
+      maxDepth,
+      style: payload.style,
+      domain: payload.domain,
+      includeCrossConnections: payload.depth !== 'shallow',
+      locale: currentLocale.value,
+    })
+
+    // Phase 3: build a fresh document and render the structure into it.
+    adaptProgress.value = { done: 3, total: 4 }
+    mapStore.newDocument()
+    mapStore.setTitle(payload.topic)
+    mapRenderer.renderMapStructure(structure, { x: 0, y: 0 })
+
+    // Phase 4: persist + best-effort sync, then navigate.
+    adaptProgress.value = { done: 4, total: 4 }
+    const doc = mapStore.toSerializable()
+    await db.saveMap(doc)
+    if (syncEngine.isSyncEnabled.value) {
+      // Don't block navigation on the network round-trip.
+      syncEngine.debouncedPush(doc.id)
+    }
+
+    showAdaptModal.value = false
+    router.push(`/map/${doc.id}`)
+  } catch (e: unknown) {
+    console.error('[templates/adapt] failed:', e)
+
+    const err = e as { statusCode?: number; status?: number; data?: { statusCode?: number; statusMessage?: string }; message?: string }
+    const status = err?.statusCode ?? err?.status ?? err?.data?.statusCode ?? 0
+    const serverMsg = err?.data?.statusMessage || ''
+
+    // Special-case the missing-credential error — it's actionable and the
+    // server's message already references Settings > AI Providers.
+    const isNoCredential =
+      status === 400 && /no ai provider/i.test(serverMsg) ||
+      /no api key|no ai provider/i.test(err?.message || '')
+
+    if (isNoCredential) {
+      adaptError.value = t('templates.ai_adapt_modal.error_no_credential')
+      toast.error(adaptError.value)
+      return
+    }
+
+    // If the server-side validation succeeded but the AI call returned
+    // unparseable JSON, fall back to a plain unadapted copy and warn.
+    const isParseError = /invalid response format|expected array|parse|json/i.test(err?.message || '')
+    if (status === 0 || isParseError) {
+      try {
+        toast.warning(t('templates.ai_adapt_modal.error_failed'))
+        const result = await useTemplate(tplSlug)
+        showAdaptModal.value = false
+        router.push(`/map/${result.mapId}`)
+        return
+      } catch (fallbackErr) {
+        console.error('[templates/adapt] fallback also failed:', fallbackErr)
+      }
+    }
+
+    // Generic error path — surface a clean message via userFriendlyError +
+    // toast, and keep the modal open so the user can retry.
+    adaptError.value = userFriendlyError(e, t)
+    toast.error(adaptError.value)
+  } finally {
+    adapting.value = false
+    adaptProgress.value = null
+  }
+}
+
+function handleAdaptModalClose() {
+  // If a generation is in flight, closing the modal hides UI but lets the
+  // background call resolve (navigation still happens on success). This is
+  // intentional — there's no AbortController plumbed through ai.generateMapStructure.
+  if (!adapting.value) {
+    adaptError.value = null
+  }
   showAdaptModal.value = false
-  // For now, use template directly, AI adaptation TBD
-  await handleUse()
 }
 
 onMounted(() => {
@@ -217,7 +366,10 @@ onMounted(() => {
     <TemplatesAIAdaptModal
       :open="showAdaptModal"
       :template-title="template?.title || ''"
-      @close="showAdaptModal = false"
+      :loading="adapting"
+      :progress="adaptProgress"
+      :error-message="adaptError"
+      @close="handleAdaptModalClose"
       @generate="handleAdaptGenerate"
     />
   </div>

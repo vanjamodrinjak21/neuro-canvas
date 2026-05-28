@@ -183,6 +183,7 @@ defineExpose({ focusTitleInput })
         <button
           class="nc-ai-btn mobile-hide"
           :disabled="!hasSelection || isAILoading"
+          :title="!hasSelection ? $t('canvas.ai.select_node_first') : ''"
           @click="emit('smart-expand')"
         >
           <span class="i-lucide-waypoints" :class="isAILoading ? 'opacity-60' : ''" />
@@ -309,6 +310,11 @@ defineExpose({ focusTitleInput })
   background: none;
   border: none;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+  text-align: left;
   transition: color var(--nc-duration-fast) var(--nc-ease-out);
 }
 

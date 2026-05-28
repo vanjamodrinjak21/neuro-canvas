@@ -66,7 +66,11 @@
             "optional": "Neobavezno",
             "domain_placeholder": "npr. \"Zdravlje i fitness\"",
             "cancel": "Odustani",
-            "generate": "Generiraj i izradi mapu"
+            "generate": "Generiraj i izradi mapu",
+            "generating": "Prilagođavam predložak…",
+            "generating_progress": "Prilagođavam čvor {n} od {total}…",
+            "error_no_credential": "Dodaj AI API ključ u Postavke → AI davatelji za AI prilagodbu.",
+            "error_failed": "Nije uspjelo prilagoditi predložak. Pokušaj ponovno."
         },
         "publish_modal": {
             "title": "Objavi predlo\u017eak",

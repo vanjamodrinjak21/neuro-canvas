@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import type { GenerationDepth, GenerationStyle } from '~/types'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   open: boolean
   templateTitle: string
-}>()
+  loading?: boolean
+  progress?: { done: number; total: number } | null
+  errorMessage?: string | null
+}>(), {
+  loading: false,
+  progress: null,
+  errorMessage: null,
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -16,7 +23,7 @@ const depth = ref<GenerationDepth>('medium')
 const style = ref<GenerationStyle>('concise')
 const domain = ref('')
 
-const canGenerate = computed(() => topic.value.trim().length > 0)
+const canGenerate = computed(() => topic.value.trim().length > 0 && !props.loading)
 
 function handleGenerate() {
   if (!canGenerate.value) return
@@ -28,12 +35,15 @@ function handleGenerate() {
   })
 }
 
+// Allow Escape to cancel even while loading — closing the modal does not
+// abort the in-flight generation (the parent owns that lifecycle), but the
+// user can dismiss the UI and let it finish in the background / navigate away.
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close')
 }
 
 watch(() => props.open, (val) => {
-  if (val) {
+  if (val && !props.loading) {
     topic.value = ''
     depth.value = 'medium'
     style.value = 'concise'
@@ -65,8 +75,8 @@ watch(() => props.open, (val) => {
             </button>
           </div>
 
-          <!-- Body -->
-          <div class="modal-body">
+          <!-- Body: form OR loading state -->
+          <div v-if="!loading" class="modal-body">
             <!-- Topic -->
             <div class="field">
               <label class="field-label">{{ $t('templates.ai_adapt_modal.topic_label') }}</label>
@@ -122,12 +132,27 @@ watch(() => props.open, (val) => {
                 :placeholder="$t('templates.ai_adapt_modal.domain_placeholder')"
               >
             </div>
+
+            <!-- Error (non-blocking, inline) -->
+            <p v-if="errorMessage" class="modal-error" role="alert">{{ errorMessage }}</p>
+          </div>
+
+          <div v-else class="modal-loading">
+            <div class="loading-spinner" />
+            <p class="loading-text">
+              <template v-if="progress && progress.total > 0">
+                {{ $t('templates.ai_adapt_modal.generating_progress', { n: progress.done, total: progress.total }) }}
+              </template>
+              <template v-else>
+                {{ $t('templates.ai_adapt_modal.generating') }}
+              </template>
+            </p>
           </div>
 
           <!-- Footer -->
           <div class="modal-footer">
-            <button class="btn-ghost" @click="emit('close')">{{ $t('templates.ai_adapt_modal.cancel') }}</button>
-            <button class="btn-primary" :disabled="!canGenerate" @click="handleGenerate">
+            <button class="btn-ghost" :disabled="loading" @click="emit('close')">{{ $t('templates.ai_adapt_modal.cancel') }}</button>
+            <button v-if="!loading" class="btn-primary" :disabled="!canGenerate" @click="handleGenerate">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
               </svg>
@@ -367,6 +392,56 @@ watch(() => props.open, (val) => {
 .btn-primary:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Loading state */
+.modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 24px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--m-border, #1A1A1E);
+  border-top-color: #00D2BE;
+  border-radius: 50%;
+  animation: ai-adapt-spin 0.7s linear infinite;
+}
+
+@keyframes ai-adapt-spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-muted, #71717A);
+  margin: 0;
+  text-align: center;
+}
+
+/* Inline error */
+.modal-error {
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  color: #EF4444;
 }
 
 /* Transitions */
