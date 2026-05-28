@@ -98,10 +98,135 @@
       "privacy_link": "Privacy",
       "terms_link": "Terms",
       "contact_link": "Contact",
-      "changelog_link": "Changelog"
+      "changelog_link": "Changelog",
+      "version_meta": "v1.0.0 · pgvector RAG · MIT licensed",
+      "made_by": "Made by Vanja Modrinjak"
     },
     "templates_section": {
       "browse_all": "Browse all 24 templates"
+    },
+    "mini_canvas": {
+      "live_chip": "live · pan · zoom · drag in production",
+      "nodes_label": "nodes",
+      "node_root": "Hero CTA framing",
+      "node_left_top": "Onboarding rework",
+      "node_left_bottom": "Save-your-work prompt",
+      "node_right_top": "Progressive nudges",
+      "node_right_bottom": "Visual template previews",
+      "ai_suggested": "AI · SUGGESTED",
+      "prompt_example": "Generate from a sentence — “plan a launch for our pgvector release”"
+    },
+    "section_01": {
+      "eyebrow": "01 — why this exists",
+      "heading": "Notes apps gave you folders. Mind-map tools gave you trees. Neither of them helped you think.",
+      "paragraph": "NeuroCanvas treats every idea as a node and every connection as a link in your reasoning. The AI sits inside the canvas — not in a sidebar — so it can extend, regroup, or summarize the part you're working on, without breaking your flow."
+    },
+    "section_02": {
+      "eyebrow": "02 — see it work",
+      "heading": "Type one sentence. Get a structured map back.",
+      "prompt_label": "prompt",
+      "prompt_text": "Plan a launch for our new pgvector RAG search — engineering, content, and rollout.",
+      "generating_status": "Generating 11 nodes",
+      "node_root": "pgvector RAG launch",
+      "node_engineering": "Engineering",
+      "node_content": "Content",
+      "node_rollout": "Rollout",
+      "node_leaf_1": "HNSW index tuning",
+      "node_leaf_2": "Embedding model swap",
+      "node_leaf_3": "Docs deep-dive post",
+      "node_leaf_4": "Beta cohort outreach",
+      "node_leaf_5": "Public docs cutover"
+    },
+    "section_03": {
+      "eyebrow": "03 — how it works",
+      "heading": "Three primitives. Nothing else to learn.",
+      "step_1": {
+        "label": "Node",
+        "title": "Double-click anywhere. Type an idea.",
+        "body": "No folders, no titles, no schema. The canvas grows infinitely in every direction. You don't decide where things go up-front — you arrange after the fact, when patterns emerge.",
+        "chip": "An idea worth keeping"
+      },
+      "step_2": {
+        "label": "Edge",
+        "title": "Drag from one node to another to connect them.",
+        "body": "Connections are typed (causes, contradicts, depends on, leads to). Edges become the *reasoning* — not just the visual link. Filter the canvas by edge type to isolate one chain of thought.",
+        "chip_cause": "Cause",
+        "chip_effect": "Effect"
+      },
+      "step_3": {
+        "label": "AI",
+        "title": "Select a node. Press ⌘K. Ask for more.",
+        "body": "\"Expand this branch with counter-arguments.\" \"Summarize the left subtree as a paragraph.\" \"Find which two nodes contradict each other.\" The AI works on the part you've selected — never the whole canvas.",
+        "kbd_text": "Ask"
+      }
+    },
+    "section_04": {
+      "eyebrow": "04 — start somewhere",
+      "heading": "A blank canvas is sometimes the wrong start. Pick a shape, then make it yours.",
+      "template_decision": {
+        "title": "Decision tree",
+        "description": "Compare options. Trace consequences.",
+        "node_root": "Decision",
+        "node_option_a": "Option A",
+        "node_option_b": "Option B",
+        "node_risks": "Risks",
+        "node_pro": "Pro",
+        "node_mixed": "Mixed",
+        "node_con": "Con"
+      },
+      "template_project": {
+        "title": "Project plan",
+        "description": "Goals → milestones → checkpoints.",
+        "node_root": "Goal",
+        "node_spec": "Spec",
+        "node_build": "Build",
+        "node_ship": "Ship",
+        "node_today": "Today",
+        "node_wk2": "Wk 2",
+        "node_wk4": "Wk 4"
+      },
+      "template_research": {
+        "title": "Research synthesis",
+        "description": "Sources cluster. AI summarizes the cluster.",
+        "node_root": "Question",
+        "node_source_1": "Source 1",
+        "node_source_2": "Source 2",
+        "node_source_3": "Source 3",
+        "node_ai": "AI synthesis"
+      },
+      "template_brainstorm": {
+        "title": "Brainstorm",
+        "description": "Spray ideas. Cluster later.",
+        "node_root": "Topic",
+        "node_idea_1": "Idea 1",
+        "node_idea_2": "Idea 2",
+        "node_idea_3": "Idea 3",
+        "node_sub_a": "Sub a",
+        "node_sub_b": "Sub b",
+        "node_sub_c": "Sub c"
+      }
+    },
+    "section_05": {
+      "eyebrow": "05 — your data",
+      "heading": "Your maps live where you do. Not on someone else's GPU.",
+      "col_local": {
+        "title": "Local-first storage",
+        "body": "SQLite on disk. Your canvas works offline. Sync only when you're signed in."
+      },
+      "col_byok": {
+        "title": "Bring your own AI key",
+        "body": "Anthropic, OpenAI, OpenRouter, or local Ollama. Keys stay encrypted in our vault — we never train on your maps."
+      },
+      "col_export": {
+        "title": "Open format, exportable",
+        "body": "Export to JSON, Markdown, or PNG anytime. The schema is documented. Your data is portable by default."
+      }
+    },
+    "final_cta": {
+      "heading": "Stop writing notes you'll never read. Start mapping.",
+      "primary": "Open the canvas — no signup",
+      "github": "View on GitHub",
+      "receipt": "Free, forever. No card. No invitation. Your work auto-saves to this browser."
     },
     "download_page": {
       "subhead": "Pick a platform below"

@@ -119,11 +119,11 @@ onMounted(() => {
             <circle cx="6" cy="6" r="2" fill="#00D2BE" />
             <circle cx="6" cy="6" r="5" stroke="#00D2BE" stroke-dasharray="2 2" />
           </svg>
-          <span>live · pan · zoom · drag in production</span>
+          <span>{{ $t('landing.mini_canvas.live_chip') }}</span>
         </div>
         <div class="mc-chip mc-chip--tr mc-rise" style="--mc-delay: 440ms">
           <span class="mc-chip-strong">7</span>
-          <span class="mc-chip-mute">nodes</span>
+          <span class="mc-chip-mute">{{ $t('landing.mini_canvas.nodes_label') }}</span>
         </div>
 
         <!-- stage: locked aspect ratio so SVG paths and nodes stay aligned at any canvas width -->
@@ -138,12 +138,12 @@ onMounted(() => {
 
           <!-- center principle -->
           <div class="mc-node mc-node--root mc-pop" style="left:50%; top:50%; transform:translate(-50%, -50%); width:200px; --mc-delay: 560ms">
-            Hero CTA framing
+            {{ $t('landing.mini_canvas.node_root') }}
           </div>
 
           <!-- left branch (existing thoughts) -->
-          <div class="mc-node mc-pop" style="right:70%; top:28.5%; transform:translateY(-50%); width:172px; --mc-delay: 680ms">Onboarding rework</div>
-          <div class="mc-node mc-pop" style="right:70%; top:71.5%; transform:translateY(-50%); width:200px; --mc-delay: 740ms">Save-your-work prompt</div>
+          <div class="mc-node mc-pop" style="right:70%; top:28.5%; transform:translateY(-50%); width:172px; --mc-delay: 680ms">{{ $t('landing.mini_canvas.node_left_top') }}</div>
+          <div class="mc-node mc-pop" style="right:70%; top:71.5%; transform:translateY(-50%); width:200px; --mc-delay: 740ms">{{ $t('landing.mini_canvas.node_left_bottom') }}</div>
 
           <!-- right branch (AI suggestions) -->
           <div class="mc-node mc-node--ai mc-pop" style="left:70%; top:28.5%; transform:translateY(-50%); width:205px; --mc-delay: 880ms">
@@ -151,18 +151,18 @@ onMounted(() => {
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                 <path d="M6 1L7.4 4.6L11 6L7.4 7.4L6 11L4.6 7.4L1 6L4.6 4.6L6 1Z" fill="#00D2BE" />
               </svg>
-              <span>AI · SUGGESTED</span>
+              <span>{{ $t('landing.mini_canvas.ai_suggested') }}</span>
             </span>
-            <span class="mc-ai-text">Progressive nudges</span>
+            <span class="mc-ai-text">{{ $t('landing.mini_canvas.node_right_top') }}</span>
           </div>
           <div class="mc-node mc-node--ai mc-pop" style="left:70%; top:71.5%; transform:translateY(-50%); width:220px; --mc-delay: 940ms">
             <span class="mc-ai-eyebrow">
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                 <path d="M6 1L7.4 4.6L11 6L7.4 7.4L6 11L4.6 7.4L1 6L4.6 4.6L6 1Z" fill="#00D2BE" />
               </svg>
-              <span>AI · SUGGESTED</span>
+              <span>{{ $t('landing.mini_canvas.ai_suggested') }}</span>
             </span>
-            <span class="mc-ai-text">Visual template previews</span>
+            <span class="mc-ai-text">{{ $t('landing.mini_canvas.node_right_bottom') }}</span>
           </div>
         </div>
 
@@ -171,7 +171,7 @@ onMounted(() => {
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M9 1.5L10.95 6.55L16 8.5L10.95 10.45L9 15.5L7.05 10.45L2 8.5L7.05 6.55L9 1.5Z" stroke="#00D2BE" stroke-width="1.5" stroke-linejoin="round" />
           </svg>
-          <span class="mc-prompt-text">Generate from a sentence — “plan a launch for our pgvector release”</span>
+          <span class="mc-prompt-text">{{ $t('landing.mini_canvas.prompt_example') }}</span>
           <span class="mc-prompt-kbd">
             <span>⌘</span><span>K</span>
           </span>
@@ -182,11 +182,11 @@ onMounted(() => {
     <!-- ══════ 01 — WHY THIS EXISTS ══════ -->
     <section class="sec sec-01">
       <div class="sec-grid">
-        <div class="sec-eyebrow" data-reveal>01 — why this exists</div>
+        <div class="sec-eyebrow" data-reveal>{{ $t('landing.section_01.eyebrow') }}</div>
         <div class="sec-body">
-          <h2 class="sec-h" data-reveal style="--reveal-delay: 50ms">Notes apps gave you folders. Mind-map tools gave you trees. Neither of them helped you think.</h2>
+          <h2 class="sec-h" data-reveal style="--reveal-delay: 50ms">{{ $t('landing.section_01.heading') }}</h2>
           <p class="sec-p" data-reveal style="--reveal-delay: 110ms">
-            NeuroCanvas treats every idea as a node and every connection as a link in your reasoning. The AI sits inside the canvas — not in a sidebar — so it can extend, regroup, or summarize the part you're working on, without breaking your flow.
+            {{ $t('landing.section_01.paragraph') }}
           </p>
         </div>
       </div>
@@ -195,17 +195,17 @@ onMounted(() => {
     <!-- ══════ 02 — SEE IT WORK ══════ -->
     <section class="sec sec-02">
       <div class="sec-grid sec-grid--head">
-        <div class="sec-eyebrow" data-reveal>02 — see it work</div>
+        <div class="sec-eyebrow" data-reveal>{{ $t('landing.section_02.eyebrow') }}</div>
         <div class="sec-body">
-          <h2 class="sec-h2" data-reveal style="--reveal-delay: 50ms">Type one sentence. Get a structured map back.</h2>
+          <h2 class="sec-h2" data-reveal style="--reveal-delay: 50ms">{{ $t('landing.section_02.heading') }}</h2>
         </div>
       </div>
 
       <div class="demo-frame" data-reveal style="--reveal-delay: 100ms">
         <div class="demo-input">
-          <span class="demo-input-label">prompt</span>
+          <span class="demo-input-label">{{ $t('landing.section_02.prompt_label') }}</span>
           <p class="demo-input-text">
-            Plan a launch for our new pgvector RAG search — engineering, content, and rollout.<span class="demo-caret">|</span>
+            {{ $t('landing.section_02.prompt_text') }}<span class="demo-caret">|</span>
           </p>
           <div class="demo-input-rows">
             <div class="demo-row">
@@ -214,7 +214,7 @@ onMounted(() => {
               <span class="demo-row-meta">opus 4.7</span>
             </div>
             <div class="demo-row">
-              <span class="demo-row-text">Generating 11 nodes</span>
+              <span class="demo-row-text">{{ $t('landing.section_02.generating_status') }}</span>
               <span class="demo-row-meta">1.4s</span>
             </div>
           </div>
@@ -232,15 +232,15 @@ onMounted(() => {
             <path class="demo-line" pathLength="1" style="--mc-delay: 600ms" d="M720 280 Q 720 360 700 420" stroke="#3F3F46" stroke-width="1.5" fill="none" />
             <path class="demo-line" pathLength="1" style="--mc-delay: 640ms" d="M720 280 Q 760 360 800 420" stroke="#3F3F46" stroke-width="1.5" fill="none" />
           </svg>
-          <div class="demo-node demo-node--root demo-pop" style="left:50%; bottom:81%; transform:translateX(-50%); width:170px; --mc-delay: 120ms">pgvector RAG launch</div>
-          <div class="demo-node demo-node--mid demo-pop" style="left:22%; top:50%; transform:translate(-50%, -50%); width:154px; --mc-delay: 360ms">Engineering</div>
-          <div class="demo-node demo-node--mid demo-pop" style="left:50%; top:50%; transform:translate(-50%, -50%); width:154px; --mc-delay: 400ms">Content</div>
-          <div class="demo-node demo-node--mid demo-pop" style="left:78%; top:50%; transform:translate(-50%, -50%); width:154px; --mc-delay: 440ms">Rollout</div>
-          <div class="demo-node demo-node--leaf demo-pop" style="left:15%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 680ms">HNSW index tuning</div>
-          <div class="demo-node demo-node--leaf demo-pop" style="left:30%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 720ms">Embedding model swap</div>
-          <div class="demo-node demo-node--leaf demo-pop" style="left:46%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 760ms">Docs deep-dive post</div>
-          <div class="demo-node demo-node--leaf demo-pop" style="left:76%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 800ms">Beta cohort outreach</div>
-          <div class="demo-node demo-node--leaf demo-pop" style="left:87%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 840ms">Public docs cutover</div>
+          <div class="demo-node demo-node--root demo-pop" style="left:50%; bottom:81%; transform:translateX(-50%); width:170px; --mc-delay: 120ms">{{ $t('landing.section_02.node_root') }}</div>
+          <div class="demo-node demo-node--mid demo-pop" style="left:22%; top:50%; transform:translate(-50%, -50%); width:154px; --mc-delay: 360ms">{{ $t('landing.section_02.node_engineering') }}</div>
+          <div class="demo-node demo-node--mid demo-pop" style="left:50%; top:50%; transform:translate(-50%, -50%); width:154px; --mc-delay: 400ms">{{ $t('landing.section_02.node_content') }}</div>
+          <div class="demo-node demo-node--mid demo-pop" style="left:78%; top:50%; transform:translate(-50%, -50%); width:154px; --mc-delay: 440ms">{{ $t('landing.section_02.node_rollout') }}</div>
+          <div class="demo-node demo-node--leaf demo-pop" style="left:15%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 680ms">{{ $t('landing.section_02.node_leaf_1') }}</div>
+          <div class="demo-node demo-node--leaf demo-pop" style="left:30%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 720ms">{{ $t('landing.section_02.node_leaf_2') }}</div>
+          <div class="demo-node demo-node--leaf demo-pop" style="left:46%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 760ms">{{ $t('landing.section_02.node_leaf_3') }}</div>
+          <div class="demo-node demo-node--leaf demo-pop" style="left:76%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 800ms">{{ $t('landing.section_02.node_leaf_4') }}</div>
+          <div class="demo-node demo-node--leaf demo-pop" style="left:87%; top:81%; transform:translateX(-50%); width:150px; --mc-delay: 840ms">{{ $t('landing.section_02.node_leaf_5') }}</div>
         </div>
       </div>
     </section>
@@ -248,9 +248,9 @@ onMounted(() => {
     <!-- ══════ 03 — HOW IT WORKS ══════ -->
     <section id="how-it-works" class="sec sec-03">
       <div class="sec-grid sec-grid--head">
-        <div class="sec-eyebrow" data-reveal>03 — how it works</div>
+        <div class="sec-eyebrow" data-reveal>{{ $t('landing.section_03.eyebrow') }}</div>
         <div class="sec-body">
-          <h2 class="sec-h2" data-reveal style="--reveal-delay: 50ms">Three primitives. Nothing else to learn.</h2>
+          <h2 class="sec-h2" data-reveal style="--reveal-delay: 50ms">{{ $t('landing.section_03.heading') }}</h2>
         </div>
       </div>
 
@@ -258,50 +258,50 @@ onMounted(() => {
         <article class="step" data-reveal>
           <div class="step-num">
             <span class="step-numeral">01</span>
-            <span class="step-label">Node</span>
+            <span class="step-label">{{ $t('landing.section_03.step_1.label') }}</span>
           </div>
           <div class="step-body">
-            <h3>Double-click anywhere. Type an idea.</h3>
-            <p>No folders, no titles, no schema. The canvas grows infinitely in every direction. You don't decide where things go up-front — you arrange after the fact, when patterns emerge.</p>
+            <h3>{{ $t('landing.section_03.step_1.title') }}</h3>
+            <p>{{ $t('landing.section_03.step_1.body') }}</p>
           </div>
           <div class="step-chip">
-            <span class="chip">An idea worth keeping</span>
+            <span class="chip">{{ $t('landing.section_03.step_1.chip') }}</span>
           </div>
         </article>
 
         <article class="step" data-reveal style="--reveal-delay: 60ms">
           <div class="step-num">
             <span class="step-numeral">02</span>
-            <span class="step-label">Edge</span>
+            <span class="step-label">{{ $t('landing.section_03.step_2.label') }}</span>
           </div>
           <div class="step-body">
-            <h3>Drag from one node to another to connect them.</h3>
-            <p>Connections are typed (causes, contradicts, depends on, leads to). Edges become the *reasoning* — not just the visual link. Filter the canvas by edge type to isolate one chain of thought.</p>
+            <h3>{{ $t('landing.section_03.step_2.title') }}</h3>
+            <p>{{ $t('landing.section_03.step_2.body') }}</p>
           </div>
           <div class="step-chip">
-            <span class="chip chip-sm">Cause</span>
+            <span class="chip chip-sm">{{ $t('landing.section_03.step_2.chip_cause') }}</span>
             <svg width="32" height="12" viewBox="0 0 32 12" fill="none">
               <path d="M2 6h26M22 2l6 4-6 4" stroke="#52525B" stroke-width="1.5" stroke-linecap="round" />
             </svg>
-            <span class="chip chip-sm">Effect</span>
+            <span class="chip chip-sm">{{ $t('landing.section_03.step_2.chip_effect') }}</span>
           </div>
         </article>
 
         <article class="step step--last" data-reveal style="--reveal-delay: 120ms">
           <div class="step-num">
             <span class="step-numeral">03</span>
-            <span class="step-label">AI</span>
+            <span class="step-label">{{ $t('landing.section_03.step_3.label') }}</span>
           </div>
           <div class="step-body">
-            <h3>Select a node. Press ⌘K. Ask for more.</h3>
-            <p>"Expand this branch with counter-arguments." "Summarize the left subtree as a paragraph." "Find which two nodes contradict each other." The AI works on the part you've selected — never the whole canvas.</p>
+            <h3>{{ $t('landing.section_03.step_3.title') }}</h3>
+            <p>{{ $t('landing.section_03.step_3.body') }}</p>
           </div>
           <div class="step-chip">
             <span class="chip chip-kbd">
               <span class="kbd-key">⌘</span>
               <span class="kbd-key">K</span>
               <span class="kbd-sep">·</span>
-              <span class="kbd-text">Ask</span>
+              <span class="kbd-text">{{ $t('landing.section_03.step_3.kbd_text') }}</span>
             </span>
           </div>
         </article>
@@ -312,7 +312,7 @@ onMounted(() => {
     <section id="templates" class="sec sec-04">
       <div class="sec-grid sec-grid--head">
         <div class="sec-aside" data-reveal>
-          <div class="sec-eyebrow">04 — start somewhere</div>
+          <div class="sec-eyebrow">{{ $t('landing.section_04.eyebrow') }}</div>
           <NuxtLink to="/templates" class="browse-all">
             <span>{{ $t('landing.templates_section.browse_all') }}</span>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -321,7 +321,7 @@ onMounted(() => {
           </NuxtLink>
         </div>
         <div class="sec-body">
-          <h2 class="sec-h" data-reveal style="--reveal-delay: 50ms">A blank canvas is sometimes the wrong start. Pick a shape, then make it yours.</h2>
+          <h2 class="sec-h" data-reveal style="--reveal-delay: 50ms">{{ $t('landing.section_04.heading') }}</h2>
         </div>
       </div>
 
@@ -336,17 +336,17 @@ onMounted(() => {
               <path d="M140 108 L140 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
               <path d="M230 108 L230 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
             </svg>
-            <span class="tpl-node tpl-node--root">Decision</span>
-            <span class="tpl-node tpl-node--mid" style="left:18px; top:84px;">Option A</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">Risks</span>
-            <span class="tpl-node tpl-node--mid" style="right:18px; top:84px;">Option B</span>
-            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">Pro</span>
-            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">Mixed</span>
-            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">Con</span>
+            <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_decision.node_root') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:18px; top:84px;">{{ $t('landing.section_04.template_decision.node_option_a') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_decision.node_risks') }}</span>
+            <span class="tpl-node tpl-node--mid" style="right:18px; top:84px;">{{ $t('landing.section_04.template_decision.node_option_b') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">{{ $t('landing.section_04.template_decision.node_pro') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_decision.node_mixed') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">{{ $t('landing.section_04.template_decision.node_con') }}</span>
           </div>
           <div class="tpl-meta">
-            <h3>Decision tree</h3>
-            <p>Compare options. Trace consequences.</p>
+            <h3>{{ $t('landing.section_04.template_decision.title') }}</h3>
+            <p>{{ $t('landing.section_04.template_decision.description') }}</p>
           </div>
         </NuxtLink>
 
@@ -360,17 +360,17 @@ onMounted(() => {
               <path d="M140 108 L140 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
               <path d="M230 108 L230 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
             </svg>
-            <span class="tpl-node tpl-node--root">Goal</span>
-            <span class="tpl-node tpl-node--mid" style="left:24px; top:84px;">Spec</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">Build</span>
-            <span class="tpl-node tpl-node--mid" style="right:24px; top:84px;">Ship</span>
-            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">Today</span>
-            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">Wk 2</span>
-            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">Wk 4</span>
+            <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_project.node_root') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:24px; top:84px;">{{ $t('landing.section_04.template_project.node_spec') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_project.node_build') }}</span>
+            <span class="tpl-node tpl-node--mid" style="right:24px; top:84px;">{{ $t('landing.section_04.template_project.node_ship') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">{{ $t('landing.section_04.template_project.node_today') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_project.node_wk2') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">{{ $t('landing.section_04.template_project.node_wk4') }}</span>
           </div>
           <div class="tpl-meta">
-            <h3>Project plan</h3>
-            <p>Goals → milestones → checkpoints.</p>
+            <h3>{{ $t('landing.section_04.template_project.title') }}</h3>
+            <p>{{ $t('landing.section_04.template_project.description') }}</p>
           </div>
         </NuxtLink>
 
@@ -384,15 +384,15 @@ onMounted(() => {
               <path d="M140 108 L140 156" stroke="#00D2BE" stroke-width="1.4" fill="none" stroke-dasharray="3 3" />
               <path d="M230 108 L140 156" stroke="#00D2BE" stroke-width="1.4" fill="none" stroke-dasharray="3 3" />
             </svg>
-            <span class="tpl-node tpl-node--root">Question</span>
-            <span class="tpl-node tpl-node--mid" style="left:18px; top:84px;">Source 1</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">Source 2</span>
-            <span class="tpl-node tpl-node--mid" style="right:18px; top:84px;">Source 3</span>
-            <span class="tpl-node tpl-node--ai" style="left:50%; top:162px; transform:translateX(-50%);">AI synthesis</span>
+            <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_research.node_root') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:18px; top:84px;">{{ $t('landing.section_04.template_research.node_source_1') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_research.node_source_2') }}</span>
+            <span class="tpl-node tpl-node--mid" style="right:18px; top:84px;">{{ $t('landing.section_04.template_research.node_source_3') }}</span>
+            <span class="tpl-node tpl-node--ai" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_research.node_ai') }}</span>
           </div>
           <div class="tpl-meta">
-            <h3>Research synthesis</h3>
-            <p>Sources cluster. AI summarizes the cluster.</p>
+            <h3>{{ $t('landing.section_04.template_research.title') }}</h3>
+            <p>{{ $t('landing.section_04.template_research.description') }}</p>
           </div>
         </NuxtLink>
 
@@ -406,17 +406,17 @@ onMounted(() => {
               <path d="M140 108 L140 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
               <path d="M230 108 L230 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
             </svg>
-            <span class="tpl-node tpl-node--root">Topic</span>
-            <span class="tpl-node tpl-node--mid" style="left:24px; top:84px;">Idea 1</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">Idea 2</span>
-            <span class="tpl-node tpl-node--mid" style="right:24px; top:84px;">Idea 3</span>
-            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">Sub a</span>
-            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">Sub b</span>
-            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">Sub c</span>
+            <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_brainstorm.node_root') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:24px; top:84px;">{{ $t('landing.section_04.template_brainstorm.node_idea_1') }}</span>
+            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_brainstorm.node_idea_2') }}</span>
+            <span class="tpl-node tpl-node--mid" style="right:24px; top:84px;">{{ $t('landing.section_04.template_brainstorm.node_idea_3') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">{{ $t('landing.section_04.template_brainstorm.node_sub_a') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_brainstorm.node_sub_b') }}</span>
+            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">{{ $t('landing.section_04.template_brainstorm.node_sub_c') }}</span>
           </div>
           <div class="tpl-meta">
-            <h3>Brainstorm</h3>
-            <p>Spray ideas. Cluster later.</p>
+            <h3>{{ $t('landing.section_04.template_brainstorm.title') }}</h3>
+            <p>{{ $t('landing.section_04.template_brainstorm.description') }}</p>
           </div>
         </NuxtLink>
       </div>
@@ -425,21 +425,21 @@ onMounted(() => {
     <!-- ══════ 05 — YOUR DATA ══════ -->
     <section class="sec sec-05">
       <div class="sec-grid">
-        <div class="sec-eyebrow" data-reveal>05 — your data</div>
+        <div class="sec-eyebrow" data-reveal>{{ $t('landing.section_05.eyebrow') }}</div>
         <div class="sec-body">
-          <h2 class="sec-h" data-reveal style="--reveal-delay: 50ms">Your maps live where you do. Not on someone else's GPU.</h2>
+          <h2 class="sec-h" data-reveal style="--reveal-delay: 50ms">{{ $t('landing.section_05.heading') }}</h2>
           <div class="privacy-cols">
             <div class="privacy-col" data-reveal style="--reveal-delay: 110ms">
-              <h4>Local-first storage</h4>
-              <p>SQLite on disk. Your canvas works offline. Sync only when you're signed in.</p>
+              <h4>{{ $t('landing.section_05.col_local.title') }}</h4>
+              <p>{{ $t('landing.section_05.col_local.body') }}</p>
             </div>
             <div class="privacy-col" data-reveal style="--reveal-delay: 170ms">
-              <h4>Bring your own AI key</h4>
-              <p>Anthropic, OpenAI, OpenRouter, or local Ollama. Keys stay encrypted in our vault — we never train on your maps.</p>
+              <h4>{{ $t('landing.section_05.col_byok.title') }}</h4>
+              <p>{{ $t('landing.section_05.col_byok.body') }}</p>
             </div>
             <div class="privacy-col" data-reveal style="--reveal-delay: 230ms">
-              <h4>Open format, exportable</h4>
-              <p>Export to JSON, Markdown, or PNG anytime. The schema is documented. Your data is portable by default.</p>
+              <h4>{{ $t('landing.section_05.col_export.title') }}</h4>
+              <p>{{ $t('landing.section_05.col_export.body') }}</p>
             </div>
           </div>
         </div>
@@ -448,17 +448,17 @@ onMounted(() => {
 
     <!-- ══════ FINAL CTA ══════ -->
     <section class="cta">
-      <h2 class="cta-h" data-reveal>Stop writing notes you'll never read. Start mapping.</h2>
+      <h2 class="cta-h" data-reveal>{{ $t('landing.final_cta.heading') }}</h2>
       <div class="cta-row" data-reveal style="--reveal-delay: 80ms">
         <button type="button" class="btn-primary btn-lg" @click="handleTryFree">
-          <span>Open the canvas — no signup</span>
+          <span>{{ $t('landing.final_cta.primary') }}</span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
-        <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener" class="btn-outline btn-lg">View on GitHub</a>
+        <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener" class="btn-outline btn-lg">{{ $t('landing.final_cta.github') }}</a>
       </div>
-      <p class="cta-receipt" data-reveal style="--reveal-delay: 160ms">Free, forever. No card. No invitation. Your work auto-saves to this browser.</p>
+      <p class="cta-receipt" data-reveal style="--reveal-delay: 160ms">{{ $t('landing.final_cta.receipt') }}</p>
     </section>
 
     <!-- ══════ FOOTER ══════ -->
@@ -468,8 +468,8 @@ onMounted(() => {
           <NcLogo :size="11" :container-size="18" :radius="5" />
           <span class="footer-brand-name">NeuroCanvas</span>
         </div>
-        <span class="footer-meta">v1.0.0 · pgvector RAG · MIT licensed</span>
-        <span class="footer-meta footer-meta--credit">Made by Vanja Modrinjak</span>
+        <span class="footer-meta">{{ $t('landing.footer.version_meta') }}</span>
+        <span class="footer-meta footer-meta--credit">{{ $t('landing.footer.made_by') }}</span>
       </div>
       <div class="footer-cols">
         <div class="footer-col">

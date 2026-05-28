@@ -98,10 +98,135 @@
       "privacy_link": "Privatnost",
       "terms_link": "Uvjeti",
       "contact_link": "Kontakt",
-      "changelog_link": "Dnevnik promjena"
+      "changelog_link": "Dnevnik promjena",
+      "version_meta": "v1.0.0 · pgvector RAG · MIT licenca",
+      "made_by": "Izradio Vanja Modrinjak"
     },
     "templates_section": {
       "browse_all": "Pregledaj svih 24 predloška"
+    },
+    "mini_canvas": {
+      "live_chip": "uživo · pomicanje · zumiranje · povlačenje u produkciji",
+      "nodes_label": "čvorova",
+      "node_root": "Okvir za hero CTA",
+      "node_left_top": "Redizajn onboardinga",
+      "node_left_bottom": "Poruka za spremanje rada",
+      "node_right_top": "Postupni poticaji",
+      "node_right_bottom": "Vizualni pregledi predložaka",
+      "ai_suggested": "AI · PREDLOŽENO",
+      "prompt_example": "Generiraj iz rečenice — „isplaniraj lansiranje za naš pgvector release”"
+    },
+    "section_01": {
+      "eyebrow": "01 — zašto ovo postoji",
+      "heading": "Aplikacije za bilješke dale su ti mape. Mind-map alati dali su ti stabla. Nijedno ti nije pomoglo razmišljati.",
+      "paragraph": "NeuroCanvas tretira svaku ideju kao čvor, a svaku vezu kao kariku u tvom razmišljanju. AI sjedi unutar platna — ne u bočnoj traci — pa može proširiti, pregrupirati ili sažeti dio na kojem radiš, bez prekidanja tvog toka."
+    },
+    "section_02": {
+      "eyebrow": "02 — vidi kako radi",
+      "heading": "Upiši jednu rečenicu. Dobiješ strukturiranu mapu.",
+      "prompt_label": "upit",
+      "prompt_text": "Isplaniraj lansiranje naše nove pgvector RAG pretrage — inženjering, sadržaj i rollout.",
+      "generating_status": "Generiram 11 čvorova",
+      "node_root": "Lansiranje pgvector RAG",
+      "node_engineering": "Inženjering",
+      "node_content": "Sadržaj",
+      "node_rollout": "Rollout",
+      "node_leaf_1": "Podešavanje HNSW indeksa",
+      "node_leaf_2": "Zamjena embedding modela",
+      "node_leaf_3": "Detaljan post u dokumentaciji",
+      "node_leaf_4": "Obavještavanje beta korisnika",
+      "node_leaf_5": "Prebacivanje javne dokumentacije"
+    },
+    "section_03": {
+      "eyebrow": "03 — kako radi",
+      "heading": "Tri primitiva. Ništa drugo za naučiti.",
+      "step_1": {
+        "label": "Čvor",
+        "title": "Dvostruki klik bilo gdje. Upiši ideju.",
+        "body": "Bez mapa, bez naslova, bez sheme. Platno raste beskonačno u svim smjerovima. Ne odlučuješ unaprijed gdje stvari idu — slažeš ih naknadno, kad se obrasci pojave.",
+        "chip": "Ideja vrijedna pamćenja"
+      },
+      "step_2": {
+        "label": "Veza",
+        "title": "Povuci od jednog čvora do drugog da ih spojiš.",
+        "body": "Veze su tipizirane (uzrokuje, proturječi, ovisi o, vodi do). Veze postaju *razmišljanje* — ne samo vizualna spojnica. Filtriraj platno po vrsti veze da izoliraš jedan tok misli.",
+        "chip_cause": "Uzrok",
+        "chip_effect": "Posljedica"
+      },
+      "step_3": {
+        "label": "AI",
+        "title": "Odaberi čvor. Pritisni ⌘K. Pitaj za više.",
+        "body": "„Proširi ovu granu s protuargumentima.” „Sažmi lijevo podstablo u odlomak.” „Pronađi koja dva čvora si proturječe.” AI radi na dijelu koji si odabrao — nikad na cijelom platnu.",
+        "kbd_text": "Pitaj"
+      }
+    },
+    "section_04": {
+      "eyebrow": "04 — počni od nečega",
+      "heading": "Prazno platno je ponekad krivi početak. Odaberi oblik, pa ga prilagodi sebi.",
+      "template_decision": {
+        "title": "Stablo odluke",
+        "description": "Usporedi opcije. Prati posljedice.",
+        "node_root": "Odluka",
+        "node_option_a": "Opcija A",
+        "node_option_b": "Opcija B",
+        "node_risks": "Rizici",
+        "node_pro": "Za",
+        "node_mixed": "Mješovito",
+        "node_con": "Protiv"
+      },
+      "template_project": {
+        "title": "Plan projekta",
+        "description": "Ciljevi → prekretnice → kontrolne točke.",
+        "node_root": "Cilj",
+        "node_spec": "Specifikacija",
+        "node_build": "Izrada",
+        "node_ship": "Isporuka",
+        "node_today": "Danas",
+        "node_wk2": "Tj. 2",
+        "node_wk4": "Tj. 4"
+      },
+      "template_research": {
+        "title": "Sinteza istraživanja",
+        "description": "Izvori se grupiraju. AI sažima grupu.",
+        "node_root": "Pitanje",
+        "node_source_1": "Izvor 1",
+        "node_source_2": "Izvor 2",
+        "node_source_3": "Izvor 3",
+        "node_ai": "AI sinteza"
+      },
+      "template_brainstorm": {
+        "title": "Brainstorm",
+        "description": "Izbaci ideje. Grupiraj kasnije.",
+        "node_root": "Tema",
+        "node_idea_1": "Ideja 1",
+        "node_idea_2": "Ideja 2",
+        "node_idea_3": "Ideja 3",
+        "node_sub_a": "Pod a",
+        "node_sub_b": "Pod b",
+        "node_sub_c": "Pod c"
+      }
+    },
+    "section_05": {
+      "eyebrow": "05 — tvoji podaci",
+      "heading": "Tvoje mape žive gdje i ti. Ne na tuđem GPU-u.",
+      "col_local": {
+        "title": "Lokalna pohrana",
+        "body": "SQLite na disku. Tvoje platno radi offline. Sinkronizacija samo kad si prijavljen."
+      },
+      "col_byok": {
+        "title": "Donesi svoj AI ključ",
+        "body": "Anthropic, OpenAI, OpenRouter ili lokalni Ollama. Ključevi ostaju enkriptirani u našem trezoru — nikad ne treniramo na tvojim mapama."
+      },
+      "col_export": {
+        "title": "Otvoreni format, prenosiv",
+        "body": "Izvezi u JSON, Markdown ili PNG bilo kad. Shema je dokumentirana. Tvoji podaci su prenosivi po default-u."
+      }
+    },
+    "final_cta": {
+      "heading": "Prestani pisati bilješke koje nikad nećeš pročitati. Počni mapirati.",
+      "primary": "Otvori platno — bez prijave",
+      "github": "Pogledaj na GitHubu",
+      "receipt": "Besplatno, zauvijek. Bez kartice. Bez pozivnice. Tvoj rad se automatski sprema u ovom pregledniku."
     },
     "download_page": {
       "subhead": "Odaberi platformu ispod"
