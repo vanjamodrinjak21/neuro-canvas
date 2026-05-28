@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { TemplateCategory } from '~/types'
+import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
+import { useTemplates } from '~/composables/useTemplates'
 
 const props = defineProps<{
   open: boolean
@@ -9,15 +11,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'publish', payload: {
-    sourceMapId: string
-    title: string
-    description: string
-    category: TemplateCategory
-    tags: string[]
-    aiEnhanced: boolean
-  }): void
+  (e: 'published'): void
 }>()
+
+const { t } = useI18n()
+const db = useDatabase()
+const { publishTemplate } = useTemplates()
 
 const title = ref('')
 const description = ref('')
@@ -26,21 +25,29 @@ const aiEnhanced = ref(true)
 const tags = ref<string[]>([])
 const tagInput = ref('')
 
-const categories: { value: TemplateCategory; label: string }[] = [
-  { value: 'education', label: 'Education' },
-  { value: 'business', label: 'Business' },
-  { value: 'creative', label: 'Creative' },
-  { value: 'planning', label: 'Planning' },
-  { value: 'research', label: 'Research' },
-]
+const userMaps = ref<DBMapDocument[]>([])
+const selectedMapId = ref<string>('')
+const mapPickerOpen = ref(false)
+const submitting = ref(false)
+const errorMessage = ref<string | null>(null)
 
-const canPublish = computed(() => title.value.trim().length > 0 && props.sourceMapId)
+const selectedMap = computed(() => userMaps.value.find(m => m.id === selectedMapId.value) || null)
+
+const categories = computed<{ value: TemplateCategory; label: string }[]>(() => [
+  { value: 'education', label: t('templates.filter.education') },
+  { value: 'business', label: t('templates.filter.business') },
+  { value: 'creative', label: t('templates.filter.creative') },
+  { value: 'planning', label: t('templates.filter.planning') },
+  { value: 'research', label: t('templates.filter.research') },
+])
+
+const canPublish = computed(() =>
+  title.value.trim().length > 0 && !!selectedMapId.value && !submitting.value
+)
 
 function addTag() {
   const tag = tagInput.value.trim().toLowerCase()
-  if (tag && !tags.value.includes(tag)) {
-    tags.value.push(tag)
-  }
+  if (tag && !tags.value.includes(tag)) tags.value.push(tag)
   tagInput.value = ''
 }
 
@@ -55,28 +62,77 @@ function handleTagKeydown(e: KeyboardEvent) {
   }
 }
 
-function handlePublish() {
-  if (!canPublish.value || !props.sourceMapId) return
-  emit('publish', {
-    sourceMapId: props.sourceMapId,
-    title: title.value.trim(),
-    description: description.value.trim(),
-    category: category.value,
-    tags: tags.value,
-    aiEnhanced: aiEnhanced.value,
-  })
+function pickMap(mapId: string) {
+  selectedMapId.value = mapId
+  mapPickerOpen.value = false
+  if (!title.value.trim()) {
+    const m = userMaps.value.find(x => x.id === mapId)
+    if (m) title.value = m.title
+  }
 }
 
-watch(() => props.open, (val) => {
-  if (val) {
-    title.value = props.sourceMapTitle || ''
-    description.value = ''
-    category.value = 'education'
-    aiEnhanced.value = true
-    tags.value = []
-    tagInput.value = ''
+function toArrayRecord<T extends { id: string }>(items: T[]): Record<string, T> {
+  const out: Record<string, T> = {}
+  for (const item of items) out[item.id] = item
+  return out
+}
+
+async function handlePublish() {
+  if (!canPublish.value || !selectedMap.value) return
+  submitting.value = true
+  errorMessage.value = null
+  try {
+    const map = selectedMap.value
+    await publishTemplate({
+      sourceMapId: map.id,
+      title: title.value.trim(),
+      description: description.value.trim(),
+      category: category.value,
+      tags: [...tags.value],
+      aiEnhanced: aiEnhanced.value,
+      nodes: toArrayRecord(map.nodes as any),
+      edges: toArrayRecord(map.edges as any),
+      settings: map.settings,
+    })
+    emit('published')
+    emit('close')
+  } catch (e: any) {
+    errorMessage.value = e?.data?.statusMessage || e?.message || t('common.errors.generic')
+  } finally {
+    submitting.value = false
+  }
+}
+
+watch(() => props.open, async (val) => {
+  if (!val) return
+  title.value = props.sourceMapTitle || ''
+  description.value = ''
+  category.value = 'education'
+  aiEnhanced.value = true
+  tags.value = []
+  tagInput.value = ''
+  errorMessage.value = null
+  selectedMapId.value = props.sourceMapId || ''
+  mapPickerOpen.value = false
+  try {
+    userMaps.value = await db.getAllMaps()
+    if (!selectedMapId.value && userMaps.value.length === 1) {
+      selectedMapId.value = userMaps.value[0]!.id
+      if (!title.value.trim()) title.value = userMaps.value[0]!.title
+    }
+  } catch {
+    userMaps.value = []
   }
 })
+
+if (typeof document !== 'undefined') {
+  onMounted(() => {
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null
+      if (target && !target.closest('.source-map-wrap')) mapPickerOpen.value = false
+    })
+  })
+}
 </script>
 
 <template>
@@ -92,8 +148,8 @@ watch(() => props.open, (val) => {
               </svg>
             </div>
             <div class="header-text">
-              <h2 class="header-title">Publish Template</h2>
-              <p class="header-subtitle">Share your map structure with the community</p>
+              <h2 class="header-title">{{ $t('templates.publish_modal.title') }}</h2>
+              <p class="header-subtitle">{{ $t('templates.publish_modal.description') }}</p>
             </div>
             <button class="close-btn" @click="emit('close')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -106,26 +162,54 @@ watch(() => props.open, (val) => {
           <div class="modal-body">
             <!-- Source Map -->
             <div class="field">
-              <label class="field-label">Source Map</label>
-              <div class="source-map-display">
-                <span class="source-avatar">{{ (sourceMapTitle || 'M')[0].toUpperCase() }}</span>
-                <span class="source-title">{{ sourceMapTitle || 'Select a map...' }}</span>
+              <label class="field-label">{{ $t('templates.publish_modal.source_map') }}</label>
+              <div class="source-map-wrap">
+                <button
+                  type="button"
+                  class="source-map-display"
+                  :class="{ active: mapPickerOpen }"
+                  @click="mapPickerOpen = !mapPickerOpen"
+                >
+                  <span class="source-avatar">{{ (selectedMap?.title || 'M')[0].toUpperCase() }}</span>
+                  <span class="source-title" :class="{ placeholder: !selectedMap }">
+                    {{ selectedMap?.title || $t('templates.publish_modal.select_map') }}
+                  </span>
+                  <svg class="source-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                <div v-if="mapPickerOpen" class="source-map-menu">
+                  <p v-if="userMaps.length === 0" class="source-map-empty">
+                    {{ $t('common.errors.not_found') }}
+                  </p>
+                  <button
+                    v-for="m in userMaps"
+                    :key="m.id"
+                    type="button"
+                    :class="['source-map-item', { active: m.id === selectedMapId }]"
+                    @click="pickMap(m.id)"
+                  >
+                    <span class="source-avatar">{{ (m.title || 'M')[0].toUpperCase() }}</span>
+                    <span class="source-map-item-title">{{ m.title || $t('common.errors.not_found') }}</span>
+                    <span class="source-map-item-meta">{{ m.nodes.length }}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
             <!-- Template Name -->
             <div class="field">
-              <label class="field-label">Template Name</label>
-              <input v-model="title" type="text" class="field-input" placeholder="Template name" >
+              <label class="field-label">{{ $t('templates.publish_modal.template_name') }}</label>
+              <input v-model="title" type="text" class="field-input" :placeholder="$t('templates.publish_modal.template_name')" >
             </div>
 
             <!-- Description -->
             <div class="field">
-              <label class="field-label">Description</label>
+              <label class="field-label">{{ $t('templates.publish_modal.template_description') }}</label>
               <textarea
                 v-model="description"
                 class="field-textarea"
-                placeholder="Describe what this template is for..."
+                :placeholder="$t('templates.publish_modal.describe_template')"
                 rows="3"
               />
             </div>
@@ -133,15 +217,17 @@ watch(() => props.open, (val) => {
             <!-- Category + AI Enhancement -->
             <div class="field-row">
               <div class="field">
-                <label class="field-label">Category</label>
+                <label class="field-label">{{ $t('templates.publish_modal.category') }}</label>
                 <select v-model="category" class="field-select">
                   <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
               </div>
               <div class="field">
-                <label class="field-label">AI Enhancement</label>
+                <label class="field-label">{{ $t('templates.publish_modal.ai_enhancement') }}</label>
                 <div class="toggle-switch-row">
-                  <span class="toggle-label">{{ aiEnhanced ? 'Enabled' : 'Disabled' }}</span>
+                  <span class="toggle-label">
+                    {{ aiEnhanced ? $t('templates.publish_modal.enabled') : $t('templates.publish_modal.disabled') }}
+                  </span>
                   <button :class="['toggle-switch', { active: aiEnhanced }]" @click="aiEnhanced = !aiEnhanced">
                     <span class="toggle-knob" />
                   </button>
@@ -151,7 +237,7 @@ watch(() => props.open, (val) => {
 
             <!-- Tags -->
             <div class="field">
-              <label class="field-label">Tags</label>
+              <label class="field-label">{{ $t('templates.publish_modal.tags') }}</label>
               <div class="tags-container">
                 <span v-for="(tag, i) in tags" :key="tag" class="tag-chip">
                   {{ tag }}
@@ -165,22 +251,25 @@ watch(() => props.open, (val) => {
                   v-model="tagInput"
                   type="text"
                   class="tag-input"
-                  placeholder="+ Add tag"
+                  :placeholder="$t('templates.publish_modal.add_tag')"
                   @keydown="handleTagKeydown"
                   @blur="addTag"
                 >
               </div>
             </div>
+
+            <p v-if="errorMessage" class="modal-error">{{ errorMessage }}</p>
           </div>
 
           <!-- Footer -->
           <div class="modal-footer">
-            <button class="btn-ghost" @click="emit('close')">Cancel</button>
+            <button class="btn-ghost" @click="emit('close')">{{ $t('templates.publish_modal.cancel') }}</button>
             <button class="btn-primary" :disabled="!canPublish" @click="handlePublish">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg v-if="!submitting" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Publish to Community
+              <span v-else class="btn-spinner" />
+              {{ $t('templates.publish_modal.publish') }}
             </button>
           </div>
         </div>
@@ -309,8 +398,11 @@ watch(() => props.open, (val) => {
 
 .field-select option { background: #111113; color: #E8E8EC; }
 
-/* Source Map Display */
+/* Source Map picker */
+.source-map-wrap { position: relative; }
+
 .source-map-display {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -318,7 +410,105 @@ watch(() => props.open, (val) => {
   background: var(--m-input-bg, #0D0D0F);
   border: 1px solid var(--m-border, #1A1A1E);
   border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.15s;
 }
+
+.source-map-display:hover,
+.source-map-display.active { border-color: #00D2BE; }
+
+.source-chev {
+  margin-left: auto;
+  color: var(--m-muted, #71717A);
+  flex-shrink: 0;
+}
+
+.source-title.placeholder { color: var(--m-placeholder, #71717A); }
+
+.source-map-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--m-bg, #111113);
+  border: 1px solid var(--m-border, #1A1A1E);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+:root.light .source-map-menu {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.source-map-empty {
+  margin: 0;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--m-muted, #71717A);
+  text-align: center;
+}
+
+.source-map-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--m-text, #E8E8EC);
+}
+
+.source-map-item:hover { background: var(--m-hover, #1A1A1E); }
+.source-map-item.active { background: rgba(0, 210, 190, 0.08); }
+
+.source-map-item-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--m-text, #E8E8EC);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-map-item-meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--m-muted, #71717A);
+}
+
+.modal-error {
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 13px;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(9, 9, 11, 0.3);
+  border-top-color: #09090B;
+  border-radius: 50%;
+  animation: pubspin 0.6s linear infinite;
+}
+
+@keyframes pubspin { to { transform: rotate(360deg); } }
 
 .source-avatar {
   width: 24px; height: 24px;

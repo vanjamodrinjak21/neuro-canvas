@@ -354,12 +354,12 @@ const edgeCount = computed(() => mapStore.edges.size)
   <div class="mde">
     <!-- Left: Node Tree -->
     <aside class="mde-tree">
-      <div class="mde-tree-hdr"><span class="mde-tree-lbl">NODES</span></div>
+      <div class="mde-tree-hdr"><span class="mde-tree-lbl">{{ $t('canvas.markdown_editor.nodes_label') }}</span></div>
       <div class="mde-tree-scroll">
         <template v-for="root in nodeTree" :key="root.id">
           <MdeTreeItem :node="root" :selected-id="selectedNode?.id" @select="selectNode" />
         </template>
-        <div v-if="nodeTree.length === 0" class="mde-tree-empty">No nodes yet</div>
+        <div v-if="nodeTree.length === 0" class="mde-tree-empty">{{ $t('canvas.markdown_editor.no_nodes') }}</div>
       </div>
     </aside>
 
@@ -371,7 +371,7 @@ const edgeCount = computed(() => mapStore.edges.size)
           <span v-if="selectedNode" class="mde-bar-dot" :style="{ background: selectedNode.style?.borderColor || '#FB923C' }" />
           <span class="mde-bar-name">{{ selectedNode?.content || mapTitle }}</span>
         </div>
-        <span class="mde-bar-meta">{{ connectedNodes.length }} connections</span>
+        <span class="mde-bar-meta">{{ $t('canvas.markdown_editor.connections_count', { n: connectedNodes.length }) }}</span>
       </div>
 
       <!-- Live-preview contenteditable editor -->
@@ -389,8 +389,8 @@ const edgeCount = computed(() => mapStore.edges.size)
     <!-- Right: Graph Preview + Info -->
     <aside class="mde-right">
       <div class="mde-right-section">
-        <span class="mde-right-lbl">GRAPH PREVIEW</span>
-        <span class="mde-right-meta">{{ nodeCount }} nodes · {{ edgeCount }} edges</span>
+        <span class="mde-right-lbl">{{ $t('canvas.markdown_editor.graph_preview') }}</span>
+        <span class="mde-right-meta">{{ $t('maps.nodes_count', { n: nodeCount }) }} · {{ $t('canvas.graph_controls_panel.edges_count', { n: edgeCount }) }}</span>
       </div>
 
       <!-- Mini graph SVG -->
@@ -422,12 +422,12 @@ const edgeCount = computed(() => mapStore.edges.size)
 
       <!-- Outline -->
       <div v-if="selectedNode" class="mde-right-section">
-        <span class="mde-right-lbl">SELECTED</span>
+        <span class="mde-right-lbl">{{ $t('canvas.markdown_editor.selected') }}</span>
         <p class="mde-sel-name">{{ selectedNode.content }}</p>
       </div>
 
       <div v-if="connectedNodes.length > 0" class="mde-right-section">
-        <span class="mde-right-lbl">CONNECTIONS</span>
+        <span class="mde-right-lbl">{{ $t('canvas.markdown_editor.connections') }}</span>
         <div class="mde-conn-list">
           <button v-for="cn in connectedNodes" :key="cn.id" class="mde-conn-item" @click="selectNode(cn.id)">
             <span class="mde-conn-dot" />
@@ -438,7 +438,7 @@ const edgeCount = computed(() => mapStore.edges.size)
 
       <!-- Outline from headings -->
       <div v-if="renderedSections.length > 0" class="mde-right-section">
-        <span class="mde-right-lbl">OUTLINE</span>
+        <span class="mde-right-lbl">{{ $t('canvas.markdown_editor.outline') }}</span>
         <div class="mde-outline">
           <button
             v-for="s in renderedSections.filter(s => s.headingLevel <= 1)"

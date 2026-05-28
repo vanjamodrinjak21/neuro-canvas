@@ -2,11 +2,14 @@
   "landing": {
     "nav": {
       "features": "Features",
+      "product": "Product",
+      "templates": "Templates",
       "download": "Download",
       "docs": "Docs",
       "github": "GitHub",
       "dashboard": "Dashboard",
       "signin": "Sign in",
+      "open_dashboard": "Open dashboard",
       "try_free": "Try for Free",
       "get_started": "Get Started"
     },
@@ -16,7 +19,13 @@
       "serif": "Learn infinitely.",
       "subtitle": "AI-powered mind mapping that understands your ideas, suggests connections, and helps you learn faster.",
       "cta_primary": "Start mapping — free forever",
-      "cta_github": "View on GitHub"
+      "cta_primary_short": "Try without signing up",
+      "cta_secondary": "Create free account",
+      "cta_github": "View on GitHub",
+      "receipt": "No email. No card. Your map auto-saves to this browser.",
+      "title_a": "A canvas for",
+      "title_b": "how you actually think.",
+      "subtitle_v2": "Drop in an idea. Connect it to another. Ask the AI to keep going. NeuroCanvas turns scattered notes into structured maps — without the cards-and-folders ceremony."
     },
     "screenshot": {
       "window_title": "Cognitive Psychology — NeuroCanvas",
@@ -76,7 +85,32 @@
       "github": "GitHub",
       "privacy": "Privacy",
       "terms": "Terms",
-      "credit": "Built by Vanja Modrinjak"
+      "credit": "Built by Vanja Modrinjak",
+      "product_head": "Product",
+      "templates_link": "Templates",
+      "download_link": "Download",
+      "roadmap_link": "Roadmap",
+      "howitworks_link": "How it works",
+      "resources_head": "Resources",
+      "docs_link": "Docs",
+      "github_link": "GitHub",
+      "company_head": "Company",
+      "privacy_link": "Privacy",
+      "terms_link": "Terms",
+      "contact_link": "Contact",
+      "changelog_link": "Changelog"
+    },
+    "templates_section": {
+      "browse_all": "Browse all 24 templates"
+    },
+    "download_page": {
+      "subhead": "Pick a platform below"
+    },
+    "install_page": {
+      "copy_button": "Copy",
+      "copied_button": "Copied",
+      "macos_open_anyway": "Open Anyway",
+      "windows_run_anyway": "Run anyway"
     }
   }
 }

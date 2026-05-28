@@ -106,7 +106,7 @@ const sheetStyle = computed(() => {
         >
           <div class="w-10 h-1 bg-nc-border-active rounded-full mb-2" />
           <div class="flex items-center justify-between w-full px-4">
-            <span class="text-sm font-semibold text-nc-ink">Node Properties</span>
+            <span class="text-sm font-semibold text-nc-ink">{{ $t('canvas.node_properties.section_title') }}</span>
             <button
               class="p-1 rounded hover:bg-nc-surface-2 text-nc-ink-muted"
               @click="emit('close')"

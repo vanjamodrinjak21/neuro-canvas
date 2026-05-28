@@ -6,6 +6,7 @@ import { useAI } from '~/composables/useAI'
 import { useAISettings } from '~/composables/useAISettings'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { safeImageUrl } from '~/utils/safeUrl'
 
 const { t, locale: currentLocale } = useI18n()
 const { isMobile } = usePlatform()
@@ -36,6 +37,7 @@ const user = computed(() => {
   if (_isCapacitor && mobileAuth?.isSignedIn.value && mobileAuth.user.value) return mobileAuth.user.value
   return session.value?.user
 })
+const avatarSrc = computed(() => safeImageUrl((user.value as { image?: string | null } | undefined)?.image))
 // Always start false so SSR and client initial render match (loading spinner).
 // Set to true in onMounted to avoid hydration mismatch in Tauri.
 const authChecked = ref(!!session.value?.user)
@@ -797,7 +799,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
             </button>
             <NuxtLink to="/settings" class="m-avatar-link" aria-label="Settings">
               <div class="m-avatar">
-                <img v-if="user?.image" :src="user.image" :alt="userName" class="m-avatar-img">
+                <img v-if="avatarSrc" :src="avatarSrc" :alt="userName" class="m-avatar-img" referrerpolicy="no-referrer">
                 <template v-else>{{ userInitials }}</template>
               </div>
             </NuxtLink>
@@ -810,7 +812,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
         <!-- Header -->
         <header class="dheader">
           <div class="dheader-left">
-            <p class="dheader-eyebrow">01 — workspace</p>
+            <p class="dheader-eyebrow">{{ $t('dashboard.header.eyebrow') }}</p>
             <h1 class="dheader-title">{{ $t('dashboard.header.your_maps') }}</h1>
           </div>
           <div class="dheader-actions">
@@ -858,9 +860,9 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
         <!-- Section label -->
         <div class="dsection-label">
-          <span class="dsection-text">RECENT · {{ Math.min(visibleMaps.length, sortedMaps.length) }} OF {{ sortedMaps.length }}</span>
+          <span class="dsection-text">{{ $t('dashboard.sections.recent_count', { current: Math.min(visibleMaps.length, sortedMaps.length), total: sortedMaps.length }) }}</span>
           <button type="button" class="dsort" @click="sortBy = sortBy === 'recent' ? 'alphabetical' : 'recent'">
-            <span class="dsort-prefix">Sort by</span>
+            <span class="dsort-prefix">{{ $t('dashboard.sections.sort_by') }}</span>
             <span class="dsort-value">{{ sortBy === 'recent' ? $t('dashboard.sections.recent') : $t('dashboard.sections.a_z') }}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <polyline points="6 9 12 15 18 9" />
@@ -966,25 +968,25 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
             <div class="doverview">
               <div class="doverview-head">
-                <span class="doverview-eyebrow">02 — overview</span>
-                <span class="doverview-period">last 30 days</span>
+                <span class="doverview-eyebrow">{{ $t('dashboard.overview.eyebrow') }}</span>
+                <span class="doverview-period">{{ $t('dashboard.overview.period') }}</span>
               </div>
               <div class="doverview-stats">
                 <div class="dov-stat">
                   <span class="dov-num">{{ stats.totalMaps }}</span>
-                  <span class="dov-label">Total maps</span>
+                  <span class="dov-label">{{ $t('dashboard.overview.total_maps') }}</span>
                 </div>
                 <div class="dov-stat">
                   <span class="dov-num">{{ stats.totalNodes }}</span>
-                  <span class="dov-label">Total nodes</span>
+                  <span class="dov-label">{{ $t('dashboard.overview.total_nodes') }}</span>
                 </div>
                 <div class="dov-stat">
                   <span class="dov-num accent">{{ stats.aiGenerated }}</span>
-                  <span class="dov-label">AI-generated</span>
+                  <span class="dov-label">{{ $t('dashboard.overview.ai_generated') }}</span>
                 </div>
                 <div class="dov-stat">
                   <span class="dov-num">{{ stats.connections }}</span>
-                  <span class="dov-label">Connections found</span>
+                  <span class="dov-label">{{ $t('dashboard.overview.connections') }}</span>
                 </div>
               </div>
               <div class="doverview-chart">
@@ -1015,11 +1017,11 @@ async function createFromTemplate(template: typeof templates.value[0]) {
               </svg>
             </div>
             <div class="dai-banner-body">
-              <span class="dai-banner-title">Generate from a sentence</span>
-              <span class="dai-banner-quote">“Plan a launch for our pgvector RAG search — engineering, content, rollout.”</span>
+              <span class="dai-banner-title">{{ $t('dashboard.ai_banner.title') }}</span>
+              <span class="dai-banner-quote">“{{ $t('common.guest.template_picker_ai_placeholder') }}”</span>
             </div>
             <span class="dai-banner-cta">
-              <span>Try it</span>
+              <span>{{ $t('dashboard.ai_banner.try_it') }}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
@@ -1038,50 +1040,91 @@ async function createFromTemplate(template: typeof templates.value[0]) {
         >
       </main>
 
-      <!-- AI Modal -->
+      <!-- AI Modal — both phases (input + generating) run fullscreen so
+           the user knows they're committing to an AI workflow, not
+           dismissing a tiny dialog. Treats AI generation as a primary
+           destination rather than an afterthought modal. -->
       <Teleport to="body">
-        <div v-if="showAIModal" class="modal-overlay" @click.self="!aiLoading && (showAIModal = false)">
-          <div class="ai-modal">
+        <div
+          v-if="showAIModal"
+          class="modal-overlay modal-overlay--fullscreen"
+          @click.self="!aiLoading && (showAIModal = false)"
+        >
+          <div class="ai-modal ai-modal--fullscreen">
+            <!-- Dismiss affordance — visible top-right in both phases
+                 except during generation when we deliberately lock the
+                 user in (clicking the backdrop is gated by aiLoading too). -->
+            <button
+              v-if="!aiLoading"
+              class="ai-fullscreen-close"
+              :aria-label="$t('dashboard.ai_modal.cancel')"
+              @click="showAIModal = false"
+            >
+              <span class="i-lucide-x" />
+            </button>
             <template v-if="!aiLoading">
-              <div class="ai-modal-content">
-                <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.title') }}</h2>
-                <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.description') }}</p>
-                <div class="ai-modal-input-wrap">
-                  <input
-                    v-model="aiTopic"
-                    type="text"
-                    class="ai-modal-input"
-                    :placeholder="$t('dashboard.ai_modal.placeholder')"
-                    autofocus
-                    @keyup.enter="handleAIQuickStart"
-                  >
-                </div>
-                <div v-if="aiError" class="ai-error-banner">
-                  <span class="i-lucide-alert-triangle ai-error-icon" />
-                  <span class="ai-error-text">{{ aiError }}</span>
-                  <button class="ai-error-dismiss" @click="aiError = null"><span class="i-lucide-x" /></button>
-                </div>
-                <div class="ai-modal-actions">
-                  <button class="ai-modal-cancel" @click="showAIModal = false">{{ $t('dashboard.ai_modal.cancel') }}</button>
-                  <button class="ai-modal-generate" :disabled="!aiTopic.trim()" @click="handleAIQuickStart">
-                    {{ $t('dashboard.ai_modal.generate') }}
-                  </button>
+              <div class="ai-modal-content ai-modal-content--fullscreen">
+                <div class="ai-fullscreen-stack">
+                  <div class="ai-fullscreen-eyebrow">{{ $t('dashboard.ai_modal.title') }}</div>
+                  <h2 class="ai-fullscreen-title">{{ $t('dashboard.ai_modal.description') }}</h2>
+                  <p class="ai-fullscreen-subtitle">{{ $t('dashboard.ai_modal.subtitle') }}</p>
+                  <div class="ai-fullscreen-input-row">
+                    <input
+                      v-model="aiTopic"
+                      type="text"
+                      class="ai-fullscreen-input"
+                      :placeholder="$t('dashboard.ai_modal.placeholder')"
+                      autofocus
+                      @keyup.enter="handleAIQuickStart"
+                    >
+                    <button
+                      class="ai-fullscreen-generate"
+                      :disabled="!aiTopic.trim()"
+                      @click="handleAIQuickStart"
+                    >
+                      <span>{{ $t('dashboard.ai_modal.generate') }}</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                  </div>
+                  <div v-if="aiError" class="ai-error-banner">
+                    <span class="i-lucide-alert-triangle ai-error-icon" />
+                    <span class="ai-error-text">{{ aiError }}</span>
+                    <button class="ai-error-dismiss" @click="aiError = null"><span class="i-lucide-x" /></button>
+                  </div>
                 </div>
               </div>
             </template>
             <template v-else>
-              <div class="ai-modal-content">
-                <h2 class="ai-modal-title">{{ $t('dashboard.ai_modal.generating', { topic: aiTopic }) }}</h2>
-                <p class="ai-modal-subtitle">{{ $t('dashboard.ai_modal.building_structure') }}</p>
-                <div class="ai-progress-bar"><div class="ai-progress-fill" :style="{ width: aiProgressPct + '%' }" /></div>
-                <div class="ai-steps">
-                  <div v-for="(step, i) in aiSteps" :key="i" :class="['ai-step', `ai-step--${step.status}`]">
-                    <div class="ai-step-indicator">
-                      <svg v-if="step.status === 'done'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                      <div v-else-if="step.status === 'active'" class="ai-step-dot" />
+              <!-- Fullscreen generation view: a hero loading state instead
+                   of a tiny dialog. Generation can take 20-30s; the
+                   takeover signals "this is happening" and prevents the
+                   user from feeling that the canvas behind is the active
+                   surface. The input phase stays compact (see above). -->
+              <div class="ai-modal-content ai-modal-content--fullscreen">
+                <div class="ai-fullscreen-stack">
+                  <div class="ai-fullscreen-eyebrow ai-fullscreen-eyebrow--live">
+                    <span class="ai-eyebrow-spinner i-lucide-loader-circle" />
+                    {{ $t('dashboard.ai_modal.building_structure') }}
+                    <span class="ai-eyebrow-dots" aria-hidden="true">
+                      <span class="ai-eyebrow-dot" />
+                      <span class="ai-eyebrow-dot" />
+                      <span class="ai-eyebrow-dot" />
+                    </span>
+                  </div>
+                  <h2 class="ai-fullscreen-title">{{ $t('dashboard.ai_modal.generating', { topic: aiTopic }) }}</h2>
+                  <div class="ai-fullscreen-progress">
+                    <div class="ai-progress-bar"><div class="ai-progress-fill" :style="{ width: aiProgressPct + '%' }" /></div>
+                    <div class="ai-fullscreen-pct">{{ aiProgressPct }}%</div>
+                  </div>
+                  <div class="ai-steps ai-steps--fullscreen">
+                    <div v-for="(step, i) in aiSteps" :key="i" :class="['ai-step', `ai-step--${step.status}`]">
+                      <div class="ai-step-indicator">
+                        <svg v-if="step.status === 'done'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                        <div v-else-if="step.status === 'active'" class="ai-step-dot" />
+                      </div>
+                      <span class="ai-step-label">{{ step.label }}</span>
+                      <span v-if="step.elapsed" class="ai-step-elapsed">{{ step.elapsed }}</span>
                     </div>
-                    <span class="ai-step-label">{{ step.label }}</span>
-                    <span v-if="step.elapsed" class="ai-step-elapsed">{{ step.elapsed }}</span>
                   </div>
                 </div>
               </div>
@@ -1353,7 +1396,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 /* Maps grid */
 .dmaps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -1758,6 +1801,19 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 :root.light .modal-overlay { background: rgba(0, 0, 0, 0.4); }
 
+/* Fullscreen takeover for the AI generation phase. Drops the padding +
+   any backdrop blur so the inner modal can fill the viewport, and
+   uses a heavier scrim so the cancelled canvas behind isn't a visual
+   distraction during the ~20-30s generation. */
+.modal-overlay--fullscreen {
+  padding: 0;
+  background: rgba(7, 7, 9, 0.96);
+  backdrop-filter: blur(10px);
+}
+:root.light .modal-overlay--fullscreen {
+  background: rgba(250, 250, 249, 0.97);
+}
+
 .modal, .ai-modal {
   background: var(--d-surface);
   border: 1px solid var(--d-border-2);
@@ -1766,6 +1822,20 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   width: 100%;
   overflow: hidden;
   color: var(--d-text);
+}
+
+.ai-modal--fullscreen {
+  /* Take the whole viewport — let the surrounding overlay scrim do the
+     "this is a modal" affordance, no border/radius needed. */
+  max-width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .modal-wide { max-width: 720px; }
 .modal-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--d-border); }
@@ -1839,31 +1909,301 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 .ai-modal-generate:disabled { opacity: 0.5; cursor: not-allowed; }
 .ai-progress-bar {
-  height: 4px; background: var(--d-surface-3);
-  border-radius: 2px; overflow: hidden; margin-bottom: 20px;
+  position: relative;
+  height: 4px;
+  background: var(--d-surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 20px;
 }
 .ai-progress-fill {
-  height: 100%; background: var(--d-accent);
-  transition: width 300ms ease;
+  position: relative;
+  height: 100%;
+  background: var(--d-accent);
+  transition: width 600ms cubic-bezier(0.23, 1, 0.32, 1);
+  /* Indeterminate shimmer that travels through the filled portion
+     while we wait between discrete step updates — keeps the bar feeling
+     alive even when the % isn't changing. */
+  overflow: hidden;
+}
+.ai-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  animation: ai-progress-shimmer 1.6s linear infinite;
+}
+@keyframes ai-progress-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 .ai-steps { display: flex; flex-direction: column; gap: 10px; }
 .ai-step {
   display: flex; align-items: center; gap: 10px;
   font-size: 13px; color: var(--d-text-4);
+  /* Fade-in when a step appears or its status changes. */
+  transition: color 300ms ease;
 }
 .ai-step--active { color: var(--d-text); }
 .ai-step--done { color: var(--d-text-2); }
 .ai-step-indicator {
+  position: relative;
   width: 16px; height: 16px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--d-border-2); flex-shrink: 0;
+  transition: border-color 200ms ease, background 200ms ease;
 }
 .ai-step--active .ai-step-indicator,
 .ai-step--done .ai-step-indicator {
   border-color: var(--d-accent); color: var(--d-accent);
   background: var(--d-accent-soft);
 }
+/* Halo ring around the ACTIVE step's indicator — breathes outward to
+   draw the eye to where work is happening right now. */
+.ai-step--active .ai-step-indicator::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1.5px solid var(--d-accent);
+  opacity: 0.55;
+  animation: ai-step-halo 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes ai-step-halo {
+  0%, 100% { transform: scale(1);    opacity: 0.55; }
+  50%      { transform: scale(1.4);  opacity: 0;    }
+}
 .ai-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--d-accent); animation: pulse 1s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-progress-fill::after,
+  .ai-step--active .ai-step-indicator::before,
+  .ai-step-dot { animation: none !important; }
+}
+
+/* Fullscreen generation hero layout. Centered column, larger
+   typography, progress bar feels load-bearing rather than incidental. */
+.ai-modal-content--fullscreen {
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ai-fullscreen-stack {
+  width: 100%;
+  max-width: 640px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Top-right dismiss — only visible in input phase, suppressed during
+   generation so the user doesn't accidentally cancel a long task. */
+.ai-fullscreen-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--d-text-3);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.ai-fullscreen-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--d-text);
+}
+:root.light .ai-fullscreen-close {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #52525B;
+}
+:root.light .ai-fullscreen-close:hover {
+  background: rgba(0, 0, 0, 0.07);
+  color: #18181B;
+}
+
+/* Hero input — wide, single-line, with an inline send button. */
+.ai-fullscreen-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.ai-fullscreen-input {
+  flex: 1;
+  height: 52px;
+  padding: 0 18px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  color: var(--d-text);
+  background: var(--d-surface);
+  border: 1px solid var(--d-border-2);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+.ai-fullscreen-input::placeholder {
+  color: var(--d-text-4);
+}
+.ai-fullscreen-input:focus {
+  border-color: var(--d-accent);
+}
+.ai-fullscreen-generate {
+  height: 52px;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0A0A0C;
+  background: #00D2BE;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: background 150ms ease, transform 120ms ease;
+}
+.ai-fullscreen-generate:hover {
+  background: #1AE0CD;
+}
+.ai-fullscreen-generate:active {
+  transform: scale(0.98);
+}
+.ai-fullscreen-generate:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #00D2BE;
+}
+:root.light .ai-fullscreen-generate {
+  background: #00A89A;
+  color: #FFFFFF;
+  box-shadow: none;
+}
+:root.light .ai-fullscreen-generate:hover {
+  background: #00BFAF;
+}
+.ai-fullscreen-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--d-text-4);
+  margin: 0;
+}
+.ai-fullscreen-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--d-text);
+  margin: 0;
+  /* Long topic names + quoted strings get a soft wrap rather than overflow. */
+  word-break: break-word;
+}
+/* Live eyebrow variant — spinner + bouncing dots so the user knows
+   work is happening even while the progress % between step boundaries.
+   Composes with the base eyebrow style. */
+.ai-fullscreen-eyebrow--live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--d-accent);
+}
+.ai-eyebrow-spinner {
+  display: inline-block;
+  font-size: 12px;
+  animation: ai-eyebrow-spin 1s linear infinite;
+}
+@keyframes ai-eyebrow-spin { to { transform: rotate(360deg); } }
+.ai-eyebrow-dots {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  margin-left: 2px;
+  height: 12px;
+}
+.ai-eyebrow-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: ai-eyebrow-bounce 1.4s ease-in-out infinite both;
+}
+.ai-eyebrow-dot:nth-child(2) { animation-delay: 0.15s; }
+.ai-eyebrow-dot:nth-child(3) { animation-delay: 0.30s; }
+@keyframes ai-eyebrow-bounce {
+  0%, 80%, 100% { transform: translateY(0);   opacity: 0.35; }
+  40%           { transform: translateY(-3px); opacity: 1;    }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-eyebrow-spinner,
+  .ai-eyebrow-dot { animation: none; }
+}
+
+/* Supporting line under the H2 — sits ~6px below, lighter weight, capped
+   at 65ch for readable line length per Pro Max typography rule. */
+.ai-fullscreen-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--d-text-3);
+  margin: -14px 0 0;
+  max-width: 65ch;
+}
+.ai-fullscreen-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ai-fullscreen-progress .ai-progress-bar {
+  flex: 1;
+  height: 6px;
+  margin-bottom: 0;
+}
+.ai-fullscreen-pct {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--d-text-3);
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ai-steps--fullscreen {
+  gap: 14px;
+}
+.ai-steps--fullscreen .ai-step {
+  font-size: 14px;
+}
+.ai-steps--fullscreen .ai-step-indicator {
+  width: 20px;
+  height: 20px;
+}
+@media (max-width: 640px) {
+  .ai-fullscreen-stack {
+    padding: 24px;
+    gap: 22px;
+  }
+}
 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.8); } }
 .ai-step-label { flex: 1; }
 .ai-step-elapsed { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--d-text-4); }
@@ -1912,7 +2252,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   }
   .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
   .m-avatar {
-    width: 32px; height: 32px; border-radius: 16px;
+    width: 32px; height: 32px; border-radius: 50%;
     background: #1A1A1E; border: 1px solid #1E1E22;
     color: #00D2BE;
     font-family: 'Inter', system-ui, sans-serif;
@@ -1920,7 +2260,13 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
-  :root.light .m-avatar { background: #F5F5F4; border-color: #E8E8E6; color: #00A89A; }
+  :root.light .m-avatar {
+    background: #F5F5F4;
+    border-color: #E8E8E6;
+    color: #00A89A;
+    /* Extra inset ring so dark profile photos don't fight the warm-paper sidebar. */
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
   .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
   /* Page title */

@@ -1,6 +1,7 @@
 import { updateComment, CommentError } from '../../../../utils/commentsService'
 import { resolveCommentActor } from '../../../../utils/commentActor'
 import { validateBody, commentUpdateSchema } from '../../../../utils/validation'
+import { rateLimitCommentMutation } from '../../../../utils/commentRateLimit'
 
 export default defineEventHandler(async (event) => {
   const mapId = getRouterParam(event, 'id')
@@ -9,6 +10,7 @@ export default defineEventHandler(async (event) => {
   const body = validateBody(commentUpdateSchema, await readBody(event))
   try {
     const actor = await resolveCommentActor(event, mapId)
+    await rateLimitCommentMutation(event, actor, 'edit', 60, 60)
     return await updateComment(mapId, actor, commentId, { body: body.body })
   } catch (err) {
     if (err instanceof CommentError) {

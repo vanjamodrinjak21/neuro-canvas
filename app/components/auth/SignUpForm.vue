@@ -85,13 +85,13 @@ watch([name, email, password, confirmPassword], () => {
     <!-- Name field (optional) -->
     <div class="form-field">
       <label for="name" class="form-label">
-        Name <span class="optional">(optional)</span>
+        {{ $t('auth.signup.name_label') }} <span class="optional">{{ $t('auth.signup.name_optional') }}</span>
       </label>
       <NcInput
         id="name"
         v-model="name"
         type="text"
-        placeholder="Your name"
+        :placeholder="$t('auth.signup.name_placeholder')"
         :disabled="isRegistering"
         autocomplete="name"
       />
@@ -99,12 +99,12 @@ watch([name, email, password, confirmPassword], () => {
 
     <!-- Email field -->
     <div class="form-field">
-      <label for="email" class="form-label">Email</label>
+      <label for="email" class="form-label">{{ $t('auth.signup.email_label') }}</label>
       <NcInput
         id="email"
         v-model="email"
         type="email"
-        placeholder="you@example.com"
+        :placeholder="$t('auth.desktop_auth.email_placeholder')"
         :disabled="isRegistering"
         autocomplete="email"
       />
@@ -112,11 +112,11 @@ watch([name, email, password, confirmPassword], () => {
 
     <!-- Password field -->
     <div class="form-field">
-      <label for="password" class="form-label">Password</label>
+      <label for="password" class="form-label">{{ $t('auth.signup.password_label') }}</label>
       <PasswordInput
         id="password"
         v-model="password"
-        placeholder="Create a password"
+        :placeholder="$t('auth.signup.password_placeholder')"
         :disabled="isRegistering"
         autocomplete="new-password"
       />
@@ -125,13 +125,13 @@ watch([name, email, password, confirmPassword], () => {
 
     <!-- Confirm Password field -->
     <div class="form-field">
-      <label for="confirm-password" class="form-label">Confirm Password</label>
+      <label for="confirm-password" class="form-label">{{ $t('auth.signup.confirm_password_label') }}</label>
       <PasswordInput
         id="confirm-password"
         v-model="confirmPassword"
-        placeholder="Confirm your password"
+        :placeholder="$t('auth.signup.confirm_password_placeholder')"
         :disabled="isRegistering"
-        :error="!passwordsMatch && confirmPassword ? 'Passwords do not match' : ''"
+        :error="!passwordsMatch && confirmPassword ? $t('auth.signup.validation.passwords_mismatch') : ''"
         autocomplete="new-password"
       />
     </div>

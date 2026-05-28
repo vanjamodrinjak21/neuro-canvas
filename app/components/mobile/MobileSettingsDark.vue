@@ -3,6 +3,7 @@
  * Mobile Settings (Dark) — implementation of Paper artboards
  * GCX-0 (iOS) and GT1-0 (Android).
  */
+import { safeImageUrl } from '~/utils/safeUrl'
 
 interface UserLike {
   name?: string | null
@@ -27,6 +28,7 @@ const emit = defineEmits<{
   'sign-in': [provider: 'google' | 'github' | 'email']
 }>()
 
+const avatarSrc = computed(() => safeImageUrl(props.user?.image))
 const displayName = computed(() => props.user?.name || 'Guest')
 const displayEmail = computed(() => props.user?.email || 'local@device')
 </script>
@@ -93,7 +95,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
       <!-- Profile card (signed in) -->
       <button v-else class="mset-profile" type="button" @click="emit('open-account')">
         <div class="mset-profile-avatar">
-          <img v-if="user?.image" :src="user.image" :alt="displayName" class="mset-profile-img">
+          <img v-if="avatarSrc" :src="avatarSrc" :alt="displayName" class="mset-profile-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitial }}</span>
         </div>
         <div class="mset-profile-info">

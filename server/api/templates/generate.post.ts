@@ -135,9 +135,16 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
     return { structure }
   } catch (e) {
     if ((e as { statusCode?: number }).statusCode) throw e
+    // Log the real failure for triage but return a generic message.
+    // Upstream / parse errors can include prompt fragments and provider
+    // request IDs that we don't want surfaced to the client.
+    console.error('template generation failed', {
+      name: (e as Error)?.name,
+      code: (e as { code?: string })?.code,
+    })
     throw createError({
       statusCode: 502,
-      statusMessage: e instanceof Error ? e.message : 'AI generation failed',
+      statusMessage: 'Failed to generate template',
     })
   }
 })

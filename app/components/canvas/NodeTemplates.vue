@@ -106,7 +106,7 @@ onKeyStroke('Escape', () => {
         >
           <!-- Header -->
           <div class="nc-between mb-4">
-            <h3 class="text-lg font-semibold text-nc-ink font-sans">Node Templates</h3>
+            <h3 class="text-lg font-semibold text-nc-ink font-sans">{{ $t('canvas.node_templates.title') }}</h3>
             <button
               class="p-1.5 rounded-nc-md text-nc-ink-muted hover:text-nc-ink hover:bg-nc-pencil transition-colors"
               @click="handleClose"

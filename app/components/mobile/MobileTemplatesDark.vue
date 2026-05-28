@@ -4,6 +4,7 @@
  * G7R-0 (iOS) and GPV-0 (Android).
  */
 import type { Template, TemplateCategory } from '~/types'
+import { safeImageUrl } from '~/utils/safeUrl'
 
 interface UserLike {
   name?: string | null
@@ -22,6 +23,8 @@ const props = defineProps<{
   sortLabel?: string
   activeCategory?: Filter
 }>()
+
+const avatarSrc = computed(() => safeImageUrl(props.user?.image))
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
@@ -75,7 +78,7 @@ function categoryLabel(c: TemplateCategory): string {
           <span class="mtpl-live-label">SYNCED</span>
         </div>
         <NuxtLink to="/settings" class="mtpl-avatar" aria-label="Settings">
-          <img v-if="user?.image" :src="user.image" :alt="user.name || ''" class="mtpl-avatar-img">
+          <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mtpl-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>
         </NuxtLink>
       </div>
@@ -103,7 +106,7 @@ function categoryLabel(c: TemplateCategory): string {
         <input
           :value="searchQuery"
           type="text"
-          placeholder="Search templates · ⌘ K"
+          :placeholder="$t('ui.search.templates_mobile_placeholder')"
           class="mtpl-search-field"
           @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
         >

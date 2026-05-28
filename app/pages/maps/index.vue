@@ -27,6 +27,30 @@ const sortBy = ref<'recent' | 'alphabetical' | 'nodes'>('recent')
 const selectMode = ref(false)
 const selectedIds = ref<Set<string>>(new Set())
 
+// Sort dropdown
+const sortMenuOpen = ref(false)
+const sortOptions = computed(() => [
+  { value: 'recent' as const, label: t('maps.sort.recent') },
+  { value: 'alphabetical' as const, label: t('maps.sort.alphabetical') },
+  { value: 'nodes' as const, label: t('maps.sort.nodes') },
+])
+const currentSortLabel = computed(() => sortOptions.value.find(o => o.value === sortBy.value)?.label ?? '')
+
+function toggleSortMenu() { sortMenuOpen.value = !sortMenuOpen.value }
+function pickSort(v: 'recent' | 'alphabetical' | 'nodes') {
+  sortBy.value = v
+  sortMenuOpen.value = false
+}
+
+onMounted(() => {
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null
+      if (target && !target.closest('.sort-wrap')) sortMenuOpen.value = false
+    })
+  }
+})
+
 const selectedCount = computed(() => selectedIds.value.size)
 const allSelected = computed(() =>
   filteredMaps.value.length > 0 && selectedIds.value.size === filteredMaps.value.length
@@ -58,10 +82,10 @@ async function deleteSelected() {
 
   const count = selectedIds.value.size
   const confirmed = await confirm({
-    title: `Delete ${count} map${count > 1 ? 's' : ''}`,
-    description: `This will permanently delete ${count} map${count > 1 ? 's' : ''}. This action cannot be undone.`,
-    confirmText: 'Delete',
-    cancelText: 'Cancel',
+    title: count === 1 ? t('maps.delete_confirm.title_one') : t('maps.delete_confirm.title_other', { n: count }),
+    description: count === 1 ? t('maps.delete_confirm.description_one') : t('maps.delete_confirm.description_other', { n: count }),
+    confirmText: t('common.buttons.delete'),
+    cancelText: t('common.buttons.cancel'),
     variant: 'danger',
     icon: 'i-lucide-trash-2'
   })
@@ -186,10 +210,10 @@ async function deleteMap(mapId: string, event: Event) {
   event.stopPropagation()
 
   const confirmed = await confirm({
-    title: 'Delete Map',
-    description: 'This action cannot be undone. Are you sure you want to delete this map?',
-    confirmText: 'Delete',
-    cancelText: 'Cancel',
+    title: t('maps.delete_single_confirm.title'),
+    description: t('maps.delete_single_confirm.description'),
+    confirmText: t('common.buttons.delete'),
+    cancelText: t('common.buttons.cancel'),
     variant: 'danger',
     icon: 'i-lucide-trash-2'
   })
@@ -224,9 +248,9 @@ function formatDate(timestamp: number): string {
   const diffMs = now.getTime() - date.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays === 0) return t('common.time.today')
+  if (diffDays === 1) return t('common.time.yesterday')
+  if (diffDays < 7) return t('common.time.days_ago', { n: diffDays })
   return date.toLocaleDateString()
 }
 </script>
@@ -265,17 +289,17 @@ function formatDate(timestamp: number): string {
         </NuxtLink>
       </div>
       <h1 v-if="!isMobile" class="m-page-title">{{ $t('common.nav.maps') }}</h1>
-      <p v-if="!isMobile" class="m-count">{{ filteredMaps.length }} {{ filteredMaps.length === 1 ? 'map' : 'maps' }}</p>
+      <p v-if="!isMobile" class="m-count">{{ filteredMaps.length === 1 ? $t('maps.count_label_one', { n: filteredMaps.length }) : $t('maps.count_label_other', { n: filteredMaps.length }) }}</p>
 
       <template v-if="!isMobile">
       <!-- Header -->
       <div class="maps-header">
         <div class="header-left">
-          <span class="header-eyebrow">02 — all maps</span>
+          <span class="header-eyebrow">{{ $t('maps.header.eyebrow') }}</span>
           <h1 class="header-title">
-            Everything <span class="header-title-italic">you've thought about.</span>
+            {{ $t('maps.header.title_a') }} <span class="header-title-italic">{{ $t('maps.header.title_b') }}</span>
           </h1>
-          <span class="header-count">{{ filteredMaps.length }} maps</span>
+          <span class="header-count">{{ filteredMaps.length === 1 ? $t('maps.count_label_one', { n: filteredMaps.length }) : $t('maps.count_label_other', { n: filteredMaps.length }) }}</span>
         </div>
 
         <div class="header-actions">
@@ -293,12 +317,25 @@ function formatDate(timestamp: number): string {
             @click="toggleSelectMode"
           >
             <span class="i-lucide-check-square" />
-            {{ selectMode ? $t('common.buttons.cancel') : 'Select' }}
+            {{ selectMode ? $t('common.buttons.cancel') : $t('maps.select.button') }}
           </button>
-          <button class="btn-sort">
-            <span class="i-lucide-arrow-up-down" />
-            Sort
-          </button>
+          <div class="sort-wrap">
+            <button class="btn-sort" @click="toggleSortMenu">
+              <span class="i-lucide-arrow-up-down" />
+              {{ $t('maps.sort.label') }} <span class="btn-sort-current">· {{ currentSortLabel }}</span>
+            </button>
+            <div v-if="sortMenuOpen" class="sort-menu">
+              <button
+                v-for="opt in sortOptions"
+                :key="opt.value"
+                :class="['sort-item', { active: sortBy === opt.value }]"
+                @click="pickSort(opt.value)"
+              >
+                <span class="i-lucide-check sort-item-check" :style="{ visibility: sortBy === opt.value ? 'visible' : 'hidden' }" />
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -320,9 +357,9 @@ function formatDate(timestamp: number): string {
       <div v-if="selectMode" class="select-bar">
         <button class="btn-select-all" @click="toggleSelectAll">
           <span :class="allSelected ? 'i-lucide-check-square' : 'i-lucide-square'" />
-          {{ allSelected ? 'Deselect all' : 'Select all' }}
+          {{ allSelected ? $t('maps.select.deselect_all') : $t('maps.select.select_all') }}
         </button>
-        <span class="select-count">{{ selectedCount }} selected</span>
+        <span class="select-count">{{ $t('maps.select.selected_count', { n: selectedCount }) }}</span>
         <button v-if="selectedCount > 0" class="btn-delete" @click="deleteSelected">
           <span class="i-lucide-trash-2" />
           {{ $t('common.buttons.delete') }}
@@ -406,9 +443,9 @@ function formatDate(timestamp: number): string {
               </button>
             </div>
             <div class="card-meta">
-              <span>{{ map.nodes.length }} nodes</span>
+              <span>{{ $t('maps.nodes_count', { n: map.nodes.length }) }}</span>
               <span class="meta-dot">&middot;</span>
-              <span>Edited {{ formatDate(map.updatedAt) }}</span>
+              <span>{{ $t('maps.edited_prefix') }} {{ formatDate(map.updatedAt) }}</span>
             </div>
           </div>
         </div>
@@ -563,6 +600,56 @@ function formatDate(timestamp: number): string {
   border-color: rgba(239, 68, 68, 0.2);
   color: #EF4444;
 }
+
+.btn-sort-current { color: #52525B; font-weight: 400; margin-left: 4px; }
+:root.light .btn-sort-current { color: #8A8780; }
+
+.sort-wrap { position: relative; }
+
+.sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 180px;
+  padding: 4px;
+  background: #111113;
+  border: 1px solid #27272A;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+:root.light .sort-menu {
+  background: #FFFFFF;
+  border-color: #E8E8E6;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.sort-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  text-align: left;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: #A1A1AA;
+  cursor: pointer;
+}
+
+.sort-item:hover { background: #1A1A1E; color: #FAFAFA; }
+.sort-item.active { color: #00D2BE; }
+.sort-item-check { width: 14px; height: 14px; flex-shrink: 0; }
+
+:root.light .sort-item { color: #52525B; }
+:root.light .sort-item:hover { background: #F5F5F3; color: #111111; }
+:root.light .sort-item.active { color: #00A89A; }
 
 /* Select bar */
 .select-bar {
@@ -1013,7 +1100,7 @@ function formatDate(timestamp: number): string {
   :root.light .m-brand { color: #18181B; }
   .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
   .m-avatar {
-    width: 32px; height: 32px; border-radius: 16px;
+    width: 32px; height: 32px; border-radius: 50%;
     background: #1A1A1E; border: 1px solid #1E1E22;
     color: #00D2BE;
     font-family: 'Inter', system-ui, sans-serif;
@@ -1021,7 +1108,12 @@ function formatDate(timestamp: number): string {
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
-  :root.light .m-avatar { background: #F5F5F4; border-color: #E8E8E6; color: #00A89A; }
+  :root.light .m-avatar {
+    background: #F5F5F4;
+    border-color: #E8E8E6;
+    color: #00A89A;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
   .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
   /* Page title */

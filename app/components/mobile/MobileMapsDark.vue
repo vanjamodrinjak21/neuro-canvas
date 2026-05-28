@@ -3,6 +3,7 @@
  * Mobile All Maps (Dark) — implementation of Paper artboards
  * G46-0 (iOS 390) and GMP-0 (Android 412).
  */
+import { safeImageUrl } from '~/utils/safeUrl'
 
 interface MapItem {
   id: string
@@ -28,6 +29,8 @@ const props = defineProps<{
   searchQuery: string
   sortLabel?: string
 }>()
+
+const avatarSrc = computed(() => safeImageUrl(props.user?.image))
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
@@ -84,7 +87,7 @@ const totalEdges = computed(() =>
           <span class="mmaps-live-label">SYNCED</span>
         </div>
         <NuxtLink to="/settings" class="mmaps-avatar" aria-label="Settings">
-          <img v-if="user?.image" :src="user.image" :alt="user.name || ''" class="mmaps-avatar-img">
+          <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mmaps-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>
         </NuxtLink>
       </div>
@@ -112,7 +115,7 @@ const totalEdges = computed(() =>
         <input
           :value="searchQuery"
           type="text"
-          placeholder="Search maps · ⌘ K"
+          :placeholder="$t('ui.search.maps_mobile_placeholder')"
           class="mmaps-search-field"
           @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
         >

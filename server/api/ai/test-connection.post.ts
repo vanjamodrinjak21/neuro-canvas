@@ -114,6 +114,19 @@ export default defineEventHandler(async (event) => {
         return { success: false, message: `Unknown provider: ${body.provider}` }
     }
   } catch (e) {
-    return { success: false, message: e instanceof Error ? e.message : 'Connection failed' }
+    // Never echo upstream provider error messages — they can include
+    // org IDs, request IDs, partial prompts, or stack fragments. Map
+    // to a small fixed set and log the real error server-side.
+    console.error('ai test-connection failed', {
+      provider: (body as { provider?: string })?.provider,
+      name: (e as Error)?.name,
+      code: (e as { code?: string })?.code,
+    })
+    const msg = e instanceof Error ? e.message.toLowerCase() : ''
+    let safe = 'Could not reach provider'
+    if (msg.includes('401') || msg.includes('unauthor') || msg.includes('forbidden')) safe = 'Authentication failed'
+    else if (msg.includes('429') || msg.includes('rate')) safe = 'Rate-limited by provider'
+    else if (msg.includes('timeout') || msg.includes('etimedout')) safe = 'Provider timed out'
+    return { success: false, message: safe }
   }
 })

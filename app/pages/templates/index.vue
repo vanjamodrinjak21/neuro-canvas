@@ -106,9 +106,9 @@ function handleCardClick(template: Template) {
   router.push(`/templates/${template.slug}`)
 }
 
-function handlePublish(payload: any) {
-  // Will be handled by the modal
+async function onTemplatePublished() {
   showPublishModal.value = false
+  await fetchTemplates()
 }
 
 async function handleAIGenerate() {
@@ -351,7 +351,7 @@ onMounted(async () => {
       v-if="!_isTauri"
       :open="showPublishModal"
       @close="showPublishModal = false"
-      @publish="handlePublish"
+      @published="onTemplatePublished"
     />
   </div>
 </template>

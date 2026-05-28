@@ -6,6 +6,8 @@ import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type'
 // Register FilePond plugins
 const FilePond = vueFilePond(FilePondPluginFileValidateType)
 
+const { t } = useI18n()
+
 // Emit event when file is added
 const emit = defineEmits<{
   'file-added': [file: File]
@@ -13,6 +15,10 @@ const emit = defineEmits<{
 
 // Track files for FilePond
 const files = ref<File[]>([])
+
+const labelIdle = computed(() =>
+  `${t('ui.file_uploader.label_prefix')} <span class="filepond--label-action">${t('ui.file_uploader.browse_action')}</span>`
+)
 
 // Handle file addition
 function handleAddFile(error: any, file: any) {
@@ -40,13 +46,13 @@ function handleAddFile(error: any, file: any) {
       :allow-multiple="false"
       :instant-upload="false"
       :accepted-file-types="['text/markdown', 'text/x-opml', 'application/xml', 'text/plain', 'application/json', '.md', '.opml', '.json']"
-      label-idle="Drag & drop your file or <span class='filepond--label-action'>Browse</span>"
+      :label-idle="labelIdle"
       :credits="false"
       @addfile="handleAddFile"
     />
     <template #fallback>
       <div class="filepond-fallback">
-        <p>Loading file uploader...</p>
+        <p>{{ $t('common.loading.text') }}</p>
       </div>
     </template>
   </ClientOnly>

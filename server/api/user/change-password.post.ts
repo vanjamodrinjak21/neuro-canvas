@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
 import { checkRateLimit } from '../../utils/redis'
 import { checkBreachedPassword } from '../../utils/hibp'
+import { kickUserEverywhere } from '../../utils/collabKick'
+import { revokeUserJtis } from '../../utils/collabJtiStore'
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -45,7 +47,7 @@ export default defineEventHandler(async (event) => {
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: parsed.error.errors[0]?.message || 'Invalid input'
+      statusMessage: parsed.error.issues[0]?.message || 'Invalid input'
     })
   }
 
@@ -107,6 +109,13 @@ export default defineEventHandler(async (event) => {
       passwordChangedAt: new Date()
     }
   })
+
+  // Auth-JWT iat check (syncHelpers) handles REST endpoints; the live
+  // PartyKit sockets need explicit kicks AND the cached JWTs need their
+  // jti dropped from the allowlist so a reconnect with the old token
+  // can't slip back in before natural exp.
+  kickUserEverywhere(user.id).catch(e => console.warn('[collab] kick after password change failed', e))
+  revokeUserJtis(user.id).catch(e => console.warn('[collab] revoke jtis after password change failed', e))
 
   return { success: true }
 })

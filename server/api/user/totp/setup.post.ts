@@ -57,10 +57,15 @@ export default defineEventHandler(async (event) => {
   try {
     const QRCode = await import('qrcode')
     const toDataURL = QRCode.toDataURL || QRCode.default?.toDataURL
+    // Universal scanner standard: dark squares on solid white. The
+    // previous palette (white squares on transparent) only worked on
+    // a dark container — on light mode the QR was invisible. Keeping
+    // it black-on-white means the QR ships its own contrast and works
+    // regardless of the surrounding theme.
     qrCodeDataUrl = await toDataURL(otpauthUrl, {
       width: 200,
       margin: 2,
-      color: { dark: '#FAFAFA', light: '#00000000' }
+      color: { dark: '#0A0A0C', light: '#FFFFFF' }
     })
   } catch {
     // QR generation failed — client can use the manual key

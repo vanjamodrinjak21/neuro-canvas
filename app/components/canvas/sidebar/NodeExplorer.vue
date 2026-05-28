@@ -121,7 +121,7 @@ const filterChips = computed(() => [
           ref="searchInputRef"
           v-model="searchQuery"
           type="text"
-          placeholder="Search nodes..."
+          :placeholder="$t('canvas.search_nodes_placeholder')"
           class="explorer__search-input"
         >
         <button
@@ -141,7 +141,7 @@ const filterChips = computed(() => [
         :class="['explorer__filter-pill', !filterCategory && 'explorer__filter-pill--active']"
         @click="filterCategory = null"
       >
-        <span class="explorer__filter-label">All</span>
+        <span class="explorer__filter-label">{{ $t('templates.filter.all') }}</span>
         <span class="explorer__filter-count">{{ totalNodeCount }}</span>
       </button>
       <button
@@ -161,7 +161,7 @@ const filterChips = computed(() => [
 
     <!-- Section divider -->
     <div class="explorer__section-divider">
-      <span class="explorer__section-label">NODES</span>
+      <span class="explorer__section-label">{{ $t('canvas.markdown_editor.nodes_label') }}</span>
       <span class="explorer__section-line" />
       <span class="explorer__section-count">{{ totalNodeCount }}</span>
     </div>

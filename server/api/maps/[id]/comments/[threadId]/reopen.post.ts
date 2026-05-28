@@ -1,5 +1,6 @@
 import { reopenThread, CommentError } from '../../../../../utils/commentsService'
 import { resolveCommentActor } from '../../../../../utils/commentActor'
+import { rateLimitCommentMutation } from '../../../../../utils/commentRateLimit'
 
 export default defineEventHandler(async (event) => {
   const mapId = getRouterParam(event, 'id')
@@ -7,6 +8,7 @@ export default defineEventHandler(async (event) => {
   if (!mapId || !threadId) throw createError({ statusCode: 400, statusMessage: 'mapId and threadId required' })
   try {
     const actor = await resolveCommentActor(event, mapId)
+    await rateLimitCommentMutation(event, actor, 'reopen', 60, 60)
     return await reopenThread(mapId, actor, threadId)
   } catch (err) {
     if (err instanceof CommentError) {

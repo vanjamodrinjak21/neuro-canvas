@@ -172,15 +172,15 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
           <span class="dl-brand-name">NeuroCanvas</span>
         </NuxtLink>
         <div class="dl-nav-links">
-          <NuxtLink to="/#how-it-works">Product</NuxtLink>
-          <NuxtLink to="/templates">Templates</NuxtLink>
-          <NuxtLink to="/docs">Docs</NuxtLink>
-          <span class="dl-nav-active">Download</span>
+          <NuxtLink to="/#how-it-works">{{ $t('landing.nav.product') }}</NuxtLink>
+          <NuxtLink to="/templates">{{ $t('landing.nav.templates') }}</NuxtLink>
+          <NuxtLink to="/docs">{{ $t('landing.nav.docs') }}</NuxtLink>
+          <span class="dl-nav-active">{{ $t('landing.nav.download') }}</span>
         </div>
       </div>
       <div class="dl-nav-right">
-        <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="dl-nav-signin">Sign in</NuxtLink>
-        <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signin'" class="dl-nav-dash">Open dashboard</NuxtLink>
+        <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="dl-nav-signin">{{ $t('landing.nav.signin') }}</NuxtLink>
+        <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signin'" class="dl-nav-dash">{{ $t('landing.nav.open_dashboard') }}</NuxtLink>
       </div>
     </nav>
 
@@ -201,7 +201,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
           <span>Download for {{ platformLabels[recommended.platform] }}</span>
         </a>
         <span v-else class="dl-btn-primary dl-btn-disabled">
-          <span>Pick a platform below</span>
+          <span>{{ $t('landing.download_page.subhead') }}</span>
         </span>
         <a href="#platforms" class="dl-btn-outline">All platforms</a>
       </div>
@@ -286,21 +286,21 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
       </div>
       <div class="dl-foot-cols">
         <div class="dl-foot-col">
-          <span class="dl-foot-col-head">Product</span>
-          <NuxtLink to="/templates">Templates</NuxtLink>
-          <NuxtLink to="/download">Download</NuxtLink>
-          <NuxtLink to="/#how-it-works">How it works</NuxtLink>
+          <span class="dl-foot-col-head">{{ $t('landing.footer.product_head') }}</span>
+          <NuxtLink to="/templates">{{ $t('landing.footer.templates_link') }}</NuxtLink>
+          <NuxtLink to="/download">{{ $t('landing.footer.download_link') }}</NuxtLink>
+          <NuxtLink to="/#how-it-works">{{ $t('landing.footer.howitworks_link') }}</NuxtLink>
         </div>
         <div class="dl-foot-col">
-          <span class="dl-foot-col-head">Resources</span>
-          <NuxtLink to="/docs">Docs</NuxtLink>
-          <a :href="release?.htmlUrl ?? 'https://github.com'" target="_blank" rel="noopener">GitHub</a>
+          <span class="dl-foot-col-head">{{ $t('landing.footer.resources_head') }}</span>
+          <NuxtLink to="/docs">{{ $t('landing.footer.docs_link') }}</NuxtLink>
+          <a :href="release?.htmlUrl ?? 'https://github.com'" target="_blank" rel="noopener">{{ $t('landing.footer.github_link') }}</a>
         </div>
         <div class="dl-foot-col">
-          <span class="dl-foot-col-head">Company</span>
-          <NuxtLink to="/privacy">Privacy</NuxtLink>
-          <NuxtLink to="/terms">Terms</NuxtLink>
-          <a href="mailto:hello@neuro-canvas.com">Contact</a>
+          <span class="dl-foot-col-head">{{ $t('landing.footer.company_head') }}</span>
+          <NuxtLink to="/privacy">{{ $t('landing.footer.privacy_link') }}</NuxtLink>
+          <NuxtLink to="/terms">{{ $t('landing.footer.terms_link') }}</NuxtLink>
+          <a href="mailto:hello@neuro-canvas.com">{{ $t('landing.footer.contact_link') }}</a>
         </div>
       </div>
     </footer>

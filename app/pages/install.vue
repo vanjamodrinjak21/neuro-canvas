@@ -54,15 +54,15 @@ async function copyMacCmd() {
           <span class="dl-brand-name">NeuroCanvas</span>
         </NuxtLink>
         <div class="dl-nav-links">
-          <NuxtLink to="/#how-it-works">Product</NuxtLink>
-          <NuxtLink to="/templates">Templates</NuxtLink>
-          <NuxtLink to="/docs">Docs</NuxtLink>
-          <NuxtLink to="/download">Download</NuxtLink>
+          <NuxtLink to="/#how-it-works">{{ $t('landing.nav.product') }}</NuxtLink>
+          <NuxtLink to="/templates">{{ $t('landing.nav.templates') }}</NuxtLink>
+          <NuxtLink to="/docs">{{ $t('landing.nav.docs') }}</NuxtLink>
+          <NuxtLink to="/download">{{ $t('landing.nav.download') }}</NuxtLink>
         </div>
       </div>
       <div class="dl-nav-right">
-        <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="dl-nav-signin">Sign in</NuxtLink>
-        <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signin'" class="dl-nav-dash">Open dashboard</NuxtLink>
+        <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="dl-nav-signin">{{ $t('landing.nav.signin') }}</NuxtLink>
+        <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signin'" class="dl-nav-dash">{{ $t('landing.nav.open_dashboard') }}</NuxtLink>
       </div>
     </nav>
 
@@ -116,7 +116,7 @@ async function copyMacCmd() {
             <p>macOS Sequoia removed the right-click → Open bypass. Run this once and the app opens normally from then on.</p>
             <div class="dl-cmd">
               <pre><code>{{ MAC_CMD }}</code></pre>
-              <button type="button" class="dl-cmd-copy" @click="copyMacCmd">{{ macCopied ? 'Copied' : 'Copy' }}</button>
+              <button type="button" class="dl-cmd-copy" @click="copyMacCmd">{{ macCopied ? $t('landing.install_page.copied_button') : $t('landing.install_page.copy_button') }}</button>
             </div>
           </div>
         </li>
@@ -184,10 +184,10 @@ async function copyMacCmd() {
         <span class="dl-foot-brand-name">NeuroCanvas · v1.0.0</span>
       </div>
       <div class="dl-foot-links">
-        <NuxtLink to="/docs">Docs</NuxtLink>
-        <NuxtLink to="/download">Changelog</NuxtLink>
-        <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener">GitHub</a>
-        <a href="mailto:hello@neuro-canvas.com">Support</a>
+        <NuxtLink to="/docs">{{ $t('landing.footer.docs_link') }}</NuxtLink>
+        <NuxtLink to="/download">{{ $t('landing.footer.changelog_link') }}</NuxtLink>
+        <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener">{{ $t('landing.footer.github_link') }}</a>
+        <a href="mailto:hello@neuro-canvas.com">{{ $t('landing.footer.contact_link') }}</a>
       </div>
     </footer>
   </div>

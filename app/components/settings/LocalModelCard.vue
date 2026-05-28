@@ -37,11 +37,11 @@ async function handleDownload() {
         <span class="i-lucide-cpu" />
       </div>
       <div class="lmc-info">
-        <h3 class="lmc-title">Gemma 4 — On-Device AI</h3>
-        <p class="lmc-desc">Run AI locally on your device. No internet or API key required.</p>
+        <h3 class="lmc-title">{{ $t('settings.local_model.title') }}</h3>
+        <p class="lmc-desc">{{ $t('settings.local_model.description') }}</p>
       </div>
-      <span v-if="localLLM.isDownloaded.value" class="lmc-badge ready">Ready</span>
-      <span v-else class="lmc-badge">Not installed</span>
+      <span v-if="localLLM.isDownloaded.value" class="lmc-badge ready">{{ $t('settings.local_model.ready') }}</span>
+      <span v-else class="lmc-badge">{{ $t('settings.local_model.not_installed') }}</span>
     </div>
 
     <div v-if="localLLM.error.value" class="lmc-error">
@@ -50,12 +50,12 @@ async function handleDownload() {
 
     <div v-if="!localLLM.isDownloaded.value && !localLLM.isDownloading.value" class="lmc-actions">
       <div class="lmc-meta">
-        <span>Model size: ~1.5 GB</span>
-        <span>Free space: {{ formattedDiskSpace }}</span>
+        <span>{{ $t('settings.local_model.model_size') }}</span>
+        <span>{{ $t('settings.local_model.free_space', { space: formattedDiskSpace }) }}</span>
       </div>
       <button class="lmc-download-btn" @click="handleDownload">
         <span class="i-lucide-download" />
-        Download Model
+        {{ $t('settings.local_model.download_model') }}
       </button>
     </div>
 
@@ -72,13 +72,13 @@ async function handleDownload() {
     <div v-if="localLLM.isDownloaded.value && !localLLM.isDownloading.value" class="lmc-actions">
       <div class="lmc-meta">
         <span v-if="localLLM.isLoaded.value" class="lmc-loaded">
-          <span class="lmc-dot" /> Loaded in memory
+          <span class="lmc-dot" /> {{ $t('settings.local_model.loaded_in_memory') }}
         </span>
-        <span v-else>Ready to use</span>
+        <span v-else>{{ $t('settings.local_model.ready_to_use') }}</span>
       </div>
       <button class="lmc-delete-btn" @click="localLLM.deleteModel()">
         <span class="i-lucide-trash-2" />
-        Delete Model
+        {{ $t('settings.local_model.delete_model') }}
       </button>
     </div>
   </div>

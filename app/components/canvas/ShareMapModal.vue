@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, reactive } from 'vue'
 
 interface ShareRow {
   id: string
@@ -24,6 +24,98 @@ const newLabel = ref('')
 const newRole = ref<'viewer' | 'commenter' | 'editor'>('editor')
 const newExpiry = ref<'never' | '1d' | '7d' | '30d'>('7d')
 const creating = ref(false)
+
+// Per-share email-invite form state, keyed by share.id. Lazy: only
+// populated when the user clicks "Email link" on a given row.
+interface InviteFormState {
+  open: boolean
+  recipients: string
+  note: string
+  sending: boolean
+  status: string | null
+  error: string | null
+}
+const inviteForms = reactive<Record<string, InviteFormState>>({})
+
+function toggleInvite(shareId: string) {
+  const existing = inviteForms[shareId]
+  if (existing) {
+    existing.open = !existing.open
+    if (existing.open) { existing.status = null; existing.error = null }
+  } else {
+    inviteForms[shareId] = {
+      open: true,
+      recipients: '',
+      note: '',
+      sending: false,
+      status: null,
+      error: null,
+    }
+  }
+}
+
+function parseRecipients(raw: string): string[] {
+  return raw
+    .split(/[\s,;\n]+/)
+    .map(s => s.trim())
+    .filter(Boolean)
+}
+
+const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+async function sendInvite(shareId: string) {
+  const form = inviteForms[shareId]
+  if (!form) return
+  const recipients = parseRecipients(form.recipients)
+  const invalid = recipients.find(r => !EMAIL_RX.test(r))
+  if (recipients.length === 0) {
+    form.error = t('canvas.share_modal.invite_no_recipients')
+    return
+  }
+  if (invalid) {
+    form.error = t('canvas.share_modal.invite_invalid_email', { email: invalid })
+    return
+  }
+  if (recipients.length > 20) {
+    form.error = t('canvas.share_modal.invite_too_many')
+    return
+  }
+  form.sending = true
+  form.error = null
+  form.status = null
+  try {
+    const res = await $fetch<{ sent: number; failed: number; recipients: number }>(
+      `/api/maps/${props.mapId}/shares/${shareId}/invite`,
+      {
+        method: 'POST',
+        body: {
+          recipients,
+          personalNote: form.note.trim() || undefined,
+        },
+      },
+    )
+    if (res.failed > 0 && res.sent === 0) {
+      form.error = t('canvas.share_modal.invite_all_failed')
+    } else if (res.failed > 0) {
+      form.status = t('canvas.share_modal.invite_partial', { sent: res.sent, failed: res.failed })
+    } else {
+      form.status = t('canvas.share_modal.invite_sent', { n: res.sent })
+      // Close the form after a brief moment so the user sees the confirmation.
+      setTimeout(() => { if (inviteForms[shareId]) inviteForms[shareId].open = false }, 1800)
+      form.recipients = ''
+      form.note = ''
+    }
+  } catch (e: unknown) {
+    const err = e as { statusMessage?: string; data?: { statusMessage?: string }; statusCode?: number }
+    if (err.statusCode === 429) {
+      form.error = t('canvas.share_modal.invite_rate_limited')
+    } else {
+      form.error = err.data?.statusMessage || err.statusMessage || t('canvas.share_modal.invite_failed')
+    }
+  } finally {
+    form.sending = false
+  }
+}
 
 async function load() {
   loading.value = true
@@ -156,38 +248,80 @@ onMounted(load)
           <div v-else-if="!shares.length" class="empty">{{ t('canvas.share_modal.empty') }}</div>
 
           <ul v-else class="list">
-            <li v-for="s in shares" :key="s.id" class="row" :class="{ revoked: !!s.revokedAt }">
-              <div class="role-icon" :data-role="s.role">
-                <svg v-if="s.role === 'EDITOR'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-              </div>
-              <div class="row-body">
-                <div class="row-label-line">
-                  <span class="row-label">{{ s.label || t('canvas.share_modal.untitled') }}</span>
-                  <span class="role-chip" :data-role="s.revokedAt ? 'REVOKED' : s.role">
-                    {{
-                      s.revokedAt
-                        ? t('canvas.share_modal.role_revoked')
-                        : s.role === 'EDITOR'
-                          ? t('canvas.share_modal.role_editor_chip')
-                          : s.role === 'COMMENTER'
-                            ? t('canvas.comments.share_modal_role_commenter_chip')
-                            : t('canvas.share_modal.role_viewer_chip')
-                    }}
-                  </span>
+            <li v-for="s in shares" :key="s.id" class="row-wrap" :class="{ revoked: !!s.revokedAt }">
+              <div class="row">
+                <div class="role-icon" :data-role="s.role">
+                  <svg v-if="s.role === 'EDITOR'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                 </div>
-                <div class="row-meta">
-                  <span class="token">{{ `s/${s.token.slice(0, 16)}` }}</span>
-                  <span class="dot" />
-                  <span>{{ expiryLabel(s) }}</span>
+                <div class="row-body">
+                  <div class="row-label-line">
+                    <span class="row-label">{{ s.label || t('canvas.share_modal.untitled') }}</span>
+                    <span class="role-chip" :data-role="s.revokedAt ? 'REVOKED' : s.role">
+                      {{
+                        s.revokedAt
+                          ? t('canvas.share_modal.role_revoked')
+                          : s.role === 'EDITOR'
+                            ? t('canvas.share_modal.role_editor_chip')
+                            : s.role === 'COMMENTER'
+                              ? t('canvas.comments.share_modal_role_commenter_chip')
+                              : t('canvas.share_modal.role_viewer_chip')
+                      }}
+                    </span>
+                  </div>
+                  <div class="row-meta">
+                    <span class="token">{{ `s/${s.token.slice(0, 16)}` }}</span>
+                    <span class="dot" />
+                    <span>{{ expiryLabel(s) }}</span>
+                  </div>
+                </div>
+                <button
+                  class="icon-btn"
+                  :aria-label="t('canvas.share_modal.invite_aria')"
+                  :disabled="!!s.revokedAt"
+                  :class="{ 'is-open': inviteForms[s.id]?.open }"
+                  @click="toggleInvite(s.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                </button>
+                <button class="icon-btn" :aria-label="t('canvas.share_modal.copy_link')" :disabled="!!s.revokedAt" @click="copyToken(s.token)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                </button>
+                <button v-if="!s.revokedAt" class="icon-btn danger" :aria-label="t('canvas.share_modal.revoke')" @click="revoke(s.id)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" /></svg>
+                </button>
+              </div>
+
+              <div v-if="inviteForms[s.id]?.open && !s.revokedAt" class="invite-form">
+                <label class="invite-label">{{ t('canvas.share_modal.invite_label') }}</label>
+                <textarea
+                  v-model="inviteForms[s.id]!.recipients"
+                  :placeholder="t('canvas.share_modal.invite_recipients_placeholder')"
+                  class="invite-recipients"
+                  rows="2"
+                  :disabled="inviteForms[s.id]!.sending"
+                />
+                <textarea
+                  v-model="inviteForms[s.id]!.note"
+                  :placeholder="t('canvas.share_modal.invite_note_placeholder')"
+                  class="invite-note"
+                  rows="2"
+                  maxlength="500"
+                  :disabled="inviteForms[s.id]!.sending"
+                />
+                <div class="invite-actions">
+                  <span v-if="inviteForms[s.id]!.error" class="invite-error">{{ inviteForms[s.id]!.error }}</span>
+                  <span v-else-if="inviteForms[s.id]!.status" class="invite-status">{{ inviteForms[s.id]!.status }}</span>
+                  <span v-else class="invite-hint">{{ t('canvas.share_modal.invite_hint') }}</span>
+                  <button
+                    class="btn-primary btn-sm"
+                    :disabled="inviteForms[s.id]!.sending"
+                    @click="sendInvite(s.id)"
+                  >
+                    {{ inviteForms[s.id]!.sending ? t('canvas.share_modal.invite_sending') : t('canvas.share_modal.invite_send') }}
+                  </button>
                 </div>
               </div>
-              <button class="icon-btn" :aria-label="t('canvas.share_modal.copy_link')" :disabled="!!s.revokedAt" @click="copyToken(s.token)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-              </button>
-              <button v-if="!s.revokedAt" class="icon-btn danger" :aria-label="t('canvas.share_modal.revoke')" @click="revoke(s.id)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" /></svg>
-              </button>
             </li>
           </ul>
         </section>
@@ -264,6 +398,7 @@ onMounted(load)
 }
 .btn-primary:active { transform: scale(0.97); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary.btn-sm { height: 30px; padding: 0 14px; font-size: 12px; }
 .list-section { display: flex; flex-direction: column; }
 .list-head {
   display: flex; align-items: center; justify-content: space-between;
@@ -272,12 +407,58 @@ onMounted(load)
 }
 .list-head .list-meta { font-weight: 400; font-size: 11px; color: var(--nc-text-muted); }
 .list { list-style: none; padding: 0; margin: 0; }
+.row-wrap {
+  border-top: 1px solid var(--nc-border);
+}
+.row-wrap.revoked { opacity: 0.45; }
 .row {
   display: flex; align-items: center; gap: 14px;
   padding: 12px 24px;
-  border-top: 1px solid var(--nc-border);
 }
-.row.revoked { opacity: 0.45; }
+.icon-btn.is-open { border-color: var(--nc-accent); color: var(--nc-accent); }
+.invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 24px 16px 74px;
+  background: color-mix(in srgb, var(--nc-accent) 4%, transparent);
+  border-top: 1px dashed var(--nc-border);
+}
+.invite-label {
+  font: 500 11px Inter, system-ui, sans-serif;
+  color: var(--nc-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.invite-recipients,
+.invite-note {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--nc-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 6px;
+  color: var(--nc-text);
+  font: 400 13px Inter, system-ui, sans-serif;
+  resize: vertical;
+  min-height: 36px;
+  transition: border-color 150ms ease;
+}
+.invite-recipients:focus,
+.invite-note:focus { outline: none; border-color: var(--nc-accent); }
+.invite-recipients:disabled,
+.invite-note:disabled { opacity: 0.6; cursor: wait; }
+.invite-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.invite-hint { font-size: 11px; color: var(--nc-text-dim); }
+.invite-error { font-size: 12px; color: var(--nc-danger); }
+.invite-status { font-size: 12px; color: var(--nc-accent); }
 .role-icon {
   width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;

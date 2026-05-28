@@ -21,4 +21,37 @@ describe('collabJwt', () => {
     const token = await signCollabJwt({ mapId: 'm1', sessionId: 's', role: 'viewer' }, SECRET, 60)
     await expect(verifyCollabJwt(token, 'different-secret-32-bytes-min-bbb')).rejects.toThrow()
   })
+
+  it('accepts the commenter role end-to-end (was previously rejected)', async () => {
+    const token = await signCollabJwt({ mapId: 'm1', sessionId: 'guest:c', role: 'commenter' }, SECRET, 60)
+    const payload = await verifyCollabJwt(token, SECRET)
+    expect(payload.role).toBe('commenter')
+  })
+
+  it('preserves the optional revocation claims (jti, userId, shareToken)', async () => {
+    const token = await signCollabJwt({
+      mapId: 'm1',
+      sessionId: 'user:u1',
+      role: 'editor',
+      userId: 'u1',
+      shareToken: 'share-token-xyz',
+      jti: 'jti-fingerprint-16',
+    }, SECRET, 60)
+    const payload = await verifyCollabJwt(token, SECRET)
+    expect(payload.userId).toBe('u1')
+    expect(payload.shareToken).toBe('share-token-xyz')
+    expect(payload.jti).toBe('jti-fingerprint-16')
+  })
+
+  it('treats missing optional claims as null/undefined (back-compat with old tokens)', async () => {
+    const token = await signCollabJwt({
+      mapId: 'm1',
+      sessionId: 'guest:g',
+      role: 'viewer',
+    }, SECRET, 60)
+    const payload = await verifyCollabJwt(token, SECRET)
+    expect(payload.userId).toBeNull()
+    expect(payload.shareToken).toBeNull()
+    expect(payload.jti).toBeUndefined()
+  })
 })

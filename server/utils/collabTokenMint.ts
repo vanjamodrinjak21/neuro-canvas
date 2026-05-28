@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid'
 import { prisma } from './prisma'
 import { signCollabJwt, type CollabRole } from './collabJwt'
+import { registerJti } from './collabJtiStore'
 
 export class TokenError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -82,6 +83,21 @@ export async function mintCollabToken(input: MintInput): Promise<MintResult> {
     throw new TokenError(403, 'Not allowed')
   }
 
-  const jwt = await signCollabJwt({ mapId, sessionId, role }, jwtSecret, ttlSeconds)
+  // Embed revocation handles so the PartyKit /kick endpoint can close only
+  // the matching connections (instead of nuking the entire room). The jti
+  // is also persisted to Redis with TTL=exp; PartyKit checks it on connect
+  // so revocation is immediate, not "wait for natural expiry".
+  const jti = nanoid(16)
+  const jwt = await signCollabJwt(
+    { mapId, sessionId, role, userId: authedUserId, shareToken, jti },
+    jwtSecret,
+    ttlSeconds
+  )
+  await registerJti(jti, ttlSeconds, {
+    mapId,
+    role,
+    userId: authedUserId,
+    shareToken,
+  })
   return { jwt, role, sessionId, displayName, expiresInSeconds: ttlSeconds }
 }

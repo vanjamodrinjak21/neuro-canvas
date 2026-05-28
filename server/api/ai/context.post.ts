@@ -1,7 +1,9 @@
+import { Prisma } from '@prisma/client'
 import { requireAuthSession } from '../../utils/syncHelpers'
 import { validateBody, ragContextSchema } from '../../utils/validation'
 import { prisma } from '../../utils/prisma'
 import { toPgVector } from '../../utils/embeddings'
+import { checkRateLimit } from '../../utils/redis'
 
 interface ContextRow {
   nodeId: string
@@ -11,6 +13,11 @@ interface ContextRow {
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
+
+  const { allowed } = await checkRateLimit(`ai:context:${userId}`, 120, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many context requests' })
+  }
 
   const body = validateBody(ragContextSchema, await readBody(event))
   const { mapId, queryEmbedding, maxNodes, threshold, includeNeighbors } = body
@@ -26,20 +33,17 @@ export default defineEventHandler(async (event) => {
 
   const vectorStr = toPgVector(queryEmbedding)
 
-  // Get most relevant nodes from this map
-  const rows = await prisma.$queryRawUnsafe<ContextRow[]>(
-    `SELECT "nodeId", "sourceText",
-            1 - ("embedding" <=> $1::vector) AS similarity
-     FROM "NodeEmbedding"
-     WHERE "mapId" = $2
-       AND 1 - ("embedding" <=> $1::vector) >= $3
-     ORDER BY "embedding" <=> $1::vector
-     LIMIT $4`,
-    vectorStr,
-    mapId,
-    threshold,
-    maxNodes
-  )
+  // Template form auto-parameterizes every interpolation, so future edits
+  // can't accidentally splice user input into the SQL string.
+  const rows = await prisma.$queryRaw<ContextRow[]>`
+    SELECT "nodeId", "sourceText",
+           1 - ("embedding" <=> ${vectorStr}::vector) AS similarity
+    FROM "NodeEmbedding"
+    WHERE "mapId" = ${mapId}
+      AND 1 - ("embedding" <=> ${vectorStr}::vector) >= ${threshold}
+    ORDER BY "embedding" <=> ${vectorStr}::vector
+    LIMIT ${maxNodes}
+  `
 
   const context: Array<{
     nodeId: string
@@ -69,16 +73,14 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Fetch neighbor texts from pgvector
+    // Fetch neighbor texts from pgvector. Prisma.join parameterizes the
+    // IN-list so a future code change can't drift into injection.
     if (neighborIds.size > 0) {
       const neighborList = Array.from(neighborIds).slice(0, 20)
-      const placeholders = neighborList.map((_, i) => `$${i + 2}`).join(', ')
-      const neighborRows = await prisma.$queryRawUnsafe<Array<{ nodeId: string; sourceText: string }>>(
-        `SELECT "nodeId", "sourceText" FROM "NodeEmbedding"
-         WHERE "mapId" = $1 AND "nodeId" IN (${placeholders})`,
-        mapId,
-        ...neighborList
-      )
+      const neighborRows = await prisma.$queryRaw<Array<{ nodeId: string; sourceText: string }>>`
+        SELECT "nodeId", "sourceText" FROM "NodeEmbedding"
+        WHERE "mapId" = ${mapId} AND "nodeId" IN (${Prisma.join(neighborList)})
+      `
 
       for (const row of neighborRows) {
         context.push({

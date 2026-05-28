@@ -64,16 +64,16 @@ onMounted(() => {
           <span class="brand-name">NeuroCanvas</span>
         </NuxtLink>
         <div class="nav-links">
-          <a href="#how-it-works" @click.prevent="scrollToId('how-it-works')">Product</a>
-          <a href="#templates" @click.prevent="scrollToId('templates')">Templates</a>
-          <NuxtLink to="/docs">Docs</NuxtLink>
-          <NuxtLink to="/download">Download</NuxtLink>
+          <a href="#how-it-works" @click.prevent="scrollToId('how-it-works')">{{ $t('landing.nav.product') }}</a>
+          <a href="#templates" @click.prevent="scrollToId('templates')">{{ $t('landing.nav.templates') }}</a>
+          <NuxtLink to="/docs">{{ $t('landing.nav.docs') }}</NuxtLink>
+          <NuxtLink to="/download">{{ $t('landing.nav.download') }}</NuxtLink>
         </div>
       </div>
       <div class="nav-right">
-        <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="nav-signin">Sign in</NuxtLink>
+        <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="nav-signin">{{ $t('landing.nav.signin') }}</NuxtLink>
         <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signin'" class="nav-dash">
-          {{ isAuthenticated ? 'Open dashboard' : 'Open dashboard' }}
+          {{ $t('landing.nav.open_dashboard') }}
         </NuxtLink>
       </div>
     </nav>
@@ -81,27 +81,27 @@ onMounted(() => {
     <!-- ══════ HERO SPLIT ══════ -->
     <section class="hero">
       <div class="hero-copy">
-        <h1 class="hero-h1 hero-rise" style="--hero-delay: 0ms">A canvas for</h1>
-        <h1 class="hero-h2 hero-rise" style="--hero-delay: 60ms">how you actually think.</h1>
+        <h1 class="hero-h1 hero-rise" style="--hero-delay: 0ms">{{ $t('landing.hero.title_a') }}</h1>
+        <h1 class="hero-h2 hero-rise" style="--hero-delay: 60ms">{{ $t('landing.hero.title_b') }}</h1>
         <p class="hero-sub hero-rise" style="--hero-delay: 140ms">
-          Drop in an idea. Connect it to another. Ask the AI to keep going. NeuroCanvas turns scattered notes into structured maps — without the cards-and-folders ceremony.
+          {{ $t('landing.hero.subtitle_v2') }}
         </p>
         <div class="hero-cta hero-rise" style="--hero-delay: 200ms">
           <button type="button" class="btn-primary" @click="handleTryFree">
-            <span>Try without signing up</span>
+            <span>{{ $t('landing.hero.cta_primary_short') }}</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
           <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signup'" class="btn-outline">
-            Create free account
+            {{ $t('landing.hero.cta_secondary') }}
           </NuxtLink>
         </div>
         <p class="hero-receipt hero-rise" style="--hero-delay: 260ms">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M13.333 4.667L6 12l-3.333-3.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
-          <span>No email. No card. Your map auto-saves to this browser.</span>
+          <span>{{ $t('landing.hero.receipt') }}</span>
         </p>
       </div>
 
@@ -126,41 +126,44 @@ onMounted(() => {
           <span class="mc-chip-mute">nodes</span>
         </div>
 
-        <!-- edges: 4 mirrored curves radiating from the center "Hero CTA framing" node -->
-        <svg class="mc-edges" viewBox="0 0 600 560" preserveAspectRatio="none">
-          <path class="mc-line mc-line--draw" style="--mc-delay: 700ms" pathLength="1" d="M180 160 Q 215 205 240 258" stroke="#3F3F46" stroke-width="1.5" fill="none" stroke-linecap="round" />
-          <path class="mc-line mc-line--draw" style="--mc-delay: 760ms" pathLength="1" d="M180 400 Q 215 355 240 302" stroke="#3F3F46" stroke-width="1.5" fill="none" stroke-linecap="round" />
-          <path class="mc-line mc-line--fade" style="--mc-delay: 900ms" d="M360 258 Q 385 205 420 160" stroke="#00D2BE" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-dasharray="4 4" />
-          <path class="mc-line mc-line--fade" style="--mc-delay: 940ms" d="M360 302 Q 385 355 420 400" stroke="#00D2BE" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-dasharray="4 4" />
-        </svg>
+        <!-- stage: locked aspect ratio so SVG paths and nodes stay aligned at any canvas width -->
+        <div class="mc-stage">
+          <!-- edges: 4 mirrored curves radiating from the center "Hero CTA framing" node -->
+          <svg class="mc-edges" viewBox="0 0 600 560" preserveAspectRatio="none">
+            <path class="mc-line mc-line--draw" style="--mc-delay: 700ms" pathLength="1" d="M180 160 Q 215 205 240 258" stroke="#3F3F46" stroke-width="1.5" fill="none" stroke-linecap="round" />
+            <path class="mc-line mc-line--draw" style="--mc-delay: 760ms" pathLength="1" d="M180 400 Q 215 355 240 302" stroke="#3F3F46" stroke-width="1.5" fill="none" stroke-linecap="round" />
+            <path class="mc-line mc-line--fade" style="--mc-delay: 900ms" d="M360 258 Q 385 205 420 160" stroke="#00D2BE" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-dasharray="4 4" />
+            <path class="mc-line mc-line--fade" style="--mc-delay: 940ms" d="M360 302 Q 385 355 420 400" stroke="#00D2BE" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-dasharray="4 4" />
+          </svg>
 
-        <!-- center principle -->
-        <div class="mc-node mc-node--root mc-pop" style="left:50%; top:50%; transform:translate(-50%, -50%); width:200px; --mc-delay: 560ms">
-          Hero CTA framing
-        </div>
+          <!-- center principle -->
+          <div class="mc-node mc-node--root mc-pop" style="left:50%; top:50%; transform:translate(-50%, -50%); width:200px; --mc-delay: 560ms">
+            Hero CTA framing
+          </div>
 
-        <!-- left branch (existing thoughts) -->
-        <div class="mc-node mc-pop" style="right:70%; top:28%; transform:translateY(-50%); width:172px; --mc-delay: 680ms">Onboarding rework</div>
-        <div class="mc-node mc-pop" style="right:70%; top:72%; transform:translateY(-50%); width:200px; --mc-delay: 740ms">Save-your-work prompt</div>
+          <!-- left branch (existing thoughts) -->
+          <div class="mc-node mc-pop" style="right:70%; top:28.5%; transform:translateY(-50%); width:172px; --mc-delay: 680ms">Onboarding rework</div>
+          <div class="mc-node mc-pop" style="right:70%; top:71.5%; transform:translateY(-50%); width:200px; --mc-delay: 740ms">Save-your-work prompt</div>
 
-        <!-- right branch (AI suggestions) -->
-        <div class="mc-node mc-node--ai mc-pop" style="left:70%; top:28%; transform:translateY(-50%); width:205px; --mc-delay: 880ms">
-          <span class="mc-ai-eyebrow">
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-              <path d="M6 1L7.4 4.6L11 6L7.4 7.4L6 11L4.6 7.4L1 6L4.6 4.6L6 1Z" fill="#00D2BE" />
-            </svg>
-            <span>AI · SUGGESTED</span>
-          </span>
-          <span class="mc-ai-text">Progressive nudges</span>
-        </div>
-        <div class="mc-node mc-node--ai mc-pop" style="left:70%; top:72%; transform:translateY(-50%); width:220px; --mc-delay: 940ms">
-          <span class="mc-ai-eyebrow">
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-              <path d="M6 1L7.4 4.6L11 6L7.4 7.4L6 11L4.6 7.4L1 6L4.6 4.6L6 1Z" fill="#00D2BE" />
-            </svg>
-            <span>AI · SUGGESTED</span>
-          </span>
-          <span class="mc-ai-text">Visual template previews</span>
+          <!-- right branch (AI suggestions) -->
+          <div class="mc-node mc-node--ai mc-pop" style="left:70%; top:28.5%; transform:translateY(-50%); width:205px; --mc-delay: 880ms">
+            <span class="mc-ai-eyebrow">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1L7.4 4.6L11 6L7.4 7.4L6 11L4.6 7.4L1 6L4.6 4.6L6 1Z" fill="#00D2BE" />
+              </svg>
+              <span>AI · SUGGESTED</span>
+            </span>
+            <span class="mc-ai-text">Progressive nudges</span>
+          </div>
+          <div class="mc-node mc-node--ai mc-pop" style="left:70%; top:71.5%; transform:translateY(-50%); width:220px; --mc-delay: 940ms">
+            <span class="mc-ai-eyebrow">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1L7.4 4.6L11 6L7.4 7.4L6 11L4.6 7.4L1 6L4.6 4.6L6 1Z" fill="#00D2BE" />
+              </svg>
+              <span>AI · SUGGESTED</span>
+            </span>
+            <span class="mc-ai-text">Visual template previews</span>
+          </div>
         </div>
 
         <!-- bottom prompt bar -->
@@ -311,7 +314,7 @@ onMounted(() => {
         <div class="sec-aside" data-reveal>
           <div class="sec-eyebrow">04 — start somewhere</div>
           <NuxtLink to="/templates" class="browse-all">
-            <span>Browse all 24 templates</span>
+            <span>{{ $t('landing.templates_section.browse_all') }}</span>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
@@ -323,7 +326,7 @@ onMounted(() => {
       </div>
 
       <div class="tpl-rail">
-        <article class="tpl" data-reveal>
+        <NuxtLink to="/templates" class="tpl" data-reveal>
           <div class="tpl-preview">
             <svg viewBox="0 0 280 208" preserveAspectRatio="none">
               <path d="M140 38 L50 78" stroke="#3F3F46" stroke-width="1.4" fill="none" />
@@ -345,9 +348,9 @@ onMounted(() => {
             <h3>Decision tree</h3>
             <p>Compare options. Trace consequences.</p>
           </div>
-        </article>
+        </NuxtLink>
 
-        <article class="tpl" data-reveal style="--reveal-delay: 50ms">
+        <NuxtLink to="/templates" class="tpl" data-reveal style="--reveal-delay: 50ms">
           <div class="tpl-preview">
             <svg viewBox="0 0 280 208" preserveAspectRatio="none">
               <path d="M140 38 L50 78" stroke="#3F3F46" stroke-width="1.4" fill="none" />
@@ -369,9 +372,9 @@ onMounted(() => {
             <h3>Project plan</h3>
             <p>Goals → milestones → checkpoints.</p>
           </div>
-        </article>
+        </NuxtLink>
 
-        <article class="tpl" data-reveal style="--reveal-delay: 100ms">
+        <NuxtLink to="/templates" class="tpl" data-reveal style="--reveal-delay: 100ms">
           <div class="tpl-preview">
             <svg viewBox="0 0 280 208" preserveAspectRatio="none">
               <path d="M140 38 L50 78" stroke="#3F3F46" stroke-width="1.4" fill="none" />
@@ -391,9 +394,9 @@ onMounted(() => {
             <h3>Research synthesis</h3>
             <p>Sources cluster. AI summarizes the cluster.</p>
           </div>
-        </article>
+        </NuxtLink>
 
-        <article class="tpl" data-reveal style="--reveal-delay: 150ms">
+        <NuxtLink to="/templates" class="tpl" data-reveal style="--reveal-delay: 150ms">
           <div class="tpl-preview">
             <svg viewBox="0 0 280 208" preserveAspectRatio="none">
               <path d="M140 38 L50 78" stroke="#3F3F46" stroke-width="1.4" fill="none" />
@@ -415,7 +418,7 @@ onMounted(() => {
             <h3>Brainstorm</h3>
             <p>Spray ideas. Cluster later.</p>
           </div>
-        </article>
+        </NuxtLink>
       </div>
     </section>
 
@@ -470,21 +473,21 @@ onMounted(() => {
       </div>
       <div class="footer-cols">
         <div class="footer-col">
-          <span class="footer-col-head">Product</span>
-          <NuxtLink to="/templates">Templates</NuxtLink>
-          <NuxtLink to="/download">Download</NuxtLink>
-          <a href="#" @click.prevent="">Roadmap</a>
+          <span class="footer-col-head">{{ $t('landing.footer.product_head') }}</span>
+          <NuxtLink to="/templates">{{ $t('landing.footer.templates_link') }}</NuxtLink>
+          <NuxtLink to="/download">{{ $t('landing.footer.download_link') }}</NuxtLink>
+          <a href="#" @click.prevent="">{{ $t('landing.footer.roadmap_link') }}</a>
         </div>
         <div class="footer-col">
-          <span class="footer-col-head">Resources</span>
-          <NuxtLink to="/docs">Docs</NuxtLink>
-          <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener">GitHub</a>
+          <span class="footer-col-head">{{ $t('landing.footer.resources_head') }}</span>
+          <NuxtLink to="/docs">{{ $t('landing.footer.docs_link') }}</NuxtLink>
+          <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener">{{ $t('landing.footer.github_link') }}</a>
         </div>
         <div class="footer-col">
-          <span class="footer-col-head">Company</span>
-          <NuxtLink to="/privacy">Privacy</NuxtLink>
-          <NuxtLink to="/terms">Terms</NuxtLink>
-          <a href="mailto:hello@neurocanvas.app">Contact</a>
+          <span class="footer-col-head">{{ $t('landing.footer.company_head') }}</span>
+          <NuxtLink to="/privacy">{{ $t('landing.footer.privacy_link') }}</NuxtLink>
+          <NuxtLink to="/terms">{{ $t('landing.footer.terms_link') }}</NuxtLink>
+          <a href="mailto:hello@neurocanvas.app">{{ $t('landing.footer.contact_link') }}</a>
         </div>
       </div>
     </footer>
@@ -900,6 +903,18 @@ onMounted(() => {
   font-size: 11px;
   line-height: 14px;
   color: var(--text-3);
+}
+
+/* Stage locks the graph to a fixed 600:560 ratio inside the canvas so SVG
+   paths and absolutely-positioned nodes stay aligned at any screen size. */
+.mc-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(100% - 32px), 720px);
+  aspect-ratio: 600 / 560;
+  max-height: calc(100% - 96px);
 }
 
 .mc-edges {
@@ -1390,17 +1405,13 @@ onMounted(() => {
 }
 
 .tpl-rail {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
-  overflow-x: auto;
-  scrollbar-width: none;
   padding-right: 56px;
 }
 
-.tpl-rail::-webkit-scrollbar { display: none; }
-
 .tpl {
-  flex: 0 0 320px;
   height: 360px;
   background: var(--bg-3);
   border: 1px solid var(--border-2);
@@ -1410,6 +1421,8 @@ onMounted(() => {
   flex-direction: column;
   gap: 16px;
   transition: border-color 150ms ease;
+  text-decoration: none;
+  color: inherit;
 }
 
 .tpl:hover { border-color: var(--border-4); }
@@ -1646,7 +1659,7 @@ onMounted(() => {
   }
   .sec-04 { padding-right: 0; }
   .sec-04 .sec-grid--head { padding-right: 32px; }
-  .tpl-rail { padding-right: 32px; }
+  .tpl-rail { padding-right: 32px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cta, .footer { padding-left: 32px; padding-right: 32px; }
 }
 
@@ -1680,6 +1693,7 @@ onMounted(() => {
   .sec-04 { padding-right: 0; }
   .sec-grid, .sec-grid--head { flex-direction: column; gap: 16px; }
   .sec-eyebrow, .sec-aside { flex-basis: auto; padding-top: 0; }
+  .tpl-rail { grid-template-columns: minmax(0, 1fr); padding-right: 20px; }
   .sec-h { font-size: 28px; line-height: 1.25; }
   .sec-h2 { font-size: 24px; }
   .step { flex-direction: column; gap: 16px; padding: 32px 0; }

@@ -20,6 +20,8 @@ interface UserLike {
   image?: string | null
 }
 
+import { safeImageUrl } from '~/utils/safeUrl'
+
 const props = defineProps<{
   user: UserLike | null | undefined
   userInitials: string
@@ -29,6 +31,8 @@ const props = defineProps<{
   isCreatingMap?: boolean
   isLoading?: boolean
 }>()
+
+const avatarSrc = computed(() => safeImageUrl(props.user?.image))
 
 const emit = defineEmits<{
   newMap: []
@@ -107,7 +111,7 @@ function onRow(id: string) {
           <span class="mdash-live-label">SYNCED</span>
         </div>
         <NuxtLink to="/settings" class="mdash-avatar" :aria-label="t('common.nav.settings')">
-          <img v-if="user?.image" :src="user.image" :alt="user.name || ''" class="mdash-avatar-img">
+          <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mdash-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>
         </NuxtLink>
       </div>

@@ -16,10 +16,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Map ID required' })
   }
 
-  // Check if map has a public share link (for OG images on shared links)
+  // Check if map has a public share link (for OG images on shared links).
+  // Revoked shares must NOT satisfy this — a revoked link would otherwise
+  // continue to serve the cached PNG preview indefinitely.
   const share = await prisma.mapShare.findFirst({
     where: {
       mapId,
+      revokedAt: null,
       OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
     },
     select: { id: true }

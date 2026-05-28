@@ -5,6 +5,8 @@ export interface CanvasColors {
   nodeBg: string
   nodeBorder: string
   nodeTier2Bg: string
+  nodeTier1Border: string
+  nodeTier2Border: string
   nodeText: string
   nodeSelected: string
   nodeGlow: string
@@ -30,6 +32,8 @@ const darkColors: CanvasColors = {
   nodeBg: '#111113',
   nodeBorder: '#27272A',
   nodeTier2Bg: '#0D0D0F',
+  nodeTier1Border: 'rgba(0, 210, 190, 0.45)',
+  nodeTier2Border: 'rgba(255, 255, 255, 0.06)',
   nodeText: '#FAFAFA',
   nodeSelected: '#00D2BE',
   nodeGlow: 'rgba(0, 210, 190, 0.08)',
@@ -50,24 +54,30 @@ const darkColors: CanvasColors = {
   rootIndicatorText: '#0A0A0C',
 }
 
+// Light-mode tokens are tuned for visibility against the warm-paper canvas
+// (#FAFAF9). Brand teal #00D2BE is preserved as the accent — only neutral
+// borders, edges, grid and accent glows were strengthened so Tier-2 nodes
+// don't disappear into the paper.
 const lightColors: CanvasColors = {
   canvasBg: '#FAFAF9',
   nodeBg: '#FFFFFF',
-  nodeBorder: '#E8E8E6',
-  nodeTier2Bg: '#F5F5F3',
+  nodeBorder: '#D4D4D0',
+  nodeTier2Bg: '#FFFFFF',
+  nodeTier1Border: 'rgba(0, 168, 154, 0.85)',
+  nodeTier2Border: 'rgba(0, 0, 0, 0.16)',
   nodeText: '#111111',
   nodeSelected: '#00D2BE',
-  nodeGlow: 'rgba(0, 210, 190, 0.06)',
+  nodeGlow: 'rgba(0, 210, 190, 0.12)',
   nodeHoverBorder: '#00D2BE',
-  nodeAiGlow: 'rgba(0, 210, 190, 0.10)',
-  nodeHighlightGlow: 'rgba(0, 210, 190, 0.08)',
-  edgeDefault: '#D4D4D8',
+  nodeAiGlow: 'rgba(0, 210, 190, 0.18)',
+  nodeHighlightGlow: 'rgba(0, 210, 190, 0.14)',
+  edgeDefault: '#A1A1AA',
   edgeSelected: '#00D2BE',
-  gridDot: '#A1A1AA',
-  gridLine: 'rgba(0, 0, 0, 0.03)',
+  gridDot: '#B8B8B3',
+  gridLine: 'rgba(0, 0, 0, 0.04)',
   accent: '#00D2BE',
-  boxSelectFill: 'rgba(0, 210, 190, 0.06)',
-  boxSelectBorder: 'rgba(0, 210, 190, 0.4)',
+  boxSelectFill: 'rgba(0, 210, 190, 0.10)',
+  boxSelectBorder: 'rgba(0, 210, 190, 0.55)',
   connectionPreview: '#00D2BE',
   anchorFill: '#FAFAF9',
   anchorBorder: '#00D2BE',

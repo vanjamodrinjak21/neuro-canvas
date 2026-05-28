@@ -9,6 +9,7 @@ const { data: _sessionData } = useAuth()
 const session = _sessionData ?? ref(null)
 const { handleSignOut, isLoading: signOutLoading } = useAuthStore()
 const aiSettings = useAISettings()
+const { t } = useI18n()
 
 const user = computed(() => session.value?.user)
 
@@ -240,20 +241,20 @@ async function onSignOut() {
   <div class="tab-content">
     <!-- ACCOUNT Section -->
     <div class="settings-section">
-      <span class="section-label">01 — account</span>
+      <span class="section-label">{{ t('settings.account.section_account') }}</span>
 
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Email</span>
-          <span class="setting-desc">Your account email address</span>
+          <span class="setting-title">{{ t('settings.account.email_label') }}</span>
+          <span class="setting-desc">{{ t('settings.account.email_desc') }}</span>
         </div>
-        <span class="setting-value">{{ user?.email || 'Not set' }}</span>
+        <span class="setting-value">{{ user?.email || t('settings.account.not_set') }}</span>
       </div>
 
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Member Since</span>
-          <span class="setting-desc">When you joined NeuroCanvas</span>
+          <span class="setting-title">{{ t('settings.account.member_since_label') }}</span>
+          <span class="setting-desc">{{ t('settings.account.member_since_desc') }}</span>
         </div>
         <span class="setting-value">{{ memberSince }}</span>
       </div>
@@ -261,24 +262,24 @@ async function onSignOut() {
 
     <!-- SECURITY Section -->
     <div class="settings-section">
-      <span class="section-label">02 — security</span>
+      <span class="section-label">{{ t('settings.account.section_security') }}</span>
 
       <!-- Change Password -->
       <div class="setting-row" :class="{ expanded: showPasswordForm }">
         <template v-if="!showPasswordForm">
           <div class="setting-info">
-            <span class="setting-title">Change Password</span>
-            <span class="setting-desc">Update your account password</span>
+            <span class="setting-title">{{ t('settings.account.change_password') }}</span>
+            <span class="setting-desc">{{ t('settings.account.change_password_desc') }}</span>
           </div>
           <button class="action-btn" @click="showPasswordForm = true">
-            Change
+            {{ t('settings.account.change_button') }}
           </button>
         </template>
 
         <template v-else>
           <div class="password-form">
             <div class="setting-info">
-              <span class="setting-title">Change Password</span>
+              <span class="setting-title">{{ t('settings.account.change_password') }}</span>
             </div>
 
             <div class="form-fields">
@@ -286,14 +287,14 @@ async function onSignOut() {
                 v-model="currentPassword"
                 type="password"
                 class="setting-input"
-                placeholder="Current password"
+                :placeholder="t('settings.account.current_password')"
                 autocomplete="current-password"
               >
               <input
                 v-model="newPassword"
                 type="password"
                 class="setting-input"
-                placeholder="New password"
+                :placeholder="t('settings.account.new_password')"
                 autocomplete="new-password"
                 minlength="8"
               >
@@ -305,7 +306,7 @@ async function onSignOut() {
 
               <div v-if="passwordSuccess" class="inline-success">
                 <span class="i-lucide-check-circle" />
-                Password changed successfully
+                {{ t('settings.account.password_changed_success') }}
               </div>
 
               <div class="form-actions">
@@ -313,14 +314,14 @@ async function onSignOut() {
                   class="cancel-btn"
                   @click="showPasswordForm = false; passwordError = null"
                 >
-                  Cancel
+                  {{ t('common.buttons.cancel') }}
                 </button>
                 <button
                   class="save-btn"
                   :disabled="isChangingPassword || !currentPassword || !newPassword"
                   @click="changePassword"
                 >
-                  {{ isChangingPassword ? 'Saving...' : 'Save' }}
+                  {{ isChangingPassword ? t('settings.account.saving') : t('settings.account.save') }}
                 </button>
               </div>
             </div>
@@ -332,9 +333,9 @@ async function onSignOut() {
       <div class="setting-row" :class="{ expanded: totpStep !== 'idle' }">
         <template v-if="totpStep === 'idle'">
           <div class="setting-info">
-            <span class="setting-title">Two-Factor Authentication</span>
+            <span class="setting-title">{{ t('settings.account.two_factor_authentication') }}</span>
             <span class="setting-desc">
-              {{ totpEnabled ? 'Enabled — your account is protected with 2FA' : 'Add an extra layer of security to your account' }}
+              {{ totpEnabled ? t('settings.account.two_factor_enabled_desc') : t('settings.account.two_factor_disabled_desc') }}
             </span>
           </div>
           <button
@@ -343,14 +344,14 @@ async function onSignOut() {
             :disabled="totpLoading"
             @click="startTotpSetup"
           >
-            Enable
+            {{ t('settings.account.enable') }}
           </button>
           <button
             v-else
             class="delete-btn"
             @click="totpStep = 'disable'"
           >
-            Disable
+            {{ t('settings.account.disable') }}
           </button>
         </template>
 
@@ -358,8 +359,8 @@ async function onSignOut() {
         <template v-else-if="totpStep === 'verify'">
           <div class="totp-setup">
             <div class="setting-info">
-              <span class="setting-title">Scan QR Code</span>
-              <span class="setting-desc">Scan with your authenticator app (Google Authenticator, Authy, etc.)</span>
+              <span class="setting-title">{{ t('settings.account.scan_qr_title') }}</span>
+              <span class="setting-desc">{{ t('settings.account.scan_qr_desc') }}</span>
             </div>
 
             <div class="totp-qr">
@@ -367,7 +368,7 @@ async function onSignOut() {
             </div>
 
             <div class="totp-manual">
-              <span class="setting-desc">Or enter this key manually:</span>
+              <span class="setting-desc">{{ t('settings.account.or_enter_manual') }}</span>
               <code class="totp-key">{{ totpSecretKey }}</code>
             </div>
 
@@ -376,7 +377,7 @@ async function onSignOut() {
                 v-model="totpCode"
                 type="text"
                 class="setting-input"
-                placeholder="Enter 6-digit code"
+                :placeholder="t('settings.account.totp_code_placeholder')"
                 maxlength="6"
                 inputmode="numeric"
                 autocomplete="one-time-code"
@@ -389,13 +390,13 @@ async function onSignOut() {
               </div>
 
               <div class="form-actions">
-                <button class="cancel-btn" @click="closeTotpFlow">Cancel</button>
+                <button class="cancel-btn" @click="closeTotpFlow">{{ t('common.buttons.cancel') }}</button>
                 <button
                   class="save-btn"
                   :disabled="totpLoading || totpCode.length !== 6"
                   @click="verifyTotp"
                 >
-                  {{ totpLoading ? 'Verifying...' : 'Verify & Enable' }}
+                  {{ totpLoading ? t('settings.account.verifying') : t('settings.account.verify_enable') }}
                 </button>
               </div>
             </div>
@@ -406,8 +407,8 @@ async function onSignOut() {
         <template v-else-if="totpStep === 'backup'">
           <div class="totp-setup">
             <div class="setting-info">
-              <span class="setting-title" style="color: #22C55E;">2FA Enabled</span>
-              <span class="setting-desc">Save these backup codes in a safe place. Each code can only be used once.</span>
+              <span class="setting-title" style="color: #22C55E;">{{ t('settings.account.twofa_enabled_title') }}</span>
+              <span class="setting-desc">{{ t('settings.account.backup_codes_desc') }}</span>
             </div>
 
             <div class="backup-grid">
@@ -415,7 +416,7 @@ async function onSignOut() {
             </div>
 
             <div class="form-actions">
-              <button class="save-btn" @click="closeTotpFlow">Done</button>
+              <button class="save-btn" @click="closeTotpFlow">{{ t('settings.account.done') }}</button>
             </div>
           </div>
         </template>
@@ -424,8 +425,8 @@ async function onSignOut() {
         <template v-else-if="totpStep === 'disable'">
           <div class="totp-setup">
             <div class="setting-info">
-              <span class="setting-title delete-title">Disable 2FA</span>
-              <span class="setting-desc">Enter your password to disable two-factor authentication</span>
+              <span class="setting-title delete-title">{{ t('settings.account.disable_2fa_title') }}</span>
+              <span class="setting-desc">{{ t('settings.account.disable_2fa_desc') }}</span>
             </div>
 
             <div class="form-fields">
@@ -433,7 +434,7 @@ async function onSignOut() {
                 v-model="disablePassword"
                 type="password"
                 class="setting-input"
-                placeholder="Enter your password"
+                :placeholder="t('auth.signin.password_placeholder')"
                 autocomplete="current-password"
                 @keydown.enter="disableTotp"
               >
@@ -444,13 +445,13 @@ async function onSignOut() {
               </div>
 
               <div class="form-actions">
-                <button class="cancel-btn" @click="closeTotpFlow">Cancel</button>
+                <button class="cancel-btn" @click="closeTotpFlow">{{ t('common.buttons.cancel') }}</button>
                 <button
                   class="delete-confirm-btn"
                   :disabled="totpLoading || !disablePassword"
                   @click="disableTotp"
                 >
-                  {{ totpLoading ? 'Disabling...' : 'Disable 2FA' }}
+                  {{ totpLoading ? t('settings.account.disabling') : t('settings.account.disable_2fa_button') }}
                 </button>
               </div>
             </div>
@@ -461,20 +462,20 @@ async function onSignOut() {
 
     <!-- DANGER ZONE Section -->
     <div class="settings-section">
-      <span class="section-label danger">03 — danger zone</span>
+      <span class="section-label danger">{{ t('settings.account.section_danger') }}</span>
 
       <!-- Export All Data -->
       <div class="setting-row">
         <div class="setting-info">
-          <span class="setting-title">Export All Data</span>
-          <span class="setting-desc">Download all your maps and account data as JSON</span>
+          <span class="setting-title">{{ t('settings.account.export_all_data') }}</span>
+          <span class="setting-desc">{{ t('settings.account.export_all_data_desc') }}</span>
         </div>
         <button
           class="action-btn"
           :disabled="isExporting"
           @click="exportAllData"
         >
-          {{ isExporting ? 'Exporting...' : 'Export' }}
+          {{ isExporting ? t('settings.account.exporting') : t('settings.account.export') }}
         </button>
       </div>
 
@@ -487,19 +488,23 @@ async function onSignOut() {
       <div class="setting-row danger-row" :class="{ expanded: showDeleteConfirm }">
         <template v-if="!showDeleteConfirm">
           <div class="setting-info">
-            <span class="setting-title">Delete Account</span>
-            <span class="setting-desc">Permanently delete your account and all data. This cannot be undone.</span>
+            <span class="setting-title">{{ t('settings.account.delete_account') }}</span>
+            <span class="setting-desc">{{ t('settings.account.delete_account_desc') }}</span>
           </div>
           <button class="delete-btn" @click="showDeleteConfirm = true">
-            Delete
+            {{ t('settings.account.delete') }}
           </button>
         </template>
 
         <template v-else>
           <div class="delete-form">
             <div class="setting-info">
-              <span class="setting-title delete-title">Delete Account</span>
-              <span class="setting-desc">Type <strong>DELETE MY ACCOUNT</strong> to confirm</span>
+              <span class="setting-title delete-title">{{ t('settings.account.delete_account') }}</span>
+              <span class="setting-desc">
+                {{ t('settings.account.delete_confirm_desc_prefix') }}
+                <strong>{{ t('settings.account.delete_confirmation_placeholder') }}</strong>
+                {{ t('settings.account.delete_confirm_desc_suffix') }}
+              </span>
             </div>
 
             <div class="form-fields">
@@ -507,7 +512,7 @@ async function onSignOut() {
                 v-model="deleteConfirmText"
                 type="text"
                 class="setting-input delete-input"
-                placeholder="DELETE MY ACCOUNT"
+                :placeholder="t('settings.account.delete_confirmation_placeholder')"
                 autocomplete="off"
                 spellcheck="false"
               >
@@ -858,7 +863,11 @@ async function onSignOut() {
   display: flex;
   justify-content: center;
   padding: 16px;
-  background: var(--s-bg, #09090B);
+  /* QR is shipped as black-on-white for scanner compatibility, so the
+     container stays a neutral light tile regardless of theme — no theme
+     variable here. A 1px ring matches the rest of the panel chrome. */
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
 }
 
@@ -866,6 +875,7 @@ async function onSignOut() {
   width: 200px;
   height: 200px;
   image-rendering: pixelated;
+  display: block;
 }
 
 .totp-manual {

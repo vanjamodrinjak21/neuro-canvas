@@ -51,6 +51,10 @@ export interface RenderLoopDeps {
   camera: Ref<Camera> | ComputedRef<Camera>
   colors: ComputedRef<CanvasColors>
   isLight: Ref<boolean>
+  // Global font-size preference multiplier (1.0 = medium / no scale).
+  // Sourced from useTextScale() which mirrors `data-font-size` on <html>.
+  // Optional so legacy callers don't break.
+  textScale?: Ref<number>
 
   // Data sources (getters for fresh data each frame)
   nodes: () => Map<string, Node>
@@ -350,6 +354,7 @@ export function useRenderLoop(deps: RenderLoopDeps) {
           { hoverProgress: anim.hoverProgress, selectionProgress: anim.selectionProgress },
           deps.isLight.value,
           parentIsRoot,
+          deps.textScale?.value ?? 1,
         )
         ctx.restore()
       } else {
@@ -367,6 +372,7 @@ export function useRenderLoop(deps: RenderLoopDeps) {
           undefined,
           deps.isLight.value,
           parentIsRoot,
+          deps.textScale?.value ?? 1,
         )
       }
     }

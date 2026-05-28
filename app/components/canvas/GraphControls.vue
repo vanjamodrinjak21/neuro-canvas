@@ -75,17 +75,17 @@ const showPhysics = ref(false)
     <!-- Header with stats -->
     <div class="px-4 py-3 border-b border-nc-border">
       <div class="nc-between mb-2">
-        <span class="font-display font-semibold text-sm text-nc-ink">Graph Controls</span>
+        <span class="font-display font-semibold text-sm text-nc-ink">{{ $t('canvas.graph_controls_panel.title') }}</span>
       </div>
       <div class="nc-row gap-4 text-xs text-nc-ink-muted">
-        <span>{{ nodeCount }} nodes</span>
-        <span>{{ edgeCount }} edges</span>
+        <span>{{ $t('maps.nodes_count', { n: nodeCount }) }}</span>
+        <span>{{ $t('canvas.graph_controls_panel.edges_count', { n: edgeCount }) }}</span>
       </div>
     </div>
 
     <!-- Mode Toggle -->
     <div class="p-4 border-b border-nc-border">
-      <div class="nc-label mb-2">View Mode</div>
+      <div class="nc-label mb-2">{{ $t('canvas.graph_controls_panel.view_mode') }}</div>
       <div class="flex gap-2">
         <button
           :class="[
@@ -97,7 +97,7 @@ const showPhysics = ref(false)
           @click="setMode('global')"
         >
           <span class="i-lucide-globe mr-1.5" />
-          Global
+          {{ $t('canvas.graph_controls_panel.mode_global') }}
         </button>
         <button
           :class="[
@@ -109,7 +109,7 @@ const showPhysics = ref(false)
           @click="setMode('local')"
         >
           <span class="i-lucide-target mr-1.5" />
-          Local
+          {{ $t('canvas.graph_controls_panel.mode_local') }}
         </button>
       </div>
     </div>
@@ -117,7 +117,7 @@ const showPhysics = ref(false)
     <!-- Depth Slider (only for local mode) -->
     <div v-if="options.mode === 'local'" class="p-4 border-b border-nc-border">
       <div class="nc-between mb-2">
-        <span class="nc-label">Depth</span>
+        <span class="nc-label">{{ $t('canvas.graph_controls_panel.depth') }}</span>
         <span class="text-sm text-nc-ink-soft">{{ localDepth }}</span>
       </div>
       <input
@@ -130,20 +130,20 @@ const showPhysics = ref(false)
         @change="updateDepth"
       >
       <div class="nc-between text-xs text-nc-ink-faint mt-1">
-        <span>1 hop</span>
-        <span>5 hops</span>
+        <span>{{ $t('canvas.graph_controls_panel.hops', { n: 1 }) }}</span>
+        <span>{{ $t('canvas.graph_controls_panel.hops', { n: 5 }) }}</span>
       </div>
     </div>
 
     <!-- Search -->
     <div class="p-4 border-b border-nc-border">
-      <div class="nc-label mb-2">Search</div>
+      <div class="nc-label mb-2">{{ $t('canvas.graph_controls_panel.search_label') }}</div>
       <div class="relative">
         <span class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search text-nc-ink-muted" />
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Filter nodes..."
+          :placeholder="$t('canvas.filter_nodes_placeholder')"
           class="w-full pl-9 pr-3 py-2 bg-nc-surface-2 border border-nc-border rounded-nc-md text-sm text-nc-ink placeholder-nc-ink-faint focus:border-nc-accent focus:outline-none transition-colors"
         >
       </div>
@@ -155,7 +155,7 @@ const showPhysics = ref(false)
         class="w-full p-4 nc-between text-left hover:bg-nc-surface-2/50 transition-colors"
         @click="showPhysics = !showPhysics"
       >
-        <span class="nc-label">Physics</span>
+        <span class="nc-label">{{ $t('canvas.graph_controls_panel.physics') }}</span>
         <span
           :class="['i-lucide-chevron-down text-nc-ink-muted transition-transform', showPhysics && 'rotate-180']"
         />
@@ -173,7 +173,7 @@ const showPhysics = ref(false)
           <!-- Link Distance -->
           <div>
             <div class="nc-between mb-1">
-              <span class="text-xs text-nc-ink-muted">Link Distance</span>
+              <span class="text-xs text-nc-ink-muted">{{ $t('canvas.graph_controls_panel.link_distance') }}</span>
               <span class="text-xs text-nc-ink-soft">{{ localPhysics.linkDistance }}</span>
             </div>
             <input
@@ -189,7 +189,7 @@ const showPhysics = ref(false)
           <!-- Repulsion Strength -->
           <div>
             <div class="nc-between mb-1">
-              <span class="text-xs text-nc-ink-muted">Repulsion</span>
+              <span class="text-xs text-nc-ink-muted">{{ $t('canvas.graph_controls_panel.repulsion') }}</span>
               <span class="text-xs text-nc-ink-soft">{{ Math.abs(localPhysics.repulsionStrength) }}</span>
             </div>
             <input
@@ -205,7 +205,7 @@ const showPhysics = ref(false)
           <!-- Center Force -->
           <div>
             <div class="nc-between mb-1">
-              <span class="text-xs text-nc-ink-muted">Center Force</span>
+              <span class="text-xs text-nc-ink-muted">{{ $t('canvas.graph_controls_panel.center_force') }}</span>
               <span class="text-xs text-nc-ink-soft">{{ localPhysics.centerForce.toFixed(2) }}</span>
             </div>
             <input
@@ -221,7 +221,7 @@ const showPhysics = ref(false)
           <!-- Collision Radius -->
           <div>
             <div class="nc-between mb-1">
-              <span class="text-xs text-nc-ink-muted">Collision Radius</span>
+              <span class="text-xs text-nc-ink-muted">{{ $t('canvas.graph_controls_panel.collision_radius') }}</span>
               <span class="text-xs text-nc-ink-soft">{{ localPhysics.collisionRadius }}</span>
             </div>
             <input

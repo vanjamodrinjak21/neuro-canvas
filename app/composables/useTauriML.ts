@@ -3,9 +3,24 @@
  *
  * Wraps `@tauri-apps/api/core` invoke() calls for native ONNX Runtime
  * inference running in the Rust backend.
+ *
+ * The `@tauri-apps/api` package is loaded lazily via dynamic import so
+ * the ~20KB runtime stays out of the web bundle entirely — useTauriML
+ * is imported by useAI.ts and would otherwise pull Tauri into every
+ * canvas-page chunk for web users.
  */
 
-import { invoke } from '@tauri-apps/api/core'
+type TauriInvoke = typeof import('@tauri-apps/api/core').invoke
+
+let _invokeCache: TauriInvoke | null = null
+
+async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (!_invokeCache) {
+    const mod = await import('@tauri-apps/api/core')
+    _invokeCache = mod.invoke
+  }
+  return _invokeCache<T>(cmd, args)
+}
 
 // ── Response types (mirror Rust serde structs) ──────────────────────
 

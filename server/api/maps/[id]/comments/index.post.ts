@@ -1,3 +1,4 @@
+import { getRequestIP } from 'h3'
 import { createComment, CommentError } from '../../../../utils/commentsService'
 import { resolveCommentActor } from '../../../../utils/commentActor'
 import { validateBody, commentCreateSchema } from '../../../../utils/validation'
@@ -10,8 +11,14 @@ export default defineEventHandler(async (event) => {
   try {
     const actor = await resolveCommentActor(event, mapId)
     // Rate-limit to discourage comment spam from compromised accounts or
-    // share-link bots. Keyed on actor.id so each guest token stays isolated.
-    const { allowed } = await checkRateLimit(`comment-create:${actor.id}`, 60, 60)
+    // share-link bots. For authed users key on actor.id; for guests key
+    // on IP — the previous per-request random nanoid in actor.id meant
+    // every guest got a fresh limit bucket, effectively disabling the cap.
+    const isGuest = actor.id.startsWith('guest:')
+    const rlKey = isGuest
+      ? `comment-create:guest:${getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'}`
+      : `comment-create:${actor.id}`
+    const { allowed } = await checkRateLimit(rlKey, 60, 60)
     if (!allowed) {
       throw createError({ statusCode: 429, statusMessage: 'Too many comments. Slow down.' })
     }
@@ -27,6 +34,9 @@ export default defineEventHandler(async (event) => {
     if (err instanceof CommentError) {
       throw createError({ statusCode: err.statusCode, statusMessage: err.message })
     }
-    throw err
+    // Don't surface raw service-layer errors — they can contain DB /
+    // framework details that fingerprint the schema.
+    console.error('comment create failed', { mapId, code: (err as { code?: string })?.code })
+    throw createError({ statusCode: 500, statusMessage: 'Could not create comment' })
   }
 })

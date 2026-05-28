@@ -16,6 +16,7 @@ import {
 import { useDatabase } from '~/composables/useDatabase'
 import { useCredentialVault } from '~/composables/useCredentialVault'
 import { aiTestConnection } from '~/utils/aiClient'
+import { wrapKey, readKey as readWrappedKey } from '~/utils/secureKeyStore'
 
 function _isTauri(): boolean {
   return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
@@ -200,10 +201,11 @@ export function useAISettings() {
 
     if (apiKey) {
       if (_isTauri() || _isCapacitor()) {
-        // Native shells (Tauri / Capacitor): store API key locally in IndexedDB.
-        // Server vault is web-only and gates on next-auth session, which mobile
-        // doesn't always have hydrated.
-        provider.localApiKey = apiKey
+        // Native shells (Tauri / Capacitor): store API key locally in
+        // IndexedDB. Wrap with AES-GCM-256 so an IndexedDB dump / backup
+        // theft / dev-tools snoop reveals only ciphertext. Legacy
+        // plaintext keys still read via readKey() during transition.
+        provider.localApiKey = await wrapKey(apiKey)
         provider.credentialId = `local-${id}`
       } else if (vault.isVaultAvailable.value) {
         // Web: send raw key to server vault (server-only encryption v4)
@@ -271,9 +273,9 @@ export function useAISettings() {
     if (!provider) throw new Error('Provider not found')
 
     if (_isTauri() || _isCapacitor()) {
-      // Native shells (Tauri / Capacitor): store API key locally in IndexedDB.
-      // Avoids the web vault, which gates on a fresh next-auth session.
-      provider.localApiKey = apiKey
+      // Native shells (Tauri / Capacitor): store API key locally in
+      // IndexedDB, wrapped with AES-GCM-256 (see secureKeyStore.ts).
+      provider.localApiKey = apiKey ? await wrapKey(apiKey) : ''
       provider.credentialId = apiKey ? `local-${id}` : ''
     } else if (vault.isVaultAvailable.value) {
       // Web: send raw key to server vault (server-only encryption v4)
@@ -506,9 +508,13 @@ export function useAISettings() {
         ? getProviderCredentialId(providerIdOrConfig)
         : null
 
-      // In Tauri / Capacitor: use localApiKey or the test key directly
+      // In Tauri / Capacitor: unwrap the stored key (or use the test key as-is).
+      // readWrappedKey passes plaintext through unchanged for backwards compat.
+      const storedKey = (_isTauri() || _isCapacitor()) && provider.localApiKey
+        ? (await readWrappedKey(provider.localApiKey)) || undefined
+        : undefined
       const effectiveApiKey = (_isTauri() || _isCapacitor())
-        ? (apiKey || provider.localApiKey || undefined)
+        ? (apiKey || storedKey)
         : undefined
 
       const result = await aiTestConnection({

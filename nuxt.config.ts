@@ -27,6 +27,9 @@ export default defineNuxtConfig({
 
   // i18n configuration
   i18n: {
+    // langDir + per-locale `files` already triggers @nuxtjs/i18n v10's
+    // lazy code-split — each locale loads on first use, not on boot.
+    // The inactive locale's ~70KB JSON stays off the wire until switch.
     locales: [
       { code: 'en', name: 'English', files: ['en/common.json', 'en/auth.json', 'en/landing.json', 'en/dashboard.json', 'en/canvas.json', 'en/settings.json', 'en/templates.json', 'en/legal.json'] },
       { code: 'hr', name: 'Hrvatski', files: ['hr/common.json', 'hr/auth.json', 'hr/landing.json', 'hr/dashboard.json', 'hr/canvas.json', 'hr/settings.json', 'hr/templates.json', 'hr/legal.json'] }
@@ -140,10 +143,11 @@ export default defineNuxtConfig({
     pageTransition: { name: 'page' },
     head: {
       title: 'NeuroCanvas',
-      // Tauri auth fix: intercept /api/auth/* fetch calls BEFORE Nuxt boots
+      // Tauri auth fix: intercept /api/auth/* fetch calls BEFORE Nuxt boots.
+      // Loaded from /public so we don't need a 'unsafe-inline' CSP exception.
       script: [
         {
-          innerHTML: `if(window.__TAURI__||window.__TAURI_INTERNALS__){var _f=window.fetch.bind(window);window.fetch=function(u,o){var s=typeof u==='string'?u:u instanceof URL?u.toString():u.url;if(s.indexOf('/api/auth/')!==-1)return Promise.resolve(new Response(JSON.stringify({}),{status:200,headers:{'Content-Type':'application/json'}}));return _f(u,o)}}`,
+          src: '/tauri-shim.js',
           tagPosition: 'head',
           type: 'text/javascript'
         }

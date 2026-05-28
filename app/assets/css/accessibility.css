@@ -1,13 +1,19 @@
 /* ══════════════════════════════════════════
    GLOBAL FONT-SIZE PREFERENCE
-   Anchors the html font-size, which all rem-based tokens scale from.
+   Sets html font-size (for rem-based tokens) AND exposes a
+   --nc-text-scale CSS variable that components/canvas code can multiply
+   against their hardcoded px font-sizes. The variable approach is what
+   actually makes the preference visible — 99% of the codebase ships
+   absolute px values, so the html font-size alone is invisible to them.
+   The canvas (drawNode.ts) reads the same scale via a Vue ref.
    No `zoom` — keeps 100vh, fixed positioning, and Safari layout sane.
    ══════════════════════════════════════════ */
-html[data-font-size="xs"]     { font-size: 13px; }
-html[data-font-size="small"]  { font-size: 14px; }
-html[data-font-size="medium"] { font-size: 16px; }
-html[data-font-size="large"]  { font-size: 18px; }
-html[data-font-size="xl"]     { font-size: 20px; }
+:root                         { --nc-text-scale: 1; }
+html[data-font-size="xs"]     { font-size: 13px; --nc-text-scale: 0.85; }
+html[data-font-size="small"]  { font-size: 14px; --nc-text-scale: 0.92; }
+html[data-font-size="medium"] { font-size: 16px; --nc-text-scale: 1; }
+html[data-font-size="large"]  { font-size: 18px; --nc-text-scale: 1.12; }
+html[data-font-size="xl"]     { font-size: 20px; --nc-text-scale: 1.25; }
 
 /* Reduced motion — kill animations / transitions everywhere when enabled */
 html.reduce-motion *,

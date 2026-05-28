@@ -8,6 +8,7 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const slug = route.params.slug as string
 
 const {
@@ -42,9 +43,9 @@ const publishedDate = computed(() => {
   const d = new Date(template.value.createdAt)
   const now = new Date()
   const diff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
-  if (diff === 0) return 'Published today'
-  if (diff === 1) return 'Published yesterday'
-  return `Published ${diff} days ago`
+  if (diff === 0) return t('templates.detail.published_today')
+  if (diff === 1) return t('templates.detail.published_yesterday')
+  return t('templates.detail.published_days_ago', { days: diff })
 })
 
 const formattedUses = computed(() => {
@@ -85,7 +86,7 @@ onMounted(() => {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
-          Templates
+          {{ $t('common.nav.templates') }}
         </NuxtLink>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18l6-6-6-6" />
@@ -101,7 +102,7 @@ onMounted(() => {
       <!-- Error -->
       <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
-        <NuxtLink to="/templates" class="back-link">Back to templates</NuxtLink>
+        <NuxtLink to="/templates" class="back-link">{{ $t('templates.detail.back') }}</NuxtLink>
       </div>
 
       <!-- Content -->
@@ -141,7 +142,7 @@ onMounted(() => {
             </text>
           </svg>
 
-          <span v-if="template.aiEnhanced" class="ai-badge">AI-Enhanced</span>
+          <span v-if="template.aiEnhanced" class="ai-badge">{{ $t('templates.detail.ai_enhanced') }}</span>
         </div>
 
         <!-- Info Panel -->
@@ -154,9 +155,9 @@ onMounted(() => {
                 class="info-badge"
                 :style="{ background: (categoryColors[template.category] || '#71717A') + '18', color: categoryColors[template.category] || '#71717A' }"
               >
-                {{ template.category.charAt(0).toUpperCase() + template.category.slice(1) }}
+                {{ $t('templates.filter.' + template.category) }}
               </span>
-              <span v-if="template.aiEnhanced" class="info-badge ai">AI-Enhanced</span>
+              <span v-if="template.aiEnhanced" class="info-badge ai">{{ $t('templates.detail.ai_enhanced') }}</span>
             </div>
           </div>
 
@@ -167,15 +168,15 @@ onMounted(() => {
           <div class="info-stats">
             <div class="stat">
               <span class="stat-value">{{ formattedUses }}</span>
-              <span class="stat-label">Uses</span>
+              <span class="stat-label">{{ $t('templates.detail.uses') }}</span>
             </div>
             <div class="stat">
               <span class="stat-value">{{ template.nodeCount }}</span>
-              <span class="stat-label">Nodes</span>
+              <span class="stat-label">{{ $t('templates.detail.nodes') }}</span>
             </div>
             <div class="stat">
               <span class="stat-value">{{ template.levelCount }}</span>
-              <span class="stat-label">Levels</span>
+              <span class="stat-label">{{ $t('templates.detail.levels') }}</span>
             </div>
           </div>
 
@@ -194,13 +195,13 @@ onMounted(() => {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Use This Template
+              {{ $t('templates.detail.use_template') }}
             </button>
             <button class="action-btn secondary" @click="showAdaptModal = true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
               </svg>
-              AI Adapt to My Topic
+              {{ $t('templates.detail.ai_adapt') }}
             </button>
           </div>
 

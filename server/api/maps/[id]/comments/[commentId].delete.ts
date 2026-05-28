@@ -1,5 +1,6 @@
 import { deleteComment, CommentError } from '../../../../utils/commentsService'
 import { resolveCommentActor } from '../../../../utils/commentActor'
+import { rateLimitCommentMutation } from '../../../../utils/commentRateLimit'
 
 export default defineEventHandler(async (event) => {
   const mapId = getRouterParam(event, 'id')
@@ -7,6 +8,7 @@ export default defineEventHandler(async (event) => {
   if (!mapId || !commentId) throw createError({ statusCode: 400, statusMessage: 'mapId and commentId required' })
   try {
     const actor = await resolveCommentActor(event, mapId)
+    await rateLimitCommentMutation(event, actor, 'delete', 60, 60)
     return { ok: true, ...(await deleteComment(mapId, actor, commentId)) }
   } catch (err) {
     if (err instanceof CommentError) {

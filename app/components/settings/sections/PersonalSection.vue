@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
+import { safeImageUrl } from '~/utils/safeUrl'
 
 const { data: _sessionData } = useAuth()
 const session = _sessionData ?? ref(null)
@@ -9,6 +10,7 @@ const { t } = useI18n()
 const flashSaved = inject<() => void>('flashSaved', () => {})
 
 const user = computed(() => session.value?.user)
+const avatarSrc = computed(() => safeImageUrl(user.value?.image))
 const userInitial = computed(() => {
   const name = user.value?.name
   return name ? name.charAt(0).toUpperCase() : 'U'
@@ -121,10 +123,11 @@ function saveAvatar() {
         <div class="profile-left">
           <div class="profile-avatar">
             <img
-              v-if="user?.image"
-              :src="user.image"
+              v-if="avatarSrc"
+              :src="avatarSrc"
               :alt="user?.name || 'Profile'"
               class="avatar-img"
+              referrerpolicy="no-referrer"
             >
             <span v-else class="avatar-letter">{{ userInitial }}</span>
           </div>
@@ -141,15 +144,15 @@ function saveAvatar() {
       <!-- Avatar URL input (shown when Change avatar clicked) -->
       <div v-if="showAvatarInput" class="setting-row avatar-input-row">
         <div class="setting-info">
-          <span class="setting-title">Avatar URL</span>
-          <span class="setting-desc">Paste an HTTPS image URL</span>
+          <span class="setting-title">{{ t('settings.personal.avatar_url') }}</span>
+          <span class="setting-desc">{{ t('settings.personal.avatar_url_desc') }}</span>
         </div>
         <div class="avatar-input-group">
           <input
             v-model="avatarUrl"
             type="url"
             class="setting-input"
-            placeholder="https://example.com/photo.jpg"
+            :placeholder="t('settings.personal.avatar_url_placeholder')"
             @keydown.enter="saveAvatar"
           >
           <button class="avatar-save-btn" :disabled="!avatarUrl.trim()" @click="saveAvatar">Save</button>
@@ -168,7 +171,7 @@ function saveAvatar() {
             type="text"
             class="setting-input"
             maxlength="100"
-            placeholder="Your name"
+            :placeholder="t('settings.personal.name_placeholder')"
             @blur="saveDisplayName"
             @keydown.enter="($event.target as HTMLInputElement)?.blur()"
           >
@@ -181,14 +184,14 @@ function saveAvatar() {
       <div class="setting-row">
         <div class="setting-info">
           <span class="setting-title">{{ t('settings.personal.bio') }}</span>
-          <span class="setting-desc">{{ locale === 'hr' ? 'Kratki opis o sebi' : 'A short description about yourself' }}</span>
+          <span class="setting-desc">{{ t('settings.personal.bio_desc') }}</span>
         </div>
         <input
           v-model="bio"
           type="text"
           class="setting-input"
           maxlength="280"
-          placeholder="Tell us about yourself"
+          :placeholder="t('settings.personal.bio_placeholder')"
           @blur="saveBio"
           @keydown.enter="($event.target as HTMLInputElement)?.blur()"
         >
@@ -323,13 +326,17 @@ function saveAvatar() {
 .profile-avatar {
   width: 56px;
   height: 56px;
-  border-radius: 28px;
+  /* Circular so dark Google profile photos don't read as black tiles on
+     light surfaces. Inset ring keeps the edge visible even when the
+     image's own background matches the surrounding panel. */
+  border-radius: 50%;
   background: rgba(0, 210, 190, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .avatar-img {

@@ -6,7 +6,8 @@
             "good_evening": "Good evening"
         },
         "header": {
-            "your_maps": "Your Maps"
+            "your_maps": "Your Maps",
+            "eyebrow": "01 — workspace"
         },
         "buttons": {
             "ai_generate": "AI Generate",
@@ -16,6 +17,7 @@
         },
         "sections": {
             "recent_maps": "Recent Maps",
+            "recent_count": "RECENT · {current} OF {total}",
             "sort_by": "Sort by",
             "recent": "Recent",
             "a_z": "A-Z"
@@ -30,10 +32,13 @@
         },
         "overview": {
             "title": "Overview",
+            "eyebrow": "02 — overview",
+            "period": "last 30 days",
             "last_30_days": "Last 30 days",
             "total_maps": "Total maps",
             "total_nodes": "Total nodes",
             "ai_generated": "AI-generated",
+            "connections": "Connections found",
             "connections_found": "Connections found"
         },
         "ai_banner": {
@@ -42,13 +47,14 @@
             "try_it": "Try it"
         },
         "ai_modal": {
-            "title": "Generate with AI",
-            "description": "Describe your topic. AI will structure the entire mind map.",
+            "title": "AI mind-map starter",
+            "description": "What do you want to map?",
+            "subtitle": "Describe your topic — AI structures the rest.",
             "placeholder": "e.g., Quantum Computing, UX Research...",
             "cancel": "Cancel",
             "generate": "Generate",
             "generating": "Generating \"{topic}\"",
-            "building_structure": "Building your mind map structure...",
+            "building_structure": "Building your mind-map structure",
             "analyzing_topic": "Analyzing topic structure",
             "generating_branches": "Generating branches",
             "adding_sub_nodes": "Adding sub-nodes & details",

@@ -33,6 +33,7 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "i18n:check": "node scripts/i18n-check.mjs",
     "version:check": "node scripts/bump-version.mjs --check",
     "version:bump": "node scripts/bump-version.mjs",
     "release": "node scripts/bump-version.mjs $npm_config_to --tag"

@@ -2,11 +2,14 @@
   "landing": {
     "nav": {
       "features": "Značajke",
+      "product": "Proizvod",
+      "templates": "Predlošci",
       "download": "Preuzmi",
       "docs": "Dokumentacija",
       "github": "GitHub",
       "dashboard": "Nadzorna ploča",
       "signin": "Prijava",
+      "open_dashboard": "Otvori nadzornu ploču",
       "try_free": "Isprobaj besplatno",
       "get_started": "Započni"
     },
@@ -16,7 +19,13 @@
       "serif": "Uči beskonačno.",
       "subtitle": "Mind mapping pokretan AI-em koji razumije tvoje ideje, predlaže veze i pomaže ti učiti brže.",
       "cta_primary": "Počni mapirati — besplatno zauvijek",
-      "cta_github": "Pogledaj na GitHubu"
+      "cta_primary_short": "Isprobaj bez prijave",
+      "cta_secondary": "Otvori besplatan račun",
+      "cta_github": "Pogledaj na GitHubu",
+      "receipt": "Bez e-maila. Bez kartice. Tvoja mapa se automatski sprema u ovom pregledniku.",
+      "title_a": "Platno za",
+      "title_b": "kako stvarno razmišljaš.",
+      "subtitle_v2": "Ubaci ideju. Spoji je s drugom. Pitaj AI da nastavi. NeuroCanvas pretvara razbacane bilješke u strukturirane mape — bez ceremonije s karticama i mapama."
     },
     "screenshot": {
       "window_title": "Kognitivna psihologija — NeuroCanvas",
@@ -76,7 +85,32 @@
       "github": "GitHub",
       "privacy": "Privatnost",
       "terms": "Uvjeti",
-      "credit": "Izradio Vanja Modrinjak"
+      "credit": "Izradio Vanja Modrinjak",
+      "product_head": "Proizvod",
+      "templates_link": "Predlošci",
+      "download_link": "Preuzmi",
+      "roadmap_link": "Plan razvoja",
+      "howitworks_link": "Kako radi",
+      "resources_head": "Resursi",
+      "docs_link": "Dokumentacija",
+      "github_link": "GitHub",
+      "company_head": "Tvrtka",
+      "privacy_link": "Privatnost",
+      "terms_link": "Uvjeti",
+      "contact_link": "Kontakt",
+      "changelog_link": "Dnevnik promjena"
+    },
+    "templates_section": {
+      "browse_all": "Pregledaj svih 24 predloška"
+    },
+    "download_page": {
+      "subhead": "Odaberi platformu ispod"
+    },
+    "install_page": {
+      "copy_button": "Kopiraj",
+      "copied_button": "Kopirano",
+      "macos_open_anyway": "Ipak otvori",
+      "windows_run_anyway": "Ipak pokreni"
     }
   }
 }

@@ -19,16 +19,42 @@ const props = defineProps<{
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let raf = 0
 
+// Per-remote interpolation state. PartyKit awareness broadcasts at the
+// peer's broadcast cadence (capped at ~30Hz upstream), but we render at
+// the local 60-120Hz rAF rate. Lerping between the previous draw and
+// the latest target produces fluid motion instead of stepped jumps.
+interface CursorAnim {
+  // Smoothed position currently being rendered.
+  rx: number
+  ry: number
+  // Most recent target from awareness.
+  tx: number
+  ty: number
+  // For idle-fade: timestamp of the last meaningful move.
+  lastMoveAt: number
+}
+const anim = new Map<string, CursorAnim>()
+
+const SMOOTH = 0.28          // lerp factor per frame; ~120ms catch-up
+const IDLE_FADE_AFTER_MS = 3500   // start fading the name flag after this idle
+const IDLE_FADE_DURATION_MS = 800  // fade-out duration
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t
+}
+
 function draw() {
   const c = canvasRef.value
   if (!c) return
   const ctx = c.getContext('2d')
   if (!ctx) return
-  const dpr = window.devicePixelRatio || 1
   const w = c.clientWidth, h = c.clientHeight
   ctx.clearRect(0, 0, w, h)
 
-  // Selection halos behind cursors so cursors stay legible
+  const now = performance.now()
+  const seen = new Set<string>()
+
+  // Selection halos behind cursors so cursors stay legible.
   if (props.nodes) {
     for (const r of props.remotes) {
       if (!r.selection.length) continue
@@ -48,10 +74,34 @@ function draw() {
 
   // Cursors
   for (const r of props.remotes) {
-    if (!r.cursor) continue
-    const x = (r.cursor.x - props.camera.x) * props.camera.zoom
-    const y = (r.cursor.y - props.camera.y) * props.camera.zoom
+    if (!r.cursor) {
+      anim.delete(r.sessionId)
+      continue
+    }
+    seen.add(r.sessionId)
+    const tx = r.cursor.x
+    const ty = r.cursor.y
 
+    let a = anim.get(r.sessionId)
+    if (!a) {
+      // First sighting — snap to position so cursors don't fly in from origin.
+      a = { rx: tx, ry: ty, tx, ty, lastMoveAt: now }
+      anim.set(r.sessionId, a)
+    } else {
+      // Detect actual movement (>0.5px) to refresh the idle timer.
+      if (Math.abs(tx - a.tx) > 0.5 || Math.abs(ty - a.ty) > 0.5) {
+        a.lastMoveAt = now
+      }
+      a.tx = tx
+      a.ty = ty
+      a.rx = lerp(a.rx, tx, SMOOTH)
+      a.ry = lerp(a.ry, ty, SMOOTH)
+    }
+
+    const x = (a.rx - props.camera.x) * props.camera.zoom
+    const y = (a.ry - props.camera.y) * props.camera.zoom
+
+    // Cursor body
     ctx.fillStyle = r.color
     ctx.strokeStyle = '#09090B'
     ctx.lineWidth = 1
@@ -67,17 +117,30 @@ function draw() {
     ctx.fill()
     ctx.stroke()
 
-    // Name flag
-    ctx.font = '600 11px Inter, system-ui, sans-serif'
-    const tw = ctx.measureText(r.displayName).width + 14
-    ctx.fillStyle = r.color
-    ctx.fillRect(x + 4, y + 18, tw, 16)
-    ctx.fillStyle = '#09090B'
-    ctx.fillText(r.displayName, x + 11, y + 30)
+    // Name flag — fades out after the cursor sits still.
+    const idleFor = now - a.lastMoveAt
+    let alpha = 1
+    if (idleFor > IDLE_FADE_AFTER_MS) {
+      const t = Math.min(1, (idleFor - IDLE_FADE_AFTER_MS) / IDLE_FADE_DURATION_MS)
+      alpha = 1 - t
+    }
+    if (alpha > 0.02) {
+      ctx.globalAlpha = alpha
+      ctx.font = '600 11px Inter, system-ui, sans-serif'
+      const tw = ctx.measureText(r.displayName).width + 14
+      ctx.fillStyle = r.color
+      ctx.fillRect(x + 4, y + 18, tw, 16)
+      ctx.fillStyle = '#09090B'
+      ctx.fillText(r.displayName, x + 11, y + 30)
+      ctx.globalAlpha = 1
+    }
   }
 
-  // Account for HiDPI without redoing scale every frame
-  void dpr
+  // Garbage-collect anim entries for users who dropped from the awareness
+  // map (left the room, lost connection, etc.).
+  for (const id of anim.keys()) {
+    if (!seen.has(id)) anim.delete(id)
+  }
 
   raf = requestAnimationFrame(draw)
 }
@@ -100,6 +163,7 @@ onMounted(() => {
 onUnmounted(() => {
   cancelAnimationFrame(raf)
   window.removeEventListener('resize', resize)
+  anim.clear()
 })
 watch(() => props.remotes.length, resize)
 </script>

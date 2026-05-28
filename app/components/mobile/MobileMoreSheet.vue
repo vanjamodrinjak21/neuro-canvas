@@ -211,8 +211,8 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">Settings</span>
-              <span class="mms-hint">THEME · AI · ACCOUNT</span>
+              <span class="mms-title">{{ $t('common.nav.settings') }}</span>
+              <span class="mms-hint">{{ $t('settings.general.theme').toUpperCase() }} · {{ $t('settings.tabs.ai_providers').toUpperCase() }} · {{ $t('settings.tabs.account').toUpperCase() }}</span>
             </div>
           </button>
         </div>

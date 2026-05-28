@@ -311,27 +311,60 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   font-size: 13px;
 }
 
+/* Solid teal pill — matches the "Start mapping — free forever" CTA on
+   the landing page. The previous muted-dark tile blended into the
+   sidebar in dark mode and was a black brick in light mode; a real
+   primary CTA reads as the action it is in both themes. */
 .shell__generate-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0 14px 12px;
-  padding: 9px;
+  padding: 11px 14px;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  color: #71717A;
+  font-size: 13px;
+  font-weight: 600;
+  background: #00D2BE;
+  border: none;
+  color: #0A0A0C;
+  /* Subtle top bevel so the pill has a tiny bit of dimensionality on
+     the dark sidebar without veering into glassmorphism territory. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              transform 120ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
-.shell__generate-btn:hover {
-  border-color: #27272A;
-  color: #A1A1AA;
+@media (hover: hover) and (pointer: fine) {
+  .shell__generate-btn:hover {
+    background: #1AE0CD;
+  }
+}
+
+.shell__generate-btn:active {
+  transform: scale(0.98);
+}
+
+.shell__generate-btn:focus-visible {
+  outline: 2px solid #00D2BE;
+  outline-offset: 2px;
+}
+
+/* Light theme: switch to the darker teal-dark variant so the white text
+   has WCAG-passing contrast and the pill sits cleanly against the warm-
+   paper sidebar. No bevel — keeps the flat editorial look. */
+:root.light .shell__generate-btn {
+  background: #00A89A;
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :root.light .shell__generate-btn:hover {
+    background: #00BFAF;
+  }
 }
 
 /* Width resize handle */

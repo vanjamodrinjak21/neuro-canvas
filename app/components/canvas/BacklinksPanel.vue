@@ -61,7 +61,7 @@ function getNodeColor(node: Node): string {
           <div class="w-7 h-7 rounded-nc-md bg-nc-accent/10 nc-center">
             <span class="i-lucide-link text-nc-accent" />
           </div>
-          <span class="font-display font-semibold text-sm text-nc-ink">Links</span>
+          <span class="font-display font-semibold text-sm text-nc-ink">{{ $t('canvas.backlinks.links') }}</span>
         </div>
         <button
           class="w-7 h-7 rounded-nc-md nc-center text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-2 transition-colors"

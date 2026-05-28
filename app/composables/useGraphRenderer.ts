@@ -1,5 +1,11 @@
 // D3.js Force-Directed Graph Renderer for NeuroCanvas
-// Renders the graph view with physics simulation
+// Renders the graph view with physics simulation.
+//
+// TODO(perf): switch to d3-selection / d3-force / d3-zoom / d3-drag
+// submodule imports to drop ~180KB gzipped from the canvas chunk.
+// Requires also adding the submodules to package.json dependencies
+// and migrating all d3.Selection/d3.Simulation type references to
+// the submodule-namespaced types. Tracked separately.
 
 import * as d3 from 'd3'
 import type { Ref } from 'vue'

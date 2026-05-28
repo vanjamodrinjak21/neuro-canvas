@@ -1,8 +1,14 @@
 import { getServerSession, getToken } from '#auth'
 import { parseCookies } from 'h3'
 
-// Temporary debug endpoint — remove after auth is fixed
+// Debug-only endpoint. Hard-blocked outside development so a forgotten
+// deploy doesn't expose JWT payload / AUTH_SECRET length / cookie shape
+// to anyone who knows the URL.
 export default defineEventHandler(async (event) => {
+  if (process.env.NODE_ENV === 'production') {
+    throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+  }
+
   const cookies = parseCookies(event)
   const secureCookie = cookies['__Secure-next-auth.session-token']
   const devCookie = cookies['next-auth.session-token']
@@ -24,10 +30,8 @@ export default defineEventHandler(async (event) => {
     tokenError = e instanceof Error ? e.message : String(e)
   }
 
-  // Check if cookie looks like a JWT (has 3 dot-separated parts)
   const isJWT = rawCookie ? rawCookie.split('.').length === 3 : false
 
-  // Try to decode JWT payload (base64, no verification) to see what's inside
   let jwtPayload: unknown = null
   if (rawCookie && isJWT) {
     try {

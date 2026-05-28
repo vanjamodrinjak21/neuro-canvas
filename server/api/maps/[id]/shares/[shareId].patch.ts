@@ -1,12 +1,19 @@
 import { updateShare, ShareError } from '../../../../utils/sharesService'
 import { requireAuthSession } from '../../../../utils/syncHelpers'
 import { validateBody, shareUpdateSchema } from '../../../../utils/validation'
+import { checkRateLimit } from '../../../../utils/redis'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
   const mapId = getRouterParam(event, 'id')
   const shareId = getRouterParam(event, 'shareId')
   if (!mapId || !shareId) throw createError({ statusCode: 400, statusMessage: 'Map id and share id required' })
+
+  const { allowed } = await checkRateLimit(`share:update:${userId}`, 60, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many share updates' })
+  }
+
   const body = validateBody(shareUpdateSchema, await readBody(event))
 
   const patch: { role?: 'viewer' | 'editor'; label?: string | null; expiresAt?: Date | null } = {}

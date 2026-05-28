@@ -600,17 +600,17 @@ function handleAccountClose() {
             <button class="m-back-btn" @click="mobileSettingsScreen = 'home'">
               <span class="i-lucide-arrow-left" />
             </button>
-            <h2 class="m-subtitle">Sign In</h2>
+            <h2 class="m-subtitle">{{ $t('settings.signin_section.title') }}</h2>
           </div>
 
           <div class="m-group">
             <div class="m-row m-row--field">
-              <label class="m-field-label">Email address</label>
-              <input v-model="mobileSignInEmail" type="email" class="m-field-input" placeholder="you@email.com" autocomplete="email">
+              <label class="m-field-label">{{ $t('auth.signin.email_label') }}</label>
+              <input v-model="mobileSignInEmail" type="email" class="m-field-input" :placeholder="$t('auth.desktop_auth.email_placeholder')" autocomplete="email">
             </div>
             <div class="m-row m-row--field m-row--last">
-              <label class="m-field-label">Password</label>
-              <input v-model="mobileSignInPassword" type="password" class="m-field-input" placeholder="Enter your password" autocomplete="current-password">
+              <label class="m-field-label">{{ $t('auth.signin.password_label') }}</label>
+              <input v-model="mobileSignInPassword" type="password" class="m-field-input" :placeholder="$t('auth.signin.password_placeholder')" autocomplete="current-password">
             </div>
           </div>
 
@@ -621,7 +621,7 @@ function handleAccountClose() {
             :disabled="!mobileSignInEmail || !mobileSignInPassword || mobileSignInLoading"
             @click="handleMobileEmailSignIn"
           >
-            {{ mobileSignInLoading ? 'Signing in...' : 'Sign In' }}
+            {{ mobileSignInLoading ? $t('settings.signin_section.loading') : $t('settings.signin_section.submit') }}
           </button>
         </template>
 
@@ -712,12 +712,12 @@ function handleAccountClose() {
           <!-- ═══ GENERAL TAB ═══ -->
           <div v-if="activeTab === 'general'" key="general" class="tab-content">
             <div class="settings-section">
-              <span class="section-label">01 — appearance</span>
+              <span class="section-label">{{ $t('settings.section_labels.appearance') }}</span>
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Theme</span>
-                  <span class="setting-desc">Choose your preferred appearance</span>
+                  <span class="setting-title">{{ $t('settings.general.theme') }}</span>
+                  <span class="setting-desc">{{ $t('settings.general.choose_appearance') }}</span>
                 </div>
                 <div class="segmented-control">
                   <button
@@ -734,8 +734,8 @@ function handleAccountClose() {
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Font Size</span>
-                  <span class="setting-desc">Adjust text size across the app</span>
+                  <span class="setting-title">{{ $t('settings.general.font_size') }}</span>
+                  <span class="setting-desc">{{ $t('settings.general.adjust_text_size') }}</span>
                 </div>
                 <div class="segmented-control">
                   <button
@@ -751,8 +751,8 @@ function handleAccountClose() {
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Reduced Motion</span>
-                  <span class="setting-desc">Minimize animations for accessibility</span>
+                  <span class="setting-title">{{ $t('settings.general.reduced_motion') }}</span>
+                  <span class="setting-desc">{{ $t('settings.general.minimize_animations') }}</span>
                 </div>
                 <button
                   :class="['toggle-switch', { on: userStore.preferences.value.reducedMotion }]"
@@ -764,12 +764,12 @@ function handleAccountClose() {
             </div>
 
             <div class="settings-section">
-              <span class="section-label">02 — canvas</span>
+              <span class="section-label">{{ $t('settings.section_labels.canvas') }}</span>
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Show Grid</span>
-                  <span class="setting-desc">Display background grid on canvas</span>
+                  <span class="setting-title">{{ $t('settings.general.show_grid') }}</span>
+                  <span class="setting-desc">{{ $t('settings.general.display_grid') }}</span>
                 </div>
                 <button
                   :class="['toggle-switch', { on: userStore.preferences.value.showGrid }]"
@@ -781,8 +781,8 @@ function handleAccountClose() {
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Show Minimap</span>
-                  <span class="setting-desc">Display navigation minimap</span>
+                  <span class="setting-title">{{ $t('settings.general.show_minimap') }}</span>
+                  <span class="setting-desc">{{ $t('settings.general.display_minimap') }}</span>
                 </div>
                 <button
                   :class="['toggle-switch', { on: userStore.preferences.value.showMinimap }]"
@@ -794,8 +794,8 @@ function handleAccountClose() {
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Auto-save</span>
-                  <span class="setting-desc">Automatically save your work every {{ userStore.preferences.value.autoSaveInterval / 1000 }}s</span>
+                  <span class="setting-title">{{ $t('settings.general.auto_save') }}</span>
+                  <span class="setting-desc">{{ $t('settings.general.auto_save_desc', { interval: userStore.preferences.value.autoSaveInterval / 1000 }) }}</span>
                 </div>
                 <button
                   :class="['toggle-switch', { on: userStore.preferences.value.autoSave }]"
@@ -810,12 +810,12 @@ function handleAccountClose() {
           <!-- ═══ AI PROVIDERS TAB ═══ -->
           <div v-else-if="activeTab === 'ai-providers'" key="ai-providers" class="tab-content">
             <div class="settings-section">
-              <span class="section-label">01 — default provider</span>
+              <span class="section-label">{{ $t('settings.section_labels.default_provider') }}</span>
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">AI Engine</span>
-                  <span class="setting-desc">Select which AI provider to use for suggestions and expansion</span>
+                  <span class="setting-title">{{ $t('settings.ai_providers.ai_engine') }}</span>
+                  <span class="setting-desc">{{ $t('settings.ai_providers.select_provider') }}</span>
                 </div>
                 <div class="segmented-control">
                   <button
@@ -831,15 +831,15 @@ function handleAccountClose() {
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Model</span>
-                  <span class="setting-desc">Choose the model for AI-powered features</span>
+                  <span class="setting-title">{{ $t('settings.ai_providers.model') }}</span>
+                  <span class="setting-desc">{{ $t('settings.ai_providers.choose_model') }}</span>
                 </div>
                 <select
                   :value="selectedModelId"
                   class="setting-select"
                   @change="selectModel(($event.target as HTMLSelectElement).value)"
                 >
-                  <option v-if="availableModels.length === 0" value="" disabled>No models available</option>
+                  <option v-if="availableModels.length === 0" value="" disabled>{{ $t('settings.ai_providers.no_models') }}</option>
                   <option
                     v-for="model in availableModels"
                     :key="model.id"
@@ -852,19 +852,19 @@ function handleAccountClose() {
             </div>
 
             <div class="settings-section">
-              <span class="section-label">02 — api keys</span>
+              <span class="section-label">{{ $t('settings.section_labels.api_keys') }}</span>
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">OpenAI API Key</span>
-                  <span class="setting-desc">Required for GPT-4o and GPT-4o-mini models</span>
+                  <span class="setting-title">{{ $t('settings.ai_providers.openai_key') }}</span>
+                  <span class="setting-desc">{{ $t('settings.ai_providers.openai_desc') }}</span>
                 </div>
                 <div class="key-input-group">
                   <input
                     v-model="openaiKey"
                     :type="showOpenaiKey ? 'text' : 'password'"
                     class="key-input"
-                    placeholder="Enter API key..."
+                    :placeholder="$t('settings.ai_api_key_placeholder')"
                     autocomplete="off"
                     @focus="clearKeyOnFocus('openai')"
                     @blur="saveApiKey('openai')"
@@ -880,15 +880,15 @@ function handleAccountClose() {
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Anthropic API Key</span>
-                  <span class="setting-desc">Required for Claude Sonnet and Haiku models</span>
+                  <span class="setting-title">{{ $t('settings.ai_providers.anthropic_key') }}</span>
+                  <span class="setting-desc">{{ $t('settings.ai_providers.anthropic_desc') }}</span>
                 </div>
                 <div class="key-input-group">
                   <input
                     v-model="anthropicKey"
                     :type="showAnthropicKey ? 'text' : 'password'"
                     class="key-input"
-                    placeholder="Enter API key..."
+                    :placeholder="$t('settings.ai_api_key_placeholder')"
                     autocomplete="off"
                     @focus="clearKeyOnFocus('anthropic')"
                     @blur="saveApiKey('anthropic')"
@@ -904,12 +904,12 @@ function handleAccountClose() {
             </div>
 
             <div class="settings-section">
-              <span class="section-label">03 — local models</span>
+              <span class="section-label">{{ $t('settings.section_labels.local_models') }}</span>
 
               <div class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Ollama Integration</span>
-                  <span class="setting-desc">Connect to a local Ollama instance for privacy-first AI</span>
+                  <span class="setting-title">{{ $t('settings.ai_providers.ollama') }}</span>
+                  <span class="setting-desc">{{ $t('settings.ai_providers.ollama_desc') }}</span>
                 </div>
                 <button
                   :class="['toggle-switch', { on: ollamaEnabled }]"
@@ -921,14 +921,14 @@ function handleAccountClose() {
 
               <div v-if="ollamaEnabled" class="setting-row">
                 <div class="setting-info">
-                  <span class="setting-title">Ollama Endpoint</span>
-                  <span class="setting-desc">URL for your local Ollama server</span>
+                  <span class="setting-title">{{ $t('settings.ai_providers.ollama_endpoint') }}</span>
+                  <span class="setting-desc">{{ $t('settings.ai_providers.ollama_endpoint_desc') }}</span>
                 </div>
                 <input
                   v-model="ollamaEndpoint"
                   type="url"
                   class="setting-url-input"
-                  placeholder="http://localhost:11434"
+                  :placeholder="$t('settings.local_model_url_placeholder')"
                   @blur="updateOllamaEndpoint"
                 >
               </div>
@@ -1040,14 +1040,18 @@ function handleAccountClose() {
   letter-spacing: -0.01em; color: var(--ms-text); margin: 0;
 }
 .m-topbar-avatar {
-  width: 32px; height: 32px; border-radius: 16px;
+  width: 32px; height: 32px; border-radius: 50%;
   background: #1A1A1E; border: 1px solid var(--ms-border);
   color: var(--ms-accent);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 13px; font-weight: 600; line-height: 16px;
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
-:root.light .m-topbar-avatar { background: #F5F5F4; }
+:root.light .m-topbar-avatar {
+  background: #F5F5F4;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
 
 .m-header { padding: 12px 20px 20px; }
 
@@ -1077,13 +1081,14 @@ function handleAccountClose() {
 .m-avatar {
   width: 48px;
   height: 48px;
-  border-radius: 24px;
+  border-radius: 50%;
   background: rgba(0, 210, 190, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }

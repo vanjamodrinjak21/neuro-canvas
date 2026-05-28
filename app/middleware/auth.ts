@@ -42,6 +42,21 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
+  // Share-link visitors: if URL carries `?via=<token>` for /map/<id> and the
+  // token resolves to this map, allow anonymous access. The canvas itself
+  // calls /api/collab/token which enforces the per-share role (viewer /
+  // commenter open to anon; editor 401s and the canvas surfaces sign-in).
+  if (to.path.startsWith('/map/') && to.query.via && import.meta.client) {
+    const shareToken = String(to.query.via)
+    const mapId = String(to.params.id || '')
+    try {
+      const res = await $fetch<{ id: string }>(`/api/share/${encodeURIComponent(shareToken)}`)
+      if (res?.id === mapId) return
+    } catch {
+      // Token invalid / revoked / expired — fall through to regular auth flow.
+    }
+  }
+
   // Guest mode: allow access to their one map; landing and auth pages are escape hatches
   if (guest.isGuest.value) {
     if (to.path.startsWith('/map/')) {

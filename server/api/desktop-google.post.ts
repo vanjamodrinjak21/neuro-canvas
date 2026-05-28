@@ -27,7 +27,7 @@ const Body = z.union([
   z.object({
     code: z.string().min(10).max(2048),
     codeVerifier: z.string().min(43).max(128),
-    redirectUri: z.string().url(),
+    redirectUri: z.url(),
   }),
   z.object({
     idToken: z.string().min(40).max(4096),
@@ -183,10 +183,12 @@ export default defineEventHandler(async (event) => {
   })
 
   setResponseHeader(event, 'Cache-Control', 'no-store')
+  // Don't echo sessionToken in the body — the HttpOnly cookie is the
+  // single source of truth. Returning the token defeats HttpOnly if any
+  // future page-level XSS lands in the desktop webview.
   return {
     ok: true,
     user,
     cookieName,
-    sessionToken,
   }
 })

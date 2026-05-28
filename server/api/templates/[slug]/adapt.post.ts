@@ -1,6 +1,7 @@
 import { prisma } from '../../../utils/prisma'
 import { requireAuthSession } from '../../../utils/syncHelpers'
 import { validateBody, templateAdaptSchema } from '../../../utils/validation'
+import { checkRateLimit } from '../../../utils/redis'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
@@ -8,6 +9,12 @@ export default defineEventHandler(async (event) => {
 
   if (!slug) {
     throw createError({ statusCode: 400, statusMessage: 'Template slug required' })
+  }
+
+  // Adaptation triggers a downstream LLM call — cap aggressively.
+  const { allowed } = await checkRateLimit(`template:adapt:${userId}`, 20, 3600)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many adaptation requests' })
   }
 
   const body = validateBody(templateAdaptSchema, await readBody(event))

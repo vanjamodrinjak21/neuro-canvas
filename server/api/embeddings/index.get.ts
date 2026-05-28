@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { cache, cacheKeys } from '../../utils/redis'
 import { requireAuthSession } from '../../utils/syncHelpers'
 import { prisma } from '../../utils/prisma'
@@ -55,16 +56,14 @@ export default defineEventHandler(async (event) => {
 
   let source: 'cache' | 'db' = cacheMisses.length === 0 ? 'cache' : 'db'
 
-  // Fallback to pgvector for cache misses
+  // Fallback to pgvector for cache misses. Prisma.join parameterizes every
+  // IN-list value so a future change can't introduce injection.
   if (cacheMisses.length > 0) {
-    const placeholders = cacheMisses.map((_, i) => `$${i + 2}`).join(', ')
-    const rows = await prisma.$queryRawUnsafe<PgVectorRow[]>(
-      `SELECT "nodeId", "contentHash", "embedding"::text
-       FROM "NodeEmbedding"
-       WHERE "mapId" = $1 AND "nodeId" IN (${placeholders})`,
-      mapId,
-      ...cacheMisses
-    )
+    const rows = await prisma.$queryRaw<PgVectorRow[]>`
+      SELECT "nodeId", "contentHash", "embedding"::text
+      FROM "NodeEmbedding"
+      WHERE "mapId" = ${mapId} AND "nodeId" IN (${Prisma.join(cacheMisses)})
+    `
 
     for (const row of rows) {
       // Parse pgvector string '[0.1,0.2,...]' back to number[]

@@ -98,7 +98,7 @@ watch(() => props.streamingText, () => {
               v-model="topic"
               type="text"
               class="mgs-input"
-              placeholder="e.g. Renewable energy systems"
+              :placeholder="$t('ui.generate_map.topic_placeholder')"
               autocomplete="off"
               autocapitalize="sentences"
               :disabled="isGenerating"

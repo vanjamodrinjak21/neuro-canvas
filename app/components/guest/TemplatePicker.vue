@@ -92,16 +92,17 @@ function handleBlank() {
   <Teleport to="body">
     <div class="picker">
       <header class="picker-head">
-        <div class="head-brand">
-          <div class="head-logo">
-            <div class="head-logo-dot" />
+        <div class="head-inner">
+          <div class="head-brand">
+            <img src="/favicon.svg" alt="NeuroCanvas" class="head-logo" width="26" height="26">
+            <div class="head-id">guest_session.live</div>
           </div>
-          <div class="head-id">guest_session.live</div>
+          <div class="head-step">step 02 — pick your shape</div>
         </div>
-        <div class="head-step">step 02 — pick your shape</div>
       </header>
 
       <div class="picker-body">
+        <div class="body-inner">
         <div class="title-block">
           <h1 class="title">A blank canvas <span class="title-italic">is sometimes the wrong start.</span></h1>
           <p class="subtitle">Describe what you're thinking, and the AI will lay it out. Or pick a shape that fits.</p>
@@ -121,7 +122,7 @@ function handleBlank() {
               v-model="aiPrompt"
               type="text"
               class="ai-input"
-              placeholder="Plan a launch for our pgvector RAG search — engineering, content, rollout."
+              :placeholder="$t('common.guest.template_picker_ai_placeholder')"
               @keydown.enter="handleGenerate"
             >
             <button class="ai-generate" :disabled="!aiPrompt.trim()" @click="handleGenerate">
@@ -188,9 +189,11 @@ function handleBlank() {
             </button>
           </div>
         </div>
+        </div>
       </div>
 
       <footer class="picker-foot">
+        <div class="foot-inner">
         <button class="foot-blank" @click="handleBlank">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3 H11 V11 H3 Z M3 7 H11 M7 3 V11" stroke-linecap="round" /></svg>
           <span>Start with a blank canvas instead</span>
@@ -198,6 +201,7 @@ function handleBlank() {
         <div class="foot-tip">
           <span class="foot-tip-label">tip:</span>
           <span>you can change template later — nothing is locked.</span>
+        </div>
         </div>
       </footer>
     </div>
@@ -222,11 +226,17 @@ function handleBlank() {
 
 /* Header */
 .picker-head {
+  padding: 24px 80px 0;
+  flex-shrink: 0;
+}
+
+.head-inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 80px 0;
-  flex-shrink: 0;
 }
 
 .head-brand {
@@ -236,20 +246,10 @@ function handleBlank() {
 }
 
 .head-logo {
-  width: 24px;
-  height: 24px;
-  background: var(--nc-accent, #00D2BE);
+  display: block;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.head-logo-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--nc-bg, #09090B);
-  border-radius: 1px;
 }
 
 .head-id,
@@ -273,11 +273,17 @@ function handleBlank() {
 
 /* Body */
 .picker-body {
+  padding: 56px 80px 40px;
+  flex: 1;
+}
+
+.body-inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 48px;
-  padding: 56px 80px 40px;
-  flex: 1;
 }
 
 .title-block {
@@ -701,11 +707,17 @@ function handleBlank() {
 
 /* Footer */
 .picker-foot {
+  padding: 16px 80px 32px;
+  border-top: 1px solid var(--nc-border, #1E1E22);
+}
+
+.foot-inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 80px 32px;
-  border-top: 1px solid var(--nc-border, #1E1E22);
 }
 
 :root.light .picker-foot {
@@ -766,6 +778,8 @@ function handleBlank() {
   }
   .picker-body {
     padding: 40px 32px 32px;
+  }
+  .body-inner {
     gap: 32px;
   }
   .templates-grid {
@@ -782,6 +796,8 @@ function handleBlank() {
   }
   .picker-body {
     padding: 24px 20px;
+  }
+  .body-inner {
     gap: 24px;
   }
   .templates-grid {
@@ -793,9 +809,12 @@ function handleBlank() {
     gap: 8px;
   }
   .picker-foot {
-    flex-direction: column;
-    gap: 12px;
     padding: 16px 20px 20px;
+  }
+  .foot-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
   .foot-tip {
     font-size: 11px;

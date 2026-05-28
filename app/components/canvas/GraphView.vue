@@ -188,9 +188,9 @@ onUnmounted(() => {
               <span class="i-lucide-git-branch text-nc-accent text-xl" />
             </div>
             <div>
-              <h1 class="font-display font-bold text-lg text-nc-ink">Graph View</h1>
+              <h1 class="font-display font-bold text-lg text-nc-ink">{{ $t('canvas.graph_view.title') }}</h1>
               <p class="text-xs text-nc-ink-muted">
-                {{ options.mode === 'local' ? 'Local connections' : 'All connections' }}
+                {{ options.mode === 'local' ? $t('canvas.graph_view.local_connections') : $t('canvas.graph_view.all_connections') }}
               </p>
             </div>
           </div>
@@ -233,8 +233,8 @@ onUnmounted(() => {
             v-if="hoveredNode"
             class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 nc-glass rounded-nc-xl px-4 py-3 max-w-md"
           >
-            <p class="text-sm text-nc-ink font-medium truncate">{{ hoveredNode.content || 'Untitled' }}</p>
-            <p class="text-xs text-nc-ink-muted mt-1">Click to navigate</p>
+            <p class="text-sm text-nc-ink font-medium truncate">{{ hoveredNode.content || $t('canvas.untitled') }}</p>
+            <p class="text-xs text-nc-ink-muted mt-1">{{ $t('canvas.graph_view.click_to_navigate_short') }}</p>
           </div>
         </Transition>
 
@@ -243,15 +243,15 @@ onUnmounted(() => {
           <div class="text-xs text-nc-ink-muted space-y-1">
             <div class="nc-row gap-2 items-center">
               <span class="i-lucide-mouse-pointer text-sm" />
-              <span>Drag to pan, scroll to zoom</span>
+              <span>{{ $t('canvas.graph_view.drag_to_pan') }}</span>
             </div>
             <div class="nc-row gap-2 items-center">
               <span class="i-lucide-move text-sm" />
-              <span>Drag node to move, Shift+release to pin</span>
+              <span>{{ $t('canvas.graph_view.drag_node_to_move') }}</span>
             </div>
             <div class="nc-row gap-2 items-center">
               <span class="i-lucide-mouse-pointer-click text-sm" />
-              <span>Click node to navigate</span>
+              <span>{{ $t('canvas.graph_view.click_node_to_navigate') }}</span>
             </div>
           </div>
         </div>
@@ -260,7 +260,7 @@ onUnmounted(() => {
         <div class="absolute bottom-4 left-4 z-10 hidden md:block">
           <div class="nc-row gap-2 text-xs text-nc-ink-muted">
             <span class="nc-shortcut-key">Esc</span>
-            <span>Close</span>
+            <span>{{ $t('canvas.graph_view.close') }}</span>
           </div>
         </div>
       </div>

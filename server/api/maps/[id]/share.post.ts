@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid'
 import { prisma } from '../../../utils/prisma'
 import { requireAuthSession } from '../../../utils/syncHelpers'
+import { checkRateLimit } from '../../../utils/redis'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
@@ -8,6 +9,12 @@ export default defineEventHandler(async (event) => {
 
   if (!mapId) {
     throw createError({ statusCode: 400, statusMessage: 'Map ID required' })
+  }
+
+  // 30/min per user — generous for normal sharing, blocks enumeration / bot loops.
+  const { allowed } = await checkRateLimit(`share:create:${userId}`, 30, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many share requests' })
   }
 
   // Verify user owns this map

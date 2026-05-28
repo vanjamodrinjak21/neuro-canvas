@@ -41,7 +41,7 @@ async function copyCode() {
   <div class="code-block">
     <div v-if="filename" class="code-header">
       <span class="code-filename">{{ filename }}</span>
-      <button class="code-copy" :title="copied ? 'Copied!' : 'Copy code'" @click="copyCode">
+      <button class="code-copy" :title="copied ? $t('ui.code.copied') : $t('ui.code.copy')" @click="copyCode">
         <svg v-if="!copied" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -53,7 +53,7 @@ async function copyCode() {
     </div>
     <div v-else class="code-header code-header-minimal">
       <span />
-      <button class="code-copy" :title="copied ? 'Copied!' : 'Copy code'" @click="copyCode">
+      <button class="code-copy" :title="copied ? $t('ui.code.copied') : $t('ui.code.copy')" @click="copyCode">
         <svg v-if="!copied" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />

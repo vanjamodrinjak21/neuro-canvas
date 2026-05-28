@@ -7,6 +7,7 @@ import type { NodeState } from '~/components/canvas/renderers/drawNode'
 
 // Extracted composables
 import { useCanvasTheme } from '~/composables/useCanvasTheme'
+import { useTextScale } from '~/composables/useTextScale'
 import { screenToWorld, worldToScreen } from '~/composables/useCanvasCoordinates'
 import { findNodeAtPosition } from '~/composables/useNodeHitTest'
 import { useNodeEditing } from '~/composables/useNodeEditing'
@@ -67,6 +68,7 @@ const { isMobile } = usePlatform()
 // ---------------------------------------------------------------------------
 
 const theme = useCanvasTheme()
+const textScale = useTextScale()
 
 // ---------------------------------------------------------------------------
 // External composables (not extracted by us)
@@ -209,6 +211,7 @@ const renderLoop = useRenderLoop({
   camera: computed(() => props.camera),
   colors: theme.colors,
   isLight: theme.isLight,
+  textScale: textScale.scale,
 
   // Data sources
   nodes: () => mapStore.nodes,

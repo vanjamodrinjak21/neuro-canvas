@@ -1,6 +1,7 @@
 import { getToken } from '#auth'
 import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
+import { checkRateLimit } from '../../utils/redis'
 
 const updateProfileSchema = z.object({
   name: z
@@ -16,7 +17,6 @@ const updateProfileSchema = z.object({
     .optional()
     .nullable(),
   image: z
-    .string()
     .url('Invalid image URL')
     .refine(
       (url) => url.startsWith('https://'),
@@ -36,13 +36,18 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const { allowed } = await checkRateLimit(`user:profile:${token.email as string}`, 20, 60)
+  if (!allowed) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many profile updates' })
+  }
+
   const body = await readBody(event)
   const parsed = updateProfileSchema.safeParse(body)
 
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: parsed.error.errors[0]?.message || 'Invalid input'
+      statusMessage: parsed.error.issues[0]?.message || 'Invalid input'
     })
   }
 

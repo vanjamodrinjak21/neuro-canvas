@@ -21,9 +21,9 @@ const props = withDefaults(defineProps<{
       <div class="w-16 h-16 rounded-full bg-nc-error/10 nc-center mx-auto mb-4">
         <span class="i-lucide-alert-circle text-nc-error text-2xl" />
       </div>
-      <h2 class="text-xl font-display font-semibold text-nc-ink mb-2">Failed to load map</h2>
+      <h2 class="text-xl font-display font-semibold text-nc-ink mb-2">{{ $t('canvas.overlay.load_failed') }}</h2>
       <p class="text-nc-ink-muted mb-6">{{ error }}</p>
-      <NcButton variant="primary" @click="$router.push('/dashboard')">Go to Dashboard</NcButton>
+      <NcButton variant="primary" @click="$router.push('/dashboard')">{{ $t('canvas.overlay.go_to_dashboard') }}</NcButton>
     </div>
   </div>
 

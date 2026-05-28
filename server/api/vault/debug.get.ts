@@ -4,8 +4,14 @@ import { checkRateLimit } from '../../utils/redis'
 
 /**
  * Debug endpoint: shows credential state without exposing secrets.
+ * Production-gated — keyHash + per-user inventory should never reach a
+ * live client, even when the caller owns the row.
  */
 export default defineEventHandler(async (event) => {
+  if (process.env.NODE_ENV === 'production') {
+    throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+  }
+
   const { userId, email } = await requireAuthSession(event)
 
   const { allowed } = await checkRateLimit(`vault:debug:${userId}`, 10, 60)

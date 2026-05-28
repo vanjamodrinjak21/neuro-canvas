@@ -6,7 +6,8 @@
             "good_evening": "Dobra ve\u010der"
         },
         "header": {
-            "your_maps": "Va\u0161e mape"
+            "your_maps": "Va\u0161e mape",
+            "eyebrow": "01 \u2014 radni prostor"
         },
         "buttons": {
             "ai_generate": "AI generiranje",
@@ -16,6 +17,7 @@
         },
         "sections": {
             "recent_maps": "Nedavne mape",
+            "recent_count": "NEDAVNO \u00b7 {current} OD {total}",
             "sort_by": "Sortiraj po",
             "recent": "Nedavno",
             "a_z": "A-\u017d"
@@ -30,10 +32,13 @@
         },
         "overview": {
             "title": "Pregled",
+            "eyebrow": "02 \u2014 pregled",
+            "period": "zadnjih 30 dana",
             "last_30_days": "Zadnjih 30 dana",
             "total_maps": "Ukupno mapa",
             "total_nodes": "Ukupno \u010dvorova",
             "ai_generated": "AI generirano",
+            "connections": "Prona\u0111enih veza",
             "connections_found": "Prona\u0111enih veza"
         },
         "ai_banner": {
@@ -42,13 +47,14 @@
             "try_it": "Isprobaj"
         },
         "ai_modal": {
-            "title": "Generiraj pomo\u0107u AI-a",
-            "description": "Opi\u0161ite temu. AI \u0107e strukturirati cijelu mentalnu mapu.",
+            "title": "AI generator mape",
+            "description": "\u0160to \u017eeli\u0161 mapirati?",
+            "subtitle": "Opi\u0161i temu \u2014 AI strukturira ostalo.",
             "placeholder": "npr. kvantno ra\u010dunalstvo, UX istra\u017eivanje...",
             "cancel": "Odustani",
             "generate": "Generiraj",
             "generating": "Generiranje \"{topic}\"",
-            "building_structure": "Izgradnja strukture mentalne mape...",
+            "building_structure": "Izgradnja strukture mape",
             "analyzing_topic": "Analiza strukture teme",
             "generating_branches": "Generiranje grana",
             "adding_sub_nodes": "Dodavanje pod\u010dvorova i detalja",

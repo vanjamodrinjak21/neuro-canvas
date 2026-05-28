@@ -16,8 +16,15 @@ const MAX_PARTICLES = prefersReducedMotion ? 0 : isMobile ? 50 : 200
 const MAX_FIELD_LINES_CAP = isMobile ? 20 : 50
 const PULSE_DURATION = 1500 // ms
 const HIGH_SIMILARITY_THRESHOLD = 0.7
-const FADE_DURATION = 300 // ms
-const FIELD_RECALC_INTERVAL = isMobile ? 100 : 32 // ms throttle for field recalculation
+// Slowed from 300ms → 800ms so fade-ins/outs read as intentional motion
+// instead of stuttering. The field is decorative — it should never grab
+// attention by changing fast.
+const FADE_DURATION = 800 // ms
+// Slowed from 32ms (~30Hz) → 300ms desktop, 200ms mobile. The previous
+// rate had lines flickering on/off every frame as similarity scores
+// crossed the threshold. 300ms gives the user time to see a connection
+// arrive without making the field feel laggy.
+const FIELD_RECALC_INTERVAL = isMobile ? 200 : 300 // ms throttle for field recalculation
 
 /**
  * Compute adaptive max field lines based on viewport, node count, and zoom.
@@ -44,11 +51,14 @@ function computeLineWidth(similarity: number, intensity: number): number {
 }
 
 /**
- * Compute particle speed proportional to similarity.
+ * Compute particle speed proportional to similarity. Slowed ~10× from
+ * the original (0.008-0.04 → 0.001-0.005) so particles read as gentle
+ * flowing dots rather than streaks that flash across in one frame.
+ * At peak similarity a particle now takes ~1.2s to traverse a line
+ * instead of ~30ms.
  */
 function computeParticleSpeed(similarity: number): number {
-  // 0.008 at low → 0.04 at high
-  return 0.008 + similarity * 0.032
+  return 0.001 + similarity * 0.004
 }
 
 /**

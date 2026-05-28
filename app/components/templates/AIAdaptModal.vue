@@ -55,8 +55,8 @@ watch(() => props.open, (val) => {
               </svg>
             </div>
             <div class="header-text">
-              <h2 class="header-title">AI Adapt Template</h2>
-              <p class="header-subtitle">{{ templateTitle }} will be customized to your topic</p>
+              <h2 class="header-title">{{ $t('templates.ai_adapt_modal.title') }}</h2>
+              <p class="header-subtitle">{{ $t('templates.ai_adapt_modal.description', { title: templateTitle }) }}</p>
             </div>
             <button class="close-btn" @click="emit('close')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -69,12 +69,12 @@ watch(() => props.open, (val) => {
           <div class="modal-body">
             <!-- Topic -->
             <div class="field">
-              <label class="field-label">Your Topic</label>
+              <label class="field-label">{{ $t('templates.ai_adapt_modal.topic_label') }}</label>
               <input
                 v-model="topic"
                 type="text"
                 class="field-input"
-                placeholder='e.g. "Launching a mobile fitness app"'
+                :placeholder="$t('templates.ai_adapt_modal.topic_placeholder')"
                 autofocus
               >
             </div>
@@ -82,7 +82,7 @@ watch(() => props.open, (val) => {
             <!-- Depth + Style -->
             <div class="field-row">
               <div class="field">
-                <label class="field-label">Depth</label>
+                <label class="field-label">{{ $t('templates.ai_adapt_modal.depth') }}</label>
                 <div class="toggle-group">
                   <button
                     v-for="d in (['shallow', 'medium', 'deep'] as GenerationDepth[])"
@@ -90,12 +90,12 @@ watch(() => props.open, (val) => {
                     :class="['toggle-btn', { active: depth === d }]"
                     @click="depth = d"
                   >
-                    {{ d.charAt(0).toUpperCase() + d.slice(1) }}
+                    {{ $t('templates.ai_adapt_modal.' + d) }}
                   </button>
                 </div>
               </div>
               <div class="field">
-                <label class="field-label">Style</label>
+                <label class="field-label">{{ $t('templates.ai_adapt_modal.style') }}</label>
                 <div class="toggle-group">
                   <button
                     v-for="s in (['concise', 'detailed', 'academic'] as GenerationStyle[])"
@@ -103,7 +103,7 @@ watch(() => props.open, (val) => {
                     :class="['toggle-btn', { active: style === s }]"
                     @click="style = s"
                   >
-                    {{ s.charAt(0).toUpperCase() + s.slice(1) }}
+                    {{ $t('templates.ai_adapt_modal.' + s) }}
                   </button>
                 </div>
               </div>
@@ -112,26 +112,26 @@ watch(() => props.open, (val) => {
             <!-- Domain -->
             <div class="field">
               <div class="field-label-row">
-                <label class="field-label">Domain</label>
-                <span class="field-optional">Optional</span>
+                <label class="field-label">{{ $t('templates.ai_adapt_modal.domain') }}</label>
+                <span class="field-optional">{{ $t('templates.ai_adapt_modal.optional') }}</span>
               </div>
               <input
                 v-model="domain"
                 type="text"
                 class="field-input"
-                placeholder='e.g. "Health & Fitness"'
+                :placeholder="$t('templates.ai_adapt_modal.domain_placeholder')"
               >
             </div>
           </div>
 
           <!-- Footer -->
           <div class="modal-footer">
-            <button class="btn-ghost" @click="emit('close')">Cancel</button>
+            <button class="btn-ghost" @click="emit('close')">{{ $t('templates.ai_adapt_modal.cancel') }}</button>
             <button class="btn-primary" :disabled="!canGenerate" @click="handleGenerate">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
               </svg>
-              Generate & Create Map
+              {{ $t('templates.ai_adapt_modal.generate') }}
             </button>
           </div>
         </div>

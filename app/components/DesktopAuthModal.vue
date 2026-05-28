@@ -99,9 +99,9 @@ watch(() => props.visible, (visible) => {
           </div>
 
           <form class="auth-form" @submit.prevent="handleSubmit">
-            <h2 class="auth-title">Sign in to NeuroCanvas</h2>
+            <h2 class="auth-title">{{ $t('auth.desktop_auth.title') }}</h2>
             <p class="auth-desc">
-              Sign in to sync your maps across devices and access community templates.
+              {{ $t('auth.desktop_auth.desc') }}
             </p>
 
             <!-- Error banner -->
@@ -112,14 +112,14 @@ watch(() => props.visible, (visible) => {
 
             <!-- Email -->
             <div class="auth-field">
-              <label for="desktop-email" class="auth-label">Email</label>
+              <label for="desktop-email" class="auth-label">{{ $t('auth.desktop_auth.email_label') }}</label>
               <input
                 id="desktop-email"
                 ref="emailInput"
                 v-model="email"
                 type="email"
                 class="auth-input"
-                placeholder="you@example.com"
+                :placeholder="$t('auth.desktop_auth.email_placeholder')"
                 autocomplete="email"
                 required
                 :disabled="desktopAuth.isLoggingIn.value"
@@ -128,14 +128,14 @@ watch(() => props.visible, (visible) => {
 
             <!-- Password -->
             <div class="auth-field">
-              <label for="desktop-password" class="auth-label">Password</label>
+              <label for="desktop-password" class="auth-label">{{ $t('auth.desktop_auth.password_label') }}</label>
               <div class="auth-input-wrap">
                 <input
                   id="desktop-password"
                   v-model="password"
                   :type="showPassword ? 'text' : 'password'"
                   class="auth-input auth-input-password"
-                  placeholder="Enter your password"
+                  :placeholder="$t('auth.desktop_auth.password_placeholder')"
                   autocomplete="current-password"
                   required
                   :disabled="desktopAuth.isLoggingIn.value"
@@ -160,12 +160,12 @@ watch(() => props.visible, (visible) => {
               class="auth-totp-toggle"
               @click="showTOTP = true"
             >
-              I have two-factor authentication enabled
+              {{ $t('auth.desktop_auth.2fa_toggle') }}
             </button>
 
             <!-- TOTP field -->
             <div v-if="showTOTP" class="auth-field">
-              <label for="desktop-totp" class="auth-label">Two-Factor Code</label>
+              <label for="desktop-totp" class="auth-label">{{ $t('auth.desktop_auth.2fa_label') }}</label>
               <input
                 id="desktop-totp"
                 v-model="totpCode"
@@ -188,12 +188,12 @@ watch(() => props.visible, (visible) => {
               :disabled="!email.trim() || !password || desktopAuth.isLoggingIn.value"
             >
               <div v-if="desktopAuth.isLoggingIn.value" class="auth-spinner" />
-              {{ desktopAuth.isLoggingIn.value ? 'Signing in...' : 'Sign In' }}
+              {{ desktopAuth.isLoggingIn.value ? $t('auth.desktop_auth.submit_loading') : $t('auth.desktop_auth.submit') }}
             </button>
           </form>
 
           <div class="auth-divider">
-            <span>or</span>
+            <span>{{ $t('auth.desktop_auth.divider') }}</span>
           </div>
 
           <!-- Google sign-in inside the desktop app (no browser hop) -->
@@ -208,17 +208,17 @@ watch(() => props.visible, (visible) => {
               <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.4-4.5 2.4-7.2 2.4-5.4 0-10-3.6-11.6-8.6l-6.5 5C9.4 39.5 16.1 44 24 44z" />
               <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.1 5.4l6.2 5.2c-.4.4 6.6-4.8 6.6-14.6 0-1.2-.1-2.4-.4-3.5z" />
             </svg>
-            <span>{{ desktopAuth.isLoggingIn.value ? 'Opening Google…' : 'Continue with Google' }}</span>
+            <span>{{ desktopAuth.isLoggingIn.value ? $t('auth.desktop_auth.google_loading') : $t('auth.desktop_auth.google_button') }}</span>
           </button>
 
           <!-- Final fallback if Google ever blocks the embedded webview -->
           <button class="auth-browser-btn" @click="openInBrowser">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-            Use system browser instead
+            {{ $t('auth.desktop_auth.use_browser_instead') }}
           </button>
 
           <button class="auth-close-btn" @click="handleClose">
-            Cancel
+            {{ $t('auth.desktop_auth.cancel') }}
           </button>
         </div>
       </div>

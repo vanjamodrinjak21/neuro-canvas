@@ -1,5 +1,6 @@
 import type { Node } from '~/types/canvas'
 import { getShapePath } from './shapes'
+import { getNodeMetrics, NODE_FONT_FAMILY } from '~/utils/nodeSizing'
 
 /** Visual state of a node on the canvas. */
 export type NodeState = 'normal' | 'hover' | 'selected' | 'dragging' | 'ai-suggestion' | 'highlighted' | 'dimmed'
@@ -9,12 +10,37 @@ export interface NodeColors {
   nodeBg: string
   nodeBorder: string
   nodeTier2Bg: string
+  nodeTier1Border: string
+  nodeTier2Border: string
   nodeText: string
   nodeSelected: string
   nodeGlow: string
   nodeHoverBorder: string
   nodeAiGlow: string
   nodeHighlightGlow: string
+}
+
+// Saturated teal `#00D2BE` was the legacy default `style.borderColor` baked
+// into every generated node. Treat it as "no explicit override" so the
+// theme's tier-derived defaults can take effect on existing maps.
+const LEGACY_DEFAULT_BORDERS = new Set(['#00D2BE', '#00d2be', '#00D2BEFF', '#00d2beff'])
+
+// Dark-mode default text colors baked into every node by mapStore /
+// properties panels. Treat as "no explicit override" so light mode can
+// fall back to the theme's high-contrast text color on white nodes.
+const LEGACY_DEFAULT_TEXT_COLORS = new Set([
+  '#FAFAFA', '#fafafa', '#FAFAFAFF', '#fafafaff',
+  '#E8E8EC', '#e8e8ec', '#E8E8ECFF', '#e8e8ecff',
+])
+
+// Category accent strip palette (matches Paper artboard CEO-0).
+const CATEGORY_STRIP_COLORS: Record<string, string> = {
+  idea: '#A78BFA',
+  task: '#60A5FA',
+  note: '#34D399',
+  question: '#F472B6',
+  evidence: '#F59E0B',
+  default: '',
 }
 
 /** Subset of colors used by the simplified node renderer. */
@@ -61,7 +87,8 @@ export function drawNode(
   lerpColor: (a: string, b: string, t: number) => string,
   animProps?: NodeAnimProps,
   isLight?: boolean,
-  parentIsRoot?: boolean
+  parentIsRoot?: boolean,
+  textScale: number = 1
 ) {
   const { x, y } = node.position
   const { width, height } = node.size
@@ -89,38 +116,48 @@ export function drawNode(
     ctx.shadowOffsetX = 0
   }
 
+  // Treat legacy hard-coded teal borders as "no explicit override" so tier
+  // defaults from the theme take effect on existing maps.
+  const explicitBorder = style.borderColor && !LEGACY_DEFAULT_BORDERS.has(style.borderColor)
+    ? style.borderColor
+    : null
+  const explicitFill = style.fillColor && style.fillColor !== '#111113' ? style.fillColor : null
+
   // Determine border color and width based on state - with interpolated hover
-  let borderColor = style.borderColor || colors.nodeBorder
-  let borderWidth = style.borderWidth || 2
-  let fillColor = style.fillColor || colors.nodeBg
+  let borderColor: string
+  let borderWidth = explicitBorder ? (style.borderWidth || 1) : 1
+  let fillColor: string
 
-  // Root nodes: solid teal fill, no border per Paper spec
   if (isRoot) {
-    fillColor = '#00D2BE'
+    // Root: solid teal fill, no border (Paper CEO-0 "ROOT NODE")
+    fillColor = colors.nodeSelected
+    borderColor = colors.nodeSelected
     borderWidth = 0
+  } else if (node.parentId && parentIsRoot) {
+    // Tier-1: dark fill, subtle teal hint stroke (Paper CEO-0 "TIER 1")
+    fillColor = explicitFill || colors.nodeBg
+    borderColor = explicitBorder || colors.nodeTier1Border
   } else {
-    // Tier differentiation per Paper spec:
-    // Tier-2+ (deeper, parent is not root): bg nodeTier2Bg, 1px border
-    if (node.parentId && !parentIsRoot) {
-      fillColor = style.fillColor === '#111113' || !style.fillColor
-        ? colors.nodeTier2Bg
-        : fillColor
-      borderWidth = 1
-    }
-
-    // Ensure minimum visibility for non-root nodes
-    if (borderWidth < 1) borderWidth = 1
+    // Tier-2+: deeper dark fill, near-invisible neutral stroke (Paper CEO-0 "TIER 2+")
+    fillColor = explicitFill || colors.nodeTier2Bg
+    borderColor = explicitBorder || colors.nodeTier2Border
   }
 
-  // Interpolated hover: blend border color and fill based on hoverProgress
-  if (hoverProg > 0 && nodeState !== 'selected' && nodeState !== 'dragging') {
-    borderColor = lerpColor(style.borderColor || colors.nodeBorder, colors.nodeHoverBorder, hoverProg)
-    fillColor = lerpColor(style.fillColor || colors.nodeBg, isLight ? '#E8E8E6' : '#1E1E24', hoverProg)
+  // Interpolated hover: blend border + fill toward hover targets.
+  // Light hover fill is a warm-paper tint that's distinct from the
+  // resting #FFF and from the resting #D4D4D0 border, so the hover
+  // change is felt instead of hidden behind the border.
+  if (hoverProg > 0 && nodeState !== 'selected' && nodeState !== 'dragging' && !isRoot) {
+    borderColor = lerpColor(borderColor, colors.nodeHoverBorder, hoverProg)
+    fillColor = lerpColor(fillColor, isLight ? '#F4F4F0' : '#1E1E24', hoverProg)
   }
 
   switch (nodeState) {
     case 'selected':
-      borderColor = colors.nodeSelected
+      if (!isRoot) {
+        borderColor = colors.nodeSelected
+        borderWidth = 2
+      }
       break
     case 'hover':
       // Already handled by interpolated hover above
@@ -133,6 +170,7 @@ export function drawNode(
       break
     case 'highlighted':
       borderColor = colors.nodeSelected
+      borderWidth = Math.max(borderWidth, 1.5)
       break
   }
 
@@ -148,7 +186,20 @@ export function drawNode(
 
   const shapePath = getShapePath(style.shape || 'rounded', drawX, drawY, drawWidth, drawHeight)
   ctx.fill(shapePath)
-  ctx.stroke(shapePath)
+  if (borderWidth > 0) ctx.stroke(shapePath)
+
+  // Category accent strip on left edge (non-root only) — matches Paper CEO-0.
+  const category = !isRoot ? (node.metadata?.category as string | undefined) : undefined
+  if (category) {
+    const stripColor = CATEGORY_STRIP_COLORS[category.toLowerCase()] || CATEGORY_STRIP_COLORS[category]
+    if (stripColor) {
+      ctx.save()
+      ctx.clip(shapePath)
+      ctx.fillStyle = stripColor
+      ctx.fillRect(drawX, drawY, 3, drawHeight)
+      ctx.restore()
+    }
+  }
 
   // Animated selection ring — grows from center based on selectionProgress
   if (selProg > 0) {
@@ -176,22 +227,36 @@ export function drawNode(
   ctx.shadowOffsetX = 0
   ctx.shadowOffsetY = 0
 
-  // Draw text — root node always uses white text for contrast on teal bg
-  ctx.fillStyle = isRoot ? '#FAFAFA' : (style.textColor || colors.nodeText)
-  ctx.font = `${style.fontWeight || 500} ${style.fontSize || 14}px "Inter", system-ui, sans-serif`
+  // Draw text — root node always uses white text for contrast on teal bg.
+  // For non-root nodes, ignore baked-in dark-mode default text colors so
+  // light theme can supply a high-contrast color on white node fills.
+  const explicitText = style.textColor && !LEGACY_DEFAULT_TEXT_COLORS.has(style.textColor)
+    ? style.textColor
+    : null
+  ctx.fillStyle = isRoot ? '#FAFAFA' : (explicitText || colors.nodeText)
+  // Apply the global Settings → Font Size preference. `textScale` is
+  // sourced from `--nc-text-scale` (xs=0.85 .. xl=1.25) by useTextScale
+  // and threaded through useRenderLoop. Multiplying here scales every
+  // node's text without touching the per-node style.fontSize stored on
+  // the document. min(8px) so xs+tiny-font doesn't disappear.
+  const baseFontSize = style.fontSize || 14
+  const fontSize = Math.max(8, Math.round(baseFontSize * textScale))
+  const fontWeight = style.fontWeight || 500
+  ctx.font = `${fontWeight} ${fontSize}px ${NODE_FONT_FAMILY}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  // Text wrapping
-  const maxWidth = drawWidth - 24
+  // Wrap using the same padding the sizer used so text fits exactly.
+  const metrics = getNodeMetrics(fontSize)
+  const maxWidth = drawWidth - metrics.paddingX
   const words = node.content.split(' ')
   const lines: string[] = []
   let currentLine = ''
 
   for (const word of words) {
     const testLine = currentLine ? `${currentLine} ${word}` : word
-    const metrics = ctx.measureText(testLine)
-    if (metrics.width > maxWidth && currentLine) {
+    const m = ctx.measureText(testLine)
+    if (m.width > maxWidth && currentLine) {
       lines.push(currentLine)
       currentLine = word
     } else {
@@ -200,7 +265,7 @@ export function drawNode(
   }
   if (currentLine) lines.push(currentLine)
 
-  const lineHeight = (style.fontSize || 14) * 1.4
+  const lineHeight = metrics.lineHeight
   const textY = drawY + drawHeight / 2 - ((lines.length - 1) * lineHeight) / 2
 
   lines.forEach((line, index) => {

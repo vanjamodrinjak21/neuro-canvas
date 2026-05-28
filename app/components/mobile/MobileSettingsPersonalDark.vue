@@ -5,6 +5,7 @@
  * Profile card with bio, Language card, Defaults card.
  */
 import { computed, ref } from 'vue'
+import { safeImageUrl } from '~/utils/safeUrl'
 
 interface UserLike {
   name?: string | null
@@ -25,6 +26,7 @@ const emit = defineEmits<{
   'edit-profile': []
 }>()
 
+const avatarSrc = computed(() => safeImageUrl(props.user?.image))
 const displayName = computed(() => props.user?.name || 'Guest')
 const handle = computed(() => {
   const n = props.user?.name || ''
@@ -80,7 +82,7 @@ const layout = ref<'radial' | 'tree'>('radial')
       <div class="mper-profile-card">
         <div class="mper-identity">
           <div class="mper-avatar">
-            <img v-if="user?.image" :src="user.image" :alt="displayName" class="mper-avatar-img">
+            <img v-if="avatarSrc" :src="avatarSrc" :alt="displayName" class="mper-avatar-img" referrerpolicy="no-referrer">
             <span v-else class="mper-avatar-letter">{{ userInitial }}</span>
           </div>
           <div class="mper-identity-info">

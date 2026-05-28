@@ -1,7 +1,7 @@
 // Camera intelligence — higher-level navigation commands built on spring camera
 // Provides flyTo, fit, cycle, follow, and breadcrumb navigation
 
-import type { Camera, Node } from '~/types/canvas'
+import type { Camera, Edge, Node } from '~/types/canvas'
 
 export interface FlyToOptions {
   padding?: number
@@ -32,7 +32,9 @@ export function useCameraIntelligence(
   springCamera: SpringCameraAPI,
   getNodes: () => Map<string, Node>,
   getSelectedNodeIds: () => Set<string>,
-  nodeAnimations?: NodeAnimAPI | null
+  nodeAnimations?: NodeAnimAPI | null,
+  getEdges?: () => Map<string, Edge>,
+  getRootNodeId?: () => string | null,
 ) {
   // Breadcrumb trail
   const breadcrumbs = ref<NavigationBreadcrumb[]>([])
@@ -51,7 +53,7 @@ export function useCameraIntelligence(
     const node = nodes.get(nodeId)
     if (!node) return
 
-    const { padding = 50, preset = 'snappy', pulse = false } = options
+    const { preset = 'snappy', pulse = false } = options
     const cam = springCamera.camera.value
 
     const zoom = options.zoom ?? cam.zoom
@@ -151,6 +153,118 @@ export function useCameraIntelligence(
   }
 
   /**
+   * Compute the camera that frames a set of nodes inside the given viewport.
+   * Pure function — doesn't read from window/refs so it works during SSR/init.
+   */
+  function cameraForBbox(
+    bbox: { minX: number; minY: number; maxX: number; maxY: number },
+    viewport: { width: number; height: number },
+    padding: number,
+    maxZoom: number,
+  ): Camera {
+    const contentWidth = bbox.maxX - bbox.minX + padding * 2
+    const contentHeight = bbox.maxY - bbox.minY + padding * 2
+    const zoom = Math.min(
+      viewport.width / contentWidth,
+      viewport.height / contentHeight,
+      maxZoom,
+    )
+    const centerX = (bbox.minX + bbox.maxX) / 2
+    const centerY = (bbox.minY + bbox.maxY) / 2
+    return {
+      x: viewport.width / 2 - centerX * zoom,
+      y: viewport.height / 2 - centerY * zoom,
+      zoom,
+    }
+  }
+
+  function bboxOfNodes(nodes: Node[]) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const n of nodes) {
+      minX = Math.min(minX, n.position.x)
+      minY = Math.min(minY, n.position.y)
+      maxX = Math.max(maxX, n.position.x + n.size.width)
+      maxY = Math.max(maxY, n.position.y + n.size.height)
+    }
+    return { minX, minY, maxX, maxY }
+  }
+
+  /**
+   * Compute the camera position to use when a map first opens.
+   *
+   *  - If the entire map fits in the viewport at a comfortable zoom, frame
+   *    the whole map.
+   *  - Otherwise, frame the root node and its directly-connected neighbours
+   *    so the user sees the main topic and its primary branches first.
+   *
+   * Returns null if there is nothing to frame (empty map). Caller decides
+   * whether to apply via setCurrent (snap) or setTarget (animate).
+   */
+  function computeOpeningCamera(
+    viewport: { width: number; height: number },
+    opts: { padding?: number; fullMapZoomThreshold?: number; rootViewMaxZoom?: number } = {},
+  ): Camera | null {
+    const padding = opts.padding ?? 120
+    const fullThreshold = opts.fullMapZoomThreshold ?? 0.55
+    const rootViewMaxZoom = opts.rootViewMaxZoom ?? 1
+    const nodes = getNodes()
+    if (nodes.size === 0) return null
+
+    const all = Array.from(nodes.values())
+    const allBbox = bboxOfNodes(all)
+    const fullCam = cameraForBbox(allBbox, viewport, padding, 1)
+    if (fullCam.zoom >= fullThreshold) return fullCam
+
+    // Map is big — focus on root + 1-hop neighbours
+    const rootId = getRootNodeId?.()
+      ?? (Array.from(nodes.values()).find(n => n.isRoot)?.id ?? null)
+
+    if (rootId) {
+      const root = nodes.get(rootId)
+      if (root) {
+        const edges = getEdges?.() ?? new Map<string, Edge>()
+        const neighbourIds = new Set<string>([rootId])
+        for (const e of edges.values()) {
+          if (e.sourceId === rootId) neighbourIds.add(e.targetId)
+          else if (e.targetId === rootId) neighbourIds.add(e.sourceId)
+        }
+        // Also include nodes whose parentId is the root (graph may not have edges)
+        for (const n of all) {
+          if (n.parentId === rootId) neighbourIds.add(n.id)
+        }
+        const subset = Array.from(neighbourIds)
+          .map(id => nodes.get(id))
+          .filter((n): n is Node => !!n)
+        if (subset.length > 0) {
+          const subBbox = bboxOfNodes(subset)
+          return cameraForBbox(subBbox, viewport, padding, rootViewMaxZoom)
+        }
+      }
+    }
+
+    // Fallback: clamp full-map camera to a usable zoom
+    return cameraForBbox(allBbox, viewport, padding, rootViewMaxZoom)
+  }
+
+  /**
+   * Apply the computed opening camera. Use setCurrent on initial load (snap)
+   * so the user never sees a janky pre-frame state.
+   */
+  function fitToOpeningView(
+    viewport: { width: number; height: number },
+    opts: { animate?: boolean; padding?: number; fullMapZoomThreshold?: number; rootViewMaxZoom?: number } = {},
+  ): Camera | null {
+    const cam = computeOpeningCamera(viewport, opts)
+    if (!cam) return null
+    if (opts.animate) {
+      springCamera.setTarget(cam, 'navigation')
+    } else {
+      springCamera.setCurrent(cam)
+    }
+    return cam
+  }
+
+  /**
    * Fly to root node
    */
   function flyToRoot() {
@@ -220,6 +334,8 @@ export function useCameraIntelligence(
     fitToContent,
     cycleNode,
     flyToRoot,
+    fitToOpeningView,
+    computeOpeningCamera,
     recordBreadcrumb,
     goBack,
     breadcrumbs: breadcrumbs as Ref<NavigationBreadcrumb[]>

@@ -55,7 +55,7 @@ watch([email, password], () => {
       <PasswordInput
         id="password"
         v-model="password"
-        placeholder="Enter your password"
+        :placeholder="$t('auth.signin.password_placeholder')"
         :disabled="isSigningIn"
         autocomplete="current-password"
       />
