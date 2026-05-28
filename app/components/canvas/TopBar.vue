@@ -470,7 +470,11 @@ defineExpose({ focusTitleInput })
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: color 150ms var(--nc-ease-out, ease), background 150ms var(--nc-ease-out, ease);
+  transition:
+    color 150ms var(--nc-ease-out, ease),
+    background 150ms var(--nc-ease-out, ease),
+    padding 200ms var(--nc-ease-out, ease),
+    gap 200ms var(--nc-ease-out, ease);
 }
 
 .topbar-view-tab:hover {
@@ -503,5 +507,19 @@ defineExpose({ focusTitleInput })
 
 .topbar-view-label {
   line-height: 1;
+  display: inline-block;
+  overflow: hidden;
+  max-width: 80px;
+  opacity: 1;
+  transition:
+    max-width 200ms var(--nc-ease-out, ease),
+    opacity 160ms var(--nc-ease-out, ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-view-tab,
+  .topbar-view-label {
+    transition: none;
+  }
 }
 </style>
