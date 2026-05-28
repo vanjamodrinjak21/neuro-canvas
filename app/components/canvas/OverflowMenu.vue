@@ -206,10 +206,16 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   min-width: 220px;
   padding: 6px;
   border-radius: var(--nc-radius-lg);
-  background: var(--nc-surface, #111113);
+  /* Hard-coded opaque color (not the token) — defends against any
+     parent transform/filter context that could let the canvas bleed
+     through, and against accidental token override. */
+  background-color: #18181B;
+  background-image: none;
+  opacity: 1;
   border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
   animation: menuIn 0.15s var(--nc-ease);
+  isolation: isolate;
 }
 
 /* ── Shared item style ───────────────────── */
@@ -280,10 +286,13 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   min-width: 200px;
   padding: 6px;
   border-radius: var(--nc-radius-lg);
-  background: var(--nc-surface, #111113);
+  background-color: #18181B;
+  background-image: none;
+  opacity: 1;
   border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
   animation: subIn 0.12s var(--nc-ease);
+  isolation: isolate;
 }
 .export-item {
   display: flex;
@@ -325,7 +334,8 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 
 /* ── Light theme ────────────────────────── */
 :root.light .overflow-panel {
-  background: var(--nc-surface, #F5F5F3);
+  background-color: #FFFFFF;
+  background-image: none;
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
 }
@@ -355,7 +365,8 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   background: rgba(0, 0, 0, 0.04);
 }
 :root.light .export-panel {
-  background: var(--nc-surface, #F5F5F3);
+  background-color: #FFFFFF;
+  background-image: none;
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
 }

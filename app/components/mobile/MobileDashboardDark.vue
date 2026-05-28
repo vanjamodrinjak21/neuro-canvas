@@ -6,6 +6,8 @@
  * Single layout, platform-tuned via :root.platform-ios / :root.platform-android.
  */
 
+import { safeImageUrl } from '~/utils/safeUrl'
+
 interface MapItem {
   id: string
   title: string
@@ -19,8 +21,6 @@ interface UserLike {
   email?: string | null
   image?: string | null
 }
-
-import { safeImageUrl } from '~/utils/safeUrl'
 
 const props = defineProps<{
   user: UserLike | null | undefined

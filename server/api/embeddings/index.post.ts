@@ -3,7 +3,7 @@ import { requireAuthSession } from '../../utils/syncHelpers'
 import { validateBody, embeddingPostSchema } from '../../utils/validation'
 import { prisma } from '../../utils/prisma'
 import { toPgVector, EMBEDDING_MODEL, EMBEDDING_DIMS } from '../../utils/embeddings'
-import { randomUUID } from 'crypto'
+import { randomUUID } from 'node:crypto'
 
 const EMBEDDING_CACHE_TTL = 7 * 24 * 60 * 60 // 7 days
 

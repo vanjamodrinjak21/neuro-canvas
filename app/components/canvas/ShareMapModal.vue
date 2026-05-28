@@ -56,12 +56,12 @@ function toggleInvite(shareId: string) {
 
 function parseRecipients(raw: string): string[] {
   return raw
-    .split(/[\s,;\n]+/)
+    .split(/[\s,;]+/)
     .map(s => s.trim())
     .filter(Boolean)
 }
 
-const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_RX = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
 
 async function sendInvite(shareId: string) {
   const form = inviteForms[shareId]

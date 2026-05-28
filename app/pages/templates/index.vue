@@ -198,7 +198,7 @@ onMounted(async () => {
           :total-count="(templates ?? []).length"
           :search-query="searchQuery"
           :sort-label="sortBy"
-          :active-category="activeCategory as 'all' | TemplateCategory"
+          :active-category="(activeCategory as unknown as ('all' | TemplateCategory))"
           @update:search-query="(v) => { searchQuery = v; handleSearch() }"
           @open-template="(slug) => router.push(`/templates/${slug}`)"
           @use-template="handleMobileUseTemplate"

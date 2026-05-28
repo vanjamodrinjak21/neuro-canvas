@@ -37,7 +37,7 @@ const FILES = {
 }
 
 // Strict semver — also matches the GitHub Actions release.yml tag filter.
-const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Z.-]+)?(?:\+[0-9A-Z.-]+)?$/i
 
 function read(p)        { return readFileSync(p, 'utf8') }
 function write(p, body) { writeFileSync(p, body) }
@@ -77,8 +77,8 @@ function setGradleVersion(file, next, codeBumpFrom) {
 
 function setPbxprojVersion(file, next) {
   let src = read(file)
-  src = src.replace(/MARKETING_VERSION\s*=\s*[^;]+;/g, `MARKETING_VERSION = ${next};`)
-  src = src.replace(/CURRENT_PROJECT_VERSION\s*=\s*[^;]+;/g, `CURRENT_PROJECT_VERSION = ${next};`)
+  src = src.replace(/MARKETING_VERSION\s*=[^;]+;/g, `MARKETING_VERSION = ${next};`)
+  src = src.replace(/CURRENT_PROJECT_VERSION\s*=[^;]+;/g, `CURRENT_PROJECT_VERSION = ${next};`)
   write(file, src)
 }
 

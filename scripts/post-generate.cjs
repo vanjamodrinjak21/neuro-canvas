@@ -3,8 +3,8 @@
  * Copies the SPA fallback (200.html) to all dynamic route directories
  * so Tauri's asset protocol can serve the app for any client-side route.
  */
-const fs = require('fs')
-const path = require('path')
+const fs = require('node:fs')
+const path = require('node:path')
 
 const publicDir = path.join(__dirname, '..', '.output', 'public')
 const fallback = path.join(publicDir, '200.html')

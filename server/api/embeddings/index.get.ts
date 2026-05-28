@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  let source: 'cache' | 'db' = cacheMisses.length === 0 ? 'cache' : 'db'
+  const source: 'cache' | 'db' = cacheMisses.length === 0 ? 'cache' : 'db'
 
   // Fallback to pgvector for cache misses. Prisma.join parameterizes every
   // IN-list value so a future change can't introduce injection.

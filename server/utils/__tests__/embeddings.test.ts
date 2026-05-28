@@ -3,7 +3,7 @@ import { truncateMatryoshka, applyNomicPrefix } from '../embeddings'
 
 describe('truncateMatryoshka', () => {
   it('truncates to target dimensions and re-normalizes', () => {
-    const input = new Array(768).fill(0)
+    const input = Array.from({length: 768}).fill(0)
     input[0] = 1.0
 
     const result = truncateMatryoshka(input, 256)
@@ -14,7 +14,7 @@ describe('truncateMatryoshka', () => {
   })
 
   it('preserves relative values after truncation', () => {
-    const input = new Array(768).fill(0)
+    const input = Array.from({length: 768}).fill(0)
     input[0] = 0.5
     input[1] = 0.5
     input[2] = 0.5
@@ -28,7 +28,7 @@ describe('truncateMatryoshka', () => {
   })
 
   it('handles already-correct dimensions (no-op)', () => {
-    const input = new Array(256).fill(0)
+    const input = Array.from({length: 256}).fill(0)
     input[0] = 1.0
 
     const result = truncateMatryoshka(input, 256)

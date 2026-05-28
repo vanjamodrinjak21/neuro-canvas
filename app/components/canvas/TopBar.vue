@@ -108,7 +108,7 @@ defineExpose({ focusTitleInput })
 </script>
 
 <template>
-  <header class="absolute top-4 left-4 right-4 z-200 pointer-events-none">
+  <header class="topbar-root absolute top-4 left-4 right-4 z-200 pointer-events-none">
     <div class="topbar-container nc-between">
       <!-- Left: Back + Title + Breadcrumbs + Save -->
       <div class="flex items-center gap-4">
@@ -241,6 +241,10 @@ defineExpose({ focusTitleInput })
 </template>
 
 <style scoped>
+.topbar-root {
+  transition: right 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
 .topbar-container {
   background: var(--nc-surface, #111114);
   border: 1px solid var(--nc-border, #1A1A1E);

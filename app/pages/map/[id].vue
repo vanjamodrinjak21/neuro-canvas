@@ -2335,5 +2335,16 @@ body:has(.overflow-panel) .topbar-view-tab {
   padding: 0 6px;
   gap: 0;
 }
+
+/* Whole topbar physically narrows so its right edge sits flush with the
+   left edge of the open side panel. Width of each panel is hard-coded in
+   its own component; keep these in sync if those widths change. */
+body:has(.detail-panel) .topbar-root {
+  right: calc(360px + 1rem);
+}
+body:has(.cm-panel) .topbar-root,
+body:has(.vh-panel) .topbar-root {
+  right: calc(380px + 1rem);
+}
 </style>
 

@@ -26,12 +26,12 @@ const DEFAULT_LOCALE = 'en'
 const LOCALES_DIR = resolve(process.cwd(), 'i18n/locales')
 
 // ─── ANSI ────────────────────────────────────────────────────────────
-const RED = '\x1b[31m'
-const YELLOW = '\x1b[33m'
-const GREEN = '\x1b[32m'
-const DIM = '\x1b[2m'
-const BOLD = '\x1b[1m'
-const RESET = '\x1b[0m'
+const RED = '\x1B[31m'
+const YELLOW = '\x1B[33m'
+const GREEN = '\x1B[32m'
+const DIM = '\x1B[2m'
+const BOLD = '\x1B[1m'
+const RESET = '\x1B[0m'
 
 let errorCount = 0
 let warningCount = 0

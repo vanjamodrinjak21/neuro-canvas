@@ -143,7 +143,7 @@ const noteRows = computed<NoteRow[]>(() => {
   const out: NoteRow[] = []
   const lines = md.split('\n')
   for (const raw of lines) {
-    const line = raw.replace(/^[\s\-\*]+/, '').trim()
+    const line = raw.replace(/^[\s\-*]+/, '').trim()
     if (!line || line.startsWith('#')) continue
     let kind: NoteRow['kind'] = 'FEAT'
     let text = line

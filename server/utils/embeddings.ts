@@ -1,5 +1,5 @@
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 /** Target dimension for Matryoshka truncation of nomic-embed-text-v1.5 */
 export const EMBEDDING_DIMS = 256
