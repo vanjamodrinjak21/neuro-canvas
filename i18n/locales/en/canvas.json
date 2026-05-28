@@ -344,7 +344,7 @@
       "title": "Comments",
       "close": "Close",
       "loading": "Loading…",
-      "empty_open": "No open threads. Drop a pin or write below to start one.",
+      "empty_open": "No open threads. Write below to start one.",
       "empty_resolved": "No resolved threads.",
       "compose_placeholder": "Write a comment…",
       "submit": "Post",

@@ -344,7 +344,7 @@
       "title": "Komentari",
       "close": "Zatvori",
       "loading": "Učitavanje…",
-      "empty_open": "Nema otvorenih niti. Postavi pribadaču ili napiši ispod da pokreneš novu.",
+      "empty_open": "Nema otvorenih niti. Napiši ispod da pokreneš novu.",
       "empty_resolved": "Nema riješenih niti.",
       "compose_placeholder": "Napiši komentar…",
       "submit": "Objavi",

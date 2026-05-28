@@ -11,7 +11,8 @@ import {
 vi.mock('../prisma', () => ({
   prisma: {
     map: { findUnique: vi.fn(), update: vi.fn() },
-    mapVersion: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn(), create: vi.fn() }
+    mapVersion: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn(), create: vi.fn() },
+    user: { findMany: vi.fn() }
   }
 }))
 
@@ -35,10 +36,17 @@ describe('versionsService', () => {
         { id: 'v1', mapId: 'm1', version: 2, byteSize: 1234, authorId: 'u1', createdAt: new Date() }
       ])
       ;(prisma.mapVersion.count as ReturnType<typeof vi.fn>).mockResolvedValue(1)
+      ;(prisma.user.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { id: 'u1', name: 'Alice', email: 'alice@example.com' }
+      ])
 
       const out = await listVersions('m1', 'owner1', { limit: 50, cursor: null })
       expect(out.items).toHaveLength(1)
       expect(out.total).toBe(1)
+      // Author display fields are joined onto each row.
+      expect(out.items[0]!.authorName).toBe('Alice')
+      // Email is hidden when name is present, to avoid leaking collaborator emails.
+      expect(out.items[0]!.authorEmail).toBeNull()
     })
 
     it('rejects non-owner with 403', async () => {

@@ -7,6 +7,10 @@ interface VersionRow {
   version: number
   byteSize: number
   authorId: string | null
+  /** Display name resolved server-side from User.name. */
+  authorName?: string | null
+  /** Fallback identity when User.name is missing; absent on legacy rows. */
+  authorEmail?: string | null
   createdAt: string
 }
 
@@ -72,6 +76,18 @@ function shortAuthor(id: string | null) {
   return id.slice(0, 6)
 }
 
+/**
+ * Resolve the human-friendly author label for a version row.
+ * Prefers User.name (joined server-side), then email, then the legacy
+ * short-id fallback so older rows without enrichment still show something.
+ */
+function authorLabel(v: VersionRow): string {
+  if (v.authorId?.startsWith('guest:')) return t('canvas.version_history.author_guest')
+  if (v.authorName && v.authorName.trim()) return v.authorName
+  if (v.authorEmail && v.authorEmail.trim()) return v.authorEmail
+  return shortAuthor(v.authorId)
+}
+
 onMounted(load)
 onKeyStroke('Escape', () => emit('close'))
 </script>
@@ -94,7 +110,7 @@ onKeyStroke('Escape', () => emit('close'))
         <div class="vh-row-main">
           <div class="vh-row-time">{{ formatDate(v.createdAt) }}</div>
           <div class="vh-row-meta">
-            <span class="vh-author">{{ shortAuthor(v.authorId) }}</span>
+            <span class="vh-author" :title="v.authorEmail || v.authorId || ''">{{ authorLabel(v) }}</span>
             <span aria-hidden="true">·</span>
             <span>{{ formatBytes(v.byteSize) }}</span>
             <span aria-hidden="true">·</span>

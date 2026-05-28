@@ -26,6 +26,10 @@ export interface VersionListItem {
   version: number
   byteSize: number
   authorId: string | null
+  /** Display name from User.name (preferred). Null for guests, missing users, or legacy rows. */
+  authorName: string | null
+  /** Email fallback only when User.name is missing — never exposed if name is present. */
+  authorEmail: string | null
   createdAt: Date
 }
 
@@ -101,9 +105,43 @@ export async function listVersions(
   const trimmed = hasMore ? items.slice(0, limit) : items
   const total = await prisma.mapVersion.count({ where: { mapId } })
 
+  // Enrich each row with the author's display name (and email as a fallback)
+  // so the Version History panel can show "Vanja Modrinjak" instead of "clx9a2".
+  // MapVersion has no direct user relation, so we do a manual lookup.
+  // Guest authors (id starts with "guest:") and unknown ids stay null on both fields.
+  const realUserIds = Array.from(
+    new Set(
+      trimmed
+        .map(v => v.authorId)
+        .filter((id): id is string => !!id && !id.startsWith('guest:'))
+    )
+  )
+  const users = realUserIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: realUserIds } },
+        select: { id: true, name: true, email: true }
+      })
+    : []
+  const byId = new Map(users.map(u => [u.id, u]))
+
+  const enriched: VersionListItem[] = trimmed.map(v => {
+    const u = v.authorId ? byId.get(v.authorId) : undefined
+    return {
+      id: v.id,
+      version: v.version,
+      byteSize: v.byteSize,
+      authorId: v.authorId,
+      // Prefer User.name to avoid leaking emails. Only fall back to email
+      // when name is empty/null. Guests and unknown authors get null/null.
+      authorName: u?.name ?? null,
+      authorEmail: u?.name ? null : (u?.email ?? null),
+      createdAt: v.createdAt
+    }
+  })
+
   return {
-    items: trimmed,
-    nextCursor: hasMore ? trimmed[trimmed.length - 1]!.id : null,
+    items: enriched,
+    nextCursor: hasMore ? enriched[enriched.length - 1]!.id : null,
     total
   }
 }
