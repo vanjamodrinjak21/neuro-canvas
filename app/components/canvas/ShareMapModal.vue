@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, reactive } from 'vue'
+import { userFriendlyError } from '~/utils/userFriendlyError'
 
 interface ShareRow {
   id: string
@@ -123,8 +124,8 @@ async function load() {
   try {
     shares.value = await $fetch<ShareRow[]>(`/api/maps/${props.mapId}/shares`)
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to load'
+    console.error('[share] load failed', e)
+    error.value = userFriendlyError(e, t)
   } finally {
     loading.value = false
   }
@@ -147,8 +148,8 @@ async function createLink() {
     shares.value = [created, ...shares.value]
     newLabel.value = ''
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to create'
+    console.error('[share] create failed', e)
+    error.value = userFriendlyError(e, t)
   } finally {
     creating.value = false
   }
@@ -156,11 +157,16 @@ async function createLink() {
 
 async function revoke(shareId: string) {
   try {
-    const res = await $fetch<{ ok: true; share: ShareRow }>(`/api/maps/${props.mapId}/shares/${shareId}`, { method: 'DELETE' })
+    // X-Requested-With satisfies the CSRF middleware for bodyless DELETE calls
+    // (no Content-Type means the JSON-body bypass doesn't fire).
+    const res = await $fetch<{ ok: true; share: ShareRow }>(`/api/maps/${props.mapId}/shares/${shareId}`, {
+      method: 'DELETE',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
     shares.value = shares.value.map(s => s.id === shareId ? res.share : s)
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to revoke'
+    console.error('[share] revoke failed', e)
+    error.value = userFriendlyError(e, t)
   }
 }
 

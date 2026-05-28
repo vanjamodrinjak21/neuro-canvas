@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { userFriendlyError } from '~/utils/userFriendlyError'
 
 interface CommentRow {
   id: string
@@ -34,8 +35,8 @@ async function load() {
   try {
     comments.value = await $fetch<CommentRow[]>(`/api/maps/${props.mapId}/comments${queryParam.value}`)
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to load'
+    console.error('[comments] load failed', e)
+    error.value = userFriendlyError(e, t)
   } finally {
     loading.value = false
   }
@@ -54,8 +55,8 @@ async function submitNew() {
     comments.value = [...comments.value, created]
     composing.value = ''
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to post'
+    console.error('[comments] submit failed', e)
+    error.value = userFriendlyError(e, t)
   } finally {
     submitting.value = false
   }
@@ -71,39 +72,48 @@ async function replyTo(threadId: string, body: string) {
     })
     comments.value = [...comments.value, created]
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to reply'
+    console.error('[comments] reply failed', e)
+    error.value = userFriendlyError(e, t)
   }
 }
 
 async function resolveThread(threadId: string) {
   try {
-    await $fetch(`/api/maps/${props.mapId}/comments/${threadId}/resolve${queryParam.value}`, { method: 'POST' })
+    await $fetch(`/api/maps/${props.mapId}/comments/${threadId}/resolve${queryParam.value}`, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
     const now = new Date().toISOString()
     comments.value = comments.value.map(c => c.threadId === threadId ? { ...c, resolvedAt: now } : c)
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to resolve'
+    console.error('[comments] resolve failed', e)
+    error.value = userFriendlyError(e, t)
   }
 }
 async function reopenThread(threadId: string) {
   try {
-    await $fetch(`/api/maps/${props.mapId}/comments/${threadId}/reopen${queryParam.value}`, { method: 'POST' })
+    await $fetch(`/api/maps/${props.mapId}/comments/${threadId}/reopen${queryParam.value}`, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
     comments.value = comments.value.map(c => c.threadId === threadId ? { ...c, resolvedAt: null } : c)
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to reopen'
+    console.error('[comments] reopen failed', e)
+    error.value = userFriendlyError(e, t)
   }
 }
 
 async function deleteComment(commentId: string) {
   if (!window.confirm(t('canvas.comments.delete_confirm'))) return
   try {
-    await $fetch(`/api/maps/${props.mapId}/comments/${commentId}${queryParam.value}`, { method: 'DELETE' })
+    await $fetch(`/api/maps/${props.mapId}/comments/${commentId}${queryParam.value}`, {
+      method: 'DELETE',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
     comments.value = comments.value.filter(c => c.id !== commentId)
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to delete'
+    console.error('[comments] delete failed', e)
+    error.value = userFriendlyError(e, t)
   }
 }
 

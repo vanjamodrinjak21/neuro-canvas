@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { userFriendlyError } from '~/utils/userFriendlyError'
 
 interface VersionRow {
   id: string
@@ -27,8 +28,8 @@ async function load() {
     )
     versions.value = res.items
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to load versions'
+    console.error('[versions] load failed', e)
+    error.value = userFriendlyError(e, t)
   } finally {
     loading.value = false
   }
@@ -39,12 +40,15 @@ async function restore(versionId: string) {
   restoringId.value = versionId
   error.value = null
   try {
-    await $fetch(`/api/maps/${props.mapId}/versions/${versionId}/restore`, { method: 'POST' })
+    await $fetch(`/api/maps/${props.mapId}/versions/${versionId}/restore`, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
     emit('restored')
     emit('close')
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string; message?: string }
-    error.value = err.statusMessage || err.message || 'Failed to restore'
+    console.error('[versions] restore failed', e)
+    error.value = userFriendlyError(e, t)
   } finally {
     restoringId.value = null
   }

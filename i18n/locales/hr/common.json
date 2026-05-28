@@ -93,7 +93,12 @@
             "unauthorized": "Morate se prijaviti za pristup.",
             "forbidden": "Nemate dopu\u0161tenje za ovu radnju.",
             "server": "Gre\u0161ka poslu\u017eitelja. Poku\u0161ajte ponovno kasnije.",
-            "timeout": "Zahtjev je istekao. Poku\u0161ajte ponovno."
+            "timeout": "Zahtjev je istekao. Poku\u0161ajte ponovno.",
+            "session_expired": "Sesija je istekla. Prijavi se ponovno.",
+            "no_permission": "Nema\u0161 dozvolu za tu radnju.",
+            "rate_limited": "Previ\u0161e zahtjeva. Uspori malo.",
+            "server_error": "Ne\u0161to je po\u0161lo po krivu na na\u0161oj strani. Poku\u0161aj ponovno.",
+            "offline": "Izgleda da nisi povezan. Provjeri vezu."
         },
         "time": {
             "just_now": "Upravo sada",

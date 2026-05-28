@@ -1183,7 +1183,8 @@ export function useAI() {
     if (_isNativeShell()) return
     try {
       await $fetch(`/api/embeddings/${mapId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
       })
     } catch (e) {
       console.debug('Failed to clear embedding cache:', e)
