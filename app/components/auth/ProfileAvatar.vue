@@ -30,7 +30,7 @@ const avatarImage = computed(() => user.value?.image || null)
 <template>
   <button
     class="profile-avatar"
-    title="Settings"
+    :title="$t('ui.settings_tooltip')"
     @click="emit('click')"
   >
     <img
@@ -50,20 +50,18 @@ const avatarImage = computed(() => user.value?.image || null)
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--nc-surface-2, #121216), var(--nc-surface-3, #18181D));
+  background: var(--nc-surface-2, #121216);
   border: 1px solid var(--nc-border, #252529);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 150ms ease-out;
 }
 
 .profile-avatar:hover {
   border-color: var(--nc-teal, #00D2BE);
-  transform: scale(1.05);
-  box-shadow: 0 0 20px rgba(0, 210, 190, 0.3);
 }
 
 .profile-avatar:focus-visible {
@@ -88,19 +86,6 @@ const avatarImage = computed(() => user.value?.image || null)
 }
 
 .avatar-ring {
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  background: linear-gradient(135deg, var(--nc-teal, #00D2BE), transparent) border-box;
-  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  -webkit-mask-composite: xor;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.profile-avatar:hover .avatar-ring {
-  opacity: 1;
+  display: none;
 }
 </style>

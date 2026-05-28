@@ -102,8 +102,8 @@ const userName = computed(() => {
   if (user.value?.email) return user.value.email.split('@')[0]
   if (desktopUser.value?.name) return desktopUser.value.name
   if (desktopUser.value?.email) return desktopUser.value.email.split('@')[0]
-  if (hasDesktopSession.value) return 'Desktop User'
-  return 'User'
+  if (hasDesktopSession.value) return t('auth.user_menu.user_default')
+  return t('auth.user_menu.user_default')
 })
 const userEmail = computed(() => {
   if (user.value?.email) return user.value.email
@@ -209,13 +209,13 @@ onMounted(() => {
     <div class="sidebar-logo">
       <NcLogo :size="14" :container-size="28" :radius="7" />
       <span v-if="!collapsed" class="logo-text">NeuroCanvas</span>
-      <button v-if="!collapsed" class="collapse-btn" title="Collapse sidebar" @click="toggleCollapse">
+      <button v-if="!collapsed" class="collapse-btn" :title="$t('canvas.sidebar.collapse_tooltip')" @click="toggleCollapse">
         <span class="i-lucide-panel-left-close collapse-icon" />
       </button>
     </div>
 
     <!-- Expand button (when collapsed) -->
-    <button v-if="collapsed" class="expand-btn" title="Expand sidebar" @click="toggleCollapse">
+    <button v-if="collapsed" class="expand-btn" :title="$t('canvas.sidebar.expand_tooltip')" @click="toggleCollapse">
       <span class="i-lucide-panel-left-open collapse-icon" />
     </button>
 
@@ -226,13 +226,13 @@ onMounted(() => {
         ref="searchInput"
         v-model="searchQuery"
         type="text"
-        placeholder="Search maps..."
+        :placeholder="$t('canvas.sidebar.search_placeholder')"
         class="search-input"
         @keydown="handleSearchKeydown"
       >
       <kbd class="search-kbd">⌘K</kbd>
     </div>
-    <button v-else class="collapsed-search" title="Search (⌘K)" @click="toggleCollapse">
+    <button v-else class="collapsed-search" :title="$t('canvas.sidebar.search_tooltip')" @click="toggleCollapse">
       <span class="i-lucide-search" />
     </button>
 
@@ -256,8 +256,8 @@ onMounted(() => {
       <div v-if="guest.isGuest.value" class="guest-ladder" :class="{ 'is-collapsed': collapsed }">
         <template v-if="!collapsed">
           <div class="ladder-eyebrow-row">
-            <span class="ladder-eyebrow">UNLOCK BY SAVING</span>
-            <span class="ladder-count">5 things</span>
+            <span class="ladder-eyebrow">{{ $t('common.sidebar.upgrade_ladder.unlock_title') }}</span>
+            <span class="ladder-count">{{ $t('common.sidebar.upgrade_ladder.item_5_things') }}</span>
           </div>
           <ul class="ladder-list">
             <li class="ladder-item is-next">
@@ -266,7 +266,7 @@ onMounted(() => {
                   <path d="M6 1 L7.5 4.5 L11 6 L7.5 7.5 L6 11 L4.5 7.5 L1 6 L4.5 4.5 Z" />
                 </svg>
               </span>
-              <span class="ladder-label">AI on this node</span>
+              <span class="ladder-label">{{ $t('common.sidebar.upgrade_ladder.item_ai_node') }}</span>
               <span class="ladder-arrow">→</span>
             </li>
             <li class="ladder-item">
@@ -276,7 +276,7 @@ onMounted(() => {
                   <path d="M2 11 H12" />
                 </svg>
               </span>
-              <span class="ladder-label">Export PNG / JSON</span>
+              <span class="ladder-label">{{ $t('common.sidebar.upgrade_ladder.item_export') }}</span>
             </li>
             <li class="ladder-item">
               <span class="ladder-icon">
@@ -285,7 +285,7 @@ onMounted(() => {
                   <path d="M5 7 L7 9 L10 5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </span>
-              <span class="ladder-label">Multiple maps</span>
+              <span class="ladder-label">{{ $t('common.sidebar.upgrade_ladder.item_multiple_maps') }}</span>
             </li>
             <li class="ladder-item">
               <span class="ladder-icon">
@@ -293,7 +293,7 @@ onMounted(() => {
                   <path d="M3 4 L11 4 M3 7 L11 7 M3 10 L8 10" stroke-linecap="round" />
                 </svg>
               </span>
-              <span class="ladder-label">24 templates</span>
+              <span class="ladder-label">{{ $t('common.sidebar.upgrade_ladder.item_templates') }}</span>
             </li>
             <li class="ladder-item">
               <span class="ladder-icon">
@@ -302,23 +302,23 @@ onMounted(() => {
                   <path d="M7 3 V7 H10" />
                 </svg>
               </span>
-              <span class="ladder-label">Sync across devices</span>
+              <span class="ladder-label">{{ $t('common.sidebar.upgrade_ladder.item_sync') }}</span>
             </li>
           </ul>
         </template>
 
-        <NuxtLink to="/auth/signup" class="ladder-cta" :title="collapsed ? 'Save my map' : undefined" @click="guest.exitGuestMode()">
+        <NuxtLink to="/auth/signup" class="ladder-cta" :title="collapsed ? $t('canvas.sidebar.save_tooltip') : undefined" @click="guest.exitGuestMode()">
           <template v-if="!collapsed">
             <div class="ladder-cta-meta">
               <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="6" cy="6" r="4.5" />
                 <path d="M6 4 V6 L7.5 7.5" />
               </svg>
-              <span>closes tab → all gone</span>
+              <span>{{ $t('common.sidebar.upgrade_ladder.cta_meta') }}</span>
             </div>
-            <div class="ladder-cta-title">Save what you've built.</div>
-            <div class="ladder-cta-desc">8 seconds. No card.</div>
-            <div class="ladder-cta-btn">Save my map →</div>
+            <div class="ladder-cta-title">{{ $t('common.sidebar.upgrade_ladder.cta_title') }}</div>
+            <div class="ladder-cta-desc">{{ $t('common.sidebar.upgrade_ladder.cta_desc') }}</div>
+            <div class="ladder-cta-btn">{{ $t('common.sidebar.upgrade_ladder.cta_button') }}</div>
           </template>
           <span v-else class="ladder-cta-collapsed">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
@@ -336,7 +336,7 @@ onMounted(() => {
           @click="desktopAuth?.signIn()"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
-          <span v-if="!collapsed">{{ desktopAuth?.showAuthModal.value ? 'Signing in...' : 'Sign In' }}</span>
+          <span v-if="!collapsed">{{ desktopAuth?.showAuthModal.value ? $t('common.buttons.signing_in') : $t('common.buttons.sign_in') }}</span>
         </button>
       </div>
 
@@ -363,7 +363,7 @@ onMounted(() => {
           <button
             ref="sidebarThemeBtnRef"
             class="sidebar-theme-btn"
-            :aria-label="isLightSidebar ? 'Switch to dark mode' : 'Switch to light mode'"
+            :aria-label="isLightSidebar ? $t('common.theme.to_dark') : $t('common.theme.to_light')"
             @click.stop="sidebarThemeReveal($event.currentTarget as HTMLElement, isLightSidebar ? 'dark' : 'light')"
           >
             <!-- Sun -->
@@ -381,7 +381,7 @@ onMounted(() => {
             @click.stop="onSignOut"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-            <span>Sign Out</span>
+            <span>{{ $t('common.buttons.sign_out') }}</span>
           </button>
         </Transition>
       </div>
@@ -722,8 +722,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 6px;
+  /* Circular avatar so a Google profile photo with dark edges doesn't
+     read as a hard black square against the warm-paper sidebar. The
+     thin ring keeps the edge visible even when the image background
+     matches the sidebar. */
+  border-radius: 50%;
   background: var(--sb-accent, #00D2BE);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .user-initials {
@@ -792,7 +798,6 @@ onMounted(() => {
 .ladder-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 10px;
-  letter-spacing: 0.06em;
   color: var(--sb-muted, #52525B);
 }
 

@@ -38,22 +38,22 @@ onMounted(() => {
           <span class="i-lucide-brain text-2xl" />
         </div>
 
-        <h3 class="nc-empty-title">Start mapping your ideas</h3>
+        <h3 class="nc-empty-title">{{ $t('canvas.empty_guide.title') }}</h3>
         <p class="nc-empty-subtitle">
-          Double-click anywhere to create a node, or choose an option below
+          {{ $t('canvas.empty_guide.subtitle') }}
         </p>
 
         <!-- Quick actions -->
         <div class="nc-empty-actions">
           <button class="nc-empty-action" @click="emit('add-node'); dismiss()">
             <span class="i-lucide-plus text-sm" />
-            <span>Add first node</span>
+            <span>{{ $t('canvas.empty_guide.add_first_node') }}</span>
             <kbd class="nc-empty-kbd">N</kbd>
           </button>
 
           <button class="nc-empty-action ai" @click="emit('generate-map'); dismiss()">
-            <span class="i-lucide-sparkles text-sm" />
-            <span>Generate with AI</span>
+            <span class="i-lucide-grid-2x2-plus text-sm" />
+            <span>{{ $t('canvas.empty_guide.generate_with_ai') }}</span>
           </button>
         </div>
 

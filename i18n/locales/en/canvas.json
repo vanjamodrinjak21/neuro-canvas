@@ -182,7 +182,12 @@
       "toggle_semantic": "Toggle Semantic Field",
       "ai_features": "AI Features",
       "ai_expand_desc": "AI Expand",
-      "accept_suggestion": "Accept suggestion"
+      "accept_suggestion": "Accept suggestion",
+      "search": "Search shortcuts",
+      "no_results": "No shortcuts match your search.",
+      "toggle_hint": "Toggle this panel anytime",
+      "got_it": "Got it",
+      "close": "Close"
     },
     "graph_controls": {
       "title": "Graph Controls",
@@ -307,7 +312,22 @@
       "rel_mins": "{n}m",
       "copy_link": "Copy link",
       "revoke": "Revoke",
-      "footnote": "Editor links require sign-in. Viewer links work for anyone."
+      "footnote": "Editor links require sign-in. Viewer links work for anyone.",
+      "invite_aria": "Email this link",
+      "invite_label": "Invite people by email",
+      "invite_recipients_placeholder": "Enter email addresses, comma-separated",
+      "invite_note_placeholder": "Optional personal note (500 chars max)",
+      "invite_hint": "Comma-separate emails. Up to 20 per send.",
+      "invite_send": "Send invite",
+      "invite_sending": "Sending…",
+      "invite_sent": "Sent to {n} recipient(s).",
+      "invite_partial": "Sent to {sent}, {failed} failed.",
+      "invite_all_failed": "Couldn't send any invites. Try again in a moment.",
+      "invite_failed": "Couldn't send invites.",
+      "invite_rate_limited": "Too many invites — wait an hour before sending more.",
+      "invite_no_recipients": "Add at least one email address.",
+      "invite_invalid_email": "\"{email}\" isn't a valid email address.",
+      "invite_too_many": "Max 20 recipients per invite."
     },
     "version_history": {
       "title": "Version history",
@@ -340,6 +360,175 @@
       "delete_confirm": "Delete this comment?",
       "share_modal_role_commenter": "Commenter",
       "share_modal_role_commenter_chip": "COMMENTER"
+    },
+    "sidebar": {
+      "collapse_tooltip": "Collapse sidebar",
+      "expand_tooltip": "Expand sidebar",
+      "search_placeholder": "Search maps...",
+      "search_tooltip": "Search (⌘K)",
+      "save_tooltip": "Save my map"
+    },
+    "multiselect": {
+      "duplicate_tooltip": "Duplicate selected (Ctrl+D)",
+      "ai_expand_tooltip": "AI Expand",
+      "delete_tooltip": "Delete selected (Del)"
+    },
+    "filter_nodes_placeholder": "Filter nodes...",
+    "search_nodes_placeholder": "Search nodes...",
+    "node_panel": {
+      "label_placeholder": "Label...",
+      "label_full_placeholder": "Node label...",
+      "notes_placeholder": "Notes...",
+      "notes_full_placeholder": "Add notes about this node..."
+    },
+    "node_props_form": {
+      "category": "Category",
+      "color": "Color",
+      "shape": "Shape",
+      "label": "Label",
+      "notes": "Notes",
+      "duplicate": "Duplicate",
+      "empty_state": "Select a node to edit",
+      "shape_rounded": "Rounded",
+      "shape_rectangle": "Rectangle",
+      "shape_circle": "Circle",
+      "shape_diamond": "Diamond",
+      "shape_hexagon": "Hexagon",
+      "shape_star": "Star",
+      "shape_pill": "Pill",
+      "shape_dot": "Dot",
+      "cat_concept": "Concept",
+      "cat_desc": "Description",
+      "cat_evidence": "Evidence",
+      "cat_question": "Question",
+      "cat_idea": "Idea",
+      "cat_ref": "Reference",
+      "cat_process": "Process",
+      "cat_node": "Node",
+      "cat_uncategorized": "Uncategorized"
+    },
+    "ai_panel": {
+      "ask_placeholder": "Ask about your map..."
+    },
+    "ai_suggestions": {
+      "title": "AI Suggestions",
+      "based_on_node": "Based on \"{name}\" node",
+      "select_node_first": "Select a node first",
+      "refresh": "Refresh",
+      "no_suggestions": "No suggestions yet",
+      "generate_ideas": "Generate ideas",
+      "generate_map_from_topic": "Generate map from topic",
+      "ai_description": "AI Description",
+      "no_description": "No description generated",
+      "generate_description": "Generate description"
+    },
+    "empty_guide": {
+      "title": "Start mapping your ideas",
+      "subtitle": "Double-click anywhere to create a node, or choose an option below",
+      "add_first_node": "Add first node",
+      "generate_with_ai": "Generate with AI"
+    },
+    "graph_controls_panel": {
+      "title": "Graph Controls",
+      "view_mode": "View Mode",
+      "mode_global": "Global",
+      "mode_local": "Local",
+      "depth": "Depth",
+      "hops": "{n} hops",
+      "physics": "Physics",
+      "link_distance": "Link Distance",
+      "repulsion": "Repulsion",
+      "center_force": "Center Force",
+      "collision_radius": "Collision Radius",
+      "search_label": "Search",
+      "edges_count": "{n} edges"
+    },
+    "markdown_editor": {
+      "nodes_label": "NODES",
+      "no_nodes": "No nodes yet",
+      "graph_preview": "GRAPH PREVIEW",
+      "selected": "SELECTED",
+      "connections": "CONNECTIONS",
+      "connections_count": "{n} connections",
+      "outline": "OUTLINE"
+    },
+    "overlay": {
+      "load_failed": "Failed to load map",
+      "go_to_dashboard": "Go to Dashboard"
+    },
+    "node_properties": {
+      "panel_title": "Properties",
+      "section_title": "Node Properties",
+      "description": "Description",
+      "keywords": "Keywords",
+      "notes": "Notes",
+      "ai_insights": "AI Insights",
+      "domain": "Domain",
+      "prerequisites": "Prerequisites",
+      "connections": "Connections",
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
+      "no_description": "No description yet.",
+      "generated_at": "Generated {time}"
+    },
+    "graph_view": {
+      "title": "Graph View",
+      "local_connections": "Local connections",
+      "all_connections": "All connections",
+      "click_to_navigate_short": "Click to navigate",
+      "drag_to_pan": "Drag to pan, scroll to zoom",
+      "drag_node_to_move": "Drag node to move, Shift+release to pin",
+      "click_node_to_navigate": "Click node to navigate",
+      "close": "Close"
+    },
+    "untitled": "Untitled",
+    "node_templates": {
+      "title": "Node Templates"
+    },
+    "backlinks": {
+      "links": "Links"
+    },
+    "context_menu": {
+      "edit": "Edit",
+      "copy": "Copy",
+      "change_color": "Change color",
+      "color_teal": "Teal",
+      "color_purple": "Purple",
+      "color_pink": "Pink",
+      "color_blue": "Blue",
+      "color_green": "Green",
+      "smart_expand": "Smart Expand",
+      "view_backlinks": "View Backlinks",
+      "open_local_graph": "Open Local Graph",
+      "delete": "Delete",
+      "disconnect": "Disconnect",
+      "delete_connection": "Delete Connection",
+      "add_node": "Add Node",
+      "templates": "Templates",
+      "paste": "Paste"
+    },
+    "agent": {
+      "start_session": "Start Session"
+    },
+    "semantic": {
+      "title": "Semantic Field",
+      "enable": "Enable",
+      "field_intensity": "Field Intensity",
+      "similarity_threshold": "Similarity Threshold",
+      "show_particles": "Show Particles",
+      "show_resonance": "Show Resonance Pulses",
+      "show_cluster_glow": "Show Cluster Glow",
+      "show_cluster_labels": "Show Cluster Labels",
+      "interactive_exploration": "Interactive Exploration",
+      "max_field_lines": "Max Field Lines",
+      "adaptive_line_count": "Adaptive Line Count",
+      "ai_status": "AI Status",
+      "model": "Model",
+      "backend": "Backend",
+      "embedded": "Embedded",
+      "clusters": "Clusters",
+      "load_now": "Load now",
+      "loading": "Loading…"
     }
   }
 }

@@ -94,8 +94,8 @@ function handleEnd() {
         Start a conversation about your map. The AI agent can suggest additions, connections, and restructuring.
       </p>
       <button class="nc-agent-start-btn" @click="handleStart">
-        <span class="i-lucide-sparkles text-sm" />
-        Start Session
+        <span class="i-lucide-message-square text-sm" />
+        {{ $t('canvas.agent.start_session') }}
       </button>
     </div>
 
@@ -150,7 +150,7 @@ function handleEnd() {
         <textarea
           v-model="userInput"
           class="nc-agent-input"
-          placeholder="Ask about your map..."
+          :placeholder="$t('canvas.ai_panel.ask_placeholder')"
           :disabled="agent.isThinking.value"
           rows="1"
           @keydown="handleKeyDown"

@@ -7,13 +7,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from 'radix-vue'
+import { safeImageUrl } from '~/utils/safeUrl'
 
+const { t } = useI18n()
 const { data: _sessionData, status } = useAuth()
 const session = _sessionData ?? ref(null)
 const { handleSignOut, isLoading } = useAuthStore()
 const router = useRouter()
 
 const user = computed(() => session.value?.user)
+const avatarSrc = computed(() => safeImageUrl(user.value?.image))
 
 const initials = computed(() => {
   if (!user.value?.name && !user.value?.email) return '?'
@@ -41,10 +44,11 @@ function goToProfile() {
       <button class="user-menu-trigger" :disabled="status === 'loading'">
         <div class="avatar">
           <img
-            v-if="user?.image"
-            :src="user.image"
-            :alt="user.name || 'User'"
+            v-if="avatarSrc"
+            :src="avatarSrc"
+            :alt="user?.name || 'User'"
             class="avatar-image"
+            referrerpolicy="no-referrer"
           >
           <span v-else class="avatar-initials">{{ initials }}</span>
         </div>
@@ -70,7 +74,7 @@ function goToProfile() {
             <span v-else class="user-avatar-initials">{{ initials }}</span>
           </div>
           <div class="user-details">
-            <p class="user-name">{{ user?.name || 'User' }}</p>
+            <p class="user-name">{{ user?.name || t('auth.user_menu.user_default') }}</p>
             <p class="user-email">{{ user?.email }}</p>
           </div>
         </div>
@@ -80,12 +84,12 @@ function goToProfile() {
         <!-- Menu items -->
         <DropdownMenuItem class="menu-item" @click="goToProfile">
           <span class="i-lucide-user menu-icon" />
-          <span>Profile</span>
+          <span>{{ t('auth.user_menu.profile') }}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem class="menu-item" @click="goToSettings">
           <span class="i-lucide-settings menu-icon" />
-          <span>Settings</span>
+          <span>{{ t('auth.user_menu.settings') }}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator class="menu-separator" />
@@ -97,7 +101,7 @@ function goToProfile() {
         >
           <span v-if="isLoading" class="i-lucide-loader-2 animate-spin menu-icon" />
           <span v-else class="i-lucide-log-out menu-icon" />
-          <span>Sign out</span>
+          <span>{{ t('auth.user_menu.sign_out') }}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>

@@ -105,11 +105,11 @@ const sheetStyle = computed(() => ({
           <div class="w-10 h-1 bg-nc-border-active rounded-full mb-2" />
           <div class="flex items-center justify-between w-full px-4">
             <div class="flex items-center gap-2">
-              <span class="i-lucide-sparkles text-lg text-nc-accent" />
-              <span class="text-sm font-semibold text-nc-ink">AI Suggestions</span>
+              <span class="i-lucide-list-tree text-lg text-nc-accent" />
+              <span class="text-sm font-semibold text-nc-ink">{{ $t('canvas.ai_suggestions.title') }}</span>
               <span
                 v-if="isAILoading"
-                class="w-4 h-4 border-2 border-nc-accent border-t-transparent rounded-full animate-spin"
+                class="w-1.5 h-1.5 rounded-full bg-nc-accent animate-pulse"
               />
             </div>
             <button

@@ -177,8 +177,8 @@ watch(() => props.visible, (isVisible) => {
                 :disabled="!topic.trim() || isLoading"
                 @click="handleGenerate"
               >
-                <span v-if="isLoading" class="i-lucide-loader-2 animate-spin" />
-                <span v-else class="i-lucide-sparkles" />
+                <span v-if="isLoading" class="i-lucide-loader-2 animate-pulse" />
+                <span v-else class="i-lucide-grid-2x2-plus" />
                 <span>{{ isLoading ? $t('canvas.generate_map.generating') : $t('canvas.generate_map.generate') }}</span>
               </button>
             </div>

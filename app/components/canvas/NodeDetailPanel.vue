@@ -14,6 +14,7 @@ const emit = defineEmits<{
 }>()
 
 const mapStore = useMapStore()
+const { t } = useI18n()
 
 // Category info
 const categoryColors: Record<string, string> = {
@@ -26,15 +27,15 @@ const categoryColors: Record<string, string> = {
   default: '#00D2BE',
 }
 
-const categoryLabels: Record<string, string> = {
-  'main-fact': 'Concept',
-  description: 'Description',
-  evidence: 'Evidence',
-  question: 'Question',
-  idea: 'Idea',
-  reference: 'Reference',
-  process: 'Process',
-  default: 'Node',
+const categoryLabelKey: Record<string, string> = {
+  'main-fact': 'canvas.node_props_form.cat_concept',
+  description: 'canvas.node_props_form.cat_desc',
+  evidence: 'canvas.node_props_form.cat_evidence',
+  question: 'canvas.node_props_form.cat_question',
+  idea: 'canvas.node_props_form.cat_idea',
+  reference: 'canvas.node_props_form.cat_ref',
+  process: 'canvas.node_props_form.cat_process',
+  default: 'canvas.node_props_form.cat_node',
 }
 
 const category = computed(() => {
@@ -46,15 +47,9 @@ const categoryColor = computed(() => {
 })
 
 const categoryLabel = computed(() => {
-  return categoryLabels[category.value] || category.value.charAt(0).toUpperCase() + category.value.slice(1)
-})
-
-// Badge text color for contrast
-const badgeTextColor = computed(() => {
-  const color = categoryColor.value
-  const lightBgColors = ['#FACC15', '#4ADE80', '#FB923C']
-  if (lightBgColors.includes(color)) return '#0A0A0C'
-  return '#FFFFFF'
+  const key = categoryLabelKey[category.value]
+  if (key) return t(key)
+  return category.value.charAt(0).toUpperCase() + category.value.slice(1)
 })
 
 // Description
@@ -123,7 +118,7 @@ function getNodeColor(node: Node): string {
         <div class="detail-panel__header-left">
           <span
             class="detail-panel__badge"
-            :style="{ background: categoryColor, color: badgeTextColor }"
+            :style="{ '--badge-color': categoryColor }"
           >
             {{ categoryLabel }}
           </span>
@@ -161,21 +156,21 @@ function getNodeColor(node: Node): string {
         <section class="detail-panel__section">
           <div class="detail-panel__section-header">
             <span class="i-lucide-file-text detail-panel__section-icon" />
-            <span class="detail-panel__section-label">Description</span>
+            <span class="detail-panel__section-label">{{ $t('canvas.node_properties.description') }}</span>
           </div>
 
           <template v-if="hasDescription">
             <p class="detail-panel__summary">{{ description!.summary }}</p>
             <p v-if="description!.details" class="detail-panel__details">{{ description!.details }}</p>
             <span v-if="description!.generatedAt" class="detail-panel__generated-at">
-              Generated {{ formatDate(description!.generatedAt) }}
+              {{ $t('canvas.node_properties.generated_at', { time: formatDate(description!.generatedAt) }) }}
             </span>
           </template>
           <div v-else class="detail-panel__empty-desc">
-            <p>No description yet.</p>
+            <p>{{ $t('canvas.node_properties.no_description') }}</p>
             <button class="detail-panel__generate-btn" @click="emit('generateDescription')">
-              <span class="i-lucide-sparkles" />
-              Generate with AI
+              <span class="i-lucide-pen-line" />
+              {{ $t('canvas.empty_guide.generate_with_ai') }}
             </button>
           </div>
         </section>
@@ -184,7 +179,7 @@ function getNodeColor(node: Node): string {
         <section v-if="description?.keywords?.length" class="detail-panel__section">
           <div class="detail-panel__section-header">
             <span class="i-lucide-tag detail-panel__section-icon" />
-            <span class="detail-panel__section-label">Keywords</span>
+            <span class="detail-panel__section-label">{{ $t('canvas.node_properties.keywords') }}</span>
           </div>
           <div class="detail-panel__keywords">
             <span
@@ -201,7 +196,7 @@ function getNodeColor(node: Node): string {
         <section v-if="notes" class="detail-panel__section">
           <div class="detail-panel__section-header">
             <span class="i-lucide-notebook-pen detail-panel__section-icon" />
-            <span class="detail-panel__section-label">Notes</span>
+            <span class="detail-panel__section-label">{{ $t('canvas.node_properties.notes') }}</span>
           </div>
           <p class="detail-panel__notes">{{ notes }}</p>
         </section>
@@ -210,14 +205,14 @@ function getNodeColor(node: Node): string {
         <section v-if="aiMeta?.inferredDomain || aiMeta?.prerequisites?.length" class="detail-panel__section">
           <div class="detail-panel__section-header">
             <span class="i-lucide-brain detail-panel__section-icon" />
-            <span class="detail-panel__section-label">AI Insights</span>
+            <span class="detail-panel__section-label">{{ $t('canvas.node_properties.ai_insights') }}</span>
           </div>
           <div v-if="aiMeta?.inferredDomain" class="detail-panel__insight-row">
-            <span class="detail-panel__insight-label">Domain</span>
+            <span class="detail-panel__insight-label">{{ $t('canvas.node_properties.domain') }}</span>
             <span class="detail-panel__insight-value">{{ aiMeta.inferredDomain }}</span>
           </div>
           <div v-if="aiMeta?.prerequisites?.length" class="detail-panel__insight-row">
-            <span class="detail-panel__insight-label">Prerequisites</span>
+            <span class="detail-panel__insight-label">{{ $t('canvas.node_properties.prerequisites') }}</span>
             <div class="detail-panel__insight-list">
               <span v-for="p in aiMeta.prerequisites" :key="p" class="detail-panel__insight-tag">{{ p }}</span>
             </div>
@@ -228,7 +223,7 @@ function getNodeColor(node: Node): string {
         <section v-if="totalConnections > 0" class="detail-panel__section">
           <div class="detail-panel__section-header">
             <span class="i-lucide-link detail-panel__section-icon" />
-            <span class="detail-panel__section-label">Connections</span>
+            <span class="detail-panel__section-label">{{ $t('canvas.node_properties.connections') }}</span>
             <span class="detail-panel__section-count">{{ totalConnections }}</span>
           </div>
 
@@ -236,7 +231,7 @@ function getNodeColor(node: Node): string {
           <div v-if="connections.incoming.length" class="detail-panel__conn-group">
             <span class="detail-panel__conn-direction">
               <span class="i-lucide-corner-down-left" />
-              Incoming
+              {{ $t('canvas.node_properties.incoming') }}
             </span>
             <button
               v-for="link in connections.incoming"
@@ -257,7 +252,7 @@ function getNodeColor(node: Node): string {
           <div v-if="connections.outgoing.length" class="detail-panel__conn-group">
             <span class="detail-panel__conn-direction">
               <span class="i-lucide-corner-right-up" />
-              Outgoing
+              {{ $t('canvas.node_properties.outgoing') }}
             </span>
             <button
               v-for="link in connections.outgoing"
@@ -287,13 +282,11 @@ function getNodeColor(node: Node): string {
   bottom: 0;
   width: 360px;
   z-index: 140;
-  background: rgba(12, 12, 14, 0.96);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: var(--nc-surface, #111114);
   border-left: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.18);
 }
 
 /* Header */
@@ -312,15 +305,41 @@ function getNodeColor(node: Node): string {
   gap: 8px;
 }
 
+/* Category badge: matches the canvas drawNode left-strip pattern.
+   Previous design used the saturated category color as a solid fill
+   (orange / pink / blue pill) which dominated the panel and looked
+   stylistically inconsistent with the editorial Paper aesthetic.
+   New design: neutral pill + 3px colored left strip + colored text —
+   identifiable at a glance, doesn't shout. */
 .detail-panel__badge {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
+  padding: 4px 12px 4px 14px;
   border-radius: 6px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--nc-surface, #1A1A1E);
+  color: var(--badge-color, var(--nc-text, #FAFAFA));
+  border: 1px solid var(--nc-border, #27272A);
+  overflow: hidden;
+}
+.detail-panel__badge::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--badge-color, var(--nc-accent, #00D2BE));
+  border-radius: 6px 0 0 6px;
+}
+:root.light .detail-panel__badge {
+  background: #FFFFFF;
+  border-color: #E5E5E2;
 }
 
 .detail-panel__close {
@@ -667,9 +686,9 @@ function getNodeColor(node: Node): string {
 
 /* Light theme */
 :root.light .detail-panel {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--nc-surface, #F5F5F3);
   border-left-color: #E4E4E7;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.08);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
 }
 
 :root.light .detail-panel__header {

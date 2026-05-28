@@ -22,14 +22,14 @@ const style = computed(() => ({
 
 <template>
   <div class="nc-multiselect-bar" :style="style">
-    <span class="nc-ms-count">{{ count }} selected</span>
+    <span class="nc-ms-count">{{ $t('maps.select.selected_count', { n: count }) }}</span>
 
     <div class="nc-ms-divider" />
 
     <button
       class="nc-ms-btn"
-      title="Duplicate selected (Ctrl+D)"
-      aria-label="Duplicate selected"
+      :title="$t('canvas.multiselect.duplicate_tooltip')"
+      :aria-label="$t('canvas.multiselect.duplicate_tooltip')"
       @click="emit('duplicate')"
     >
       <span class="i-lucide-copy text-sm" />
@@ -37,17 +37,17 @@ const style = computed(() => ({
 
     <button
       class="nc-ms-btn nc-ms-btn-ai"
-      title="AI Expand"
-      aria-label="AI expand selected"
+      :title="$t('canvas.multiselect.ai_expand_tooltip')"
+      :aria-label="$t('canvas.multiselect.ai_expand_tooltip')"
       @click="emit('ai-expand')"
     >
-      <span class="i-lucide-sparkles text-sm" />
+      <span class="i-lucide-waypoints text-sm" />
     </button>
 
     <button
       class="nc-ms-btn nc-ms-btn-danger"
-      title="Delete selected (Del)"
-      aria-label="Delete selected"
+      :title="$t('canvas.multiselect.delete_tooltip')"
+      :aria-label="$t('canvas.multiselect.delete_tooltip')"
       @click="emit('delete')"
     >
       <span class="i-lucide-trash-2 text-sm" />
@@ -61,12 +61,10 @@ const style = computed(() => ({
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: rgba(18, 18, 24, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--nc-surface, #111114);
+  border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
   pointer-events: auto;
 }
 

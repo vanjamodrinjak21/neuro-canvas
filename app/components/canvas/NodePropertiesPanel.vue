@@ -11,6 +11,7 @@ const emit = defineEmits<{
 }>()
 
 const mapStore = useMapStore()
+const { t } = useI18n()
 
 // Local state for editing
 const localContent = ref('')
@@ -37,16 +38,16 @@ watch(() => props.node, (newNode) => {
 }, { immediate: true })
 
 // Shape options
-const shapes: { value: NodeShape; icon: string; label: string }[] = [
-  { value: 'rounded',   icon: 'i-lucide-square',                label: 'Rounded' },
-  { value: 'rectangle', icon: 'i-lucide-rectangle-horizontal',  label: 'Rectangle' },
-  { value: 'circle',    icon: 'i-lucide-circle',                label: 'Circle' },
-  { value: 'diamond',   icon: 'i-lucide-diamond',               label: 'Diamond' },
-  { value: 'hexagon',   icon: 'i-lucide-hexagon',               label: 'Hexagon' },
-  { value: 'star',      icon: 'i-lucide-star',                  label: 'Star' },
-  { value: 'pill',      icon: 'i-lucide-pill',                  label: 'Pill' },
-  { value: 'dot',       icon: 'i-lucide-minus',                 label: 'Dot' },
-]
+const shapes = computed<{ value: NodeShape; icon: string; label: string }[]>(() => [
+  { value: 'rounded',   icon: 'i-lucide-square',                label: t('canvas.node_props_form.shape_rounded') },
+  { value: 'rectangle', icon: 'i-lucide-rectangle-horizontal',  label: t('canvas.node_props_form.shape_rectangle') },
+  { value: 'circle',    icon: 'i-lucide-circle',                label: t('canvas.node_props_form.shape_circle') },
+  { value: 'diamond',   icon: 'i-lucide-diamond',               label: t('canvas.node_props_form.shape_diamond') },
+  { value: 'hexagon',   icon: 'i-lucide-hexagon',               label: t('canvas.node_props_form.shape_hexagon') },
+  { value: 'star',      icon: 'i-lucide-star',                  label: t('canvas.node_props_form.shape_star') },
+  { value: 'pill',      icon: 'i-lucide-pill',                  label: t('canvas.node_props_form.shape_pill') },
+  { value: 'dot',       icon: 'i-lucide-minus',                 label: t('canvas.node_props_form.shape_dot') },
+])
 
 // Font weight options
 const fontWeights = [
@@ -160,7 +161,7 @@ onKeyStroke('Escape', () => {
       v-if="node"
       class="absolute right-4 top-20 w-60 z-toolbar bg-[#111114] border border-[#1E1E22] rounded-xl p-4"
     >
-      <h3 class="text-xs font-semibold text-[#888890] mb-4">Properties</h3>
+      <h3 class="text-xs font-semibold text-[#888890] mb-4">{{ $t('canvas.node_properties.panel_title') }}</h3>
 
       <!-- Color dots - 20px, no labels -->
       <div class="flex gap-2 mb-4">
@@ -195,7 +196,7 @@ onKeyStroke('Escape', () => {
         v-model="localContent"
         type="text"
         class="w-full bg-[#1A1A1E] border border-[#1E1E22] rounded-lg px-3 py-2 text-sm text-[#FAFAFA] placeholder-[#555558] focus:border-[#00D2BE] focus:outline-none mb-3"
-        placeholder="Label..."
+        :placeholder="$t('canvas.node_panel.label_placeholder')"
         @blur="updateContent"
         @keydown.enter="updateContent"
       >
@@ -203,7 +204,7 @@ onKeyStroke('Escape', () => {
       <!-- Notes - placeholder only, expands on focus -->
       <textarea
         v-model="localNotes"
-        placeholder="Notes..."
+        :placeholder="$t('canvas.node_panel.notes_placeholder')"
         class="w-full bg-[#1A1A1E] border border-[#1E1E22] rounded-lg px-3 py-2 text-sm text-[#FAFAFA] placeholder-[#555558] focus:border-[#00D2BE] focus:outline-none resize-none"
         rows="2"
         @blur="updateNotes"

@@ -21,9 +21,9 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
     <!-- Header -->
     <div class="ai-panel__header">
       <div class="ai-panel__header-info">
-        <span class="ai-panel__header-title">AI Suggestions</span>
+        <span class="ai-panel__header-title">{{ $t('canvas.ai_suggestions.title') }}</span>
         <span class="ai-panel__header-context">
-          {{ selectedNode ? `Based on "${selectedNode.content}" node` : 'Select a node first' }}
+          {{ selectedNode ? $t('canvas.ai_suggestions.based_on_node', { name: selectedNode.content }) : $t('canvas.ai_suggestions.select_node_first') }}
         </span>
       </div>
       <button
@@ -32,7 +32,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
         @click="dispatch({ type: 'ai:smart-expand' })"
       >
         <span class="i-lucide-refresh-cw ai-panel__refresh-icon" />
-        <span>Refresh</span>
+        <span>{{ $t('canvas.ai_suggestions.refresh') }}</span>
       </button>
     </div>
 
@@ -78,17 +78,17 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
       <!-- Empty state -->
       <template v-else>
         <div class="ai-panel__empty">
-          <span class="i-lucide-sparkles ai-panel__empty-icon" />
+          <span class="i-lucide-list-tree ai-panel__empty-icon" />
           <p class="ai-panel__empty-text">
-            {{ selectedNode ? 'No suggestions yet' : 'Select a node first' }}
+            {{ selectedNode ? $t('canvas.ai_suggestions.no_suggestions') : $t('canvas.ai_suggestions.select_node_first') }}
           </p>
           <button
             v-if="selectedNode"
             class="ai-panel__generate-btn"
             @click="dispatch({ type: 'ai:smart-expand' })"
           >
-            <span class="i-lucide-sparkles" />
-            Generate ideas
+            <span class="i-lucide-waypoints" />
+            {{ $t('canvas.ai_suggestions.generate_ideas') }}
           </button>
           <button
             v-if="!selectedNode"
@@ -96,7 +96,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
             @click="dispatch({ type: 'ai:generate-map' })"
           >
             <span class="i-lucide-map" />
-            Generate map from topic
+            {{ $t('canvas.ai_suggestions.generate_map_from_topic') }}
           </button>
         </div>
       </template>
@@ -104,7 +104,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
       <!-- Node description sub-section -->
       <div v-if="selectedNode" class="ai-panel__description">
         <div class="ai-panel__description-divider" />
-        <div class="ai-panel__description-label">AI Description</div>
+        <div class="ai-panel__description-label">{{ $t('canvas.ai_suggestions.ai_description') }}</div>
         <template v-if="selectedNode.metadata?.description">
           <p class="ai-panel__description-text">
             {{ (selectedNode.metadata.description as { summary: string }).summary }}
@@ -123,13 +123,13 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
           </div>
         </template>
         <template v-else>
-          <p class="ai-panel__empty-text text-xs mb-2">No description generated</p>
+          <p class="ai-panel__empty-text text-xs mb-2">{{ $t('canvas.ai_suggestions.no_description') }}</p>
           <button
             class="ai-panel__generate-btn ai-panel__generate-btn--small"
             @click="dispatch({ type: 'ai:generate-description' })"
           >
             <span class="i-lucide-wand-2" />
-            Generate description
+            {{ $t('canvas.ai_suggestions.generate_description') }}
           </button>
         </template>
       </div>

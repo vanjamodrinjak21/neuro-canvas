@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useSemanticStore } from '~/stores/semanticStore'
+import { useAI } from '~/composables/useAI'
 
 defineProps<{
   visible: boolean
@@ -10,6 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const semanticStore = useSemanticStore()
+const ai = useAI()
 
 // Local refs bound to store settings
 const settings = computed(() => semanticStore.fieldSettings)
@@ -28,6 +31,26 @@ const backendLabel = computed(() => {
 
 const embeddedCount = computed(() => semanticStore.embeddedNodeCount)
 const clusterCount = computed(() => semanticStore.clusterCount)
+
+// Backend load state. The semantic engine is lazy by default — it loads
+// on first semantic operation. Surfacing an explicit "Load now" button
+// in the status row turns a passive "Not loaded" label into an action,
+// so the user can pre-warm the model before they start exploring.
+const isBackendLoaded = computed(() => semanticStore.aiState.modelLoaded === true)
+const isBackendLoading = computed(() => {
+  const status = semanticStore.aiState.status
+  return status === 'loading-model'
+})
+const loadError = ref<string | null>(null)
+
+async function loadBackend() {
+  loadError.value = null
+  try {
+    await ai.initialize()
+  } catch (e) {
+    loadError.value = e instanceof Error ? e.message : 'Could not load AI model'
+  }
+}
 </script>
 
 <template>
@@ -46,7 +69,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
         <div class="nc-settings-panel">
           <!-- Header -->
           <div class="nc-settings-header">
-            <h3 class="nc-settings-title">Semantic Field</h3>
+            <h3 class="nc-settings-title">{{ $t('canvas.semantic.title') }}</h3>
             <button class="nc-settings-close" @click="emit('close')">
               <span class="i-lucide-x text-base" />
             </button>
@@ -56,7 +79,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
           <div class="nc-settings-body">
             <!-- Master toggle -->
             <div class="nc-setting-row">
-              <label class="nc-setting-label">Enable</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.enable') }}</label>
               <button
                 :class="['nc-toggle', settings.enabled && 'active']"
                 @click="semanticStore.toggleField()"
@@ -69,7 +92,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
 
             <!-- Field intensity -->
             <div class="nc-setting-row column">
-              <label class="nc-setting-label">Field Intensity</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.field_intensity') }}</label>
               <input
                 type="range"
                 min="0"
@@ -84,7 +107,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
             <!-- Similarity threshold -->
             <div class="nc-setting-row column">
               <div class="nc-setting-label-row">
-                <label class="nc-setting-label">Similarity Threshold</label>
+                <label class="nc-setting-label">{{ $t('canvas.semantic.similarity_threshold') }}</label>
                 <span class="nc-setting-value">{{ Math.round(settings.similarityThreshold * 100) }}%</span>
               </div>
               <input
@@ -102,7 +125,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
 
             <!-- Toggles -->
             <div class="nc-setting-row">
-              <label class="nc-setting-label">Show Particles</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.show_particles') }}</label>
               <button
                 :class="['nc-toggle', settings.showParticles && 'active']"
                 @click="updateSetting('showParticles', !settings.showParticles)"
@@ -112,7 +135,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
             </div>
 
             <div class="nc-setting-row">
-              <label class="nc-setting-label">Show Resonance Pulses</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.show_resonance') }}</label>
               <button
                 :class="['nc-toggle', settings.showPulses && 'active']"
                 @click="updateSetting('showPulses', !settings.showPulses)"
@@ -122,7 +145,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
             </div>
 
             <div class="nc-setting-row">
-              <label class="nc-setting-label">Show Cluster Glow</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.show_cluster_glow') }}</label>
               <button
                 :class="['nc-toggle', settings.showClusterGlow && 'active']"
                 @click="updateSetting('showClusterGlow', !settings.showClusterGlow)"
@@ -132,7 +155,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
             </div>
 
             <div class="nc-setting-row">
-              <label class="nc-setting-label">Show Cluster Labels</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.show_cluster_labels') }}</label>
               <button
                 :class="['nc-toggle', settings.showClusterLabels && 'active']"
                 @click="updateSetting('showClusterLabels', !settings.showClusterLabels)"
@@ -142,7 +165,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
             </div>
 
             <div class="nc-setting-row">
-              <label class="nc-setting-label">Interactive Exploration</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.interactive_exploration') }}</label>
               <button
                 :class="['nc-toggle', settings.interactiveExploration && 'active']"
                 @click="updateSetting('interactiveExploration', !settings.interactiveExploration)"
@@ -156,7 +179,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
             <!-- Max field lines -->
             <div class="nc-setting-row column">
               <div class="nc-setting-label-row">
-                <label class="nc-setting-label">Max Field Lines</label>
+                <label class="nc-setting-label">{{ $t('canvas.semantic.max_field_lines') }}</label>
                 <span class="nc-setting-value">{{ settings.maxFieldLines }}</span>
               </div>
               <input
@@ -171,7 +194,7 @@ const clusterCount = computed(() => semanticStore.clusterCount)
             </div>
 
             <div class="nc-setting-row">
-              <label class="nc-setting-label">Adaptive Line Count</label>
+              <label class="nc-setting-label">{{ $t('canvas.semantic.adaptive_line_count') }}</label>
               <button
                 :class="['nc-toggle', settings.adaptiveLineCount && 'active']"
                 @click="updateSetting('adaptiveLineCount', !settings.adaptiveLineCount)"
@@ -184,21 +207,40 @@ const clusterCount = computed(() => semanticStore.clusterCount)
 
             <!-- AI Status -->
             <div class="nc-ai-status">
-              <h4 class="nc-status-heading">AI Status</h4>
+              <h4 class="nc-status-heading">{{ $t('canvas.semantic.ai_status') }}</h4>
               <div class="nc-status-row">
-                <span class="nc-status-label">Model</span>
+                <span class="nc-status-label">{{ $t('canvas.semantic.model') }}</span>
                 <span class="nc-status-value">all-MiniLM-L6-v2</span>
               </div>
               <div class="nc-status-row">
-                <span class="nc-status-label">Backend</span>
-                <span class="nc-status-value">{{ backendLabel }}</span>
+                <span class="nc-status-label">{{ $t('canvas.semantic.backend') }}</span>
+                <template v-if="isBackendLoaded">
+                  <span class="nc-status-value">{{ backendLabel }}</span>
+                </template>
+                <template v-else-if="isBackendLoading">
+                  <span class="nc-status-value nc-status-value--loading">
+                    <span class="nc-status-spinner i-lucide-loader-circle" />
+                    {{ $t('canvas.semantic.loading') }}
+                  </span>
+                </template>
+                <template v-else>
+                  <button
+                    class="nc-status-load-btn"
+                    :disabled="isBackendLoading"
+                    @click="loadBackend"
+                  >
+                    <span class="i-lucide-download" />
+                    {{ $t('canvas.semantic.load_now') }}
+                  </button>
+                </template>
+              </div>
+              <div v-if="loadError" class="nc-status-error">{{ loadError }}</div>
+              <div class="nc-status-row">
+                <span class="nc-status-label">{{ $t('canvas.semantic.embedded') }}</span>
+                <span class="nc-status-value">{{ $t('maps.nodes_count', { n: embeddedCount }) }}</span>
               </div>
               <div class="nc-status-row">
-                <span class="nc-status-label">Embedded</span>
-                <span class="nc-status-value">{{ embeddedCount }} nodes</span>
-              </div>
-              <div class="nc-status-row">
-                <span class="nc-status-label">Clusters</span>
+                <span class="nc-status-label">{{ $t('canvas.semantic.clusters') }}</span>
                 <span class="nc-status-value">{{ clusterCount }}</span>
               </div>
             </div>
@@ -221,12 +263,11 @@ const clusterCount = computed(() => semanticStore.clusterCount)
 .nc-settings-panel {
   width: 300px;
   height: 100%;
-  background: var(--nc-glass-bg-elevated, rgba(28, 28, 32, 0.95));
-  backdrop-filter: blur(20px);
+  background: var(--nc-surface, #111114);
   border-left: 1px solid var(--nc-border, rgba(255, 255, 255, 0.08));
   display: flex;
   flex-direction: column;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.18);
   overflow-y: auto;
 }
 
@@ -399,8 +440,77 @@ const clusterCount = computed(() => semanticStore.clusterCount)
   font-weight: 500;
 }
 
+.nc-status-value--loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--nc-accent, #00D2BE);
+}
+.nc-status-spinner {
+  display: inline-block;
+  font-size: 12px;
+  animation: nc-status-spin 0.9s linear infinite;
+}
+@keyframes nc-status-spin { to { transform: rotate(360deg); } }
+
+/* Compact pill — same family as the sidebar generate button but
+   right-sized for an inline status row. Brand teal in both modes. */
+.nc-status-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  background: rgba(0, 210, 190, 0.12);
+  border: 1px solid rgba(0, 210, 190, 0.35);
+  border-radius: 6px;
+  color: var(--nc-accent, #00D2BE);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.nc-status-load-btn:hover {
+  background: rgba(0, 210, 190, 0.18);
+  border-color: rgba(0, 210, 190, 0.5);
+}
+.nc-status-load-btn:active {
+  transform: scale(0.97);
+}
+.nc-status-load-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+:root.light .nc-status-load-btn {
+  background: rgba(0, 168, 154, 0.10);
+  border-color: rgba(0, 168, 154, 0.40);
+  color: #00A89A;
+}
+:root.light .nc-status-load-btn:hover {
+  background: rgba(0, 168, 154, 0.16);
+  border-color: rgba(0, 168, 154, 0.55);
+}
+
+.nc-status-error {
+  margin-top: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #FCA5A5;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+}
+:root.light .nc-status-error {
+  color: #B91C1C;
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .nc-toggle-knob {
+  .nc-toggle-knob,
+  .nc-status-spinner {
+    animation: none;
     transition: none;
   }
 }

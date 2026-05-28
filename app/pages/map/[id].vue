@@ -33,7 +33,7 @@ import CollabCursorLayer from '~/components/canvas/CollabCursorLayer.vue'
 import CollabParticipants from '~/components/canvas/CollabParticipants.vue'
 
 // i18n
-const { locale: currentLocale } = useI18n()
+const { t, locale: currentLocale } = useI18n()
 
 // Route
 const route = useRoute()
@@ -152,6 +152,24 @@ async function tryStartCollab() {
   }
 }
 
+// Throttle cursor broadcasts to ~30Hz. Mousemove can fire >120Hz on
+// high-refresh displays — without throttling we'd spam every peer's
+// WebSocket and saturate the awareness fan-out.
+let _lastCursorBroadcast = 0
+let _pendingCursor: { x: number; y: number } | null = null
+let _cursorRaf = 0
+const CURSOR_BROADCAST_INTERVAL_MS = 33  // ~30Hz cap on outgoing frames
+
+function flushCursorBroadcast() {
+  _cursorRaf = 0
+  if (!_pendingCursor) return
+  const session = collabSession.value
+  if (!session) { _pendingCursor = null; return }
+  session.setCursor(_pendingCursor)
+  _pendingCursor = null
+  _lastCursorBroadcast = performance.now()
+}
+
 function broadcastCursor(ev: PointerEvent) {
   if (ev.pointerType !== 'mouse') return
   const session = collabSession.value
@@ -159,9 +177,22 @@ function broadcastCursor(ev: PointerEvent) {
   const cam = camera.value
   const x = ev.clientX / cam.zoom + cam.x
   const y = ev.clientY / cam.zoom + cam.y
-  session.setCursor({ x, y })
+  _pendingCursor = { x, y }
+  const now = performance.now()
+  // If we're within the throttle window, defer; otherwise broadcast immediately.
+  if (now - _lastCursorBroadcast >= CURSOR_BROADCAST_INTERVAL_MS) {
+    flushCursorBroadcast()
+    return
+  }
+  if (!_cursorRaf) {
+    _cursorRaf = requestAnimationFrame(flushCursorBroadcast)
+  }
 }
-function clearRemoteCursor() { collabSession.value?.setCursor(null) }
+function clearRemoteCursor() {
+  _pendingCursor = null
+  if (_cursorRaf) { cancelAnimationFrame(_cursorRaf); _cursorRaf = 0 }
+  collabSession.value?.setCursor(null)
+}
 
 // Guest onboarding overlays
 const showOnboarding = ref(false)
@@ -212,7 +243,9 @@ const cameraIntel = useCameraIntelligence(
   springCamera,
   () => mapStore.nodes,
   () => mapStore.selection.nodeIds,
-  nodeAnim
+  nodeAnim,
+  () => mapStore.edges,
+  () => mapStore.rootNodeId ?? null,
 )
 
 // Tools - now includes 'connect' for connection tool
@@ -534,7 +567,16 @@ onMounted(async () => {
 
     if (map) {
       mapStore.fromSerializable(map)
-      springCamera.setCurrent(map.camera)
+      // Always frame intentionally on open: full map if it fits, else root + 1-hop.
+      // Falls back to the saved camera only on empty maps.
+      await nextTick()
+      const opened = cameraIntel.fitToOpeningView({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      })
+      if (!opened) {
+        springCamera.setCurrent(map.camera)
+      }
     } else {
       mapStore.newDocument()
     }
@@ -670,19 +712,11 @@ function reloadAfterRestore() {
   // has to refetch too so they see the restored state.
   window.location.reload()
 }
-async function handleShare() {
-  // If collab is enabled, open the rich share-link modal.
-  // Otherwise fall back to the legacy native-share text export.
-  const config = useRuntimeConfig()
-  if (config.public.collabEnabled) {
-    showShareModal.value = true
-    return
-  }
-  try {
-    await exportUtils.shareAsText(mapStore, platform)
-  } catch (e) {
-    console.error('Share failed:', e)
-  }
+function handleShare() {
+  // Always open the rich share modal. It handles both collab share-links
+  // and basic link-copy fallback when collab is disabled, so the button
+  // is always visible/responsive on desktop.
+  showShareModal.value = true
 }
 
 function handleExportPng() {
@@ -920,39 +954,39 @@ const contextMenuItems = computed<ContextMenuItem[]>(() => {
   const items: ContextMenuItem[] = []
   if (contextMenuTargetNode.value) {
     items.push(
-      { label: 'Edit', icon: 'i-lucide-edit-2', shortcut: 'Enter', action: () => handleEditNode() },
-      { label: 'Copy', icon: 'i-lucide-copy', shortcut: '⌘C', action: () => handleCopyNode() },
+      { label: t('canvas.context_menu.edit'), icon: 'i-lucide-edit-2', shortcut: 'Enter', action: () => handleEditNode() },
+      { label: t('canvas.context_menu.copy'), icon: 'i-lucide-copy', shortcut: '⌘C', action: () => handleCopyNode() },
       { type: 'separator' },
       {
-        label: 'Change color',
+        label: t('canvas.context_menu.change_color'),
         icon: 'i-lucide-palette',
         children: [
-          { label: 'Teal', icon: 'i-lucide-circle', action: () => changeNodeColor('#00D2BE') },
-          { label: 'Purple', icon: 'i-lucide-circle', action: () => changeNodeColor('#A78BFA') },
-          { label: 'Pink', icon: 'i-lucide-circle', action: () => changeNodeColor('#F472B6') },
-          { label: 'Blue', icon: 'i-lucide-circle', action: () => changeNodeColor('#60A5FA') },
-          { label: 'Green', icon: 'i-lucide-circle', action: () => changeNodeColor('#4ADE80') }
+          { label: t('canvas.context_menu.color_teal'), icon: 'i-lucide-circle', action: () => changeNodeColor('#00D2BE') },
+          { label: t('canvas.context_menu.color_purple'), icon: 'i-lucide-circle', action: () => changeNodeColor('#A78BFA') },
+          { label: t('canvas.context_menu.color_pink'), icon: 'i-lucide-circle', action: () => changeNodeColor('#F472B6') },
+          { label: t('canvas.context_menu.color_blue'), icon: 'i-lucide-circle', action: () => changeNodeColor('#60A5FA') },
+          { label: t('canvas.context_menu.color_green'), icon: 'i-lucide-circle', action: () => changeNodeColor('#4ADE80') }
         ]
       },
-      { label: 'Smart Expand', icon: 'i-lucide-sparkles', action: () => handleSmartExpand() },
-      { label: 'View Backlinks', icon: 'i-lucide-link', shortcut: '⌘B', action: () => handleViewBacklinks() },
-      { label: 'Open Local Graph', icon: 'i-lucide-git-branch', action: () => handleOpenLocalGraph() },
+      { label: t('canvas.context_menu.smart_expand'), icon: 'i-lucide-waypoints', action: () => handleSmartExpand() },
+      { label: t('canvas.context_menu.view_backlinks'), icon: 'i-lucide-link', shortcut: '⌘B', action: () => handleViewBacklinks() },
+      { label: t('canvas.context_menu.open_local_graph'), icon: 'i-lucide-git-branch', action: () => handleOpenLocalGraph() },
       { type: 'separator' },
-      { label: 'Delete', icon: 'i-lucide-trash-2', shortcut: 'Del', danger: true, action: () => handleDeleteNode() }
+      { label: t('canvas.context_menu.delete'), icon: 'i-lucide-trash-2', shortcut: 'Del', danger: true, action: () => handleDeleteNode() }
     )
   } else if (contextMenuTargetEdge.value) {
     // Edge context menu
     items.push(
-      { label: 'Disconnect', icon: 'i-lucide-unlink', shortcut: 'Del', action: () => handleDisconnect() },
+      { label: t('canvas.context_menu.disconnect'), icon: 'i-lucide-unlink', shortcut: 'Del', action: () => handleDisconnect() },
       { type: 'separator' },
-      { label: 'Delete Connection', icon: 'i-lucide-trash-2', danger: true, action: () => handleDisconnect() }
+      { label: t('canvas.context_menu.delete_connection'), icon: 'i-lucide-trash-2', danger: true, action: () => handleDisconnect() }
     )
   } else {
     items.push(
-      { label: 'Add Node', icon: 'i-lucide-plus', shortcut: 'N', action: () => handleAddNode() },
-      { label: 'Templates', icon: 'i-lucide-layout-template', shortcut: 'T', action: () => showTemplates.value = true },
+      { label: t('canvas.context_menu.add_node'), icon: 'i-lucide-plus', shortcut: 'N', action: () => handleAddNode() },
+      { label: t('canvas.context_menu.templates'), icon: 'i-lucide-layout-template', shortcut: 'T', action: () => showTemplates.value = true },
       { type: 'separator' },
-      { label: 'Paste', icon: 'i-lucide-clipboard', shortcut: '⌘V', disabled: true }
+      { label: t('canvas.context_menu.paste'), icon: 'i-lucide-clipboard', shortcut: '⌘V', disabled: true }
     )
   }
   return items
@@ -1918,6 +1952,7 @@ useHead({
         @export-json="handleExportJson"
         @export-markdown="handleExportMarkdown"
         @open-shortcuts="showShortcutsModal = true"
+        @settings="$router.push('/settings')"
         @undo="mapStore.undo()"
         @redo="mapStore.redo()"
         @navigate-breadcrumb="(crumb) => springCamera.setTarget(crumb, 'snappy')"
@@ -2037,7 +2072,9 @@ useHead({
       @generate-description="handleGenerateDescription"
     />
 
-    <GraphView
+    <!-- Lazy: brings d3 into the bundle only when the user opens graph view. -->
+    <LazyGraphView
+      v-if="mapStore.graphView.isOpen"
       :visible="mapStore.graphView.isOpen"
       @close="mapStore.closeGraphView()"
       @navigate-to-node="handleNavigateToNode"
@@ -2133,9 +2170,19 @@ useHead({
   position: fixed;
   bottom: 96px;
   right: 24px;
-  z-index: 200;
+  z-index: var(--nc-z-minimap, 90);
   pointer-events: auto;
+  transition: left var(--nc-duration-fast, 150ms) var(--nc-ease-out, ease),
+              right var(--nc-duration-fast, 150ms) var(--nc-ease-out, ease);
 }
+
+/* When the right-side NodeDetailPanel is open, dock the minimap to the
+   bottom-left so it doesn't get hidden under the panel. */
+body:has(.detail-panel) .minimap-wrapper {
+  left: 16px;
+  right: auto;
+}
+
 
 
 /* ═══ Mobile Top App Bar ═══ */
@@ -2264,5 +2311,23 @@ useHead({
 
 /* Platform tweaks */
 :root.platform-android .nc-segment { border-radius: 999px; }
+</style>
+
+<!-- Global styles: reach into child components via body:has() without :deep().
+     Mobile TopBar is hidden via .mobile-hide; these rules only target the
+     desktop view-tab labels nested inside .topbar-view-tab. -->
+<style>
+body:has(.detail-panel) .topbar-view-label,
+body:has(.cm-panel) .topbar-view-label,
+body:has(.vh-panel) .topbar-view-label,
+body:has(.overflow-panel) .topbar-view-label {
+  display: none;
+}
+body:has(.detail-panel) .topbar-view-tab,
+body:has(.cm-panel) .topbar-view-tab,
+body:has(.vh-panel) .topbar-view-tab,
+body:has(.overflow-panel) .topbar-view-tab {
+  padding: 6px 8px;
+}
 </style>
 

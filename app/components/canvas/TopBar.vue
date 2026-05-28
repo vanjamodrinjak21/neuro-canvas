@@ -185,7 +185,7 @@ defineExpose({ focusTitleInput })
           :disabled="!hasSelection || isAILoading"
           @click="emit('smart-expand')"
         >
-          <span class="i-lucide-sparkles" :class="isAILoading ? 'animate-spin' : ''" />
+          <span class="i-lucide-waypoints" :class="isAILoading ? 'opacity-60' : ''" />
           {{ $t('canvas.topbar.ai_expand') }}
         </button>
 
@@ -242,9 +242,7 @@ defineExpose({ focusTitleInput })
 
 <style scoped>
 .topbar-container {
-  background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: var(--nc-surface, #111114);
   border: 1px solid var(--nc-border, #1A1A1E);
   border-radius: 8px;
   padding: 10px 16px;
@@ -449,6 +447,15 @@ defineExpose({ focusTitleInput })
   border-radius: 8px;
 }
 
+/* Light mode: the dark-theme defaults (3% white fill + #1E1E22 border)
+   produce a dark-outlined pill against the warm-paper toolbar. Switch
+   to a flat off-paper fill + the canvas-neutral border so the segmented
+   control reads as a single quiet shape. */
+:root.light .topbar-view-tabs {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: #D4D4D0;
+}
+
 .topbar-view-tab {
   display: flex;
   align-items: center;
@@ -470,10 +477,24 @@ defineExpose({ focusTitleInput })
   color: var(--nc-ink-muted, #A1A1AA);
 }
 
+/* Light mode hover used to inherit the dark-theme rule (#52525B → #A1A1AA)
+   which makes the text fade toward the bg instead of darkening — backwards
+   feedback. Override so hover moves toward the higher-contrast ink. */
+:root.light .topbar-view-tab:hover {
+  color: #18181B;
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .topbar-view-tab.active {
   background: rgba(0, 210, 190, 0.08);
   border-color: rgba(0, 210, 190, 0.2);
   color: var(--nc-accent, #00D2BE);
+}
+
+:root.light .topbar-view-tab.active {
+  background: rgba(0, 168, 154, 0.10);
+  border-color: rgba(0, 168, 154, 0.30);
+  color: #00A89A;
 }
 
 .topbar-view-tab:active {

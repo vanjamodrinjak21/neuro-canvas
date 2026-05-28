@@ -72,15 +72,19 @@ const darkPalette = {
 }
 
 const lightPalette = {
-  bg: '#F5F5F3',
-  node: '#00D2BE',
-  nodeSelected: '#00A89A',
+  // Match canvasBg (#FAFAF9) so the minimap reads as "a thumbnail of the
+  // canvas" instead of "a different surface entirely". The edge color is
+  // bumped to a real neutral so node dots have something to sit against
+  // without relying on the now-near-white bg.
+  bg: '#FAFAF9',
+  node: '#00A89A',
+  nodeSelected: '#00D2BE',
   root: '#111111',
-  edge: 'rgba(180, 180, 176, 0.6)',
-  viewport: 'rgba(0, 210, 190, 0.5)',
-  viewportFill: 'rgba(0, 210, 190, 0.04)',
+  edge: 'rgba(0, 0, 0, 0.18)',
+  viewport: 'rgba(0, 168, 154, 0.65)',
+  viewportFill: 'rgba(0, 168, 154, 0.08)',
   regionLabel: 'rgba(17, 17, 17, 0.4)',
-  breadcrumb: 'rgba(0, 210, 190, 0.3)',
+  breadcrumb: 'rgba(0, 168, 154, 0.45)',
 }
 
 const isLight = ref(false)
@@ -381,7 +385,10 @@ function render() {
 
 // Watch for changes and re-render (throttled)
 // Camera x/y/zoom are watched explicitly so panning the canvas re-renders the
-// "you are here" viewport rectangle on the minimap.
+// "you are here" viewport rectangle on the minimap. `isLight` is also watched
+// so toggling the theme repaints the minimap with the matching palette —
+// without this the canvas keeps its last-painted bg even though `colors`
+// recomputes, leaving a dark window cut out of a light page.
 watch(
   [
     () => props.camera.x,
@@ -394,6 +401,7 @@ watch(
     () => props.breadcrumbs,
     () => props.containerWidth,
     () => props.containerHeight,
+    isLight,
   ],
   () => {
     scheduleRender()
@@ -515,20 +523,18 @@ const { t } = useI18n()
   flex-direction: column;
   width: 220px;
   height: 156px;
-  background: rgba(17, 17, 20, 0.94);
+  background: var(--nc-surface, #111114);
   border: 1px solid #2A2A2E;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   animation: minimap-appear 0.2s ease-out;
 }
 
 :root.light .nc-minimap-body {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--nc-surface, #F5F5F3);
   border-color: #E4E4E7;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 @keyframes minimap-appear {
@@ -553,10 +559,8 @@ const { t } = useI18n()
 .nc-minimap-title {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--nc-ink-muted);
-  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--nc-ink-soft);
 }
 
 .nc-minimap-collapse-btn {
@@ -605,15 +609,13 @@ const { t } = useI18n()
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(17, 17, 20, 0.94);
+  background: var(--nc-surface, #111114);
   border: 1px solid #2A2A2E;
   color: var(--nc-ink-muted, #A1A1AA);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   transition: color var(--nc-duration-fast) var(--nc-ease-out),
               border-color var(--nc-duration-fast) var(--nc-ease-out);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .nc-minimap-toggle:hover {
@@ -628,7 +630,7 @@ const { t } = useI18n()
 
 /* Light theme */
 :root.light .nc-minimap-body {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--nc-surface, #F5F5F3);
   border-color: #E8E8E6;
 }
 
@@ -649,7 +651,7 @@ const { t } = useI18n()
 }
 
 :root.light .nc-minimap-toggle {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--nc-surface, #F5F5F3);
   border-color: #E8E8E6;
   color: #A1A1AA;
 }

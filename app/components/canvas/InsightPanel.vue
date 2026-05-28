@@ -227,7 +227,7 @@ function getActionText(insight: Insight): string {
           <span
             :class="[
               'text-sm',
-              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-spin' : 'i-lucide-sparkles'
+              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-pulse' : 'i-lucide-scan-eye'
             ]"
           />
           <span>{{ $t('canvas.insight_panel.ai_analyze') }}</span>

@@ -202,16 +202,13 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 
 /* ── Main panel ──────────────────────────── */
 .overflow-panel {
-  z-index: 300;
+  z-index: var(--nc-z-modal, 300);
   min-width: 220px;
   padding: 6px;
   border-radius: var(--nc-radius-lg);
-  background: #18181B;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.5),
-    0 16px 48px rgba(0, 0, 0, 0.3);
+  background: var(--nc-surface, #111113);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.32);
   animation: menuIn 0.15s var(--nc-ease);
 }
 
@@ -262,11 +259,9 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 .menu-label {
   padding: 8px 12px 4px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #52525B;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--nc-ink-soft);
 }
 .menu-sep {
   height: 1px;
@@ -281,16 +276,13 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 
 /* ── Export fly-out panel ────────────────── */
 .export-panel {
-  z-index: 301;
+  z-index: calc(var(--nc-z-modal, 300) + 1);
   min-width: 200px;
   padding: 6px;
   border-radius: var(--nc-radius-lg);
-  background: #18181B;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.5),
-    0 16px 48px rgba(0, 0, 0, 0.3);
+  background: var(--nc-surface, #111113);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.32);
   animation: subIn 0.12s var(--nc-ease);
 }
 .export-item {
@@ -333,12 +325,9 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 
 /* ── Light theme ────────────────────────── */
 :root.light .overflow-panel {
-  background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(0, 0, 0, 0.12),
-    0 16px 48px rgba(0, 0, 0, 0.08);
+  background: var(--nc-surface, #F5F5F3);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
 }
 :root.light .menu-item {
   color: #3F3F46;
@@ -366,12 +355,9 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   background: rgba(0, 0, 0, 0.04);
 }
 :root.light .export-panel {
-  background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(0, 0, 0, 0.12),
-    0 16px 48px rgba(0, 0, 0, 0.08);
+  background: var(--nc-surface, #F5F5F3);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
 }
 :root.light .export-item {
   color: #3F3F46;

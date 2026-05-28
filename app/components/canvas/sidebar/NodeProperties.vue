@@ -19,6 +19,7 @@ const emit = defineEmits<{
 
 const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 const mapStore = useMapStore()
+const { t } = useI18n()
 
 // Local editing state
 const localContent = ref('')
@@ -30,16 +31,16 @@ const localShape = ref<NodeShape>('rounded')
 const labelMaxLength = 50
 
 // Shape definitions with SVG path data for mini previews
-const shapeOptions: { id: NodeShape; label: string; icon: string }[] = [
-  { id: 'rounded', label: 'Rounded', icon: 'i-lucide-square' },
-  { id: 'rectangle', label: 'Rectangle', icon: 'i-lucide-rectangle-horizontal' },
-  { id: 'circle', label: 'Circle', icon: 'i-lucide-circle' },
-  { id: 'diamond', label: 'Diamond', icon: 'i-lucide-diamond' },
-  { id: 'hexagon', label: 'Hexagon', icon: 'i-lucide-hexagon' },
-  { id: 'star', label: 'Star', icon: 'i-lucide-star' },
-  { id: 'pill', label: 'Pill', icon: 'i-lucide-tablet' },
-  { id: 'dot', label: 'Dot', icon: 'i-lucide-circle-dot' },
-]
+const shapeOptions = computed<{ id: NodeShape; label: string; icon: string }[]>(() => [
+  { id: 'rounded', label: t('canvas.node_props_form.shape_rounded'), icon: 'i-lucide-square' },
+  { id: 'rectangle', label: t('canvas.node_props_form.shape_rectangle'), icon: 'i-lucide-rectangle-horizontal' },
+  { id: 'circle', label: t('canvas.node_props_form.shape_circle'), icon: 'i-lucide-circle' },
+  { id: 'diamond', label: t('canvas.node_props_form.shape_diamond'), icon: 'i-lucide-diamond' },
+  { id: 'hexagon', label: t('canvas.node_props_form.shape_hexagon'), icon: 'i-lucide-hexagon' },
+  { id: 'star', label: t('canvas.node_props_form.shape_star'), icon: 'i-lucide-star' },
+  { id: 'pill', label: t('canvas.node_props_form.shape_pill'), icon: 'i-lucide-tablet' },
+  { id: 'dot', label: t('canvas.node_props_form.shape_dot'), icon: 'i-lucide-circle-dot' },
+])
 
 // Sync from prop
 watch(() => props.selectedNode, (node) => {
@@ -104,12 +105,12 @@ const connectionCount = computed(() => {
 
 // Category chips for display
 const categoryChips = computed(() => [
-  { id: 'main-fact', label: 'Concept', color: '#00D2BE' },
-  { id: 'description', label: 'Desc', color: '#60A5FA' },
-  { id: 'evidence', label: 'Evidence', color: '#4ADE80' },
-  { id: 'question', label: 'Question', color: '#FACC15' },
-  { id: 'idea', label: 'Idea', color: '#FB923C' },
-  { id: 'reference', label: 'Ref', color: '#A78BFA' },
+  { id: 'main-fact', label: t('canvas.node_props_form.cat_concept'), color: '#00D2BE' },
+  { id: 'description', label: t('canvas.node_props_form.cat_desc'), color: '#60A5FA' },
+  { id: 'evidence', label: t('canvas.node_props_form.cat_evidence'), color: '#4ADE80' },
+  { id: 'question', label: t('canvas.node_props_form.cat_question'), color: '#FACC15' },
+  { id: 'idea', label: t('canvas.node_props_form.cat_idea'), color: '#FB923C' },
+  { id: 'reference', label: t('canvas.node_props_form.cat_ref'), color: '#A78BFA' },
 ])
 </script>
 
@@ -139,7 +140,7 @@ const categoryChips = computed(() => [
       <div class="properties__fields">
         <!-- Category -->
         <div class="properties__field">
-          <label class="properties__label">Category</label>
+          <label class="properties__label">{{ $t('canvas.node_props_form.category') }}</label>
           <div class="properties__categories">
             <button
               v-for="chip in categoryChips"
@@ -160,7 +161,7 @@ const categoryChips = computed(() => [
 
         <!-- Color -->
         <div class="properties__field">
-          <label class="properties__label">Color</label>
+          <label class="properties__label">{{ $t('canvas.node_props_form.color') }}</label>
           <div class="properties__colors">
             <button
               v-for="color in nodeColors"
@@ -179,7 +180,7 @@ const categoryChips = computed(() => [
 
         <!-- Shape -->
         <div class="properties__field">
-          <label class="properties__label">Shape</label>
+          <label class="properties__label">{{ $t('canvas.node_props_form.shape') }}</label>
           <div class="properties__shapes">
             <button
               v-for="shape in shapeOptions"
@@ -197,13 +198,13 @@ const categoryChips = computed(() => [
         <!-- Label -->
         <div class="properties__field">
           <div class="properties__label-row">
-            <label class="properties__label">Label</label>
+            <label class="properties__label">{{ $t('canvas.node_props_form.label') }}</label>
             <span class="properties__char-count">{{ localContent.length }}/{{ labelMaxLength }}</span>
           </div>
           <input
             v-model="localContent"
             type="text"
-            placeholder="Node label..."
+            :placeholder="$t('canvas.node_panel.label_full_placeholder')"
             class="properties__input"
             :maxlength="labelMaxLength"
             @blur="updateContent"
@@ -213,10 +214,10 @@ const categoryChips = computed(() => [
 
         <!-- Notes -->
         <div class="properties__field">
-          <label class="properties__label">Notes</label>
+          <label class="properties__label">{{ $t('canvas.node_props_form.notes') }}</label>
           <textarea
             v-model="localNotes"
-            placeholder="Add notes about this node..."
+            :placeholder="$t('canvas.node_panel.notes_full_placeholder')"
             class="properties__textarea"
             rows="3"
             @blur="updateNotes"
@@ -231,14 +232,14 @@ const categoryChips = computed(() => [
           @click="dispatch({ type: 'node:duplicate' })"
         >
           <span class="i-lucide-copy" />
-          Duplicate
+          {{ $t('canvas.node_props_form.duplicate') }}
         </button>
         <button
           class="properties__footer-btn properties__footer-btn--danger"
           @click="emit('deleteNode')"
         >
           <span class="i-lucide-trash-2" />
-          Delete
+          {{ $t('common.buttons.delete') }}
         </button>
       </div>
     </template>
@@ -246,7 +247,7 @@ const categoryChips = computed(() => [
     <!-- Empty state -->
     <div v-else class="properties__empty">
       <span class="i-lucide-mouse-pointer-click properties__empty-icon" />
-      <p>Select a node to edit</p>
+      <p>{{ $t('canvas.node_props_form.empty_state') }}</p>
     </div>
   </div>
 </template>

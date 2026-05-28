@@ -182,7 +182,12 @@
       "toggle_semantic": "Uključi/isključi semantičko polje",
       "ai_features": "AI značajke",
       "ai_expand_desc": "AI proširenje",
-      "accept_suggestion": "Prihvati prijedlog"
+      "accept_suggestion": "Prihvati prijedlog",
+      "search": "Pretraži prečace",
+      "no_results": "Nema prečaca koji odgovaraju pretrazi.",
+      "toggle_hint": "Otvori ovaj panel u bilo kojem trenutku",
+      "got_it": "Razumijem",
+      "close": "Zatvori"
     },
     "graph_controls": {
       "title": "Upravljanje grafom",
@@ -307,7 +312,22 @@
       "rel_mins": "{n}min",
       "copy_link": "Kopiraj poveznicu",
       "revoke": "Opozovi",
-      "footnote": "Poveznice za uređivača zahtijevaju prijavu. Poveznice za gledatelje rade za sve."
+      "footnote": "Poveznice za uređivača zahtijevaju prijavu. Poveznice za gledatelje rade za sve.",
+      "invite_aria": "Pošalji poveznicu e-poštom",
+      "invite_label": "Pozovi osobe e-poštom",
+      "invite_recipients_placeholder": "Unesi e-mail adrese, razdvojene zarezima",
+      "invite_note_placeholder": "Opcionalna osobna poruka (max 500 znakova)",
+      "invite_hint": "Razdvoji adrese zarezima. Do 20 po slanju.",
+      "invite_send": "Pošalji poziv",
+      "invite_sending": "Slanje…",
+      "invite_sent": "Pozivi poslani — {n} primatelja.",
+      "invite_partial": "Poslano: {sent}, neuspjelo: {failed}.",
+      "invite_all_failed": "Nije se moglo poslati. Pokušaj ponovno za trenutak.",
+      "invite_failed": "Nije se moglo poslati pozive.",
+      "invite_rate_limited": "Previše poziva — pričekaj sat vremena.",
+      "invite_no_recipients": "Dodaj barem jednu e-mail adresu.",
+      "invite_invalid_email": "\"{email}\" nije valjana adresa.",
+      "invite_too_many": "Najviše 20 primatelja po pozivu."
     },
     "version_history": {
       "title": "Povijest verzija",
@@ -340,6 +360,175 @@
       "delete_confirm": "Obrisati ovaj komentar?",
       "share_modal_role_commenter": "Komentator",
       "share_modal_role_commenter_chip": "KOMENTATOR"
+    },
+    "sidebar": {
+      "collapse_tooltip": "Sažmi bočnu traku",
+      "expand_tooltip": "Proširi bočnu traku",
+      "search_placeholder": "Pretraži mape...",
+      "search_tooltip": "Pretraži (⌘K)",
+      "save_tooltip": "Spremi mapu"
+    },
+    "multiselect": {
+      "duplicate_tooltip": "Dupliciraj odabrano (Ctrl+D)",
+      "ai_expand_tooltip": "AI proširi",
+      "delete_tooltip": "Obriši odabrano (Del)"
+    },
+    "filter_nodes_placeholder": "Filtriraj čvorove...",
+    "search_nodes_placeholder": "Pretraži čvorove...",
+    "node_panel": {
+      "label_placeholder": "Oznaka...",
+      "label_full_placeholder": "Oznaka čvora...",
+      "notes_placeholder": "Bilješke...",
+      "notes_full_placeholder": "Dodaj bilješke o ovom čvoru..."
+    },
+    "node_props_form": {
+      "category": "Kategorija",
+      "color": "Boja",
+      "shape": "Oblik",
+      "label": "Oznaka",
+      "notes": "Bilješke",
+      "duplicate": "Dupliciraj",
+      "empty_state": "Odaberi čvor za uređivanje",
+      "shape_rounded": "Zaobljeno",
+      "shape_rectangle": "Pravokutnik",
+      "shape_circle": "Krug",
+      "shape_diamond": "Romb",
+      "shape_hexagon": "Šesterokut",
+      "shape_star": "Zvijezda",
+      "shape_pill": "Pilula",
+      "shape_dot": "Točka",
+      "cat_concept": "Koncept",
+      "cat_desc": "Opis",
+      "cat_evidence": "Dokaz",
+      "cat_question": "Pitanje",
+      "cat_idea": "Ideja",
+      "cat_ref": "Referenca",
+      "cat_process": "Proces",
+      "cat_node": "Čvor",
+      "cat_uncategorized": "Nesvrstano"
+    },
+    "ai_panel": {
+      "ask_placeholder": "Pitaj o svojoj mapi..."
+    },
+    "ai_suggestions": {
+      "title": "AI prijedlozi",
+      "based_on_node": "Na temelju čvora \"{name}\"",
+      "select_node_first": "Prvo odaberi čvor",
+      "refresh": "Osvježi",
+      "no_suggestions": "Još nema prijedloga",
+      "generate_ideas": "Generiraj ideje",
+      "generate_map_from_topic": "Generiraj mapu iz teme",
+      "ai_description": "AI opis",
+      "no_description": "Nema generiranog opisa",
+      "generate_description": "Generiraj opis"
+    },
+    "empty_guide": {
+      "title": "Počni mapirati svoje ideje",
+      "subtitle": "Dvoklik bilo gdje za stvaranje čvora ili odaberi opciju ispod",
+      "add_first_node": "Dodaj prvi čvor",
+      "generate_with_ai": "Generiraj pomoću AI-a"
+    },
+    "graph_controls_panel": {
+      "title": "Kontrole grafa",
+      "view_mode": "Način prikaza",
+      "mode_global": "Globalno",
+      "mode_local": "Lokalno",
+      "depth": "Dubina",
+      "hops": "{n} skokova",
+      "physics": "Fizika",
+      "link_distance": "Udaljenost veze",
+      "repulsion": "Odbijanje",
+      "center_force": "Centralna sila",
+      "collision_radius": "Polumjer sudara",
+      "search_label": "Pretraga",
+      "edges_count": "{n} veza"
+    },
+    "markdown_editor": {
+      "nodes_label": "ČVOROVI",
+      "no_nodes": "Još nema čvorova",
+      "graph_preview": "PREGLED GRAFA",
+      "selected": "ODABRANO",
+      "connections": "VEZE",
+      "connections_count": "{n} veza",
+      "outline": "OBRIS"
+    },
+    "overlay": {
+      "load_failed": "Učitavanje mape nije uspjelo",
+      "go_to_dashboard": "Idi na nadzornu ploču"
+    },
+    "node_properties": {
+      "panel_title": "Svojstva",
+      "section_title": "Svojstva čvora",
+      "description": "Opis",
+      "keywords": "Ključne riječi",
+      "notes": "Bilješke",
+      "ai_insights": "AI uvidi",
+      "domain": "Domena",
+      "prerequisites": "Preduvjeti",
+      "connections": "Veze",
+      "incoming": "Dolazne",
+      "outgoing": "Odlazne",
+      "no_description": "Još nema opisa.",
+      "generated_at": "Generirano {time}"
+    },
+    "graph_view": {
+      "title": "Pregled grafa",
+      "local_connections": "Lokalne veze",
+      "all_connections": "Sve veze",
+      "click_to_navigate_short": "Klikni za navigaciju",
+      "drag_to_pan": "Povuci za pomak, scroll za zoom",
+      "drag_node_to_move": "Povuci čvor za pomak, Shift+otpuštanje za zakvačiti",
+      "click_node_to_navigate": "Klikni na čvor za navigaciju",
+      "close": "Zatvori"
+    },
+    "untitled": "Bez naslova",
+    "node_templates": {
+      "title": "Predlošci čvorova"
+    },
+    "backlinks": {
+      "links": "Veze"
+    },
+    "context_menu": {
+      "edit": "Uredi",
+      "copy": "Kopiraj",
+      "change_color": "Promijeni boju",
+      "color_teal": "Tirkizna",
+      "color_purple": "Ljubičasta",
+      "color_pink": "Roza",
+      "color_blue": "Plava",
+      "color_green": "Zelena",
+      "smart_expand": "Pametno proširi",
+      "view_backlinks": "Prikaži povratne veze",
+      "open_local_graph": "Otvori lokalni graf",
+      "delete": "Obriši",
+      "disconnect": "Prekini vezu",
+      "delete_connection": "Obriši vezu",
+      "add_node": "Dodaj čvor",
+      "templates": "Predlošci",
+      "paste": "Zalijepi"
+    },
+    "agent": {
+      "start_session": "Pokreni sesiju"
+    },
+    "semantic": {
+      "title": "Semantičko polje",
+      "enable": "Omogući",
+      "field_intensity": "Intenzitet polja",
+      "similarity_threshold": "Prag sličnosti",
+      "show_particles": "Prikaži čestice",
+      "show_resonance": "Prikaži pulseve rezonance",
+      "show_cluster_glow": "Prikaži sjaj klastera",
+      "show_cluster_labels": "Prikaži oznake klastera",
+      "interactive_exploration": "Interaktivno istraživanje",
+      "max_field_lines": "Maksimalno linija polja",
+      "adaptive_line_count": "Adaptivni broj linija",
+      "ai_status": "AI status",
+      "model": "Model",
+      "backend": "Backend",
+      "embedded": "Ugrađeno",
+      "clusters": "Klasteri",
+      "load_now": "Učitaj sad",
+      "loading": "Učitavanje…"
     }
   }
 }

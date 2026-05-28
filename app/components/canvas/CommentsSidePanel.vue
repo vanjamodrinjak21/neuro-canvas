@@ -164,13 +164,18 @@ function onComposeKey(ev: KeyboardEvent) {
 }
 
 onMounted(load)
+
+// ESC closes the panel — users expect this from any modal/side rail
+onKeyStroke('Escape', () => emit('close'))
 </script>
 
 <template>
   <aside class="cm-panel" role="dialog" aria-modal="true" :aria-label="t('canvas.comments.title')">
     <header class="cm-header">
       <h2>{{ t('canvas.comments.title') }}</h2>
-      <button class="cm-close" :aria-label="t('canvas.comments.close')" @click="emit('close')">×</button>
+      <button class="cm-close" :aria-label="t('canvas.comments.close')" @click="emit('close')">
+        <span class="i-lucide-x" />
+      </button>
     </header>
 
     <div v-if="error" class="cm-error">{{ error }}</div>
@@ -257,24 +262,37 @@ onMounted(load)
 
 <style scoped>
 .cm-panel {
-  position: fixed; top: 0; right: 0; bottom: 0;
+  position: fixed; top: 64px; right: 0; bottom: 0;
   width: 380px;
   background: #111113; border-left: 1px solid #27272A;
   color: #FAFAFA;
   display: flex; flex-direction: column;
-  z-index: 100;
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  z-index: 120;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.18);
 }
 .cm-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid #27272A;
+  padding: 14px 20px; border-bottom: 1px solid #27272A;
 }
-.cm-header h2 { font-size: 14px; font-weight: 600; margin: 0; letter-spacing: 0.02em; }
+.cm-header h2 { font-size: 14px; font-weight: 600; margin: 0; }
 .cm-close {
-  background: none; border: none; color: #A1A1AA;
-  font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 8px;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--nc-ink-soft, #A1A1AA);
+  font-size: 16px; cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
-.cm-close:hover { color: #FAFAFA; }
+.cm-close:hover {
+  color: var(--nc-ink, #FAFAFA);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--nc-border, #27272A);
+}
+.cm-close:focus-visible {
+  outline: none;
+  border-color: var(--nc-accent, #00D2BE);
+}
 
 .cm-error {
   margin: 12px 20px; padding: 10px 12px;

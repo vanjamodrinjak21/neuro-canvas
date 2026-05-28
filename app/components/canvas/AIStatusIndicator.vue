@@ -27,7 +27,7 @@ const statusConfig = computed<Record<AIStatus, {
   computing: {
     color: '#FACC15',
     bgColor: 'rgba(250, 204, 21, 0.1)',
-    icon: 'i-lucide-sparkles',
+    icon: 'i-lucide-loader-2',
     label: t('canvas.ai_status.computing')
   },
   ready: {

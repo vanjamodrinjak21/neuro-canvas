@@ -16,6 +16,7 @@ import type {
 import { useLinkIndex } from '~/composables/useLinkIndex'
 import type { DBMapDocument, DBNode, DBEdge } from '~/composables/useDatabase'
 import { resolveCategoryId, LEGACY_CATEGORY_MAP } from '~/constants/categories'
+import { measureNodeSize } from '~/utils/nodeSizing'
 
 // Enable Immer patches for undo/redo
 enablePatches()
@@ -24,69 +25,6 @@ enablePatches()
 // (Proxy invariant requires non-configurable properties to return their exact value,
 // but Vue wraps nested objects in a different Proxy, causing TypeError)
 setAutoFreeze(false)
-
-// ─── Text measurement for auto-sizing nodes ───────────────────────
-let _measureCtx: CanvasRenderingContext2D | null = null
-
-function getMeasureCtx(): CanvasRenderingContext2D | null {
-  if (typeof document === 'undefined') return null
-  if (!_measureCtx) {
-    const c = document.createElement('canvas')
-    _measureCtx = c.getContext('2d')
-  }
-  return _measureCtx
-}
-
-const NODE_PADDING_X = 24    // horizontal padding (12 each side)
-const NODE_PADDING_Y = 20    // vertical padding (10 top + 10 bottom)
-const NODE_MIN_WIDTH = 80
-const NODE_MAX_WIDTH = 260
-const NODE_MIN_HEIGHT = 40
-
-/**
- * Compute the width and height a node needs to fit its text content.
- * Uses an offscreen canvas for measureText.
- */
-function measureNodeSize(
-  content: string,
-  fontSize: number = 14,
-  fontWeight: number = 500
-): { width: number; height: number } {
-  const ctx = getMeasureCtx()
-  if (!ctx || !content) {
-    return { width: NODE_MIN_WIDTH, height: NODE_MIN_HEIGHT }
-  }
-
-  ctx.font = `${fontWeight} ${fontSize}px "Inter", system-ui, sans-serif`
-  const lineHeight = fontSize * 1.4
-
-  // First, measure the full text width to decide natural width
-  const fullWidth = ctx.measureText(content).width + NODE_PADDING_X
-  // Clamp width between min and max
-  const targetWidth = Math.max(NODE_MIN_WIDTH, Math.min(NODE_MAX_WIDTH, fullWidth))
-  const maxTextWidth = targetWidth - NODE_PADDING_X
-
-  // Word-wrap to compute line count
-  const words = content.split(' ')
-  const lines: string[] = []
-  let currentLine = ''
-
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word
-    if (ctx.measureText(testLine).width > maxTextWidth && currentLine) {
-      lines.push(currentLine)
-      currentLine = word
-    } else {
-      currentLine = testLine
-    }
-  }
-  if (currentLine) lines.push(currentLine)
-
-  const textHeight = lines.length * lineHeight
-  const height = Math.max(NODE_MIN_HEIGHT, textHeight + NODE_PADDING_Y)
-
-  return { width: Math.ceil(targetWidth), height: Math.ceil(height) }
-}
 
 // Default styles - Midnight Paper + Petronas Teal Theme
 const DEFAULT_NODE_STYLE: NodeStyle = {
@@ -195,7 +133,7 @@ export interface MapActions {
   beginMoveNodes(nodeIds: string[]): Map<string, { x: number; y: number }>
   commitMoveNodes(nodeIds: string[], originalPositions: Map<string, { x: number; y: number }>): void
   resizeNode(id: string, width: number, height: number): void
-  resolveOverlaps(nodeIds?: string[]): void
+  resolveOverlaps(nodeIds?: string[], options?: { exclude?: string[] }): void
 
   // Edges
   addEdge(sourceId: string, targetId: string, style?: Partial<EdgeStyle>, sourceAnchor?: Anchor, targetAnchor?: Anchor): Edge
@@ -489,7 +427,7 @@ const actions: MapActions = {
     // Migration: auto-resize nodes that still have the old default 150x50
     for (const [, node] of state.nodes) {
       if (node.size.width === 150 && node.size.height === 50 && node.content) {
-        const measured = measureNodeSize(node.content, node.style.fontSize, node.style.fontWeight)
+        const measured = measureNodeSize(node.content, node.style.fontSize, node.style.fontWeight, node.style.shape)
         if (measured.height > 50 || measured.width > 150) {
           node.size = measured
         }
@@ -525,7 +463,7 @@ const actions: MapActions = {
     // Auto-size from content when no explicit size is given
     const content = partial.content ?? ''
     const mergedStyle = { ...DEFAULT_NODE_STYLE, ...partial.style }
-    const size = partial.size ?? measureNodeSize(content, mergedStyle.fontSize, mergedStyle.fontWeight)
+    const size = partial.size ?? measureNodeSize(content, mergedStyle.fontSize, mergedStyle.fontWeight, mergedStyle.shape)
 
     const node: Node = {
       id: partial.id ?? nanoid(),
@@ -559,12 +497,36 @@ const actions: MapActions = {
     const node = state.nodes.get(id)
     if (!node) return
 
-    // Auto-resize when content changes and no explicit size update
-    if (updates.content !== undefined && !updates.size) {
-      const style = { ...node.style, ...updates.style }
-      updates = {
-        ...updates,
-        size: measureNodeSize(updates.content, style.fontSize, style.fontWeight)
+    // Auto-resize when content OR text metrics (fontSize/fontWeight) change
+    // and the caller did not pass an explicit size. Without this, changing
+    // fontSize via the properties panel leaves node.size at the old
+    // measurement — text overflows or shrinks inside a frozen box.
+    //
+    // We also re-center the node so the visual center stays put when the
+    // node grows or shrinks. Without re-centering, the node expands from
+    // its top-left corner and the rest of the map appears to shift.
+    let didGrow = false
+    if (!updates.size) {
+      const nextContent = updates.content ?? node.content
+      const nextStyle = updates.style ? { ...node.style, ...updates.style } : node.style
+      const contentChanged = updates.content !== undefined
+      const fontSizeChanged = updates.style?.fontSize !== undefined &&
+        updates.style.fontSize !== node.style.fontSize
+      const fontWeightChanged = updates.style?.fontWeight !== undefined &&
+        updates.style.fontWeight !== node.style.fontWeight
+      const shapeChanged = updates.style?.shape !== undefined &&
+        updates.style.shape !== node.style.shape
+      if (contentChanged || fontSizeChanged || fontWeightChanged || shapeChanged) {
+        const nextSize = measureNodeSize(nextContent, nextStyle.fontSize, nextStyle.fontWeight, nextStyle.shape)
+        updates = { ...updates, size: nextSize }
+        // Re-center only when caller didn't explicitly move the node.
+        if (!updates.position && (nextSize.width !== node.size.width || nextSize.height !== node.size.height)) {
+          updates.position = {
+            x: node.position.x + (node.size.width - nextSize.width) / 2,
+            y: node.position.y + (node.size.height - nextSize.height) / 2,
+          }
+        }
+        didGrow = nextSize.width > node.size.width || nextSize.height > node.size.height
       }
     }
 
@@ -577,6 +539,13 @@ const actions: MapActions = {
         }
       }
     })
+
+    // Layout adapt: when the node grew, push neighbors out of its way so
+    // the map reflows around the new size instead of overlapping. The
+    // resized node itself stays anchored where the user placed it.
+    if (didGrow) {
+      actions.resolveOverlaps(undefined, { exclude: [id] })
+    }
   },
 
   deleteNode(id: string) {
@@ -704,15 +673,20 @@ const actions: MapActions = {
    * are moved; otherwise all nodes are checked.
    * Uses iterative separation — runs up to 10 passes to settle.
    */
-  resolveOverlaps(nodeIds?: string[]) {
+  resolveOverlaps(nodeIds?: string[], options?: { exclude?: string[] }) {
     const GAP = 20 // minimum gap between nodes
     const MAX_PASSES = 10
 
-    const candidates = nodeIds
+    let candidates: Node[] = nodeIds
       ? nodeIds.map(id => state.nodes.get(id)).filter(Boolean) as Node[]
       : Array.from(state.nodes.values())
+    if (options?.exclude?.length) {
+      const skip = new Set(options.exclude)
+      candidates = candidates.filter(n => !skip.has(n.id))
+    }
 
-    if (candidates.length < 2) return
+    if (candidates.length < 1) return
+    if (candidates.length < 2 && state.nodes.size < 2) return
 
     const allNodes = Array.from(state.nodes.values())
 

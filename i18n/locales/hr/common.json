@@ -80,6 +80,7 @@
         "guest": {
             "template_picker_title": "Odaberite predlo\u017eak",
             "template_picker_desc": "Odaberite polaznu to\u010dku za svoju prvu mapu",
+            "template_picker_ai_placeholder": "Isplaniraj launch za na\u0161 pgvector RAG search \u2014 in\u017eenjering, sadr\u017eaj, rollout.",
             "upgrade_title": "Otklju\u010dajte sve zna\u010dajke",
             "upgrade_desc": "Registrirajte se besplatno za sinkronizaciju izme\u0111u ure\u0111aja, kori\u0161tenje AI zna\u010dajki i jo\u0161 mnogo toga.",
             "upgrade_button": "Registriraj se besplatno",
@@ -102,6 +103,73 @@
             "days_ago": "prije {n}d",
             "today": "Danas",
             "yesterday": "Ju\u010der"
+        },
+        "sidebar": {
+            "upgrade_ladder": {
+                "unlock_title": "Otklju\u010daj spremanjem",
+                "item_5_things": "5 stvari",
+                "item_ai_node": "AI na ovom \u010dvoru",
+                "item_export": "Izvoz PNG / JSON",
+                "item_multiple_maps": "Vi\u0161e karata",
+                "item_templates": "24 predlo\u0161ka",
+                "item_sync": "Sinkronizacija me\u0111u ure\u0111ajima",
+                "cta_meta": "zatvori\u0161 tab \u2192 sve nestaje",
+                "cta_title": "Spremi \u0161to si stvorio.",
+                "cta_desc": "8 sekundi. Bez kartice.",
+                "cta_button": "Spremi moju mapu \u2192"
+            }
+        }
+    },
+    "maps": {
+        "sort": {
+            "label": "Sortiraj",
+            "recent": "Najnovije",
+            "alphabetical": "A \u2013 \u017d",
+            "nodes": "Najvi\u0161e \u010dvorova"
+        },
+        "select": {
+            "button": "Odaberi",
+            "select_all": "Odaberi sve",
+            "deselect_all": "Poni\u0161ti odabir",
+            "selected_count": "Odabrano: {n}"
+        },
+        "delete_confirm": {
+            "title_one": "Obri\u0161i mapu",
+            "title_other": "Obri\u0161i {n} mapa",
+            "description_one": "Ovo \u0107e trajno obrisati mapu. Ova radnja se ne mo\u017ee poni\u0161titi.",
+            "description_other": "Ovo \u0107e trajno obrisati {n} mapa. Ova radnja se ne mo\u017ee poni\u0161titi."
+        },
+        "delete_single_confirm": {
+            "title": "Obri\u0161i mapu",
+            "description": "Ova radnja se ne mo\u017ee poni\u0161titi. Jeste li sigurni da \u017eelite obrisati ovu mapu?"
+        },
+        "count_label_one": "{n} mapa",
+        "count_label_other": "{n} mapa",
+        "nodes_count": "{n} čvorova",
+        "edited_prefix": "Ure\u0111eno",
+        "header": {
+            "eyebrow": "02 \u2014 sve mape",
+            "title_a": "Sve",
+            "title_b": "o \u010demu si razmi\u0161ljao."
+        }
+    },
+    "ui": {
+        "or": "ili",
+        "settings_tooltip": "Postavke",
+        "search": {
+            "maps_mobile_placeholder": "Pretra\u017ei mape \u00b7 \u2318 K",
+            "templates_mobile_placeholder": "Pretra\u017ei predlo\u0161ke \u00b7 \u2318 K"
+        },
+        "generate_map": {
+            "topic_placeholder": "npr. Sustavi obnovljive energije"
+        },
+        "file_uploader": {
+            "label_prefix": "Povucite datoteku ovdje ili",
+            "browse_action": "pregledajte"
+        },
+        "code": {
+            "copy": "Kopiraj k\u00f4d",
+            "copied": "Kopirano!"
         }
     }
 }

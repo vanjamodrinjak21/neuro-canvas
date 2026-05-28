@@ -59,7 +59,7 @@ const aiEnabled = ref(false)
         aria-label="Toggle AI suggestions"
         @click="aiEnabled = !aiEnabled; $emit('toggle-ai')"
       >
-        <span class="i-lucide-sparkles" />
+        <span class="i-lucide-list-tree" />
       </button>
 
       <button class="nc-outline-tool nc-outline-tool--export" aria-label="Export" @click="$emit('export')">
