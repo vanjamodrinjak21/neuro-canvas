@@ -36,8 +36,11 @@
     "active": true,
     "targets": "all",
     "resources": [
-      "resources/models/all-MiniLM-L6-v2/model_quantized.onnx",
-      "resources/models/all-MiniLM-L6-v2/tokenizer.json"
+      "resources/models/nomic-embed-text-v1.5/model_quantized.onnx",
+      "resources/models/nomic-embed-text-v1.5/tokenizer.json",
+      "resources/models/nomic-embed-text-v1.5/tokenizer_config.json",
+      "resources/models/nomic-embed-text-v1.5/special_tokens_map.json",
+      "resources/models/nomic-embed-text-v1.5/config.json"
     ],
     "icon": [
       "icons/32x32.png",
