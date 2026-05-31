@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "bash scripts/tauri-dev.sh",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "npm run generate && node scripts/post-generate.cjs",
+    "beforeBuildCommand": "node scripts/fetch-onnx-model.mjs && npm run generate && node scripts/post-generate.cjs",
     "frontendDist": "../.output/public"
   },
   "app": {
