@@ -71,7 +71,7 @@ function makeRng(seed) {
     state ^= state << 13; state >>>= 0
     state ^= state >>> 17
     state ^= state << 5;  state >>>= 0
-    return (state >>> 0) / 0xffffffff
+    return (state >>> 0) / 0xFFFFFFFF
   }
 }
 

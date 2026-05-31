@@ -38,7 +38,7 @@ function makeRng(seed) {
     s ^= s << 13; s >>>= 0
     s ^= s >>> 17
     s ^= s << 5;  s >>>= 0
-    return (s >>> 0) / 0xffffffff
+    return (s >>> 0) / 0xFFFFFFFF
   }
 }
 
