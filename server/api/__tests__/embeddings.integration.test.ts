@@ -314,7 +314,7 @@ maybe('embeddings + semantic-search data plane', () => {
         LIMIT ${K + 1}
       `
       // First result is the probe itself; check the next K.
-      const neighbours = rows.filter(r => r.nodeId !== probe.nodeId).slice(0, K)
+      const neighbours = rows.filter((r: Row) => r.nodeId !== probe.nodeId).slice(0, K)
       for (const n of neighbours) {
         const peer = fx.find(f => f.nodeId === n.nodeId)
         if (!peer) continue
