@@ -149,12 +149,22 @@ export const templateAdaptSchema = z.object({
   domain: z.string().max(200).trim().optional().transform(v => v === '' ? undefined : v),
 })
 
+// All embedding-bearing payloads must carry exactly 256-dim vectors
+// (nomic-embed-text-v1.5 Matryoshka-truncated). The server never embeds
+// from text — see server/utils/embeddings.ts header for the why.
+const EMBEDDING_DIMS_REQUIRED = 256
+const embeddingVector = z
+  .array(z.number().finite())
+  .length(EMBEDDING_DIMS_REQUIRED, {
+    message: `embedding must have exactly ${EMBEDDING_DIMS_REQUIRED} dimensions`,
+  })
+
 export const embeddingPostSchema = z.object({
   mapId: cuid,
   embeddings: z.array(z.object({
     nodeId: z.string().min(1).max(128),
     text: z.string().min(1).max(50_000),
-    embedding: z.array(z.number()).min(1).max(4096),
+    embedding: embeddingVector,
     contentHash: z.string().min(1).max(64)
   })).min(1).max(500)
 })
@@ -164,7 +174,7 @@ export const semanticSearchSchema = z.object({
   mapIds: z.array(cuid).max(100).optional(),
   topK: z.number().int().min(1).max(100).default(20),
   threshold: z.number().min(0).max(1).default(0.3),
-  queryEmbedding: z.array(z.number()).min(1).max(4096)
+  queryEmbedding: embeddingVector
 })
 
 export const ragContextSchema = z.object({
@@ -173,7 +183,11 @@ export const ragContextSchema = z.object({
   maxNodes: z.number().int().min(1).max(50).default(10),
   threshold: z.number().min(0).max(1).default(0.25),
   includeNeighbors: z.boolean().default(true),
-  queryEmbedding: z.array(z.number()).min(1).max(4096)
+  queryEmbedding: embeddingVector
+})
+
+export const embeddingsReindexSchema = z.object({
+  force: z.boolean().optional().default(false)
 })
 
 // --------------------------------------------------------------------------
