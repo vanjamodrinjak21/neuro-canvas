@@ -21,7 +21,49 @@ fn init_logging() {
 pub fn run() {
     init_logging();
 
-    tauri::Builder::default()
+    // `mut` is only required when the single-instance plugin is added below
+    // (Windows / Linux); on macOS the binding stays immutable, so silence the
+    // unused-mut warning without losing the cfg-gated mutation path.
+    #[cfg_attr(not(any(target_os = "windows", target_os = "linux")), allow(unused_mut))]
+    let mut builder = tauri::Builder::default();
+
+    // ── single-instance + deep-link forwarder (Windows / Linux only) ────
+    // On Windows and Linux, the OS spawns a new process when a deep-link URL
+    // (e.g. `neurocanvas://...` or Google's reverse-client-ID scheme) is
+    // opened while the app is already running. Without the single-instance
+    // plugin, that new process would silently exit and the running window
+    // would never see the OAuth `code`, so Google sign-in would just hang on
+    // the "Open NeuroCanvas?" browser prompt.
+    //
+    // The plugin must be registered FIRST (per Tauri docs) and its callback
+    // a) brings the existing window to the front, and b) feeds the deep-link
+    // URL argv back through tauri-plugin-deep-link via the enabled
+    // `deep-link` feature, which re-emits `deep-link://new-url`. The JS
+    // composable's `onOpenUrl` listener picks it up unchanged.
+    //
+    // macOS is intentionally skipped — its NSApplicationDelegate delivers
+    // deep links natively to the running process, so adding single-instance
+    // there would suppress legitimate re-launches without benefit.
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        use tauri::Manager;
+        builder = builder.plugin(tauri_plugin_single_instance::init(
+            |app, _argv, _cwd| {
+                // Re-focus the existing window so the user sees the OAuth
+                // completion instead of an orphan background process.
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+                // The `deep-link` feature of tauri-plugin-single-instance
+                // already forwards the URL argv into the deep-link plugin's
+                // `deep-link://new-url` event, so nothing else is needed here.
+            },
+        ));
+    }
+
+    builder
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
@@ -51,6 +93,27 @@ pub fn run() {
                 use tauri::Manager;
                 if let Some(window) = app.get_webview_window("main") {
                     window.open_devtools();
+                }
+            }
+
+            // ── Windows-only: write HKCU\Software\Classes\<scheme> ────────
+            // Without this, the OS doesn't know that `neurocanvas://` and
+            // the Google reverse-client-ID scheme should launch this app,
+            // so the browser's redirect after Google sign-in produces an
+            // "Open with..." dialog (or a 404) instead of reaching the app.
+            //
+            // The MSI/NSIS installer normally writes these keys at install
+            // time, but registering at startup is idempotent and also fixes
+            // the dev/portable-binary case where the installer never ran.
+            // macOS auto-registers via Info.plist (handled by the bundler),
+            // so this block is intentionally Windows-only.
+            #[cfg(target_os = "windows")]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                if let Err(e) = app.deep_link().register_all() {
+                    // Non-fatal — the user can still sign in via credentials
+                    // and the installer-written keys may already be present.
+                    tracing::warn!("failed to register deep-link schemes: {e}");
                 }
             }
 

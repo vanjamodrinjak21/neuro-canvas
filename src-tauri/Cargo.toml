@@ -60,6 +60,18 @@ ort = { version = "=2.0.0-rc.11", features = ["coreml"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 ort = { version = "=2.0.0-rc.11", features = ["directml"] }
 
+# ── Windows / Linux only: single-instance with deep-link forwarding ──────
+# Prevents the OS from spawning a fresh process when a `neurocanvas://` or
+# `com.googleusercontent.apps.<cid>://` deep-link URL is opened while the
+# app is already running. Without this, Google's OAuth redirect would start
+# a new headless process instead of delivering the auth code to the running
+# window. The `deep-link` feature wires the URL into tauri-plugin-deep-link's
+# `deep-link://new-url` event so the existing `onOpenUrl` JS listener fires.
+# macOS doesn't need this — it delivers deep-link URLs natively via
+# NSApplicationDelegate.
+[target.'cfg(any(target_os = "windows", target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+
 [profile.release]
 # NOTE: Do NOT use panic = "abort" — Tauri's IPC resolver has .expect() calls
 # that can panic when a webview navigates during async command execution.
