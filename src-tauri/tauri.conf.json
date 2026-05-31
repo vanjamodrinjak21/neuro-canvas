@@ -80,8 +80,10 @@
   },
   "plugins": {
     "updater": {
-      "endpoints": [],
-      "pubkey": ""
+      "endpoints": [
+        "https://cdn.neuro-canvas.com/beta/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwRkM2QTU0RDMwRkVCNwpSV1MzL2pCTnBjWVBESjhBVHgxR0g1dFdtM0ptZ3JodmxPUXQ2WC92R09oaEJBUUl3NDQ2d2QrKwo="
     },
     "deep-link": {
       "desktop": {
