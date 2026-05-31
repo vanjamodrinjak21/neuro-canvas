@@ -150,8 +150,9 @@ export const templateAdaptSchema = z.object({
 })
 
 // All embedding-bearing payloads must carry exactly 256-dim vectors
-// (nomic-embed-text-v1.5 Matryoshka-truncated). The server never embeds
-// from text — see server/utils/embeddings.ts header for the why.
+// (nomic-embed-text-v1.5 Matryoshka-truncated). The server normally accepts
+// pre-computed embeddings from the client Web Worker, but it may also embed
+// from raw text via the server-side pipeline (see server/utils/embeddings.ts).
 const EMBEDDING_DIMS_REQUIRED = 256
 const embeddingVector = z
   .array(z.number().finite())
@@ -159,14 +160,23 @@ const embeddingVector = z
     message: `embedding must have exactly ${EMBEDDING_DIMS_REQUIRED} dimensions`,
   })
 
+// Per-entry rules:
+//   - `text` is always required (we store it as `sourceText` for debug/RAG).
+//   - `embedding` is OPTIONAL — when omitted, the server computes it from
+//     `text` using the server-side pipeline.
+//   - Sending BOTH `text` and `embedding` is allowed (the client did the
+//     work already, the server just validates and stores).
+//   - Sending NEITHER is impossible because `text` is required.
+const embeddingPostEntry = z.object({
+  nodeId: z.string().min(1).max(128),
+  text: z.string().min(1).max(50_000),
+  embedding: embeddingVector.optional(),
+  contentHash: z.string().min(1).max(64),
+})
+
 export const embeddingPostSchema = z.object({
   mapId: cuid,
-  embeddings: z.array(z.object({
-    nodeId: z.string().min(1).max(128),
-    text: z.string().min(1).max(50_000),
-    embedding: embeddingVector,
-    contentHash: z.string().min(1).max(64)
-  })).min(1).max(500)
+  embeddings: z.array(embeddingPostEntry).min(1).max(500),
 })
 
 export const semanticSearchSchema = z.object({
