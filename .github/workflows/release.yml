@@ -153,13 +153,22 @@ jobs:
           git tag -f "$TAG"
           git push origin "$TAG" --force
 
-      # UNSIGNED build — we deliberately omit APPLE_* and TAURI_SIGNING_*
-      # env. macOS shows Gatekeeper, Windows shows SmartScreen on first run;
-      # the release body explains the one-time bypass.
-      - name: Build with Tauri (unsigned)
+      # Code-signing (APPLE_* / Windows cert) is deliberately omitted — macOS
+      # shows Gatekeeper, Windows shows SmartScreen on first run; the release
+      # body explains the one-time bypass.
+      #
+      # Updater signing (TAURI_SIGNING_*) IS enabled. When these env vars are
+      # set, `tauri build` automatically generates a `.sig` file next to each
+      # updater bundle (*.app.tar.gz on macOS, *-setup.exe on Windows). The
+      # `write-manifest` job below ingests those .sig files into latest.json so
+      # the in-app updater can verify downloads with the public key baked into
+      # tauri.conf.json — see AER-14.
+      - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.resolve-version.outputs.tag }}
           releaseName: 'NeuroCanvas ${{ needs.resolve-version.outputs.version }}'
@@ -244,8 +253,58 @@ jobs:
             [ -f "$f" ] && gh release upload "$TAG" "$f" --clobber || true
           done
 
+      # Capture the Tauri updater .sig files so the manifest job can ingest
+      # them into latest.json (AER-14). Each .sig is a tiny base64-encoded
+      # minisign signature emitted automatically by `tauri build` when the
+      # TAURI_SIGNING_* env vars are set. We tag the artifact by platform key
+      # so the manifest job knows which entry to attach each signature to.
+      - name: Stage updater signatures
+        shell: bash
+        env:
+          MATRIX_TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p ./updater-sigs
+          # Map Cargo target triple → Tauri updater platform key.
+          case "$MATRIX_TARGET" in
+            aarch64-apple-darwin)    PLATFORM_KEY="darwin-aarch64" ;;
+            x86_64-apple-darwin)     PLATFORM_KEY="darwin-x86_64"  ;;
+            x86_64-pc-windows-msvc)  PLATFORM_KEY="windows-x86_64" ;;
+            *)                        PLATFORM_KEY="unknown"        ;;
+          esac
+          # Find the canonical updater bundle .sig for this platform:
+          #   macOS  → *.app.tar.gz.sig
+          #   Windows → *-setup.exe.sig (NSIS) ; fall back to *.msi.sig
+          SIG_FILE=""
+          if [ -f ./r2-upload/*.app.tar.gz.sig ] 2>/dev/null; then
+            SIG_FILE="$(ls ./r2-upload/*.app.tar.gz.sig | head -1)"
+          fi
+          if [ -z "$SIG_FILE" ]; then
+            for f in ./r2-upload/*-setup.exe.sig ./r2-upload/*.msi.sig; do
+              [ -f "$f" ] && SIG_FILE="$f" && break
+            done
+          fi
+          if [ -n "$SIG_FILE" ]; then
+            cp "$SIG_FILE" "./updater-sigs/${PLATFORM_KEY}.sig"
+            echo "Captured ${PLATFORM_KEY} signature from $SIG_FILE"
+          else
+            echo "::warning::No updater .sig produced for ${PLATFORM_KEY} — check TAURI_SIGNING_* secrets."
+          fi
+          ls -la ./updater-sigs
+
+      - name: Upload updater signatures (workflow artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-sigs-${{ matrix.target }}
+          path: ./updater-sigs/*.sig
+          if-no-files-found: warn
+          retention-days: 7
+
   # 4. Write latest.json to the R2 bucket root once every build is done.
-  # /api/releases/manifest passes this through; in-app updaters poll it.
+  # The file serves two callers:
+  #   1. Tauri's in-app updater (reads platforms.<key>.{signature, url})
+  #   2. /api/releases/manifest passthrough used by the web/mobile banners
+  #      (reads the top-level version + published_at)
+  # See AER-14 for the unified spec.
   write-manifest:
     name: Write latest.json to R2
     needs: [resolve-version, build-tauri]
@@ -255,25 +314,90 @@ jobs:
       VERSION: ${{ needs.resolve-version.outputs.version }}
       REPO: ${{ github.repository }}
     steps:
+      - name: Download updater signatures
+        uses: actions/download-artifact@v4
+        with:
+          pattern: updater-sigs-*
+          path: ./updater-sigs-raw
+          merge-multiple: true
+
       - name: Compose latest.json
         shell: bash
+        env:
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.resolve-version.outputs.tag }}
         run: |
-          mkdir -p ./manifest
-          PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          cat > ./manifest/latest.json <<JSON
-          {
-            "version": "${VERSION}",
-            "tag": "${TAG}",
-            "channel": "beta",
-            "published_at": "${PUBLISHED_AT}",
-            "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
-            "platforms": {
-              "macos-arm64": "https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_aarch64.dmg",
-              "macos-x64":   "https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64.dmg",
-              "windows-x64": "https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64-setup.exe"
-            }
+          mkdir -p ./manifest ./updater-sigs-raw
+
+          # Read each platform's .sig (the file content IS the base64 signature
+          # — Tauri writes it ready-to-paste). Missing sigs become empty
+          # strings so the manifest still parses; the updater will simply
+          # refuse to install an unsigned platform.
+          read_sig() {
+            local key="$1"
+            local f="./updater-sigs-raw/${key}.sig"
+            if [ -f "$f" ]; then
+              # Strip any trailing newline so the JSON stays clean.
+              tr -d '\n' < "$f"
+            else
+              printf ''
+            fi
           }
-          JSON
+
+          export PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export SIG_DARWIN_ARM64="$(read_sig 'darwin-aarch64')"
+          export SIG_DARWIN_X64="$(read_sig 'darwin-x86_64')"
+          export SIG_WINDOWS_X64="$(read_sig 'windows-x86_64')"
+
+          # Updater bundle URLs (NOT the dmg/msi — Tauri needs the .app.tar.gz
+          # for macOS and the NSIS *-setup.exe for Windows).
+          export URL_DARWIN_ARM64="https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_aarch64.app.tar.gz"
+          export URL_DARWIN_X64="https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64.app.tar.gz"
+          export URL_WINDOWS_X64="https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64-setup.exe"
+
+          # Public CDN download URLs (dmg/exe) for the /download page — kept
+          # in a separate `downloads` block so the Tauri updater contract
+          # (top-level `platforms` map) stays clean.
+          export DL_DARWIN_ARM64="https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_aarch64.dmg"
+          export DL_DARWIN_X64="https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64.dmg"
+          export DL_WINDOWS_X64="https://cdn.neuro-canvas.com/beta/NeuroCanvas_${VERSION}_x64-setup.exe"
+
+          # Use python (preinstalled on ubuntu-latest) to emit safely-quoted
+          # JSON — avoids any heredoc-injection risk from version strings.
+          python3 - > ./manifest/latest.json <<'PY'
+          import json, os
+          data = {
+              "version": os.environ["VERSION"],
+              "tag": os.environ["TAG"],
+              "channel": "beta",
+              "pub_date": os.environ["PUBLISHED_AT"],
+              "published_at": os.environ["PUBLISHED_AT"],
+              "notes": f"NeuroCanvas {os.environ['VERSION']} — see release notes at {os.environ['RELEASE_URL']}",
+              "release_url": os.environ["RELEASE_URL"],
+              # Tauri updater contract — keyed by `<os>-<arch>` per spec.
+              "platforms": {
+                  "darwin-aarch64": {
+                      "signature": os.environ["SIG_DARWIN_ARM64"],
+                      "url": os.environ["URL_DARWIN_ARM64"],
+                  },
+                  "darwin-x86_64": {
+                      "signature": os.environ["SIG_DARWIN_X64"],
+                      "url": os.environ["URL_DARWIN_X64"],
+                  },
+                  "windows-x86_64": {
+                      "signature": os.environ["SIG_WINDOWS_X64"],
+                      "url": os.environ["URL_WINDOWS_X64"],
+                  },
+              },
+              # Cross-platform direct-download URLs used by the /download page
+              # and the web/mobile banners (NOT consumed by the Tauri updater).
+              "downloads": {
+                  "macos-arm64": os.environ["DL_DARWIN_ARM64"],
+                  "macos-x64":   os.environ["DL_DARWIN_X64"],
+                  "windows-x64": os.environ["DL_WINDOWS_X64"],
+              },
+          }
+          print(json.dumps(data, indent=2))
+          PY
           cat ./manifest/latest.json
 
       - name: Upload latest.json to R2 bucket root
