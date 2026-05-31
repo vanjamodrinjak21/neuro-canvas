@@ -44,6 +44,30 @@
 //   Without ONNX_MODEL_DIR + a populated reference, the test still runs
 //   the server pipeline on each input and asserts the output is a valid
 //   256d L2-normalised vector — a "no junk vectors" smoke test.
+//
+// Tauri (Rust ONNX) parity                                          (AER-8)
+// ─────────────────────
+//   Vitest cannot drive the Tauri Rust pipeline directly — the engine lives
+//   in `src-tauri/src/ml/embedding.rs` and only runs inside the desktop
+//   binary. To verify cross-surface (Tauri ↔ Web ↔ Server) parity manually:
+//
+//     1. Build + launch the Tauri app. In its DevTools console:
+//          await window.__TAURI__.invoke('ml_init', {})
+//          const r = await window.__TAURI__.invoke('ml_embed',
+//                       { text: 'the quick brown fox' })
+//          JSON.stringify(r.embedding)   // → save to scripts/fixtures/tauri.json
+//
+//     2. Capture the same input from the web worker (transformers.js) and
+//        from the server-side pipeline.
+//
+//     3. Run scripts/aer8-cross-parity.mjs over the three JSON files —
+//        the script asserts pairwise cosine ≥ 0.999 between every pair and
+//        exits non-zero on failure.
+//
+//   Full protocol + commands live in `BENCHMARK.md` under "Cross-surface
+//   parity verification". The Rust side also has its own dim-boundary
+//   assertion (`cargo test --lib ml::embedding`) which catches any future
+//   regression where the engine starts returning non-256d vectors.
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'

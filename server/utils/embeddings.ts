@@ -361,6 +361,7 @@ export async function generateEmbeddingFromText(
 
   const prefixed = applyNomicPrefix(trimmed, prefixType)
 
+  const startedAt = Date.now()
   const pipe = await getPipeline()
   const output = await pipe(prefixed, { pooling: 'mean', normalize: true })
 
@@ -382,7 +383,30 @@ export async function generateEmbeddingFromText(
   const full: number[] = Array.from<number>({ length: data.length })
   for (let i = 0; i < data.length; i++) full[i] = data[i]!
 
-  return truncateMatryoshka(full, EMBEDDING_DIMS)
+  const result = truncateMatryoshka(full, EMBEDDING_DIMS)
+
+  // Boundary assertion: pgvector schema is vector(256). Anything else is a
+  // bug — fail loud rather than corrupt the index.
+  if (result.length !== EMBEDDING_DIMS) {
+    throw new Error(
+      `Server-side embedding has wrong post-truncation dim ${result.length} (expected ${EMBEDDING_DIMS})`,
+    )
+  }
+
+  // Uniform cross-surface telemetry shape (matches Tauri tracing fields +
+  // worker `[ai-worker-telemetry]` JSON line). Field names intentionally
+  // identical so a single grep / log-pipeline regex captures all three.
+  const telemetry = {
+    op: 'embed',
+    duration_ms: Number((Date.now() - startedAt).toFixed(2)),
+    runtime: 'server-cpu',
+    dimensions: EMBEDDING_DIMS,
+    batch_size: 1,
+    prefix: prefixType,
+  }
+  console.log(`[embeddings-telemetry] ${JSON.stringify(telemetry)}`)
+
+  return result
 }
 
 /**
