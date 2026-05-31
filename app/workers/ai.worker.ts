@@ -105,7 +105,6 @@ interface WorkerResponse {
 // Embedding pipeline (lazy loaded)
 let embeddingPipeline: FeatureExtractionPipeline | null = null
 let isModelLoading = false
-let _modelLoadProgress = 0
 let hasWebGPU = false
 let activeDevice: 'webgpu' | 'wasm' = 'wasm'
 let activeDtype: EmbeddingDtype = 'q8'
@@ -150,10 +149,8 @@ async function initEmbeddingModel(onProgress?: (progress: number) => void): Prom
 
     const progressCallback = (progress: { status: string; progress?: number; loaded?: number; total?: number }) => {
       if (progress.status === 'progress' && progress.progress !== undefined) {
-        _modelLoadProgress = progress.progress
         onProgress?.(progress.progress)
       } else if (progress.status === 'done') {
-        _modelLoadProgress = 100
         onProgress?.(100)
       }
     }
