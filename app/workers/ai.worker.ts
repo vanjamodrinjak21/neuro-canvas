@@ -16,8 +16,25 @@ import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/tran
 env.cacheDir = 'indexeddb://neurocanvas-models-v2'
 env.allowLocalModels = false
 
-/** Target dimension for Matryoshka truncation */
+/** Target dimension for Matryoshka truncation — must match Rust EMBEDDING_DIMS + server EMBEDDING_DIMS. */
 const MATRYOSHKA_DIM = 256
+
+/**
+ * Quantization dtype fallback chain. We try the smallest/fastest first, then
+ * step up if the model variant isn't published on HuggingFace or fails to
+ * load. Why this order:
+ *   - `q4f16`  ≈  60 MB, fastest on WebGPU (FP16 activations + INT4 weights)
+ *   - `q8`     ≈  37 MB, our previous default for WASM; well-tested
+ *   - `fp16`   ≈ 138 MB, near-fp32 quality, GPU-friendly
+ *   - `fp32`   ≈ 274 MB, last-resort native precision
+ *
+ * Recall on the AER-5 cluster fixture is the gate — anything that drops
+ * below recall@3 = 0.9 we reject at evaluation time. The default `q8`
+ * variant has been shipping in production since AER-5 and passes the
+ * existing parity tests, so it's a safe baseline.
+ */
+type EmbeddingDtype = 'q4f16' | 'q8' | 'fp16' | 'fp32'
+const DTYPE_FALLBACK_CHAIN: readonly EmbeddingDtype[] = ['q4f16', 'q8', 'fp16', 'fp32'] as const
 
 /**
  * Truncate a Matryoshka embedding to target dimensions and L2-renormalize.
@@ -90,6 +107,8 @@ let embeddingPipeline: FeatureExtractionPipeline | null = null
 let isModelLoading = false
 let _modelLoadProgress = 0
 let hasWebGPU = false
+let activeDevice: 'webgpu' | 'wasm' = 'wasm'
+let activeDtype: EmbeddingDtype = 'q8'
 
 // Content hash cache for skipping unchanged embeddings
 const contentHashCache = new Map<string, number>()
@@ -107,16 +126,27 @@ async function checkWebGPU(): Promise<boolean> {
   }
 }
 
-// Initialize the embedding model
+// Initialize the embedding model.
+//
+// Two axes of selection happen here:
+//   1. Device — WebGPU if the adapter is available + a pipeline actually
+//      compiles; otherwise WASM (with SIMD + threading, transformers.js
+//      handles ORT setup internally).
+//   2. Dtype  — walk DTYPE_FALLBACK_CHAIN, stopping at the first variant
+//      that loads. q4f16 is smallest/fastest; q8 is our previous default and
+//      passes the AER-5 parity fixture; fp16/fp32 are quality fallbacks if a
+//      quant variant isn't published on HF for this exact model.
+//
+// Logs a one-time `[ai-worker] device=… dtype=…` line on success so dev/ops
+// can confirm acceleration is live in the console without spelunking.
 async function initEmbeddingModel(onProgress?: (progress: number) => void): Promise<void> {
   if (embeddingPipeline || isModelLoading) return
 
   isModelLoading = true
 
   try {
-    // Determine device - use WebGPU if available, otherwise WASM
     hasWebGPU = await checkWebGPU()
-    let device: 'webgpu' | 'wasm' = hasWebGPU ? 'webgpu' : 'wasm'
+    activeDevice = hasWebGPU ? 'webgpu' : 'wasm'
 
     const progressCallback = (progress: { status: string; progress?: number; loaded?: number; total?: number }) => {
       if (progress.status === 'progress' && progress.progress !== undefined) {
@@ -128,34 +158,24 @@ async function initEmbeddingModel(onProgress?: (progress: number) => void): Prom
       }
     }
 
-    console.log(`[AI Worker] Initializing nomic-embed-text-v1.5 with ${device}...`)
+    console.log(`[AI Worker] Initializing nomic-embed-text-v1.5 (device=${activeDevice})…`)
 
-    try {
-      // Load nomic-embed-text-v1.5 model (~111MB, 768→256d Matryoshka)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      embeddingPipeline = await (pipeline as any)(
-        'feature-extraction',
-        'nomic-ai/nomic-embed-text-v1.5',
-        { device, progress_callback: progressCallback }
-      ) as FeatureExtractionPipeline
-    } catch (gpuError) {
-      // WebGPU init may fail even when adapter exists — fall back to WASM
-      if (device === 'webgpu') {
-        console.warn('[AI Worker] WebGPU pipeline failed, falling back to WASM:', gpuError)
-        hasWebGPU = false
-        device = 'wasm'
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        embeddingPipeline = await (pipeline as any)(
-          'feature-extraction',
-          'nomic-ai/nomic-embed-text-v1.5',
-          { device, progress_callback: progressCallback }
-        ) as FeatureExtractionPipeline
-      } else {
-        throw gpuError
-      }
-    }
+    embeddingPipeline = await loadPipelineWithFallback(
+      activeDevice,
+      DTYPE_FALLBACK_CHAIN,
+      progressCallback,
+    )
 
-    console.log(`[AI Worker] Embedding model loaded successfully (${device})`)
+    // If WebGPU failed completely we silently flipped to WASM inside the
+    // helper. Mirror that back to the public flag so the UI doesn't claim
+    // GPU acceleration when CPU was what actually loaded.
+    if (activeDevice === 'wasm') hasWebGPU = false
+
+    // Single, structured device + dtype log. Matches Tauri's
+    // `ml: execution_provider=…` shape so cross-surface telemetry parses
+    // with the same regex.
+    console.info(`[ai-worker] device=${activeDevice} dtype=${activeDtype} dimensions=${MATRYOSHKA_DIM}`)
+    console.log(`[AI Worker] Embedding model loaded successfully (device=${activeDevice}, dtype=${activeDtype})`)
   } catch (error) {
     console.error('[AI Worker] Failed to load embedding model:', error)
     throw error
@@ -164,21 +184,74 @@ async function initEmbeddingModel(onProgress?: (progress: number) => void): Prom
   }
 }
 
+/**
+ * Try each dtype in `chain` on `preferredDevice`. On the first hard failure
+ * across all dtypes on WebGPU, drop to WASM and retry the chain there. Sets
+ * the module-scope `activeDevice` + `activeDtype` to whatever ended up
+ * actually loading. Throws the LAST error if every combination fails.
+ */
+async function loadPipelineWithFallback(
+  preferredDevice: 'webgpu' | 'wasm',
+  chain: readonly EmbeddingDtype[],
+  progressCallback: (p: { status: string; progress?: number; loaded?: number; total?: number }) => void,
+): Promise<FeatureExtractionPipeline> {
+  const devicesToTry: Array<'webgpu' | 'wasm'> = preferredDevice === 'webgpu'
+    ? ['webgpu', 'wasm']
+    : ['wasm']
+
+  let lastError: unknown = null
+
+  for (const device of devicesToTry) {
+    for (const dtype of chain) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const p = await (pipeline as any)(
+          'feature-extraction',
+          'nomic-ai/nomic-embed-text-v1.5',
+          { device, dtype, progress_callback: progressCallback }
+        ) as FeatureExtractionPipeline
+        activeDevice = device
+        activeDtype = dtype
+        return p
+      } catch (err) {
+        lastError = err
+        // Quant variant probably doesn't exist on HF for this model — try
+        // the next one. Logged as warn so curious devs can see the chain.
+        console.warn(`[AI Worker] dtype=${dtype} device=${device} failed, trying next:`, err)
+      }
+    }
+    // All dtypes failed on this device. If we were on WebGPU, drop to WASM.
+    if (device === 'webgpu') {
+      console.warn('[AI Worker] WebGPU exhausted — falling back to WASM')
+    }
+  }
+
+  throw lastError ?? new Error('All dtype/device combinations failed to load')
+}
+
 // ═══════════════ BATCH EMBEDDING ═══════════════
 
 /**
  * True batch inference — processes multiple texts in a single forward pass.
  * Falls back to sequential for single items.
+ *
+ * Default batch size is 32 to saturate WebGPU (matches Tauri MAX_BATCH).
+ * For very long inputs the caller can pass a smaller batchSize to avoid
+ * GPU memory pressure.
+ *
+ * Emits one telemetry line per call with the cross-surface uniform shape:
+ *   `[ai-worker-telemetry] {"duration_ms":N,"runtime":"webgpu","dimensions":256,"batch_size":N}`
  */
 async function batchEmbed(
   texts: string[],
-  batchSize: number = 16,
+  batchSize: number = 32,
   onProgress?: (completed: number, total: number) => void
 ): Promise<Float32Array[]> {
   if (!embeddingPipeline) {
     throw new Error('Embedding model not initialized')
   }
 
+  const startedAt = performance.now()
   const results: Float32Array[] = []
   const total = texts.length
 
@@ -197,13 +270,43 @@ async function batchEmbed(
       const offset = i * nativeDim
       const fullEmbedding = new Float32Array(data.buffer, data.byteOffset + offset * 4, nativeDim)
       const truncated = truncateAndNormalize(fullEmbedding, nativeDim, MATRYOSHKA_DIM)
+      // Boundary assertion: truncated MUST be exactly MATRYOSHKA_DIM long.
+      // Anything else means our truncator broke OR the native model changed
+      // shape mid-flight — fail loud rather than ship a mis-shaped vector
+      // into pgvector / similarity computation.
+      if (truncated.length !== MATRYOSHKA_DIM) {
+        throw new Error(
+          `batchEmbed: dim mismatch — got ${truncated.length}, expected ${MATRYOSHKA_DIM}`
+        )
+      }
       results.push(truncated)
     }
 
     onProgress?.(Math.min(end, total), total)
   }
 
+  emitEmbedTelemetry('batchEmbed', performance.now() - startedAt, total)
   return results
+}
+
+/**
+ * Emit a structured telemetry line for a single embed call. The shape
+ * matches Tauri's `tracing::info!` fields and the server's structured log so
+ * cross-surface latency dashboards can use one schema.
+ *
+ * Stays a console.info (not a postMessage) — keeping the worker thread free
+ * of UI plumbing for what is effectively a debug breadcrumb.
+ */
+function emitEmbedTelemetry(op: 'embed' | 'batchEmbed', durationMs: number, batchSize: number): void {
+  const payload = {
+    op,
+    duration_ms: Number(durationMs.toFixed(2)),
+    runtime: activeDevice,
+    dtype: activeDtype,
+    dimensions: MATRYOSHKA_DIM,
+    batch_size: batchSize,
+  }
+  console.info(`[ai-worker-telemetry] ${JSON.stringify(payload)}`)
 }
 
 // Generate embedding for a single text
@@ -212,6 +315,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
     throw new Error('Embedding model not initialized')
   }
 
+  const startedAt = performance.now()
   const output = await embeddingPipeline(text, {
     pooling: 'mean',
     normalize: true
@@ -219,6 +323,12 @@ async function generateEmbedding(text: string): Promise<number[]> {
 
   const fullData = output.data as Float32Array
   const truncated = truncateAndNormalize(fullData, fullData.length, MATRYOSHKA_DIM)
+  if (truncated.length !== MATRYOSHKA_DIM) {
+    throw new Error(
+      `generateEmbedding: dim mismatch — got ${truncated.length}, expected ${MATRYOSHKA_DIM}`
+    )
+  }
+  emitEmbedTelemetry('embed', performance.now() - startedAt, 1)
   return Array.from(truncated)
 }
 
@@ -594,7 +704,12 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
           initialized: true,
           webgpu: hasWebGPU,
           modelLoaded: !!embeddingPipeline,
-          availableModels: ['all-MiniLM-L6-v2']
+          // Surface the device + dtype that actually ended up loading so the
+          // UI / debug panel reports reality, not the requested config.
+          device: activeDevice,
+          dtype: activeDtype,
+          dimensions: MATRYOSHKA_DIM,
+          availableModels: ['nomic-embed-text-v1.5']
         })
         break
       }
@@ -671,9 +786,13 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
           }
         }
 
-        // True batch inference for texts that need embedding
+        // True batch inference for texts that need embedding.
+        // Default batch size 32 matches the Tauri MAX_BATCH and saturates
+        // WebGPU well for short-to-medium inputs (< 256 tokens). Callers
+        // can lower it via `payload.batchSize` for very long inputs to
+        // avoid OOM on memory-constrained GPUs.
         const rawTexts = textsToEmbed.map(t => `search_document: ${t.text}`)
-        const batchSize = (payload as { batchSize?: number }).batchSize ?? 16
+        const batchSize = (payload as { batchSize?: number }).batchSize ?? 32
         const batchResults = rawTexts.length > 0
           ? await batchEmbed(rawTexts, batchSize, (completed, _total) => {
               respond(id, 'progress', {

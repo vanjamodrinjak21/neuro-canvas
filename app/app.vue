@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
+import { useAIPreload } from '~/composables/useAIPreload'
 
 // Initialize user store at root so theme loads once for all pages
 useUserStore()
+
+// Background pre-warm of the embedding model so the first user-facing
+// semantic operation (search, smart expand, auto-connect) doesn't pay the
+// cold-start cost. Native shells skip this — Tauri pre-warms its own ONNX
+// engine inside `commands::ml::spawn_preload_default_model`.
+useAIPreload()
 
 // Desktop auth modal (Tauri only)
 const _isTauri = typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
