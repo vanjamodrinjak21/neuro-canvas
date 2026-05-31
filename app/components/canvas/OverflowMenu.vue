@@ -200,23 +200,12 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   background: var(--nc-surface-3);
 }
 
-/* ── Main panel ──────────────────────────── */
-.overflow-panel {
-  z-index: var(--nc-z-modal, 300);
-  min-width: 220px;
-  padding: 6px;
-  border-radius: var(--nc-radius-lg);
-  /* Hard-coded opaque color (not the token) — defends against any
-     parent transform/filter context that could let the canvas bleed
-     through, and against accidental token override. */
-  background-color: #18181B;
-  background-image: none;
-  opacity: 1;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
-  animation: menuIn 0.15s var(--nc-ease);
-  isolation: isolate;
-}
+/* NOTE: .overflow-panel and .export-panel chrome (background, border,
+   shadow, sizing, z-index) live in app/assets/css/components.css as
+   GLOBAL rules. They cannot be scoped because radix-vue's
+   <DropdownMenuPortal> teleports the panels through multiple component
+   wrappers, and the scoped data-v-* attribute does not survive that
+   chain (canvas content was bleeding through — see AER-7). */
 
 /* ── Shared item style ───────────────────── */
 .menu-item {
@@ -281,19 +270,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 }
 
 /* ── Export fly-out panel ────────────────── */
-.export-panel {
-  z-index: calc(var(--nc-z-modal, 300) + 1);
-  min-width: 200px;
-  padding: 6px;
-  border-radius: var(--nc-radius-lg);
-  background-color: #18181B;
-  background-image: none;
-  opacity: 1;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
-  animation: subIn 0.12s var(--nc-ease);
-  isolation: isolate;
-}
+/* (Panel chrome lives in app/assets/css/components.css — see AER-7 note above.) */
 .export-item {
   display: flex;
   align-items: center;
@@ -333,12 +310,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 }
 
 /* ── Light theme ────────────────────────── */
-:root.light .overflow-panel {
-  background-color: #FFFFFF;
-  background-image: none;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
-}
+/* (Panel chrome light-mode overrides live in components.css — see AER-7.) */
 :root.light .menu-item {
   color: #3F3F46;
 }
@@ -364,12 +336,6 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 :root.light .sub-trigger[data-state="open"] {
   background: rgba(0, 0, 0, 0.04);
 }
-:root.light .export-panel {
-  background-color: #FFFFFF;
-  background-image: none;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
-}
 :root.light .export-item {
   color: #3F3F46;
 }
@@ -384,13 +350,4 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   color: #A1A1AA;
 }
 
-/* ── Entrance animations ─────────────────── */
-@keyframes menuIn {
-  from { opacity: 0; transform: scale(0.97) translateY(-4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-@keyframes subIn {
-  from { opacity: 0; transform: translateX(-4px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
 </style>
