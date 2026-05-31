@@ -45,14 +45,21 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())
         .manage(ml::state::MLState::new())
-        .setup(|_app| {
+        .setup(|app| {
             #[cfg(debug_assertions)]
             {
                 use tauri::Manager;
-                if let Some(window) = _app.get_webview_window("main") {
+                if let Some(window) = app.get_webview_window("main") {
                     window.open_devtools();
                 }
             }
+
+            // Pre-warm the ONNX embedding engine in the background so the
+            // first user-facing search isn't blocked behind a cold model
+            // load. Non-blocking — Tauri main thread keeps the window
+            // responsive while the bundled quantized model compiles.
+            commands::ml::spawn_preload_default_model(app.handle().clone());
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

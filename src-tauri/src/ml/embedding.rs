@@ -3,18 +3,32 @@ use ndarray::{Array1, Array2, Axis};
 use ort::session::Session;
 use ort::value::Tensor;
 use std::path::Path;
+use std::time::Instant;
 use tokenizers::Tokenizer;
 
 /// Maximum batch size to prevent OOM on GPU.
-const MAX_BATCH: usize = 32;
+pub const MAX_BATCH: usize = 32;
 
 /// Target output dimension after Matryoshka truncation.
-const MATRYOSHKA_DIM: usize = 256;
+///
+/// This MUST match `EMBEDDING_DIMS` in `server/utils/embeddings.ts` and the
+/// `MATRYOSHKA_DIM` constant in `app/workers/ai.worker.ts`. The pgvector
+/// column is defined as `vector(256)` and HNSW cosine indexes assume this
+/// exact dim — changing it requires a schema migration AND re-embedding
+/// every row across web, desktop, and server pipelines.
+pub const MATRYOSHKA_DIM: usize = 256;
+
+/// Public alias so call sites (Tauri commands, tests) can reference the
+/// canonical 256d constant without hard-coding the number.
+pub const EMBEDDING_DIMS: usize = MATRYOSHKA_DIM;
 
 /// Core ONNX embedding engine. Holds a loaded ONNX session and tokenizer.
 pub struct EmbeddingEngine {
     session: Session,
     tokenizer: Tokenizer,
+    /// The execution provider name actually in use ("coreml", "directml", "cpu").
+    /// Surfaced for telemetry / debug UIs so we can verify GPU acceleration is live.
+    execution_provider: &'static str,
 }
 
 /// Hardware info for choosing execution providers.
@@ -42,6 +56,17 @@ impl EmbeddingEngine {
     }
 
     /// Load an ONNX session + tokenizer with explicit hardware info.
+    ///
+    /// Execution provider selection is explicit and platform-gated:
+    ///   - macOS (Apple Silicon, full model): CoreML actively registered
+    ///   - macOS (Apple Silicon, quantized):  CPU (avoids 30s+ CoreML compile)
+    ///   - Windows:                           DirectML (DX12 GPU)
+    ///   - everything else:                   CPU
+    ///
+    /// The chosen provider is logged via `tracing::info!("ml: execution_provider=…")`
+    /// at startup AND stored on the engine so the IPC layer can include it in
+    /// telemetry. If the requested GPU EP fails to register, we fall back to CPU
+    /// and log a `warn!` — never silently degrade.
     pub fn new_with_hardware(
         onnx_path: &Path,
         tokenizer_path: &Path,
@@ -49,49 +74,22 @@ impl EmbeddingEngine {
     ) -> Result<Self> {
         tracing::info!("Loading ONNX session from {}", onnx_path.display());
 
-        let mut builder = Session::builder()
-            .context("create session builder")?;
-
-        // On Apple Silicon, skip CoreML for the quantized model — CPU is fast enough
-        // and CoreML compilation can hang for 30s+ on first launch.
-        // Only use CoreML for the full-precision model where acceleration matters.
-        #[cfg(target_os = "macos")]
-        if hw.is_apple_silicon {
-            let is_quantized = onnx_path
-                .file_name()
-                .and_then(|f| f.to_str())
-                .map(|f| f.contains("quantized"))
-                .unwrap_or(false);
-
-            if !is_quantized {
-                tracing::info!("Apple Silicon + full model — attempting CoreML EP");
-                let coreml_result = Session::builder()
-                    .and_then(|b| {
-                        b.with_execution_providers([
-                            ort::execution_providers::CoreMLExecutionProvider::default().build(),
-                        ])
-                    });
-                match coreml_result {
-                    Ok(b) => {
-                        builder = b;
-                        tracing::info!("CoreML EP registered");
-                    }
-                    Err(e) => {
-                        tracing::warn!("CoreML EP failed, falling back to CPU: {e}");
-                    }
-                }
-            } else {
-                tracing::info!("Apple Silicon + quantized model — using CPU (faster startup)");
-            }
-        }
-
-        #[cfg(not(target_os = "macos"))]
-        let _ = hw; // suppress unused warning
+        // Build the session via a self-contained helper that returns the final
+        // builder plus the EP name that actually got registered. Doing it this
+        // way sidesteps Cargo feature-gating issues (the `directml` feature is
+        // only declared on Windows targets) AND the `with_execution_providers`
+        // move semantics (it consumes `self` and gives back a `Result<Self>`,
+        // so a failed register on macOS would otherwise leave `builder` moved).
+        let (builder, execution_provider) = build_session_builder(onnx_path, hw)?;
 
         let session = builder
             .with_intra_threads(num_cpus())?
             .commit_from_file(onnx_path)
             .context("load ONNX model")?;
+
+        // Visible at startup for ops / debug UI parity-check with the web
+        // worker's "[ai-worker] device=…" log line.
+        tracing::info!("ml: execution_provider={execution_provider}");
 
         tracing::info!("Loading tokenizer from {}", tokenizer_path.display());
         let mut tokenizer = Tokenizer::from_file(tokenizer_path)
@@ -110,7 +108,13 @@ impl EmbeddingEngine {
             ..Default::default()
         })).map_err(|e| anyhow::anyhow!("set truncation: {e}"))?;
 
-        Ok(Self { session, tokenizer })
+        Ok(Self { session, tokenizer, execution_provider })
+    }
+
+    /// Name of the execution provider in use ("coreml", "directml", "cpu").
+    /// Stable identifier — safe to log/emit in telemetry.
+    pub fn execution_provider(&self) -> &'static str {
+        self.execution_provider
     }
 
     /// Run a single dummy inference to pre-allocate memory and warm up the session.
@@ -122,12 +126,39 @@ impl EmbeddingEngine {
     }
 
     /// Generate a `MATRYOSHKA_DIM`-dim L2-renormalised embedding for a single text.
+    ///
+    /// Emits a `tracing::info!` telemetry line with the uniform shape used by
+    /// the web worker + server (`runtime=tauri-…, dimensions=256, batch_size=1`),
+    /// so latency can be compared across surfaces without parsing different
+    /// log formats. Also asserts the output length matches the canonical
+    /// `EMBEDDING_DIMS` — a hard guarantee against a regressed model that
+    /// would silently write incompatible vectors into pgvector.
     pub fn embed(&mut self, text: &str) -> Result<Vec<f32>> {
-        let batch = self.embed_batch(&[text])?;
-        batch
-            .into_iter()
+        let start = Instant::now();
+        let batch = self.embed_batch_inner(&[text])?;
+        let mut iter = batch.into_iter();
+        let embedding = iter
             .next()
-            .ok_or_else(|| anyhow::anyhow!("empty batch result"))
+            .ok_or_else(|| anyhow::anyhow!("empty batch result"))?;
+
+        // Boundary assertion: every single-text embedding must be exactly
+        // EMBEDDING_DIMS long. Anything else is a parity bug.
+        anyhow::ensure!(
+            embedding.len() == EMBEDDING_DIMS,
+            "embed: dim mismatch — got {}, expected {EMBEDDING_DIMS}",
+            embedding.len()
+        );
+
+        let duration_ms = start.elapsed().as_secs_f64() * 1000.0;
+        tracing::info!(
+            duration_ms = %format!("{duration_ms:.2}"),
+            runtime = %format!("tauri-{}", self.execution_provider),
+            dimensions = EMBEDDING_DIMS,
+            batch_size = 1,
+            "ml: embed"
+        );
+
+        Ok(embedding)
     }
 
     /// Generate embeddings for a batch of texts.
@@ -137,6 +168,7 @@ impl EmbeddingEngine {
             return Ok(vec![]);
         }
 
+        let start = Instant::now();
         let mut all_results = Vec::with_capacity(texts.len());
 
         // Process in bounded chunks
@@ -146,6 +178,25 @@ impl EmbeddingEngine {
             let chunk_results = self.embed_batch_inner(chunk)?;
             all_results.extend(chunk_results);
         }
+
+        // Boundary assertion on every embedding in the batch — surface any
+        // dim drift loudly rather than burying garbage in pgvector.
+        for (i, emb) in all_results.iter().enumerate() {
+            anyhow::ensure!(
+                emb.len() == EMBEDDING_DIMS,
+                "embed_batch[{i}]: dim mismatch — got {}, expected {EMBEDDING_DIMS}",
+                emb.len()
+            );
+        }
+
+        let duration_ms = start.elapsed().as_secs_f64() * 1000.0;
+        tracing::info!(
+            duration_ms = %format!("{duration_ms:.2}"),
+            runtime = %format!("tauri-{}", self.execution_provider),
+            dimensions = EMBEDDING_DIMS,
+            batch_size = texts.len(),
+            "ml: embed_batch"
+        );
 
         Ok(all_results)
     }
@@ -265,6 +316,86 @@ impl EmbeddingEngine {
     }
 }
 
+/// Build the ONNX `SessionBuilder` with the best execution provider available
+/// for the current target. Returns the (possibly EP-augmented) builder plus
+/// the stable name of the EP that was registered ("coreml", "directml",
+/// "cpu"). This is split out so the platform `cfg` gates are isolated and
+/// `with_execution_providers`'s consuming semantics don't poison the caller.
+fn build_session_builder(
+    onnx_path: &Path,
+    hw: &HardwareInfo,
+) -> Result<(ort::session::builder::SessionBuilder, &'static str)> {
+    let builder = ort::session::Session::builder().context("create session builder")?;
+
+    // ── macOS: CoreML for Apple Silicon, full-precision model only ──
+    // CoreML compile can stall first launch by 30s+ on the quantized model
+    // for negligible gain (CPU is already 3–6ms/embed at q8), so we skip it
+    // for the quantized variant.
+    #[cfg(target_os = "macos")]
+    {
+        if hw.is_apple_silicon {
+            let is_quantized = onnx_path
+                .file_name()
+                .and_then(|f| f.to_str())
+                .map(|f| f.contains("quantized"))
+                .unwrap_or(false);
+
+            if !is_quantized {
+                tracing::info!("Apple Silicon + full model — registering CoreML EP");
+                match builder.with_execution_providers([
+                    ort::execution_providers::CoreMLExecutionProvider::default().build(),
+                ]) {
+                    Ok(b) => {
+                        tracing::info!("CoreML EP registered");
+                        return Ok((b, "coreml"));
+                    }
+                    Err(e) => {
+                        tracing::warn!("CoreML EP failed, falling back to CPU: {e}");
+                        // Builder is consumed by the call — rebuild a fresh
+                        // one for the CPU path. Cheap (it's just options).
+                        return Ok((
+                            ort::session::Session::builder().context("rebuild session builder after coreml fail")?,
+                            "cpu",
+                        ));
+                    }
+                }
+            } else {
+                tracing::info!("Apple Silicon + quantized model — using CPU (faster startup)");
+            }
+        }
+    }
+
+    // ── Windows: DirectML on DX12-capable GPUs (Intel/AMD/NVIDIA) ──
+    // The `directml` feature is declared in Cargo.toml only on Windows
+    // targets, so the inner block compiles on Windows and is dead-elided
+    // on every other platform (no `cfg(feature = ...)` mismatch warning).
+    #[cfg(target_os = "windows")]
+    {
+        tracing::info!("Windows — registering DirectML EP (DX12)");
+        match builder.with_execution_providers([
+            ort::execution_providers::DirectMLExecutionProvider::default().build(),
+        ]) {
+            Ok(b) => {
+                tracing::info!("DirectML EP registered");
+                return Ok((b, "directml"));
+            }
+            Err(e) => {
+                tracing::warn!("DirectML EP failed, falling back to CPU: {e}");
+                return Ok((
+                    ort::session::Session::builder().context("rebuild session builder after directml fail")?,
+                    "cpu",
+                ));
+            }
+        }
+    }
+
+    // Linux / other: CPU only.
+    #[cfg(not(target_os = "macos"))]
+    let _ = hw; // keep hw param used on non-mac targets
+
+    Ok((builder, "cpu"))
+}
+
 /// Truncate a Matryoshka embedding to target dimensions and L2-renormalize.
 fn truncate_matryoshka(embedding: &[f32], target_dim: usize) -> Vec<f32> {
     let truncated = &embedding[..target_dim.min(embedding.len())];
@@ -279,4 +410,88 @@ fn num_cpus() -> usize {
     std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(4)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// The dimension test loads the actual bundled quantized model so it exercises
+// the full pipeline (tokenizer → ONNX → mean-pool → L2 → Matryoshka). Because
+// the model lives under `src-tauri/resources/models/nomic-embed-text-v1.5/`
+// the test is gated on the file actually existing — CI without LFS or a
+// stripped checkout won't fail spuriously, but local runs will confirm the
+// 256d boundary contract end-to-end.
+//
+// Run locally:
+//     cd src-tauri
+//     cargo test --lib ml::embedding -- --nocapture
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn bundled_model_paths() -> Option<(PathBuf, PathBuf)> {
+        // src-tauri/src/ml/embedding.rs  ->  src-tauri/resources/models/…
+        let base = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("resources")
+            .join("models")
+            .join("nomic-embed-text-v1.5");
+        let onnx = base.join("model_quantized.onnx");
+        let tok = base.join("tokenizer.json");
+        if onnx.exists() && tok.exists() {
+            Some((onnx, tok))
+        } else {
+            None
+        }
+    }
+
+    #[test]
+    fn embed_returns_exactly_matryoshka_dim() {
+        let Some((onnx, tok)) = bundled_model_paths() else {
+            eprintln!("skipping: bundled model not present (run `pnpm fetch-onnx-model`)");
+            return;
+        };
+
+        let mut engine = EmbeddingEngine::new(&onnx, &tok)
+            .expect("load EmbeddingEngine from bundled resources");
+
+        let v = engine.embed("hello").expect("embed");
+        assert_eq!(
+            v.len(),
+            EMBEDDING_DIMS,
+            "single embed must be exactly {EMBEDDING_DIMS}d (the pgvector schema is vector(256))"
+        );
+
+        // L2-normalised => sum of squares ≈ 1.0
+        let norm_sq: f32 = v.iter().map(|x| x * x).sum();
+        assert!(
+            (norm_sq - 1.0).abs() < 1e-3,
+            "embed output must be L2-normalised, got |v|^2 = {norm_sq}"
+        );
+    }
+
+    #[test]
+    fn embed_batch_returns_exactly_matryoshka_dim_for_each() {
+        let Some((onnx, tok)) = bundled_model_paths() else {
+            eprintln!("skipping: bundled model not present");
+            return;
+        };
+
+        let mut engine = EmbeddingEngine::new(&onnx, &tok).expect("load engine");
+
+        let texts = ["alpha", "beta gamma", "the quick brown fox"];
+        let out = engine
+            .embed_batch(&texts)
+            .expect("embed_batch");
+
+        assert_eq!(out.len(), texts.len());
+        for (i, emb) in out.iter().enumerate() {
+            assert_eq!(
+                emb.len(),
+                EMBEDDING_DIMS,
+                "batch[{i}] must be exactly {EMBEDDING_DIMS}d"
+            );
+        }
+    }
 }

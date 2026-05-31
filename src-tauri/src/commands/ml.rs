@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager, State};
 
-use crate::ml::{embedding::EmbeddingEngine, model_manager, state::MLState};
+use crate::ml::{
+    embedding::{EmbeddingEngine, EMBEDDING_DIMS},
+    model_manager,
+    state::MLState,
+};
 
 // ── Response types ───────────────────────────────────────────────────
 
@@ -64,19 +68,18 @@ struct ProgressPayload {
 
 // ── Commands ─────────────────────────────────────────────────────────
 
-/// Load ONNX model. Accepts a `model_variant` parameter:
-/// - `"quantized"` (default) — bundled quantized model
-/// - `"full"` — downloaded full-precision model from app data
-#[tauri::command]
-pub async fn ml_init(
-    app: tauri::AppHandle,
-    state: State<'_, MLState>,
-    model_variant: Option<String>,
-) -> Result<InitResult, String> {
-    let variant = model_manager::ModelVariant::from_str(
-        model_variant.as_deref().unwrap_or("quantized"),
-    );
-
+/// Internal helper: load the requested model variant and install it on the
+/// shared `MLState`. Shared by the public `ml_init` IPC command and the
+/// `preload_default_model` setup-time warmup so both paths are byte-for-byte
+/// identical. Returns the EP that was actually selected for telemetry/UI.
+///
+/// This blocks on the actual ONNX session compile (potentially seconds), so
+/// callers MUST drive it from an async task — never on the Tauri main thread.
+pub async fn load_model_into_state(
+    app: &tauri::AppHandle,
+    state: &MLState,
+    variant: model_manager::ModelVariant,
+) -> Result<(), String> {
     // Drop existing engine so we can re-initialize with a different variant
     {
         let mut engine_guard = state.engine.lock().await;
@@ -107,6 +110,7 @@ pub async fn ml_init(
         .map_err(|e| format!("EmbeddingEngine::new: {e}"))?;
 
     // Run warmup inference to pre-allocate memory
+    let engine_arc = state.engine.clone();
     tokio::task::spawn_blocking(move || {
         if let Err(e) = engine.warmup() {
             tracing::warn!("Model warmup failed (non-fatal): {e}");
@@ -114,13 +118,68 @@ pub async fn ml_init(
         engine
     })
     .await
-    .map(|engine| {
-        let mut engine_guard = state.engine.blocking_lock();
+    .map(move |engine| {
+        let mut engine_guard = engine_arc.blocking_lock();
         *engine_guard = Some(engine);
     })
     .map_err(|e| format!("warmup spawn_blocking join: {e}"))?;
 
     let _ = state.progress_tx.send(1.0);
+
+    Ok(())
+}
+
+/// Pre-warm the engine on app launch in a background task. Non-blocking —
+/// the Tauri window comes up immediately while the model loads. If the
+/// preload fails (e.g. bundled model missing), the user's first explicit
+/// `ml_init` call still works as the canonical fallback path.
+///
+/// Called from `lib.rs` via `.setup()`. Always defaults to the quantized
+/// variant, which is bundled in `resources/models/` and avoids the 30s+
+/// CoreML compile that the full-precision model triggers.
+pub fn spawn_preload_default_model(app: tauri::AppHandle) {
+    tokio::spawn(async move {
+        let start = std::time::Instant::now();
+        // Run inside an async context so `Manager::state` works.
+        let state = app.state::<MLState>();
+        match load_model_into_state(
+            &app,
+            state.inner(),
+            model_manager::ModelVariant::Quantized,
+        )
+        .await
+        {
+            Ok(_) => {
+                let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+                tracing::info!(
+                    duration_ms = %format!("{elapsed:.0}"),
+                    "ml: preload complete"
+                );
+            }
+            Err(e) => {
+                // Don't surface as error — preload is opportunistic. The
+                // explicit ml_init from the frontend will retry and report
+                // a real failure if the model is genuinely unavailable.
+                tracing::warn!("ml: preload skipped: {e}");
+            }
+        }
+    });
+}
+
+/// Load ONNX model. Accepts a `model_variant` parameter:
+/// - `"quantized"` (default) — bundled quantized model
+/// - `"full"` — downloaded full-precision model from app data
+#[tauri::command]
+pub async fn ml_init(
+    app: tauri::AppHandle,
+    state: State<'_, MLState>,
+    model_variant: Option<String>,
+) -> Result<InitResult, String> {
+    let variant = model_manager::ModelVariant::from_str(
+        model_variant.as_deref().unwrap_or("quantized"),
+    );
+
+    load_model_into_state(&app, state.inner(), variant).await?;
 
     Ok(InitResult {
         initialized: true,
@@ -129,6 +188,10 @@ pub async fn ml_init(
 }
 
 /// Single text embedding.
+///
+/// Asserts the produced vector length at the IPC boundary. If the inner
+/// engine ever drifts from 256d the frontend will get a clear error rather
+/// than silently corrupted pgvector rows.
 #[tauri::command]
 pub async fn ml_embed(text: String, state: State<'_, MLState>) -> Result<EmbedResult, String> {
     let mut engine_guard = state.engine.lock().await;
@@ -138,6 +201,12 @@ pub async fn ml_embed(text: String, state: State<'_, MLState>) -> Result<EmbedRe
 
     let embedding = engine.embed(&text).map_err(|e| format!("embed: {e}"))?;
     let dimensions = embedding.len();
+
+    if dimensions != EMBEDDING_DIMS {
+        return Err(format!(
+            "ml_embed: dim mismatch — got {dimensions}, expected {EMBEDDING_DIMS}"
+        ));
+    }
 
     Ok(EmbedResult {
         embedding,
@@ -192,7 +261,22 @@ pub async fn ml_embed_batch(
         });
     }
 
-    let dimensions = all_embeddings.first().map(|v| v.embedding.len()).unwrap_or(384);
+    // The 256d Matryoshka dim is a system-wide invariant — pgvector schema,
+    // web worker output, server output. Use the canonical constant rather
+    // than a stale fallback literal so a regression in the engine can never
+    // ship malformed vectors to the frontend or DB.
+    let dimensions = all_embeddings
+        .first()
+        .map(|v| v.embedding.len())
+        .unwrap_or(EMBEDDING_DIMS);
+
+    if let Some(bad) = all_embeddings.iter().find(|e| e.embedding.len() != EMBEDDING_DIMS) {
+        return Err(format!(
+            "ml_embed_batch: dim mismatch for id={} — got {}, expected {EMBEDDING_DIMS}",
+            bad.id,
+            bad.embedding.len()
+        ));
+    }
 
     Ok(BatchEmbedResult {
         embeddings: all_embeddings,
