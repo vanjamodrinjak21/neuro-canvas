@@ -30,9 +30,8 @@
 
 import { readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 
 import {

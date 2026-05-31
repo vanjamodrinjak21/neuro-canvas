@@ -16,8 +16,7 @@ import {
 
 function unitVector(length: number, seed = 1): number[] {
   // Simple deterministic non-zero vector then L2-normalise.
-  const v = new Array<number>(length)
-  for (let i = 0; i < length; i++) v[i] = Math.sin(seed * (i + 1))
+  const v: number[] = Array.from({ length }, (_, i) => Math.sin(seed * (i + 1)))
   let norm = 0
   for (let i = 0; i < length; i++) norm += v[i]! * v[i]!
   norm = Math.sqrt(norm)
@@ -78,8 +77,8 @@ describe('cosineSimilarity', () => {
   })
 
   it('returns 0 for orthogonal vectors', () => {
-    const a = new Array<number>(4).fill(0); a[0] = 1
-    const b = new Array<number>(4).fill(0); b[1] = 1
+    const a: number[] = Array.from({ length: 4 }, () => 0); a[0] = 1
+    const b: number[] = Array.from({ length: 4 }, () => 0); b[1] = 1
     expect(cosineSimilarity(a, b)).toBeCloseTo(0, 10)
   })
 
@@ -90,7 +89,7 @@ describe('cosineSimilarity', () => {
   })
 
   it('returns 0 (not NaN) when either vector is zero-magnitude', () => {
-    const z = new Array<number>(EMBEDDING_DIMS).fill(0)
+    const z: number[] = Array.from({ length: EMBEDDING_DIMS }, () => 0)
     const v = unitVector(EMBEDDING_DIMS)
     expect(cosineSimilarity(z, v)).toBe(0)
     expect(cosineSimilarity(v, z)).toBe(0)
