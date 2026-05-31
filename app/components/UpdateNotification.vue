@@ -1,81 +1,94 @@
 <script setup lang="ts">
-const { updateAvailable, updateVersion, updateBody, isDownloading, downloadProgress, error, checkForUpdates, downloadAndInstall } = useTauriUpdater()
+/**
+ * Cross-platform update banner — one component, three platforms.
+ *
+ *   Tauri   → "Update now" downloads + installs + relaunches
+ *   Web     → "Refresh"   reloads to pick up the new SPA bundle
+ *   Mobile  → "Open store" deep-links to App Store / Play Store
+ *
+ * Powered by `useAppUpdates` (AER-14). All platform branching lives in the
+ * composable; this file only renders the unified surface.
+ */
+const updates = useAppUpdates()
 const { t } = useI18n()
-
-const dismissed = ref(false)
-
-const visible = computed(() => updateAvailable.value && !dismissed.value)
-
-function dismiss() {
-  dismissed.value = true
-}
-
-onMounted(() => {
-  checkForUpdates()
-})
 </script>
 
 <template>
   <Transition name="slide-down">
     <div
-      v-if="visible"
-      class="fixed top-4 right-4 z-[9999] w-80 rounded-lg border border-[#1a1a2e] bg-[#0a0a0f] shadow-lg shadow-black/40"
+      v-if="updates.updateAvailable.value"
+      role="status"
+      aria-live="polite"
+      class="update-banner"
     >
-      <div class="p-4">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0 flex-1">
-            <h4 class="text-sm font-semibold text-[#e8e4d9]">
-              {{ $t('common.update.available') }}
+      <div class="update-banner-inner">
+        <div class="update-banner-head">
+          <div class="update-banner-text">
+            <h4 class="update-title">
+              {{ t('common.update.available') }}
             </h4>
-            <p class="mt-1 text-xs text-[#e8e4d9]/60">
-              {{ $t('common.update.version_ready', { version: updateVersion }) }}
-            </p>
-            <p
-              v-if="updateBody"
-              class="mt-1.5 line-clamp-2 text-xs text-[#e8e4d9]/40"
-            >
-              {{ updateBody }}
+            <p class="update-message">
+              {{ updates.message.value }}
             </p>
           </div>
           <button
-            class="shrink-0 p-0.5 text-[#e8e4d9]/40 transition-colors hover:text-[#e8e4d9]/70"
-            :aria-label="$t('common.update.dismiss')"
-            @click="dismiss"
+            class="update-dismiss"
+            :aria-label="t('common.update.dismiss')"
+            @click="updates.dismiss()"
           >
-            <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg
+              class="update-dismiss-icon"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
               <path d="M4 4l8 8M12 4l-8 8" />
             </svg>
           </button>
         </div>
 
-        <div v-if="error" class="mt-2 text-xs text-red-400">
-          {{ error }}
-        </div>
+        <p
+          v-if="updates.error.value"
+          class="update-error"
+          role="alert"
+        >
+          {{ updates.error.value }}
+        </p>
 
-        <div v-if="isDownloading" class="mt-3">
-          <div class="h-1.5 w-full overflow-hidden rounded-full bg-[#1a1a2e]">
+        <div
+          v-if="updates.isWorking.value"
+          class="update-progress-wrap"
+        >
+          <div class="update-progress-track">
             <div
-              class="h-full rounded-full bg-[#e8e4d9]/60 transition-all duration-300"
-              :style="{ width: `${Math.min(downloadProgress, 100)}%` }"
+              class="update-progress-bar"
+              :style="{ width: `${Math.min(updates.progress.value, 100)}%` }"
             />
           </div>
-          <p class="mt-1 text-xs text-[#e8e4d9]/40">
-            {{ $t('common.update.downloading') }}
+          <p class="update-progress-label">
+            {{ t('common.update.downloading') }}
           </p>
         </div>
 
-        <div v-else class="mt-3 flex gap-2">
+        <div
+          v-else
+          class="update-actions"
+        >
           <button
-            class="rounded-md bg-[#e8e4d9] px-3 py-1.5 text-xs font-medium text-[#0a0a0f] transition-opacity hover:opacity-90"
-            @click="downloadAndInstall"
+            class="update-cta"
+            type="button"
+            @click="updates.action()"
           >
-            {{ $t('common.update.update_now') }}
+            {{ updates.ctaLabel.value }}
           </button>
           <button
-            class="rounded-md border border-[#1a1a2e] px-3 py-1.5 text-xs font-medium text-[#e8e4d9]/60 transition-colors hover:border-[#e8e4d9]/20 hover:text-[#e8e4d9]/80"
-            @click="dismiss"
+            class="update-secondary"
+            type="button"
+            @click="updates.dismiss()"
           >
-            {{ $t('common.update.later') }}
+            {{ t('common.update.later') }}
           </button>
         </div>
       </div>
@@ -84,6 +97,137 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.update-banner {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+  border-radius: 0.5rem;
+  border: 1px solid #1a1a2e;
+  background-color: #0a0a0f;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.update-banner-inner {
+  padding: 1rem;
+}
+
+.update-banner-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.update-banner-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.update-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e8e4d9;
+  margin: 0;
+}
+
+.update-message {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: rgba(232, 228, 217, 0.6);
+}
+
+.update-dismiss {
+  flex-shrink: 0;
+  padding: 0.125rem;
+  color: rgba(232, 228, 217, 0.4);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.update-dismiss:hover {
+  color: rgba(232, 228, 217, 0.7);
+}
+
+.update-dismiss-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.update-error {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #f87171;
+}
+
+.update-progress-wrap {
+  margin-top: 0.75rem;
+}
+
+.update-progress-track {
+  height: 0.375rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: #1a1a2e;
+}
+
+.update-progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  background-color: rgba(232, 228, 217, 0.6);
+  transition: width 0.3s ease;
+}
+
+.update-progress-label {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: rgba(232, 228, 217, 0.4);
+}
+
+.update-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.update-cta {
+  border-radius: 0.375rem;
+  background-color: #e8e4d9;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #0a0a0f;
+  border: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.update-cta:hover {
+  opacity: 0.9;
+}
+
+.update-secondary {
+  border-radius: 0.375rem;
+  border: 1px solid #1a1a2e;
+  background: transparent;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(232, 228, 217, 0.6);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.update-secondary:hover {
+  color: rgba(232, 228, 217, 0.8);
+  border-color: rgba(232, 228, 217, 0.2);
+}
+
 .slide-down-enter-active,
 .slide-down-leave-active {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

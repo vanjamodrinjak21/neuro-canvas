@@ -13,6 +13,7 @@
         "section_labels": {
             "appearance": "01 \u2014 izgled",
             "canvas": "02 \u2014 platno",
+            "updates": "03 \u2014 nadogradnje",
             "default_provider": "01 \u2014 zadani davatelj",
             "api_keys": "02 \u2014 API klju\u010devi",
             "local_models": "03 \u2014 lokalni modeli"
@@ -39,7 +40,12 @@
             "show_minimap": "Prika\u017ei minimapu",
             "display_minimap": "Prika\u017ei navigacijsku minimapu",
             "auto_save": "Automatsko spremanje",
-            "auto_save_desc": "Automatski spremi rad svakih {interval}s"
+            "auto_save_desc": "Automatski spremi rad svakih {interval}s",
+            "auto_check_updates": "Automatski provjeri nadogradnje",
+            "auto_check_updates_desc": "Diskretno traži nove verzije pri pokretanju i svakih 6 sati.",
+            "check_now": "Provjeri sada",
+            "current_version": "Trenutna verzija",
+            "up_to_date": "Koristite najnoviju verziju."
         },
         "ai_providers": {
             "default_provider": "Zadani davatelj",

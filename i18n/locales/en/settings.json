@@ -13,6 +13,7 @@
         "section_labels": {
             "appearance": "01 — appearance",
             "canvas": "02 — canvas",
+            "updates": "03 — updates",
             "default_provider": "01 — default provider",
             "api_keys": "02 — api keys",
             "local_models": "03 — local models"
@@ -39,7 +40,12 @@
             "show_minimap": "Show Minimap",
             "display_minimap": "Display navigation minimap",
             "auto_save": "Auto-save",
-            "auto_save_desc": "Automatically save your work every {interval}s"
+            "auto_save_desc": "Automatically save your work every {interval}s",
+            "auto_check_updates": "Check for updates automatically",
+            "auto_check_updates_desc": "Quietly look for new versions when the app starts and every 6 hours.",
+            "check_now": "Check now",
+            "current_version": "Current version",
+            "up_to_date": "You're on the latest version."
         },
         "ai_providers": {
             "default_provider": "Default Provider",

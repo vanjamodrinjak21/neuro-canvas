@@ -86,6 +86,11 @@ useHead({
       @authenticated="desktopAuth.completeSignIn()"
     />
 
+    <!-- Cross-platform update notification (AER-14): self-checks on mount,
+         polls on schedule (6h Tauri, 1h web/mobile), and renders nothing
+         when no update is available. -->
+    <UpdateNotification />
+
     <!-- Global toast stack -->
     <Toast />
   </div>

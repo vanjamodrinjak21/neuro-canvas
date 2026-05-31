@@ -132,6 +132,22 @@ const themeOptions = computed(() => [
   { value: 'system', label: t('settings.general.system'), icon: 'i-lucide-monitor' }
 ])
 
+// Auto-check-for-updates toggle (AER-14). Backed by localStorage so it
+// survives reloads without bothering the user store; `useAppUpdates` reads
+// the same key to gate background polling.
+const autoUpdate = useAutoUpdateToggle()
+const appUpdates = useAppUpdates()
+const checkingForUpdates = ref(false)
+async function manualUpdateCheck() {
+  if (checkingForUpdates.value) return
+  checkingForUpdates.value = true
+  try {
+    await appUpdates.check()
+  } finally {
+    checkingForUpdates.value = false
+  }
+}
+
 const fontSizeOptions = computed(() => [
   { value: 'xs', label: t('settings.general.xs') },
   { value: 'small', label: t('settings.general.small') },
@@ -802,6 +818,48 @@ function handleAccountClose() {
                   @click="userStore.setPreference('autoSave', !userStore.preferences.value.autoSave)"
                 >
                   <span class="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Updates (AER-14) — cross-platform: Tauri installs in-app,
+                 web hard-reloads, mobile deep-links to App/Play Store. -->
+            <div class="settings-section">
+              <span class="section-label">{{ $t('settings.section_labels.updates') }}</span>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">{{ $t('settings.general.auto_check_updates') }}</span>
+                  <span class="setting-desc">{{ $t('settings.general.auto_check_updates_desc') }}</span>
+                </div>
+                <button
+                  :class="['toggle-switch', { on: autoUpdate.enabled.value }]"
+                  :aria-pressed="autoUpdate.enabled.value"
+                  @click="autoUpdate.setEnabled(!autoUpdate.enabled.value)"
+                >
+                  <span class="toggle-knob" />
+                </button>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">{{ $t('settings.general.current_version') }}</span>
+                  <span class="setting-desc">
+                    <template v-if="appUpdates.updateAvailable.value && appUpdates.latestVersion.value">
+                      v{{ appUpdates.currentVersion }} → v{{ appUpdates.latestVersion.value }}
+                    </template>
+                    <template v-else>
+                      v{{ appUpdates.currentVersion }} — {{ $t('settings.general.up_to_date') }}
+                    </template>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="setting-action-btn"
+                  :disabled="checkingForUpdates"
+                  @click="manualUpdateCheck"
+                >
+                  {{ $t('settings.general.check_now') }}
                 </button>
               </div>
             </div>
@@ -1907,6 +1965,30 @@ button.m-row { text-align: left; }
 }
 
 .setting-select:focus { border-color: var(--s-accent, #00D2BE); }
+
+/* Inline "Check now" button used by the Updates section (AER-14). */
+.setting-action-btn {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--s-text, #FAFAFA);
+  background: var(--s-surface, #0D0D10);
+  border: 1px solid var(--s-border, #1A1A1E);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.setting-action-btn:hover:not(:disabled) {
+  border-color: var(--s-accent, #00D2BE);
+  color: var(--s-accent, #00D2BE);
+}
+
+.setting-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* API Key Input */
 .key-input-group {
