@@ -96,15 +96,24 @@ pub fn run() {
                 }
             }
 
-            // ── Windows-only: write HKCU\Software\Classes\<scheme> ────────
-            // Without this, the OS doesn't know that `neurocanvas://` and
-            // the Google reverse-client-ID scheme should launch this app,
-            // so the browser's redirect after Google sign-in produces an
-            // "Open with..." dialog (or a 404) instead of reaching the app.
+            // ── Windows-only: idempotent runtime scheme registration ──────
             //
-            // The MSI/NSIS installer normally writes these keys at install
-            // time, but registering at startup is idempotent and also fixes
-            // the dev/portable-binary case where the installer never ran.
+            // The NSIS installer (see `src-tauri/windows/hooks.nsh`, AER-11)
+            // is the PRIMARY source of truth — it writes both URL schemes
+            // (`neurocanvas` and the Google reverse-client-ID scheme) to
+            // SHCTX\Software\Classes at install time, picking HKLM for
+            // per-machine installs and HKCU for current-user installs.
+            //
+            // This runtime call is a SAFETY NET for cases the installer
+            // didn't cover:
+            //   - Portable / sideloaded binaries that never ran the .exe
+            //     installer (e.g. `cargo run --release`, dev builds).
+            //   - Upgrades from a version that pre-dates AER-11 where the
+            //     installer-written keys are absent.
+            //
+            // `register_all()` writes HKCU only, which is harmless if HKLM
+            // already has the same payload — Windows resolves HKLM first
+            // for ShellExecute, so the per-machine entries take precedence.
             // macOS auto-registers via Info.plist (handled by the bundler),
             // so this block is intentionally Windows-only.
             #[cfg(target_os = "windows")]

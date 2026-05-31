@@ -60,7 +60,11 @@
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": ""
+      "timestampUrl": "",
+      "nsis": {
+        "installMode": "both",
+        "installerHooks": "./windows/hooks.nsh"
+      }
     },
     "linux": {
       "appimage": {
