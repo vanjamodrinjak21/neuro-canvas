@@ -51,7 +51,11 @@
         "update": {
             "available": "Update available",
             "version_ready": "Version {version} is ready to install.",
+            "version_available_web": "NeuroCanvas {version} is available — refresh to update.",
+            "version_available_mobile": "NeuroCanvas {version} is available in the store.",
             "update_now": "Update now",
+            "refresh": "Refresh",
+            "open_store": "Open store",
             "later": "Later",
             "downloading": "Downloading update...",
             "dismiss": "Dismiss"

@@ -51,7 +51,11 @@
         "update": {
             "available": "Dostupna nadogradnja",
             "version_ready": "Verzija {version} je spremna za instalaciju.",
+            "version_available_web": "NeuroCanvas {version} je dostupan — osvježite za nadogradnju.",
+            "version_available_mobile": "NeuroCanvas {version} je dostupan u trgovini.",
             "update_now": "Nadogradi sada",
+            "refresh": "Osvježi",
+            "open_store": "Otvori trgovinu",
             "later": "Kasnije",
             "downloading": "Preuzimanje nadogradnje...",
             "dismiss": "Odbaci"

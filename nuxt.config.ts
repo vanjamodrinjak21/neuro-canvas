@@ -119,7 +119,11 @@ export default defineNuxtConfig({
       cdnBaseUrl: process.env.NUXT_PUBLIC_CDN_BASE_URL || 'https://cdn.neuro-canvas.com',
       // Desktop (Tauri) Google client — public so the in-app WebviewWindow
       // can build the auth URL. The matching client *secret* stays server-side.
-      googleDesktopClientId: process.env.GOOGLE_DESKTOP_CLIENT_ID || ''
+      googleDesktopClientId: process.env.GOOGLE_DESKTOP_CLIENT_ID || '',
+      // Build-time app version — baked into the bundle at build time from
+      // package.json. Used by `useAppUpdates` to detect "this build is older
+      // than the latest published release" on web + mobile (AER-14).
+      buildVersion: process.env.npm_package_version || ''
     }
   },
 
