@@ -205,6 +205,14 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
         </span>
         <a href="#platforms" class="dl-btn-outline">All platforms</a>
       </div>
+      <div class="dl-hero-platforms" aria-label="Jump to platform">
+        <template v-for="p in orderedPlatforms" :key="p">
+          <a v-if="buckets[p].length" href="#platforms" class="dl-hero-platform-chip">
+            <PlatformIcon :platform="p" />
+            <span>{{ platformLabels[p] }}</span>
+          </a>
+        </template>
+      </div>
       <p class="dl-receipt">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M13.333 4.667L6 12l-3.333-3.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -479,6 +487,28 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 .dl-receipt svg { color: var(--text-3); flex-shrink: 0; }
 .dl-receipt-link { color: var(--accent); text-decoration: none; }
 .dl-receipt-link:hover { text-decoration: underline; }
+
+.dl-hero-platforms {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding-top: 4px;
+}
+.dl-hero-platform-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.dl-hero-platform-chip:hover,
+.dl-hero-platform-chip:focus-visible {
+  background: var(--surface-3);
+  border-color: var(--border-active);
+  color: var(--text);
+}
 
 /* ═══════════════════════ SECTIONS ═══════════════════════ */
 .dl-section {
