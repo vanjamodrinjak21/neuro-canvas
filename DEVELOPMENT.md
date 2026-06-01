@@ -58,14 +58,54 @@ Until these are set, `tauri build` will skip emitting `.sig` files and the `writ
 
 ### Key rotation
 
-If the private key is ever leaked:
+If the private key is ever leaked, suspected of being on a compromised
+machine, or you simply need to roll the key on a schedule:
 
-1. Generate a new keypair with the procedure above.
-2. Update `plugins.updater.pubkey` in `src-tauri/tauri.conf.json` with the new public key.
-3. Rotate the two GitHub Actions secrets.
-4. Ship a new release. **Old installs will be permanently unable to auto-update** (the new manifest signatures won't verify against their baked-in old pubkey) and will have to download a fresh build from `/download` manually.
+1. **Generate** a new keypair with the procedure above (writes to `~/.tauri/`,
+   which is gitignored — see *Why we don't commit the private key* below).
+2. **Replace** `plugins.updater.pubkey` in `src-tauri/tauri.conf.json` with
+   the contents of the new `~/.tauri/neurocanvas.key.pub` and commit it.
+3. **Rotate** the two GitHub Actions secrets:
 
-This is why losing the key is a big deal — there's no escape hatch by design.
+   ```bash
+   gh secret set TAURI_SIGNING_PRIVATE_KEY          < ~/.tauri/neurocanvas.key
+   gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < ~/.tauri/neurocanvas.key.password
+   ```
+
+4. **Ship** a new tagged release (`git tag v1.0.1 && git push origin v1.0.1`).
+   CI's *Sync version with release tag* step pins package.json +
+   tauri.conf.json to the tag, builds, signs with the new key, and publishes
+   a fresh `latest.json` to R2.
+5. **Announce** out-of-band (changelog, in-app banner, email) that users on
+   pre-rotation builds **must** download manually from `/download`. **Old
+   installs will be permanently unable to auto-update** — the new manifest
+   signatures won't verify against their baked-in old pubkey. That's by
+   design; it's what makes signing meaningful, so plan the rollout.
+
+### Why we don't commit the private key
+
+The private key + password are what GitHub Actions uses to sign every
+binary. If they leak, an attacker can ship a malicious update that the
+in-app updater will happily verify and install (it only checks the
+signature, not the author).
+
+`.gitignore` already excludes these paths as a safety net:
+
+```
+*.tauri.key
+*.tauri.key.pub
+*.tauri.key.password
+neurocanvas.key
+neurocanvas.key.pub
+neurocanvas.key.password
+~/.tauri/
+```
+
+…but the real defense is keeping the files outside the repo entirely
+(`~/.tauri/`). If you ever accidentally commit one of these files:
+rotate immediately (procedure above), even if you push-force the commit
+out. Treat any window where the key was visible on a public repo as a
+full compromise.
 
 ---
 
