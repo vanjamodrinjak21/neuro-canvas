@@ -11,6 +11,14 @@ name: Release
 #
 # Linux / Android / iOS are intentionally not built for the initial v1.0.0
 # release. Add them back when packaging stabilises.
+#
+# Versioning (AER-14): the "Sync version with release tag" step inside
+# build-tauri rewrites package.json + src-tauri/tauri.conf.json to match the
+# semver portion of the pushed tag BEFORE `tauri build` runs. You can still
+# bump package.json locally for clarity, but you do NOT have to — the tag
+# is the source of truth and the build will pin every binary's
+# `currentVersion()` to it. The rolling `beta` tag is exempt (keeps the
+# committed version).
 
 on:
   push:
@@ -135,6 +143,26 @@ jobs:
             ${{ runner.os }}-${{ matrix.target }}-target-${{ hashFiles('src-tauri/Cargo.lock') }}-
 
       - run: npm ci --legacy-peer-deps
+
+      # Sync package.json + src-tauri/tauri.conf.json version to the resolved
+      # release tag BEFORE the build runs (AER-14). Tauri bakes this number
+      # into the binary; the runtime `useAppUpdates` composable reads it from
+      # `process.env.npm_package_version` so the in-app "Current version"
+      # label and the updater's "is this newer than what I'm running?" check
+      # both have to match the tag. Idempotent — no-op for the rolling beta
+      # tag (we leave the working copy version alone there).
+      - name: Sync version with release tag
+        if: startsWith(needs.resolve-version.outputs.tag, 'v')
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.resolve-version.outputs.version }}
+        run: |
+          # `npm version` rewrites package.json + package-lock.json atomically.
+          npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
+          # Mirror the same number into tauri.conf.json so the bundle metadata
+          # and updater-side `currentVersion()` agree with the JS bundle.
+          node -e "const fs=require('fs');const p='src-tauri/tauri.conf.json';const j=JSON.parse(fs.readFileSync(p,'utf8'));j.version=process.env.RELEASE_VERSION;fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');"
+          echo "Pinned package.json + tauri.conf.json to $RELEASE_VERSION"
 
       - run: npx prisma generate
 
