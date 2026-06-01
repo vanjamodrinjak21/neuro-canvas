@@ -30,10 +30,15 @@ const SESSION_DISMISS_KEY = 'nc-update-dismissed-version'
 const BACKGROUND_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6h (matches AER-14 spec)
 const WEB_POLL_INTERVAL_MS = 60 * 60 * 1000       // 1h for web/mobile banner
 
-// App Store / Play Store listings. The iOS app ID is a placeholder until
-// App Store Connect provisioning lands — see USER ACTIONS in the AER-14
-// final report.
-const APP_STORE_URL = 'https://apps.apple.com/app/neurocanvas/id0000000000'
+// App Store / Play Store listings.
+// TODO(AER-14): replace `id0000000000` with the real Apple App Store ID once
+// App Store Connect provisioning lands. Until then `action()` on iOS will
+// console.warn in dev so ops can see the placeholder and silently no-op-ish
+// in production (the URL still opens but lands on a 404 — better than nothing
+// because TestFlight installs still update through the App Store app).
+const APP_STORE_PLACEHOLDER_ID = 'id0000000000'
+const APP_STORE_URL = `https://apps.apple.com/app/neurocanvas/${APP_STORE_PLACEHOLDER_ID}`
+// Matches `appId` in capacitor.config.ts. Verified in AER-14 audit.
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.neurocanvas.app'
 
 type Platform = 'tauri' | 'capacitor-ios' | 'capacitor-android' | 'web'
@@ -190,6 +195,21 @@ export function useAppUpdates(): AppUpdatesApi {
     }
     if (platformRef.value === 'capacitor-ios' || platformRef.value === 'capacitor-android') {
       const url = platformRef.value === 'capacitor-ios' ? APP_STORE_URL : PLAY_STORE_URL
+      // Surface the iOS placeholder loudly in dev — silently in production
+      // (per TODO(AER-14) above). Keeps the build from breaking while making
+      // the missing App Store ID obvious to anyone running the dev server.
+      if (
+        platformRef.value === 'capacitor-ios'
+        && import.meta.dev
+        && APP_STORE_URL.includes(APP_STORE_PLACEHOLDER_ID)
+      ) {
+        console.warn(
+          '[useAppUpdates] iOS App Store URL still has placeholder ID '
+          + `(${APP_STORE_PLACEHOLDER_ID}). Update APP_STORE_URL in `
+          + 'app/composables/useAppUpdates.ts once App Store Connect '
+          + 'provisioning lands. See AER-14.'
+        )
+      }
       try {
         const { Browser } = await import('@capacitor/browser')
         await Browser.open({ url })

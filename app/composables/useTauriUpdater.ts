@@ -1,7 +1,14 @@
 /**
  * Tauri auto-updater composable
- * Checks for updates on app launch and provides UI state
+ * Checks for updates on app launch and provides UI state.
+ *
+ * Vue runtime imports are declared explicitly (rather than leaning on
+ * Nuxt's auto-import) so this composable also works when called from
+ * non-Nuxt-managed entry points (e.g. unit tests, lazy imports inside
+ * `useAppUpdates`) where the auto-import macro hasn't run.
  */
+import { ref, readonly } from 'vue'
+
 export function useTauriUpdater() {
   const updateAvailable = ref(false)
   const updateVersion = ref('')
