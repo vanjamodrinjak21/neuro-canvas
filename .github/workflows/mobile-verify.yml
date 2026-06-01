@@ -2,10 +2,13 @@ name: Mobile Verify
 
 # Cheap unsigned native builds on every PR / push to main, so a broken
 # Capacitor sync or Gradle config never reaches a release tag.
+# All CI is GitHub-hosted — no self-hosted runners.
 
 on:
-  # GitHub-hosted blocked by account billing — self-hosted is the active path
-  # (see mobile-selfhosted.yml). This file stays as a manual fallback only.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:

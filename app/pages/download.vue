@@ -166,41 +166,6 @@ const noteRows = computed<NoteRow[]>(() => {
 })
 
 const versionLabel = computed(() => release.value?.tag ?? release.value?.name ?? 'v1.0.0')
-
-// ── CTA hover-reveal popover (AER-13)
-const ctaPopoverOpen = ref(false)
-const ctaWrapEl = ref<HTMLElement | null>(null)
-let ctaCloseTimer: ReturnType<typeof setTimeout> | null = null
-function openCtaPopover() {
-  if (ctaCloseTimer) { clearTimeout(ctaCloseTimer); ctaCloseTimer = null }
-  ctaPopoverOpen.value = true
-}
-function scheduleCloseCtaPopover() {
-  if (ctaCloseTimer) clearTimeout(ctaCloseTimer)
-  ctaCloseTimer = setTimeout(() => { ctaPopoverOpen.value = false }, 150)
-}
-function closeCtaPopoverNow() {
-  if (ctaCloseTimer) { clearTimeout(ctaCloseTimer); ctaCloseTimer = null }
-  ctaPopoverOpen.value = false
-}
-function onCtaPopoverKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') closeCtaPopoverNow()
-}
-function onDocumentClick(e: MouseEvent) {
-  if (!ctaPopoverOpen.value) return
-  const wrap = ctaWrapEl.value
-  if (wrap && !wrap.contains(e.target as Node)) closeCtaPopoverNow()
-}
-onMounted(() => { document.addEventListener('click', onDocumentClick) })
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocumentClick)
-  if (ctaCloseTimer) clearTimeout(ctaCloseTimer)
-})
-
-const otherPlatforms = computed<Platform[]>(() => {
-  const rp = recommended.value?.platform
-  return orderedPlatforms.filter(p => p !== rp && buckets.value[p].length)
-})
 </script>
 
 <template>
@@ -235,52 +200,17 @@ const otherPlatforms = computed<Platform[]>(() => {
         {{ $t('landing.download_page.hero_sub') }}
       </p>
       <div class="dl-cta-row">
-        <div
+        <a
           v-if="recommended"
-          ref="ctaWrapEl"
-          class="dl-cta-trigger-wrap"
-          @mouseenter="openCtaPopover"
-          @mouseleave="scheduleCloseCtaPopover"
-          @focusin="openCtaPopover"
-          @focusout="scheduleCloseCtaPopover"
-          @keydown="onCtaPopoverKeydown"
+          :href="recommended.url"
+          :download="recommended.name"
+          class="dl-btn-primary"
         >
-          <a
-            :href="recommended.url"
-            class="dl-btn-primary"
-            aria-haspopup="menu"
-            :aria-expanded="ctaPopoverOpen"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 2v9m0 0l-3.5-3.5M8 11l3.5-3.5M3 13.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span>{{ $t('landing.download_page.cta_download_for', { platform: platformLabels[recommended.platform] }) }}</span>
-          </a>
-          <div v-show="ctaPopoverOpen" class="dl-cta-popover" role="menu">
-            <a
-              v-for="a in buckets[recommended.platform]"
-              :key="a.name"
-              :href="a.url"
-              :download="a.name"
-              class="dl-cta-popover-item"
-              role="menuitem"
-            >
-              <span>{{ chipLabel(a) }}</span>
-              <span class="dl-cta-popover-meta">{{ fmtSize(a.size) }}</span>
-            </a>
-            <div v-if="otherPlatforms.length" class="dl-cta-popover-divider" aria-hidden="true" />
-            <a
-              v-for="p in otherPlatforms"
-              :key="p"
-              href="#platforms"
-              class="dl-cta-popover-item"
-              role="menuitem"
-            >
-              <PlatformIcon :platform="p" />
-              <span>{{ platformLabels[p] }}</span>
-            </a>
-          </div>
-        </div>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 2v9m0 0l-3.5-3.5M8 11l3.5-3.5M3 13.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>{{ $t('landing.download_page.cta_download_for', { platform: platformLabels[recommended.platform] }) }}</span>
+        </a>
         <span v-else class="dl-btn-primary dl-btn-disabled">
           <span>{{ $t('landing.download_page.subhead') }}</span>
         </span>
@@ -599,55 +529,6 @@ const otherPlatforms = computed<Platform[]>(() => {
   color: var(--text);
 }
 
-.dl-cta-trigger-wrap {
-  position: relative;
-  display: inline-flex;
-}
-.dl-cta-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  min-width: 220px;
-  display: flex; flex-direction: column;
-  gap: 2px;
-  padding: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border-active);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  z-index: 50;
-}
-:root.light .dl-cta-popover { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); }
-.dl-cta-popover-item {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 13px; font-weight: 500;
-  color: var(--text);
-  text-decoration: none;
-  transition: background 120ms ease;
-}
-.dl-cta-popover-item:hover,
-.dl-cta-popover-item:focus-visible {
-  background: var(--surface-3);
-  outline: none;
-}
-.dl-cta-popover-meta {
-  font-size: 12px;
-  color: var(--text-3);
-  font-weight: 400;
-}
-.dl-cta-popover-divider {
-  height: 1px;
-  margin: 4px 4px;
-  background: var(--border);
-}
-
-/* Hide hover popover on touch / no-hover devices — chip row is the alternative */
-@media (hover: none) {
-  .dl-cta-popover { display: none; }
-}
-
 /* ═══════════════════════ SECTIONS ═══════════════════════ */
 .dl-section {
   padding: 24px 56px 32px;
@@ -759,14 +640,24 @@ const otherPlatforms = computed<Platform[]>(() => {
   font-size: 12px; font-weight: 500;
   color: var(--text);
   text-decoration: none;
-  transition: background 120ms ease;
+  transition: background 120ms ease, color 120ms ease;
 }
-.dl-chip:hover { background: var(--border-active); }
+.dl-chip:hover,
+.dl-chip:focus-visible {
+  background: var(--accent);
+  color: var(--on-accent);
+  outline: none;
+}
 .dl-chip-ghost {
   background: transparent;
   border: 1px solid var(--border-active);
 }
-.dl-chip-ghost:hover { background: var(--surface-3); }
+.dl-chip-ghost:hover,
+.dl-chip-ghost:focus-visible {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
 
 /* ═══════════════════════ RELEASE NOTES ═══════════════════════ */
 .dl-section-notes { padding-bottom: 64px; }

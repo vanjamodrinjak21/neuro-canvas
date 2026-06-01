@@ -1,9 +1,10 @@
 name: Tauri Beta
 
+# All CI runs on GitHub-hosted runners — no self-hosted infra.
+# Push to main builds a beta artifact; tag push to v* uses release.yml.
 on:
-  # GitHub-hosted runners are paid on private repos. Self-hosted is the
-  # default path now (see tauri-selfhosted.yml). Keep this workflow as a
-  # manual fallback only — no automatic push trigger.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
