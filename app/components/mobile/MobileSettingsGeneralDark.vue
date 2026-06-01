@@ -4,8 +4,9 @@
  * Paper artboard KL8-0 ("Mobile iOS — Settings: General").
  * Theme tiles, Typography card (font / slider / density), Behavior card.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useUserStore } from '~/stores/userStore'
+import { useAppUpdates, useAutoUpdateToggle } from '~/composables/useAppUpdates'
 
 defineProps<{
   signOutLoading?: boolean
@@ -54,6 +55,31 @@ const themeStatus = computed(() => {
   if (theme.value === 'light') return 'LIGHT MODE'
   return 'DARK MODE'
 })
+
+// ── Updates (AER-14) ────────────────────────────────────────────────────
+// Mirrors the desktop Settings → General toggle so mobile users can opt
+// out of automatic update checks and trigger a manual one. On iOS/Android
+// `appUpdates.action()` opens the store via @capacitor/browser; here we
+// only expose the toggle + manual check.
+const autoUpdate = useAutoUpdateToggle()
+const appUpdates = useAppUpdates()
+const checkingForUpdates = ref(false)
+const updateStatus = computed(() => {
+  if (checkingForUpdates.value) return 'CHECKING…'
+  if (appUpdates.updateAvailable.value && appUpdates.latestVersion.value) {
+    return `v${appUpdates.currentVersion} → v${appUpdates.latestVersion.value}`
+  }
+  return `v${appUpdates.currentVersion} · UP TO DATE`
+})
+async function manualUpdateCheck() {
+  if (checkingForUpdates.value) return
+  checkingForUpdates.value = true
+  try {
+    await appUpdates.check()
+  } finally {
+    checkingForUpdates.value = false
+  }
+}
 </script>
 
 <template>
@@ -287,6 +313,58 @@ const themeStatus = computed(() => {
             @click="toggle('showMinimap')"
           >
             <span class="mgen-toggle-knob" />
+          </button>
+        </div>
+      </div>
+
+      <!-- UPDATES (AER-14) -->
+      <div class="mgen-section-head">
+        <span class="mgen-section-label">{{ $t('settings.section_labels.updates') }}</span>
+        <span class="mgen-section-status">{{ updateStatus }}</span>
+      </div>
+      <div class="mgen-card">
+        <div class="mgen-row">
+          <div class="mgen-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C15 3 17.5 4.5 19 6.5" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M21 3V7H17" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="mgen-row-text">
+            <span class="mgen-row-title">{{ $t('settings.general.auto_check_updates') }}</span>
+            <span class="mgen-row-hint">{{ $t('settings.general.auto_check_updates_desc') }}</span>
+          </div>
+          <button
+            class="mgen-toggle"
+            :class="{ 'mgen-toggle--on': autoUpdate.enabled.value }"
+            :aria-pressed="autoUpdate.enabled.value"
+            type="button"
+            @click="autoUpdate.setEnabled(!autoUpdate.enabled.value)"
+          >
+            <span class="mgen-toggle-knob" />
+          </button>
+        </div>
+
+        <div class="mgen-divider" />
+
+        <div class="mgen-row">
+          <div class="mgen-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v9m0 0l4-4m-4 4l-4-4" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3 16v3a2 2 0 002 2h14a2 2 0 002-2v-3" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div class="mgen-row-text">
+            <span class="mgen-row-title">{{ $t('settings.general.current_version') }}</span>
+            <span class="mgen-row-hint">{{ updateStatus }}</span>
+          </div>
+          <button
+            class="mgen-update-btn"
+            type="button"
+            :disabled="checkingForUpdates"
+            @click="manualUpdateCheck"
+          >
+            {{ $t('settings.general.check_now') }}
           </button>
         </div>
       </div>
@@ -648,6 +726,33 @@ const themeStatus = computed(() => {
   border: 1px solid rgba(0, 210, 190, 0.22);
   color: var(--mgen-mint);
   font-weight: 600;
+}
+
+/* Updates — Check now button (AER-14) */
+.mgen-update-btn {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  background: var(--mgen-bg);
+  border: 1px solid var(--mgen-stroke);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 0.08em;
+  color: var(--mgen-body);
+  text-transform: uppercase;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+.mgen-update-btn:hover:not(:disabled) {
+  color: var(--mgen-mint);
+  border-color: rgba(0, 210, 190, 0.30);
+  background: rgba(0, 210, 190, 0.06);
+}
+.mgen-update-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .mgen-spacer {
