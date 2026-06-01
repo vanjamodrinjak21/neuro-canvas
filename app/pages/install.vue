@@ -7,10 +7,12 @@
 
 definePageMeta({ layout: false })
 
+const { t } = useI18n()
+
 useHead({
-  title: 'Install NeuroCanvas — first-launch guide',
+  title: () => t('landing.install_page.meta_title'),
   meta: [
-    { name: 'description', content: 'Open NeuroCanvas on your machine. macOS quarantine bypass and Windows SmartScreen step-through for v1.0.0 unsigned builds.' },
+    { name: 'description', content: () => t('landing.install_page.meta_description') },
   ],
 })
 
@@ -70,14 +72,14 @@ async function copyMacCmd() {
     <section class="dl-hero">
       <span class="dl-pill">
         <span class="dl-pill-dot" />
-        <span>Install Guide · v1.0.0</span>
+        <span>{{ $t('landing.install_page.pill') }}</span>
       </span>
       <h1 class="dl-headline">
-        <span class="dl-h-sans">Open NeuroCanvas</span>
-        <span class="dl-h-serif">on your machine.</span>
+        <span class="dl-h-sans">{{ $t('landing.install_page.hero_sans') }}</span>
+        <span class="dl-h-serif">{{ $t('landing.install_page.hero_serif') }}</span>
       </h1>
       <p class="dl-sub">
-        The first-launch step takes a few seconds. Pick your platform below — the steps are self-contained, no account or extra downloads required.
+        {{ $t('landing.install_page.hero_sub') }}
       </p>
     </section>
 
@@ -90,30 +92,30 @@ async function copyMacCmd() {
           </svg>
         </span>
         <div>
-          <p class="dl-platform-eyebrow">Platform 01</p>
-          <h2 class="dl-platform-title">macOS — Apple Silicon &amp; Intel</h2>
+          <p class="dl-platform-eyebrow">{{ $t('landing.install_page.mac_eyebrow') }}</p>
+          <h2 class="dl-platform-title">{{ $t('landing.install_page.mac_title') }}</h2>
         </div>
       </header>
       <ol class="dl-steps">
         <li class="dl-step">
           <span class="dl-step-num">1</span>
           <div class="dl-step-body">
-            <h3>Download the .dmg</h3>
-            <p>Universal build runs on Apple Silicon and Intel. Pick the universal .dmg from the <NuxtLink to="/download">Downloads</NuxtLink> page.</p>
+            <h3>{{ $t('landing.install_page.mac_step1_title') }}</h3>
+            <p>{{ $t('landing.install_page.mac_step1_body_pre') }} <NuxtLink to="/download">{{ $t('landing.install_page.mac_step1_body_link') }}</NuxtLink>{{ $t('landing.install_page.mac_step1_body_post') }}</p>
           </div>
         </li>
         <li class="dl-step">
           <span class="dl-step-num">2</span>
           <div class="dl-step-body">
-            <h3>Drag NeuroCanvas to /Applications</h3>
-            <p>Open the .dmg and drop the app into the Applications folder. Then close the disk image — you won't need it again.</p>
+            <h3>{{ $t('landing.install_page.mac_step2_title') }}</h3>
+            <p>{{ $t('landing.install_page.mac_step2_body') }}</p>
           </div>
         </li>
         <li class="dl-step is-key">
           <span class="dl-step-num">3</span>
           <div class="dl-step-body">
-            <h3>Strip the quarantine flag in Terminal</h3>
-            <p>macOS Sequoia removed the right-click → Open bypass. Run this once and the app opens normally from then on.</p>
+            <h3>{{ $t('landing.install_page.mac_step3_title') }}</h3>
+            <p>{{ $t('landing.install_page.mac_step3_body') }}</p>
             <div class="dl-cmd">
               <pre><code>{{ MAC_CMD }}</code></pre>
               <button type="button" class="dl-cmd-copy" @click="copyMacCmd">{{ macCopied ? $t('landing.install_page.copied_button') : $t('landing.install_page.copy_button') }}</button>
@@ -123,8 +125,8 @@ async function copyMacCmd() {
         <li class="dl-step">
           <span class="dl-step-num">4</span>
           <div class="dl-step-body">
-            <h3>No Terminal? Use System Settings</h3>
-            <p>Double-click the app, dismiss the warning, then go to System Settings → Privacy &amp; Security → scroll down → <strong>Open Anyway</strong> next to NeuroCanvas.</p>
+            <h3>{{ $t('landing.install_page.mac_step4_title') }}</h3>
+            <p>{{ $t('landing.install_page.mac_step4_body_pre') }} <strong>{{ $t('landing.install_page.mac_step4_body_emphasis') }}</strong> {{ $t('landing.install_page.mac_step4_body_post') }}</p>
           </div>
         </li>
       </ol>
@@ -139,30 +141,30 @@ async function copyMacCmd() {
           </svg>
         </span>
         <div>
-          <p class="dl-platform-eyebrow">Platform 02</p>
-          <h2 class="dl-platform-title">Windows 10 / 11 — x86_64</h2>
+          <p class="dl-platform-eyebrow">{{ $t('landing.install_page.win_eyebrow') }}</p>
+          <h2 class="dl-platform-title">{{ $t('landing.install_page.win_title') }}</h2>
         </div>
       </header>
       <ol class="dl-steps">
         <li class="dl-step">
           <span class="dl-step-num">1</span>
           <div class="dl-step-body">
-            <h3>Download the .msi installer</h3>
-            <p>Pick <code>NeuroCanvas_1.0.0_x64_en-US.msi</code> from <NuxtLink to="/download">Downloads</NuxtLink>. The .exe portable build is also available — installer is recommended.</p>
+            <h3>{{ $t('landing.install_page.win_step1_title') }}</h3>
+            <p>{{ $t('landing.install_page.win_step1_body_pre') }} <code>NeuroCanvas_1.0.0_x64_en-US.msi</code> {{ $t('landing.install_page.win_step1_body_mid') }} <NuxtLink to="/download">{{ $t('landing.install_page.win_step1_body_link') }}</NuxtLink>{{ $t('landing.install_page.win_step1_body_post') }}</p>
           </div>
         </li>
         <li class="dl-step is-key">
           <span class="dl-step-num">2</span>
           <div class="dl-step-body">
-            <h3>SmartScreen → More info → Run anyway</h3>
-            <p>Windows Defender SmartScreen blocks unsigned installers by default. Click the small <strong>More info</strong> link, then <strong>Run anyway</strong>. The installer continues normally.</p>
+            <h3>{{ $t('landing.install_page.win_step2_title') }}</h3>
+            <p>{{ $t('landing.install_page.win_step2_body_pre') }} <strong>{{ $t('landing.install_page.win_step2_body_more_info') }}</strong>{{ $t('landing.install_page.win_step2_body_mid') }} <strong>{{ $t('landing.install_page.win_step2_body_run_anyway') }}</strong>{{ $t('landing.install_page.win_step2_body_post') }}</p>
           </div>
         </li>
         <li class="dl-step">
           <span class="dl-step-num">3</span>
           <div class="dl-step-body">
-            <h3>Pin to Start, launch from anywhere</h3>
-            <p>After installation completes, NeuroCanvas appears in the Start menu under <strong>N</strong>. Right-click → Pin to Start or Pin to taskbar for quick access.</p>
+            <h3>{{ $t('landing.install_page.win_step3_title') }}</h3>
+            <p>{{ $t('landing.install_page.win_step3_body_pre') }} <strong>{{ $t('landing.install_page.win_step3_body_letter') }}</strong>{{ $t('landing.install_page.win_step3_body_post') }}</p>
           </div>
         </li>
       </ol>
@@ -170,10 +172,10 @@ async function copyMacCmd() {
 
     <!-- ══════ VERIFY (optional) ══════ -->
     <section class="dl-verify">
-      <p class="dl-verify-eyebrow">Optional · Verify your download</p>
-      <h2 class="dl-verify-title">SHA-256 sidecar files</h2>
+      <p class="dl-verify-eyebrow">{{ $t('landing.install_page.verify_eyebrow') }}</p>
+      <h2 class="dl-verify-title">{{ $t('landing.install_page.verify_title') }}</h2>
       <p class="dl-verify-sub">
-        Every release artifact ships with a matching <code>.sha256</code> file in the same R2 directory. Compare your local hash against it to confirm an unmodified download.
+        {{ $t('landing.install_page.verify_body_pre') }} <code>.sha256</code> {{ $t('landing.install_page.verify_body_post') }}
       </p>
     </section>
 

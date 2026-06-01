@@ -11,10 +11,12 @@
 
 definePageMeta({ layout: false })
 
+const { t } = useI18n()
+
 useHead({
-  title: 'Download NeuroCanvas — desktop & mobile',
+  title: () => t('landing.download_page.meta_title'),
   meta: [
-    { name: 'description', content: 'Download NeuroCanvas for macOS, Windows, Linux, iOS, and Android. Free, forever. Direct from our CDN.' },
+    { name: 'description', content: () => t('landing.download_page.meta_description') },
   ],
 })
 
@@ -100,19 +102,23 @@ const recommended = computed<Asset | null>(() => {
   return list[0] ?? null
 })
 
-const platformLabels: Record<Platform, string> = {
-  macos: 'macOS', windows: 'Windows', linux: 'Linux',
-  android: 'Android', ios: 'iOS', unknown: 'Other',
-}
+const platformLabels = computed<Record<Platform, string>>(() => ({
+  macos: 'macOS',
+  windows: 'Windows',
+  linux: 'Linux',
+  android: 'Android',
+  ios: 'iOS',
+  unknown: t('landing.download_page.platform_other'),
+}))
 
-const platformSubtitles: Record<Platform, string> = {
-  macos: 'Universal binary · macOS 12 or later',
-  windows: 'Windows 10 or later',
-  linux: 'Debian, Ubuntu, Fedora',
-  android: 'Android 9 or later · Sideload',
-  ios: 'iOS 16 or later · Sideload via AltStore',
+const platformSubtitles = computed<Record<Platform, string>>(() => ({
+  macos: t('landing.download_page.subtitle_macos'),
+  windows: t('landing.download_page.subtitle_windows'),
+  linux: t('landing.download_page.subtitle_linux'),
+  android: t('landing.download_page.subtitle_android'),
+  ios: t('landing.download_page.subtitle_ios'),
   unknown: '',
-}
+}))
 
 function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -222,11 +228,11 @@ const otherPlatforms = computed<Platform[]>(() => {
     <!-- ══════ HERO ══════ -->
     <section class="dl-hero">
       <h1 class="dl-headline">
-        <span class="dl-h-sans">Download NeuroCanvas.</span>
-        <span class="dl-h-serif">On every device.</span>
+        <span class="dl-h-sans">{{ $t('landing.download_page.hero_sans') }}</span>
+        <span class="dl-h-serif">{{ $t('landing.download_page.hero_serif') }}</span>
       </h1>
       <p class="dl-sub">
-        Free, forever. Direct from our CDN — no app stores, no waiting. Your maps work offline and sync on every device you sign in to.
+        {{ $t('landing.download_page.hero_sub') }}
       </p>
       <div class="dl-cta-row">
         <div
@@ -248,7 +254,7 @@ const otherPlatforms = computed<Platform[]>(() => {
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 2v9m0 0l-3.5-3.5M8 11l3.5-3.5M3 13.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <span>Download for {{ platformLabels[recommended.platform] }}</span>
+            <span>{{ $t('landing.download_page.cta_download_for', { platform: platformLabels[recommended.platform] }) }}</span>
           </a>
           <div v-show="ctaPopoverOpen" class="dl-cta-popover" role="menu">
             <a
@@ -278,9 +284,9 @@ const otherPlatforms = computed<Platform[]>(() => {
         <span v-else class="dl-btn-primary dl-btn-disabled">
           <span>{{ $t('landing.download_page.subhead') }}</span>
         </span>
-        <a href="#platforms" class="dl-btn-outline">All platforms</a>
+        <a href="#platforms" class="dl-btn-outline">{{ $t('landing.download_page.cta_all_platforms') }}</a>
       </div>
-      <div class="dl-hero-platforms" aria-label="Jump to platform">
+      <div class="dl-hero-platforms" :aria-label="$t('landing.download_page.cta_jump_aria')">
         <template v-for="p in orderedPlatforms" :key="p">
           <a v-if="buckets[p].length" href="#platforms" class="dl-hero-platform-chip">
             <PlatformIcon :platform="p" />
@@ -293,23 +299,23 @@ const otherPlatforms = computed<Platform[]>(() => {
           <path d="M13.333 4.667L6 12l-3.333-3.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span v-if="recommended">
-          No invitation. No card. {{ chipLabel(recommended) }} · {{ fmtSize(recommended.size) }} · Unsigned —
+          {{ $t('landing.download_page.receipt_prefix') }} {{ chipLabel(recommended) }} · {{ fmtSize(recommended.size) }} · {{ $t('landing.download_page.receipt_unsigned') }} —
           <NuxtLink
             :to="recommended.platform === 'macos' ? '/install?os=mac' : recommended.platform === 'windows' ? '/install?os=windows' : '/install'"
             class="dl-receipt-link"
-          >first-launch guide</NuxtLink>.
+          >{{ $t('landing.download_page.receipt_first_launch') }}</NuxtLink>.
         </span>
-        <span v-else>No invitation. No card. Direct from our CDN.</span>
+        <span v-else>{{ $t('landing.download_page.receipt_no_release') }}</span>
       </p>
     </section>
 
     <!-- ══════ PLATFORMS ══════ -->
     <section id="platforms" class="dl-section">
-      <p class="dl-section-eyebrow">01 — pick your platform</p>
-      <div v-if="pending" class="dl-state">Loading the latest release…</div>
+      <p class="dl-section-eyebrow">{{ $t('landing.download_page.section_pick') }}</p>
+      <div v-if="pending" class="dl-state">{{ $t('landing.download_page.state_loading') }}</div>
       <div v-else-if="error || !release" class="dl-state">
-        No release available yet. Browse releases on
-        <a :href="`https://github.com/${$config.public.releasesRepo || ''}/releases`" target="_blank" rel="noopener noreferrer">GitHub</a>.
+        {{ $t('landing.download_page.state_no_release') }}
+        <a :href="`https://github.com/${$config.public.releasesRepo || ''}/releases`" target="_blank" rel="noopener noreferrer">{{ $t('landing.download_page.state_no_release_gh') }}</a>.
       </div>
       <div v-else class="dl-grid">
         <article
@@ -325,16 +331,24 @@ const otherPlatforms = computed<Platform[]>(() => {
             <h2 class="dl-card-title">{{ platformLabels[p] }}</h2>
           </header>
           <p class="dl-card-sub">{{ platformSubtitles[p] }}</p>
-          <div class="dl-card-chips">
-            <a
-              v-for="a in buckets[p]"
-              :key="a.name"
-              :href="a.url"
-              :download="a.name"
-              class="dl-chip"
-              :title="`${fmtSize(a.size)}`"
-            >{{ chipLabel(a) }}</a>
-            <NuxtLink v-if="p === 'ios'" to="/docs/install/ios" class="dl-chip dl-chip-ghost">Install guide</NuxtLink>
+          <div class="dl-card-chips-wrap">
+            <span class="dl-card-hint" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v9m0 0l-3.5-3.5M8 11l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              {{ $t('landing.download_page.card_hint') }}
+            </span>
+            <div class="dl-card-chips">
+              <a
+                v-for="a in buckets[p]"
+                :key="a.name"
+                :href="a.url"
+                :download="a.name"
+                class="dl-chip"
+                :title="`${fmtSize(a.size)}`"
+              >{{ chipLabel(a) }}</a>
+              <NuxtLink v-if="p === 'ios'" to="/docs/install/ios" class="dl-chip dl-chip-ghost">{{ $t('landing.download_page.platform_install_guide') }}</NuxtLink>
+            </div>
           </div>
         </article>
       </div>
@@ -343,8 +357,8 @@ const otherPlatforms = computed<Platform[]>(() => {
     <!-- ══════ RELEASE NOTES ══════ -->
     <section v-if="release" class="dl-section dl-section-notes">
       <header class="dl-notes-head">
-        <p class="dl-section-eyebrow">02 — what's new in {{ versionLabel }}</p>
-        <a :href="release.htmlUrl" target="_blank" rel="noopener noreferrer" class="dl-notes-gh">View on GitHub →</a>
+        <p class="dl-section-eyebrow">{{ $t('landing.download_page.section_whats_new', { version: versionLabel }) }}</p>
+        <a :href="release.htmlUrl" target="_blank" rel="noopener noreferrer" class="dl-notes-gh">{{ $t('landing.download_page.notes_view_gh') }}</a>
       </header>
       <div class="dl-notes-card">
         <div v-for="(row, i) in noteRows" :key="i" class="dl-notes-row">
@@ -352,7 +366,7 @@ const otherPlatforms = computed<Platform[]>(() => {
           <span class="dl-notes-text">{{ row.text }}</span>
         </div>
         <p v-if="!noteRows.length" class="dl-notes-text dl-notes-empty">
-          {{ release.name || versionLabel }} — see GitHub for the full changelog.
+          {{ $t('landing.download_page.notes_empty', { name: release.name || versionLabel }) }}
         </p>
       </div>
     </section>
@@ -691,9 +705,51 @@ const otherPlatforms = computed<Platform[]>(() => {
   margin: 0;
   font-size: 13px; color: var(--text-3);
 }
+.dl-card-chips-wrap {
+  position: relative;
+  margin-top: auto;
+  min-height: 30px;
+}
+.dl-card-hint {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface-3);
+  border-radius: 6px;
+  font-size: 12px; font-weight: 500;
+  color: var(--text-3);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+  user-select: none;
+}
+.dl-card-hint svg { color: var(--text-3); flex-shrink: 0; }
 .dl-card-chips {
   display: flex; flex-wrap: wrap; gap: 8px;
-  margin-top: auto;
+}
+/* Desktop hover-reveal: hint shown by default, chips fade in on card hover/focus */
+@media (hover: hover) and (min-width: 641px) {
+  .dl-card-chips {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 180ms ease, transform 180ms ease;
+    pointer-events: none;
+  }
+  .dl-card:hover .dl-card-chips,
+  .dl-card:focus-within .dl-card-chips {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .dl-card:hover .dl-card-hint,
+  .dl-card:focus-within .dl-card-hint {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+/* Touch / mobile: hide the hint, chips render inline */
+@media (hover: none), (max-width: 640px) {
+  .dl-card-hint { display: none; }
 }
 .dl-chip {
   display: inline-flex; align-items: center;
@@ -850,6 +906,7 @@ const otherPlatforms = computed<Platform[]>(() => {
     flex: 1;
     margin-top: -2px;
   }
+  .dl-card-chips-wrap { margin-top: 0; flex-shrink: 0; min-height: 0; }
   .dl-card-chips { margin-top: 0; flex-shrink: 0; }
   .dl-card-chips .dl-chip {
     background: transparent;
@@ -869,7 +926,7 @@ const otherPlatforms = computed<Platform[]>(() => {
   .dl-card-icon { grid-column: 1; grid-row: 1 / span 2; }
   .dl-card-title { grid-column: 2; grid-row: 1; align-self: end; }
   .dl-card-sub { grid-column: 2; grid-row: 2; align-self: start; }
-  .dl-card-chips { grid-column: 3; grid-row: 1 / span 2; }
+  .dl-card-chips-wrap { grid-column: 3; grid-row: 1 / span 2; }
 
   .dl-section-notes { padding-bottom: 24px; }
   .dl-notes-card { padding: 16px; gap: 14px; }
