@@ -501,8 +501,11 @@ const MdeTreeItem = defineComponent({
    side panels and nav. */
 .mde { position: absolute; inset: 0; display: flex; background: var(--nc-bg); overflow: hidden; padding-top: 72px; font-family: var(--nc-font-display); }
 
-/* ── Left: node tree ── */
-.mde-tree { width: 248px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--nc-surface); border-right: 1px solid var(--nc-border); }
+/* ── Left: node tree ──
+   All three panes share --nc-bg (the canvas colour the editor view replaces)
+   so toggling canvas/graph/editor is seamless and the panes read as one
+   cohesive surface, separated by 1px borders rather than mismatched fills. */
+.mde-tree { width: 248px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--nc-bg); border-right: 1px solid var(--nc-border); }
 .mde-tree-hdr { padding: 16px 16px 10px; }
 .mde-tree-lbl { font-family: var(--nc-font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--nc-text-dim); }
 .mde-tree-scroll { flex: 1; overflow-y: auto; padding: 0 8px 16px; }
@@ -622,8 +625,8 @@ const MdeTreeItem = defineComponent({
   font-weight: 500;
 }
 
-/* ── Right panel ── */
-.mde-right { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--nc-surface); overflow-y: auto; }
+/* ── Right panel (shares --nc-bg with the other panes) ── */
+.mde-right { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--nc-bg); border-left: 1px solid var(--nc-border); overflow-y: auto; }
 .mde-right::-webkit-scrollbar { width: 6px; }
 .mde-right::-webkit-scrollbar-thumb { background: var(--nc-border-active); border-radius: 999px; }
 
