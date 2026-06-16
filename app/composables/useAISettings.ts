@@ -119,8 +119,17 @@ export function useAISettings() {
             const template = PROVIDER_TEMPLATES[p.type]
             if (template?.models?.length) {
               p.models = [...template.models]
-              if (!p.selectedModelId || !template.models.some(m => m.id === p.selectedModelId)) {
-                p.selectedModelId = template.models[0]!.id
+              // Move off any selection that's missing, no longer in the list,
+              // or not yet available (e.g. Fable 5 is listed but available:false
+              // — defaulting to it would send a model the key can't use and
+              // break every AI call). Fall back to the first AVAILABLE model.
+              const usable = template.models.some(
+                m => m.id === p.selectedModelId && m.available !== false,
+              )
+              if (!usable) {
+                const fallback = template.models.find(m => m.available !== false)
+                  ?? template.models[0]!
+                p.selectedModelId = fallback.id
               }
             }
           }
@@ -194,7 +203,8 @@ export function useAISettings() {
       name: name || template.name || type,
       baseUrl: baseUrl || template.baseUrl,
       models: [...(template.models || [])],
-      selectedModelId: template.models?.[0]?.id,
+      // First AVAILABLE model (skip not-yet-GA entries like Fable 5).
+      selectedModelId: (template.models?.find(m => m.available !== false) ?? template.models?.[0])?.id,
       isEnabled: true,
       isDefault: state.settings.providers.length === 0,
       createdAt: Date.now(),
