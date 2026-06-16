@@ -222,7 +222,8 @@ watch(() => props.visible, (isVisible) => {
 .nc-dialog-title {
   font-size: 16px;
   font-weight: 600;
-  color: #FAFAFA;
+  /* Tokenized: was hardcoded #FAFAFA (white) -> invisible on the light modal. */
+  color: var(--nc-ink);
   margin: 0;
 }
 
