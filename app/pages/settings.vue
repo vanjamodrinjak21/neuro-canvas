@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
 import { useAISettings } from '~/composables/useAISettings'
+import { PROVIDER_TEMPLATES } from '~/types/ai-settings'
 
 const { t, locale, setLocale, locales: i18nLocales } = useI18n()
 
@@ -244,7 +245,15 @@ const availableModels = computed(() => {
     'Ollama': 'ollama'
   }
   const provider = findProviderByType(typeMap[selectedEngine.value])
-  return provider?.models || []
+  if (!provider) return []
+  // Curated providers always show the CURRENT template list. The stored
+  // models array can be stale on accounts created before a model bump (the
+  // store self-heal only runs on init and isn't persisted), so read the
+  // template directly to guarantee the picker is up to date.
+  if (provider.type === 'anthropic' || provider.type === 'openai') {
+    return PROVIDER_TEMPLATES[provider.type]?.models ?? provider.models ?? []
+  }
+  return provider.models || []
 })
 
 const selectedModelId = computed(() => {
