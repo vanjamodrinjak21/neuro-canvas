@@ -1056,10 +1056,82 @@ function handleAddNode() {
   if (isMobile.value) platform.haptics.impact('medium')
 }
 
+/**
+ * Autonomous map expansion — "AI proširenje" with nothing selected. Grows the
+ * map's frontier the way the generator builds one: expand each leaf node with a
+ * few AI-generated children so the map extends itself, no node-picking required.
+ */
+async function handleAutonomousExpand() {
+  if (mapStore.nodes.size === 0) return
+
+  isAILoading.value = true
+  contextMenuVisible.value = false
+  try {
+    // Frontier = leaf nodes (no outgoing children); fall back to all nodes when
+    // the map has no edges yet. Bound the count so one click can't run away.
+    const childSources = new Set(Array.from(mapStore.edges.values()).map(e => e.sourceId))
+    let frontier = Array.from(mapStore.nodes.values()).filter(n => !childSources.has(n.id))
+    if (frontier.length === 0) frontier = Array.from(mapStore.nodes.values())
+    const targets = frontier.slice(0, 4)
+
+    const newIds: string[] = []
+    for (const node of targets) {
+      const context: GenerationContext = {
+        mapTitle: mapStore.title as string,
+        existingNodes: Array.from(mapStore.nodes.values())
+          .filter(n => n.id !== node.id)
+          .slice(0, 10)
+          .map(n => ({
+            id: n.id,
+            content: n.content,
+            description: n.metadata?.description as { summary: string } | undefined,
+          })),
+        existingEdges: Array.from(mapStore.edges.values()).map(e => ({
+          sourceId: e.sourceId,
+          targetId: e.targetId,
+          label: e.label,
+        })),
+        depth: 'medium',
+        style: 'detailed',
+        locale: currentLocale.value,
+      }
+      try {
+        const suggestions = await ai.enhancedSmartExpand(node.content, context, 3)
+        const result = mapRenderer.renderRichSuggestions(suggestions, node, { layout: 'vertical', spacing: 80 })
+        if (result?.nodeIds?.length) {
+          newIds.push(...result.nodeIds)
+          for (const id of result.nodeIds) semanticStore.markDirty(id)
+        }
+      } catch (nodeError) {
+        console.warn('Autonomous expand: node failed', node.id, nodeError)
+      }
+    }
+
+    if (newIds.length > 0) {
+      nodeAnim.enterNodesBatch(newIds, 60, 'ai')
+      ai.processQueue(
+        (nId) => mapStore.nodes.get(nId)?.content,
+        semanticStore.fieldSettings.similarityThreshold,
+      )
+      cameraIntel.fitToContent(80)
+    } else {
+      const { userFriendlyError } = await import('~/utils/userFriendlyError')
+      useToast().error(userFriendlyError(new Error('AI expansion returned no nodes'), t))
+    }
+  } catch (error) {
+    console.error('Autonomous expand failed:', error)
+    const { userFriendlyError } = await import('~/utils/userFriendlyError')
+    useToast().error(userFriendlyError(error, t))
+  } finally {
+    isAILoading.value = false
+  }
+}
+
 async function handleSmartExpand() {
   const node = contextMenuTargetNode.value || selectedNode.value
   if (!node) {
-    useToast().warning(t('canvas.ai.select_node_first'))
+    // Nothing selected → grow the whole map autonomously (generator-style).
+    await handleAutonomousExpand()
     return
   }
 
