@@ -511,7 +511,8 @@
       "start_session": "Start Session"
     },
     "ai": {
-      "select_node_first": "Select a node first to expand from."
+      "select_node_first": "Select a node first to expand from.",
+      "expand_whole_map": "Grow the whole map automatically"
     },
     "semantic": {
       "title": "Semantic Field",

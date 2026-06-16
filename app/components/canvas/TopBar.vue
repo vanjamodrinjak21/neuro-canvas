@@ -182,8 +182,8 @@ defineExpose({ focusTitleInput })
 
         <button
           class="nc-ai-btn mobile-hide"
-          :disabled="!hasSelection || isAILoading"
-          :title="!hasSelection ? $t('canvas.ai.select_node_first') : ''"
+          :disabled="isAILoading"
+          :title="hasSelection ? '' : $t('canvas.ai.expand_whole_map')"
           @click="emit('smart-expand')"
         >
           <span class="i-lucide-waypoints" :class="isAILoading ? 'opacity-60' : ''" />

@@ -511,7 +511,8 @@
       "start_session": "Pokreni sesiju"
     },
     "ai": {
-      "select_node_first": "Najprije odaberi čvor iz kojeg ćeš proširiti."
+      "select_node_first": "Najprije odaberi čvor iz kojeg ćeš proširiti.",
+      "expand_whole_map": "Automatski proširi cijelu mapu"
     },
     "semantic": {
       "title": "Semantičko polje",

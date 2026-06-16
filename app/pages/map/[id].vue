@@ -1385,7 +1385,12 @@ function handleDropNode(event: { nodeId: string; position: { x: number; y: numbe
 
 async function handleGenerateSuggestions() {
   const node = selectedNode.value
-  if (!node) return
+  if (!node) {
+    // No selection → grow the whole map autonomously (generator-style),
+    // matching the top-bar AI-expand behaviour instead of silently no-op.
+    await handleAutonomousExpand()
+    return
+  }
 
   isAILoading.value = true
   aiSuggestions.value = []
