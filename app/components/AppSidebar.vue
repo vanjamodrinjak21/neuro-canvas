@@ -147,8 +147,20 @@ const visibleNavItems = computed(() => {
 // Sidebar collapse — persisted so the rail stays put across navigation/reload.
 // AppSidebar is mounted per-page (dashboard, maps, templates, settings, …); a
 // plain ref would reset to expanded on every route change, so back it with
-// localStorage and each freshly-mounted instance restores the last state.
-const collapsed = useStorage('nc-sidebar-collapsed', false)
+// localStorage and have each freshly-mounted instance restore the last state.
+// Implemented against localStorage directly (not VueUse's useStorage) so this
+// always-mounted component never depends on an auto-import that may not be
+// present in every build.
+const COLLAPSE_KEY = 'nc-sidebar-collapsed'
+const collapsed = ref(import.meta.client && localStorage.getItem(COLLAPSE_KEY) === 'true')
+watch(collapsed, (value) => {
+  if (!import.meta.client) return
+  try {
+    localStorage.setItem(COLLAPSE_KEY, value ? 'true' : 'false')
+  } catch {
+    // localStorage unavailable (private mode / blocked) — persistence is best-effort.
+  }
+})
 function toggleCollapse() {
   collapsed.value = !collapsed.value
 }
