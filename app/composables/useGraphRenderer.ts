@@ -79,7 +79,7 @@ export function useGraphRenderer(
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M-5,-5 L5,0 L-5,5')
-      .attr('fill', 'var(--nc-ink-muted)')
+      .style('fill', 'var(--nc-ink-muted)')
 
     // Add glow filter
     const defs = svg.select('defs')
@@ -131,7 +131,7 @@ export function useGraphRenderer(
       .data(newEdges)
       .join('line')
       .attr('class', 'link')
-      .attr('stroke', 'var(--nc-border)')
+      .style('stroke', 'var(--nc-border)')
       .attr('stroke-width', d => Math.max(1, d.weight))
       .attr('stroke-opacity', 0.6)
       .attr('marker-end', 'url(#arrowhead)')
@@ -147,8 +147,8 @@ export function useGraphRenderer(
     // Node circles
     node.append('circle')
       .attr('r', d => Math.max(15, Math.min(30, 15 + d.connections * 2)))
-      .attr('fill', d => d.color || 'var(--nc-surface-3)')
-      .attr('stroke', 'var(--nc-border)')
+      .style('fill', d => d.color || 'var(--nc-surface-3)')
+      .style('stroke', 'var(--nc-border)')
       .attr('stroke-width', 2)
 
     // Node labels
@@ -156,13 +156,13 @@ export function useGraphRenderer(
       .text(d => truncateLabel(d.label, 15))
       .attr('text-anchor', 'middle')
       .attr('dy', d => Math.max(15, Math.min(30, 15 + d.connections * 2)) + 15)
-      .attr('fill', 'var(--nc-ink-soft)')
+      .style('fill', 'var(--nc-ink-soft)')
       .attr('font-size', '12px')
       .attr('font-family', 'var(--nc-font-display)')
 
     // Node interactions
     node
-      .on('mouseenter', (event, d) => {
+      .on('mouseenter', (_event, d) => {
         hoveredNodeId.value = d.id
         highlightNode(d.id)
         callbacks.onNodeHover?.(d.id)
@@ -266,7 +266,7 @@ export function useGraphRenderer(
         const targetId = typeof d.target === 'string' ? d.target : d.target.id
         return (sourceId === nodeId || targetId === nodeId) ? 1 : 0.1
       })
-      .attr('stroke', d => {
+      .style('stroke', d => {
         const sourceId = typeof d.source === 'string' ? d.source : d.source.id
         const targetId = typeof d.target === 'string' ? d.target : d.target.id
         return (sourceId === nodeId || targetId === nodeId) ? 'var(--nc-accent)' : 'var(--nc-border)'
@@ -286,7 +286,7 @@ export function useGraphRenderer(
 
     g.selectAll('.link')
       .style('opacity', 0.6)
-      .attr('stroke', 'var(--nc-border)')
+      .style('stroke', 'var(--nc-border)')
   }
 
   /**
