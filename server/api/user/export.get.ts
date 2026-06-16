@@ -59,10 +59,14 @@ export default defineEventHandler(async (event) => {
       templates: {
         select: {
           id: true,
+          slug: true,
           title: true,
           description: true,
           category: true,
-          data: true,
+          tags: true,
+          nodes: true,
+          edges: true,
+          settings: true,
           isPublic: true,
           createdAt: true,
           updatedAt: true
