@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useSemanticStore } from '~/stores/semanticStore'
 import { useAI } from '~/composables/useAI'
+import { SEMANTIC_EMBEDDING_MODEL_NAME } from '~/utils/embeddingModel'
 
 defineProps<{
   visible: boolean
@@ -210,7 +211,7 @@ async function loadBackend() {
               <h4 class="nc-status-heading">{{ $t('canvas.semantic.ai_status') }}</h4>
               <div class="nc-status-row">
                 <span class="nc-status-label">{{ $t('canvas.semantic.model') }}</span>
-                <span class="nc-status-value">all-MiniLM-L6-v2</span>
+                <span class="nc-status-value">{{ SEMANTIC_EMBEDDING_MODEL_NAME }}</span>
               </div>
               <div class="nc-status-row">
                 <span class="nc-status-label">{{ $t('canvas.semantic.backend') }}</span>
@@ -255,16 +256,21 @@ async function loadBackend() {
 .nc-settings-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  /* Sit in the same band as the node detail panel — below the floating top
+     toolbar (which renders above) so the toolbar stays visible and usable. */
+  z-index: 140;
   display: flex;
   justify-content: flex-end;
 }
 
 .nc-settings-panel {
-  width: 300px;
+  width: 360px;
+  max-width: 100vw;
   height: 100%;
-  background: var(--nc-surface, #111114);
-  border-left: 1px solid var(--nc-border, rgba(255, 255, 255, 0.08));
+  /* Clear the floating top toolbar, matching the node detail panel. */
+  padding-top: 56px;
+  background: var(--nc-surface);
+  border-left: 1px solid var(--nc-border);
   display: flex;
   flex-direction: column;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.18);
@@ -300,7 +306,7 @@ async function loadBackend() {
 
 .nc-settings-close:hover {
   color: var(--nc-ink, rgba(255, 255, 255, 0.9));
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--nc-surface-3);
 }
 
 .nc-settings-body {
@@ -351,7 +357,7 @@ async function loadBackend() {
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--nc-surface-4);
   border: none;
   cursor: pointer;
   padding: 2px;
@@ -382,7 +388,7 @@ async function loadBackend() {
   appearance: none;
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--nc-surface-4);
   border-radius: 2px;
   outline: none;
 }

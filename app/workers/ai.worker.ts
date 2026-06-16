@@ -11,6 +11,7 @@
  */
 
 import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/transformers'
+import { SEMANTIC_EMBEDDING_MODEL_ID } from '../utils/embeddingModel'
 
 // Configure transformers.js to use IndexedDB for model caching
 env.cacheDir = 'indexeddb://neurocanvas-models-v2'
@@ -204,7 +205,7 @@ async function loadPipelineWithFallback(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const p = await (pipeline as any)(
           'feature-extraction',
-          'nomic-ai/nomic-embed-text-v1.5',
+          SEMANTIC_EMBEDDING_MODEL_ID,
           { device, dtype, progress_callback: progressCallback }
         ) as FeatureExtractionPipeline
         activeDevice = device

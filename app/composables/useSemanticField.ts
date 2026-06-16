@@ -51,14 +51,13 @@ function computeLineWidth(similarity: number, intensity: number): number {
 }
 
 /**
- * Compute particle speed proportional to similarity. Slowed ~10× from
- * the original (0.008-0.04 → 0.001-0.005) so particles read as gentle
- * flowing dots rather than streaks that flash across in one frame.
- * At peak similarity a particle now takes ~1.2s to traverse a line
- * instead of ~30ms.
+ * Compute particle speed proportional to similarity. Slowed ~10× again
+ * (0.001-0.005 → 0.0001-0.0005) so the dots read as a slow, ambient drift
+ * rather than a steady stream. At peak similarity a particle now takes
+ * ~10s to traverse a line; at the low end it's a barely-perceptible crawl.
  */
 function computeParticleSpeed(similarity: number): number {
-  return 0.001 + similarity * 0.004
+  return 0.0001 + similarity * 0.0004
 }
 
 /**
