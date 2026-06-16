@@ -17,7 +17,7 @@ const featurePreview: Record<GuestRestrictedFeature, {
     headline: 'Let the AI take it',
     serif: 'from here.',
     desc: 'Save your map and the AI starts expanding any branch you select. Counter-arguments, summaries, gap analysis — anchored to the node.',
-    receipt: 'claude-3.5-sonnet · 1.4s · 4 nodes generated',
+    receipt: 'claude-opus-4-8 · 1.4s · 4 nodes generated',
   },
   'ai-settings': {
     eyebrow: 'AI · BRING YOUR OWN KEY',

@@ -14,7 +14,7 @@ interface ProviderLike {
   isDefault?: boolean
   isEnabled?: boolean
   baseUrl?: string
-  models?: Array<{ id: string; name?: string }>
+  models?: Array<{ id: string; name?: string; available?: boolean }>
 }
 
 const props = defineProps<{
@@ -251,9 +251,13 @@ function maskKey(type: string): string {
                 :key="m.id"
                 type="button"
                 class="map-model-pill"
-                :class="{ 'map-model-pill--on': getSelectedModelId(provider.type) === m.id }"
-                @click="emit('set-model', { type: provider.type, modelId: m.id })"
-              >{{ m.name.replace(/^Claude\s+/, '') }}</button>
+                :class="{
+                  'map-model-pill--on': getSelectedModelId(provider.type) === m.id,
+                  'map-model-pill--soon': m.available === false,
+                }"
+                :disabled="m.available === false"
+                @click="m.available === false ? null : emit('set-model', { type: provider.type, modelId: m.id })"
+              >{{ m.name.replace(/^Claude\s+/, '') }}{{ m.available === false ? ' · Soon' : '' }}</button>
             </div>
           </div>
 
@@ -675,6 +679,10 @@ function maskKey(type: string): string {
   border-color: rgba(0, 210, 190, 0.45);
   color: var(--map-mint);
   font-weight: 600;
+}
+.map-model-pill--soon {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .map-test-result {

@@ -130,7 +130,7 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
           })
         },
         body: JSON.stringify({
-          model: model || (provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
+          model: model || (provider === 'openrouter' ? 'openai/gpt-5.4-mini' : 'gpt-5.4-mini'),
           messages: systemPrompt
             ? [{ role: 'system', content: systemPrompt }, ...messages]
             : messages,

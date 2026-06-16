@@ -57,7 +57,7 @@ export default defineEventHandler(async (event) => {
                 })
               },
               body: JSON.stringify({
-                model: body.model || (body.provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'),
+                model: body.model || (body.provider === 'openrouter' ? 'openai/gpt-5.4-mini' : 'gpt-5.4-mini'),
                 messages: body.systemPrompt
                   ? [{ role: 'system', content: body.systemPrompt }, ...body.messages]
                   : body.messages,
@@ -122,7 +122,7 @@ export default defineEventHandler(async (event) => {
                 'anthropic-version': '2023-06-01'
               },
               body: JSON.stringify({
-                model: body.model || 'claude-sonnet-4-20250514',
+                model: body.model || 'claude-sonnet-4-6',
                 max_tokens: body.maxTokens,
                 system: body.systemPrompt,
                 messages: body.messages,

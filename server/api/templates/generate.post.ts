@@ -76,7 +76,7 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 4000,
           temperature: 0.7,
           system: systemPrompt,
@@ -92,7 +92,7 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
       const data = await response.json() as any
       content = data.content?.[0]?.text || ''
     } else if (provider === 'openai' || provider === 'openrouter') {
-      const model = provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini'
+      const model = provider === 'openrouter' ? 'openai/gpt-5.4-mini' : 'gpt-5.4-mini'
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,

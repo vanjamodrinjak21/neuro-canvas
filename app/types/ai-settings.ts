@@ -10,6 +10,8 @@ export interface AIModel {
   contextLength?: number
   maxOutputTokens?: number
   isVision?: boolean
+  /** When false, the model is listed but not yet selectable (e.g. not GA). Defaults to available. */
+  available?: boolean
 }
 
 export interface AIProviderConfig {
@@ -75,13 +77,10 @@ export const PROVIDER_TEMPLATES: Record<AIProviderType, Partial<AIProviderConfig
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
     models: [
-      { id: 'gpt-4.1', name: 'GPT-4.1', contextLength: 1000000, maxOutputTokens: 32768, isVision: true },
-      { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', contextLength: 1000000, maxOutputTokens: 32768, isVision: true },
-      { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', contextLength: 1000000, maxOutputTokens: 32768, isVision: true },
-      { id: 'o4-mini', name: 'o4-mini (Reasoning)', contextLength: 200000, maxOutputTokens: 100000, isVision: true },
-      { id: 'o3-mini', name: 'o3-mini (Reasoning)', contextLength: 200000, maxOutputTokens: 100000, isVision: true },
-      { id: 'gpt-4o', name: 'GPT-4o (Audio)', contextLength: 128000, maxOutputTokens: 16384, isVision: true },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', contextLength: 128000, maxOutputTokens: 16384, isVision: true }
+      { id: 'gpt-5.5', name: 'GPT-5.5', contextLength: 1050000, maxOutputTokens: 128000, isVision: true },
+      { id: 'gpt-5.4', name: 'GPT-5.4', contextLength: 1050000, maxOutputTokens: 128000, isVision: true },
+      { id: 'gpt-5.4-mini', name: 'GPT-5.4 Mini', contextLength: 400000, maxOutputTokens: 128000, isVision: true },
+      { id: 'gpt-5.4-nano', name: 'GPT-5.4 Nano', contextLength: 400000, maxOutputTokens: 128000, isVision: true }
     ]
   },
   anthropic: {
@@ -89,11 +88,10 @@ export const PROVIDER_TEMPLATES: Record<AIProviderType, Partial<AIProviderConfig
     name: 'Anthropic',
     baseUrl: 'https://api.anthropic.com/v1',
     models: [
-      { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', contextLength: 1000000, maxOutputTokens: 64000, isVision: true },
-      { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
-      { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
-      { id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true },
-      { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true }
+      { id: 'claude-fable-5', name: 'Claude Fable 5', contextLength: 1000000, maxOutputTokens: 128000, isVision: true, available: false },
+      { id: 'claude-opus-4-8', name: 'Claude Opus 4.8', contextLength: 1000000, maxOutputTokens: 128000, isVision: true },
+      { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', contextLength: 1000000, maxOutputTokens: 64000, isVision: true },
+      { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true }
     ]
   },
   ollama: {

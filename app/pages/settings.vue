@@ -265,6 +265,8 @@ async function selectModel(modelId: string) {
   }
   const provider = findProviderByType(typeMap[selectedEngine.value])
   if (provider) {
+    // Ignore models flagged as not yet available (e.g. not GA)
+    if (provider.models.find(m => m.id === modelId)?.available === false) return
     await aiSettings.updateProvider(provider.id, { selectedModelId: modelId })
   }
 }
@@ -902,8 +904,9 @@ function handleAccountClose() {
                     v-for="model in availableModels"
                     :key="model.id"
                     :value="model.id"
+                    :disabled="model.available === false"
                   >
-                    {{ model.name || model.id }}
+                    {{ model.name || model.id }}{{ model.available === false ? ` — ${$t('settings.ai_providers.coming_soon')}` : '' }}
                   </option>
                 </select>
               </div>
