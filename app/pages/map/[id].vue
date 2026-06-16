@@ -2331,6 +2331,7 @@ body:has(.detail-panel) .minimap-wrapper {
      desktop view-tab labels nested inside .topbar-view-tab. -->
 <style>
 body:has(.detail-panel) .topbar-view-label,
+body:has(.nc-settings-panel) .topbar-view-label,
 body:has(.cm-panel) .topbar-view-label,
 body:has(.vh-panel) .topbar-view-label,
 body:has(.overflow-panel) .topbar-view-label {
@@ -2342,6 +2343,7 @@ body:has(.overflow-panel) .topbar-view-label {
   transition-duration: 160ms;
 }
 body:has(.detail-panel) .topbar-view-tab,
+body:has(.nc-settings-panel) .topbar-view-tab,
 body:has(.cm-panel) .topbar-view-tab,
 body:has(.vh-panel) .topbar-view-tab,
 body:has(.overflow-panel) .topbar-view-tab {
@@ -2351,8 +2353,10 @@ body:has(.overflow-panel) .topbar-view-tab {
 
 /* Whole topbar physically narrows so its right edge sits flush with the
    left edge of the open side panel. Width of each panel is hard-coded in
-   its own component; keep these in sync if those widths change. */
-body:has(.detail-panel) .topbar-root {
+   its own component; keep these in sync if those widths change.
+   .nc-settings-panel (Semantic Field) is 360px — same group as .detail-panel. */
+body:has(.detail-panel) .topbar-root,
+body:has(.nc-settings-panel) .topbar-root {
   right: calc(360px + 1rem);
 }
 body:has(.cm-panel) .topbar-root,

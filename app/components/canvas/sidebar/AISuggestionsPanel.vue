@@ -360,9 +360,11 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 10px;
   padding: 1px 6px;
-  background: #18181B;
+  /* Tokenised so the chip flips with the theme — was a hardcoded dark fill
+     that rendered as dark chips on the light (warm paper) background. */
+  background: var(--nc-surface-3);
   border-radius: 3px;
-  color: #3F3F46;
+  color: var(--nc-text-secondary);
   font-weight: 500;
 }
 
