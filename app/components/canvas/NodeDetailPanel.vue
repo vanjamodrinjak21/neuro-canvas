@@ -278,8 +278,11 @@ function getNodeColor(node: Node): string {
 .detail-panel {
   position: fixed;
   right: 0;
-  top: 56px;
+  top: 0;
   bottom: 0;
+  /* Fill to the top edge (no canvas gap) but keep content clear of the
+     floating top toolbar, which renders above the panel. */
+  padding-top: 56px;
   width: 360px;
   z-index: 140;
   background: var(--nc-surface, #111114);
