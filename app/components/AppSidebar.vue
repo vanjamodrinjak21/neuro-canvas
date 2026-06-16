@@ -144,8 +144,11 @@ const visibleNavItems = computed(() => {
   return navItems.value
 })
 
-// Sidebar collapse
-const collapsed = ref(false)
+// Sidebar collapse — persisted so the rail stays put across navigation/reload.
+// AppSidebar is mounted per-page (dashboard, maps, templates, settings, …); a
+// plain ref would reset to expanded on every route change, so back it with
+// localStorage and each freshly-mounted instance restores the last state.
+const collapsed = useStorage('nc-sidebar-collapsed', false)
 function toggleCollapse() {
   collapsed.value = !collapsed.value
 }
