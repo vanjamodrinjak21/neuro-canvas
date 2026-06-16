@@ -18,15 +18,19 @@ const overlayRef = ref<HTMLDivElement | null>(null)
 
 function toggle() {
   if (isAnimating.value) return
-  isAnimating.value = true
 
   const btn = toggleBtnRef.value
   const overlay = overlayRef.value
-  if (!btn || !overlay || typeof window === 'undefined') {
+  const reduceMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  // No wipe when reduced motion is requested, or if refs aren't ready.
+  if (reduceMotion || !btn || !overlay || typeof window === 'undefined') {
     applyThemeChange()
-    isAnimating.value = false
     return
   }
+
+  isAnimating.value = true
 
   const rect = btn.getBoundingClientRect()
   const cx = rect.left + rect.width / 2
@@ -34,16 +38,25 @@ function toggle() {
   const maxX = Math.max(cx, window.innerWidth - cx)
   const maxY = Math.max(cy, window.innerHeight - cy)
   const maxRadius = Math.ceil(Math.sqrt(maxX * maxX + maxY * maxY))
+  const diameter = maxRadius * 2
 
-  overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
-  overlay.style.display = 'block'
+  // GPU-composited circular reveal: a teal disc grown from the toggle via
+  // transform:scale(). Animating clip-path:circle() instead repaints the
+  // fullscreen overlay every frame, which stutters on the canvas page where
+  // the semantic-field rAF loop already saturates the main thread.
+  overlay.style.width = `${diameter}px`
+  overlay.style.height = `${diameter}px`
+  overlay.style.left = `${cx - maxRadius}px`
+  overlay.style.top = `${cy - maxRadius}px`
+  overlay.style.transform = 'scale(0)'
   overlay.style.opacity = '1'
+  overlay.style.display = 'block'
 
-  // Force a layout flush so the next frame starts from clip(0) cleanly.
+  // Force a layout flush so the transition starts from scale(0) cleanly.
   void overlay.offsetHeight
 
-  overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'
-  overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
+  overlay.style.transition = 'transform 500ms cubic-bezier(0.16, 1, 0.3, 1)'
+  overlay.style.transform = 'scale(1)'
 
   setTimeout(() => {
     applyThemeChange()
@@ -53,7 +66,7 @@ function toggle() {
       setTimeout(() => {
         overlay.style.display = 'none'
         overlay.style.transition = ''
-        overlay.style.clipPath = ''
+        overlay.style.transform = ''
         isAnimating.value = false
       }, 300)
     }, 60)
@@ -202,12 +215,13 @@ function applyThemeChange() {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
+  /* Sized/positioned inline as a disc; grown via transform:scale (composited)
+     rather than clip-path (which repaints every frame and stutters). */
+  border-radius: 50%;
   background: #00D2BE;
   z-index: 9999;
   pointer-events: none;
+  transform-origin: center;
+  will-change: transform, opacity;
 }
 </style>
