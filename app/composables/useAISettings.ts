@@ -109,13 +109,15 @@ export function useAISettings() {
           await save()
         }
 
-        // Self-heal: refresh Anthropic provider models so the latest IDs
-        // (Opus 4.7, Sonnet 4.6, …) become available even on accounts
-        // that were created before the model list was bumped.
+        // Self-heal: refresh the curated provider model lists (Anthropic ->
+        // Fable 5 / Opus 4.8 / Sonnet 4.6 / Haiku 4.5; OpenAI -> GPT-5.5 / 5.4 /
+        // mini / nano) so the latest IDs become available even on accounts
+        // created before the lists were bumped. Dynamic providers (OpenRouter,
+        // Ollama) load their models from the API, so leave those untouched.
         for (const p of state.settings.providers) {
-          if (p.type === 'anthropic') {
-            const template = PROVIDER_TEMPLATES['anthropic']
-            if (template?.models) {
+          if (p.type === 'anthropic' || p.type === 'openai') {
+            const template = PROVIDER_TEMPLATES[p.type]
+            if (template?.models?.length) {
               p.models = [...template.models]
               if (!p.selectedModelId || !template.models.some(m => m.id === p.selectedModelId)) {
                 p.selectedModelId = template.models[0]!.id
