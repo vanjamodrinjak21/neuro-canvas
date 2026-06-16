@@ -156,6 +156,16 @@
       "generating": "Generiranje...",
       "generate": "Generiraj mapu"
     },
+    "expand_map": {
+      "title": "Proširi mapu",
+      "subtitle": "Automatski proširi cijelu mapu",
+      "count_label": "Broj čvorova",
+      "nodes_suffix": "novih čvorova",
+      "hint": "AI proširuje rub mape — raspoređeno po krajnjim čvorovima kad ih je više.",
+      "cancel": "Odustani",
+      "expand": "Proširi",
+      "expanding": "Proširujem..."
+    },
     "shortcuts": {
       "title": "Tipkovnički prečaci",
       "navigation": "Navigacija",

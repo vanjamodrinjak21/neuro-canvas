@@ -313,6 +313,17 @@ const richSuggestions = ref<RichNodeSuggestion[]>([])
 // Map generation dialog
 const showGenerateMapDialog = ref(false)
 
+// Autonomous AI-expand: how many nodes to grow when nothing is selected.
+// The picker dialog lets the user set this; the value is remembered per session.
+const DEFAULT_EXPAND_NODE_COUNT = 12
+const showExpandDialog = ref(false)
+const expandNodeCount = ref(DEFAULT_EXPAND_NODE_COUNT)
+function handleExpandConfirm(count: number) {
+  expandNodeCount.value = count
+  showExpandDialog.value = false
+  void handleAutonomousExpand(count)
+}
+
 // Overflow menu (managed by OverflowMenu component internally)
 
 // Sidebar visibility (desktop always visible, mobile as sheet)
@@ -1061,7 +1072,7 @@ function handleAddNode() {
  * map's frontier the way the generator builds one: expand each leaf node with a
  * few AI-generated children so the map extends itself, no node-picking required.
  */
-async function handleAutonomousExpand() {
+async function handleAutonomousExpand(targetTotal = DEFAULT_EXPAND_NODE_COUNT) {
   if (mapStore.nodes.size === 0) return
 
   isAILoading.value = true
@@ -1072,10 +1083,14 @@ async function handleAutonomousExpand() {
     const childSources = new Set(Array.from(mapStore.edges.values()).map(e => e.sourceId))
     let frontier = Array.from(mapStore.nodes.values()).filter(n => !childSources.has(n.id))
     if (frontier.length === 0) frontier = Array.from(mapStore.nodes.values())
-    const targets = frontier.slice(0, 4)
+    const targets = frontier.slice(0, 6)
+    // Spread the user-chosen node budget across the frontier; at least two
+    // children per expanded node so each expansion is worthwhile.
+    const childrenPerNode = Math.max(2, Math.ceil(targetTotal / targets.length))
 
     const newIds: string[] = []
     for (const node of targets) {
+      if (newIds.length >= targetTotal) break
       const context: GenerationContext = {
         mapTitle: mapStore.title as string,
         existingNodes: Array.from(mapStore.nodes.values())
@@ -1096,7 +1111,7 @@ async function handleAutonomousExpand() {
         locale: currentLocale.value,
       }
       try {
-        const suggestions = await ai.enhancedSmartExpand(node.content, context, 3)
+        const suggestions = await ai.enhancedSmartExpand(node.content, context, childrenPerNode)
         const result = mapRenderer.renderRichSuggestions(suggestions, node, { layout: 'vertical', spacing: 80 })
         if (result?.nodeIds?.length) {
           newIds.push(...result.nodeIds)
@@ -1130,8 +1145,10 @@ async function handleAutonomousExpand() {
 async function handleSmartExpand() {
   const node = contextMenuTargetNode.value || selectedNode.value
   if (!node) {
-    // Nothing selected → grow the whole map autonomously (generator-style).
-    await handleAutonomousExpand()
+    // Nothing selected → let the user choose how many nodes to grow, then
+    // expand the whole map autonomously (generator-style).
+    contextMenuVisible.value = false
+    showExpandDialog.value = true
     return
   }
 
@@ -1386,9 +1403,9 @@ function handleDropNode(event: { nodeId: string; position: { x: number; y: numbe
 async function handleGenerateSuggestions() {
   const node = selectedNode.value
   if (!node) {
-    // No selection → grow the whole map autonomously (generator-style),
-    // matching the top-bar AI-expand behaviour instead of silently no-op.
-    await handleAutonomousExpand()
+    // No selection → ask how many nodes, then grow the whole map
+    // autonomously, matching the top-bar AI-expand behaviour.
+    showExpandDialog.value = true
     return
   }
 
@@ -2175,6 +2192,14 @@ useHead({
       :is-loading="isAILoading"
       @close="showGenerateMapDialog = false"
       @generate="handleGenerateMap"
+    />
+
+    <LazyCanvasExpandMapDialog
+      :visible="showExpandDialog"
+      :is-loading="isAILoading"
+      :initial="expandNodeCount"
+      @close="showExpandDialog = false"
+      @confirm="handleExpandConfirm"
     />
 
     <!-- Semantic Search Overlay -->

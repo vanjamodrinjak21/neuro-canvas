@@ -156,6 +156,16 @@
       "generating": "Generating...",
       "generate": "Generate Map"
     },
+    "expand_map": {
+      "title": "Expand Map",
+      "subtitle": "Grow the whole map automatically",
+      "count_label": "Number of nodes",
+      "nodes_suffix": "new nodes",
+      "hint": "AI grows the map's frontier — spread across leaf nodes when there are several.",
+      "cancel": "Cancel",
+      "expand": "Expand",
+      "expanding": "Expanding..."
+    },
     "shortcuts": {
       "title": "Keyboard Shortcuts",
       "navigation": "Navigation",
