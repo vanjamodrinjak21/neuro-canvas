@@ -15,6 +15,7 @@
 // HTTPS). When unset this is a no-op and all logging stays local.
 
 import type { NitroApp } from 'nitropack'
+import { isScannerPath } from '../utils/scannerPatterns'
 
 const WEBHOOK_URL = process.env.ERROR_WEBHOOK_URL || ''
 const WEBHOOK_TIMEOUT_MS = 1500
@@ -54,6 +55,12 @@ export default defineNitroPlugin((nitro: NitroApp) => {
     const statusCode = (err as { statusCode?: number })?.statusCode
     const event = ctx?.event
     const path = event?.path
+
+    // Expected, high-volume bot probes for `.git`, `.env`, `wp-*`, etc. are
+    // already turned into a 404 by the block-scanners middleware. Logging
+    // each one floods production logs and buries real errors, so drop them
+    // here. Genuine 404s (real missing app routes) still log.
+    if (statusCode === 404 && isScannerPath(path || '')) return
 
     // Errors that already carry an h3-style statusCode are intentional
     // (createError, validation, auth refusals) — log lightly, don't mask.
