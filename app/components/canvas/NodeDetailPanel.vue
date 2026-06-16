@@ -280,9 +280,9 @@ function getNodeColor(node: Node): string {
   right: 0;
   top: 0;
   bottom: 0;
-  /* Fill to the top edge (no canvas gap) but keep content clear of the
-     floating top toolbar, which renders above the panel. */
-  padding-top: 56px;
+  /* No top offset: when this panel is open the top toolbar physically narrows
+     to the panel's left edge (see map/[id].vue body:has(.detail-panel)
+     .topbar-root), so the panel owns the full-height right column. */
   width: 360px;
   z-index: 140;
   background: var(--nc-surface, #111114);

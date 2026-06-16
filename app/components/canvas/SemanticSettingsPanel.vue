@@ -267,8 +267,9 @@ async function loadBackend() {
   width: 360px;
   max-width: 100vw;
   height: 100%;
-  /* Clear the floating top toolbar, matching the node detail panel. */
-  padding-top: 56px;
+  /* No top offset: the top toolbar narrows to this panel's left edge when it
+     is open (map/[id].vue body:has(.nc-settings-panel) .topbar-root), so the
+     panel owns the full-height right column. */
   background: var(--nc-surface);
   border-left: 1px solid var(--nc-border);
   display: flex;
