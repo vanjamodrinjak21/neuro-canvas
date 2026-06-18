@@ -443,7 +443,6 @@ jobs:
   _build-android-disabled:
     if: false
     name: Android (APK + AAB)
-    name: Android (APK + AAB)
     needs: resolve-version
     runs-on: ubuntu-latest
     env:
@@ -537,7 +536,6 @@ jobs:
   # 5. iOS — DISABLED for v1.0.0. Re-enable with a Developer Program account.
   _build-ios-disabled:
     if: false
-    name: iOS (.ipa)
     name: iOS (.ipa)
     needs: resolve-version
     runs-on: macos-14
