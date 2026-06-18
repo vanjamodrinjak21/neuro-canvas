@@ -233,6 +233,20 @@ We don't build for the median user. We build for the person who wants their tool
 
 ---
 
+## Contributors
+
+<div align="center">
+
+<a href="https://github.com/vanjamodrinjak21">
+  <img src="https://github.com/vanjamodrinjak21.png" width="80" alt="Vanja Modrinjak" />
+</a>
+
+[**Vanja Modrinjak**](https://github.com/vanjamodrinjak21) — creator &amp; maintainer
+
+</div>
+
+---
+
 ## License
 
 **Proprietary — all rights reserved.** No part of this project may be copied, modified, distributed, or reused without explicit written permission. Commercial inquiries welcome.
