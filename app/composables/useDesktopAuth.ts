@@ -8,6 +8,12 @@
 
 const AUTH_BASE_URL = 'https://neuro-canvas.com'
 
+// Reverse-client-ID scheme registered for the Google OAuth deep-link callback.
+// MUST stay byte-identical (and lowercase) to the scheme baked into the build:
+//   - src-tauri/tauri.conf.json    plugins.deep-link.desktop.schemes[1]
+//   - src-tauri/windows/hooks.nsh  GOOGLE_OAUTH_SCHEME
+const REGISTERED_GOOGLE_SCHEME_PREFIX = 'com.googleusercontent.apps.1025021574887-effk89v1d8s52cjgc4m7mi4nmipruk6c'
+
 // Module-level shared state (singleton across all callers)
 const _showAuthModal = ref(false)
 const _isSignedIn = ref(false)
@@ -208,8 +214,19 @@ export function useDesktopAuth() {
       //   com.googleusercontent.apps.<CLIENT_ID_PREFIX>:/oauthredirect
       // No console changes needed. The matching scheme is registered with
       // Tauri's deep-link plugin so the OS routes it back to the running app.
-      const reverseClientId = clientId.replace(/\.apps\.googleusercontent\.com$/, '')
+      const reverseClientId = clientId.replace(/\.apps\.googleusercontent\.com$/, '').toLowerCase()
       const redirectUri = `com.googleusercontent.apps.${reverseClientId}:/oauthredirect`
+
+      // Drift guard: the OS only routes the scheme baked into the build
+      // (tauri.conf.json / hooks.nsh). If the runtime GOOGLE_DESKTOP_CLIENT_ID
+      // resolves to a different reverse-client-ID, Windows has no handler for
+      // the scheme Google redirects to and the callback is silently dropped —
+      // so fail loudly here instead of hanging for five minutes.
+      if (`com.googleusercontent.apps.${reverseClientId}` !== REGISTERED_GOOGLE_SCHEME_PREFIX) {
+        throw new Error(
+          'Desktop Google client-ID mismatch: the runtime GOOGLE_DESKTOP_CLIENT_ID does not match the scheme baked into this desktop build. Rebuild the desktop app with the matching client ID.',
+        )
+      }
 
       const params = new URLSearchParams({
         client_id: clientId,
@@ -224,14 +241,16 @@ export function useDesktopAuth() {
       })
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
 
-      // Open Google in the system browser. This is the standard, reliable
-      // pattern for desktop OAuth — Google never blocks system browsers.
+      // CRITICAL (Windows): attach the deep-link listener BEFORE opening the
+      // browser. On macOS the redirect is delivered in-process, so a late
+      // listener still catches it — which is why this only ever broke on
+      // Windows. There, the redirect arrives as a brand-new OS process whose
+      // URL the single-instance plugin forwards into a single, un-buffered
+      // `new-url` emit; if the listener isn't attached yet, that emit is lost
+      // and sign-in hangs until the 5-minute timeout.
       const { open: openUrl } = await import('@tauri-apps/plugin-shell')
-      await openUrl(authUrl)
+      const { onOpenUrl, getCurrent } = await import('@tauri-apps/plugin-deep-link')
 
-      // Listen for the OS handing the neurocanvas:// callback back to us via
-      // tauri-plugin-deep-link. The plugin emits `onOpenUrl` for any registered
-      // scheme; we resolve as soon as a matching URL arrives.
       const code: string = await new Promise<string>((resolve, reject) => {
         let settled = false
         let unlisten: (() => void) | null = null
@@ -247,40 +266,56 @@ export function useDesktopAuth() {
           if (!settled) { cleanup(); reject(new Error('Sign-in timed out.')) }
         }, 5 * 60 * 1000)
 
-        ;(async () => {
-          const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link')
-          unlisten = await onOpenUrl((urls: string[]) => {
-            if (settled) return
-            for (const raw of urls) {
-              console.debug('[desktop-auth] deep-link received →', raw)
-              let u: URL
-              try {
-                u = new URL(raw)
-              } catch { continue }
-              // Match Google's reverse-client-ID redirect:
-              //   com.googleusercontent.apps.<CID>:/oauthredirect?code=...
-              // (Also accept a generic neurocanvas://auth/desktop-callback in
-              // case the user ever switches to a Web client + custom scheme.)
-              const isReverseClientCallback
-                = u.protocol.startsWith('com.googleusercontent.apps.')
-                  && raw.includes('oauthredirect')
-              const isLegacyCallback
-                = u.protocol === 'neurocanvas:'
-                  && raw.includes('desktop-callback')
-              if (!isReverseClientCallback && !isLegacyCallback) continue
+        // Shared matcher — used by both the live onOpenUrl listener and the
+        // getCurrent() backstop below. Matching is case-insensitive because
+        // Windows registry/ShellExecute scheme lookup is case-insensitive
+        // while the deep-link plugin's own scheme filter is exact.
+        const handleUrls = (urls: string[]) => {
+          if (settled) return
+          for (const raw of urls) {
+            console.debug('[desktop-auth] deep-link received →', raw)
+            let u: URL
+            try {
+              u = new URL(raw)
+            } catch { continue }
+            const lowerRaw = raw.toLowerCase()
+            // Match Google's reverse-client-ID redirect:
+            //   com.googleusercontent.apps.<CID>:/oauthredirect?code=...
+            // (Also accept a generic neurocanvas://auth/desktop-callback in
+            // case the user ever switches to a Web client + custom scheme.)
+            const isReverseClientCallback
+              = u.protocol.toLowerCase().startsWith('com.googleusercontent.apps.')
+                && lowerRaw.includes('oauthredirect')
+            const isLegacyCallback
+              = u.protocol.toLowerCase() === 'neurocanvas:'
+                && lowerRaw.includes('desktop-callback')
+            if (!isReverseClientCallback && !isLegacyCallback) continue
 
-              const err = u.searchParams.get('error')
-              if (err) { cleanup(); reject(new Error(`Google returned error: ${err}`)); return }
-              const returnedState = u.searchParams.get('state')
-              const returnedCode = u.searchParams.get('code')
-              if (returnedState !== state || !returnedCode) {
-                cleanup(); reject(new Error('OAuth state mismatch.')); return
-              }
-              cleanup()
-              resolve(returnedCode)
-              return
+            const err = u.searchParams.get('error')
+            if (err) { cleanup(); reject(new Error(`Google returned error: ${err}`)); return }
+            const returnedState = u.searchParams.get('state')
+            const returnedCode = u.searchParams.get('code')
+            if (returnedState !== state || !returnedCode) {
+              cleanup(); reject(new Error('OAuth state mismatch.')); return
             }
-          })
+            cleanup()
+            resolve(returnedCode)
+            return
+          }
+        }
+
+        ;(async () => {
+          // 1. Attach the listener FIRST so no redirect can slip past.
+          unlisten = await onOpenUrl(handleUrls)
+          // 2. Now open Google's consent screen in the system browser.
+          await openUrl(authUrl)
+          // 3. Backstop: drain any URL the OS already handed us before the
+          //    listener attached. On Windows/Linux getCurrent() reads the
+          //    forwarded CLI argument; on macOS it is normally null (no-op).
+          try {
+            const initial = await getCurrent()
+            if (initial && initial.length) handleUrls(initial)
+          } catch {}
         })().catch((e) => {
           if (!settled) { cleanup(); reject(new Error(`Deep-link listener failed: ${e?.message || e}`)) }
         })
