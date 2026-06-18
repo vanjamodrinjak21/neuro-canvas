@@ -138,7 +138,16 @@ pub async fn load_model_into_state(
 /// variant, which is bundled in `resources/models/` and avoids the 30s+
 /// CoreML compile that the full-precision model triggers.
 pub fn spawn_preload_default_model(app: tauri::AppHandle) {
-    tokio::spawn(async move {
+    // Use Tauri's managed async runtime, NOT `tokio::spawn`. This is called
+    // from the Tauri run/setup callback, which on macOS executes inside
+    // AppKit's `applicationDidFinishLaunching` (an `extern "C"` delegate) where
+    // no Tokio reactor is entered. `tokio::spawn` there panics with "there is
+    // no reactor running", and because that panic can't unwind across the ObjC
+    // boundary it aborts the whole app on launch (the macOS "opens then
+    // instantly closes" crash). `tauri::async_runtime::spawn` holds a handle to
+    // Tauri's runtime, works from any thread, and runs the task on that Tokio
+    // runtime so the inner `spawn_blocking` calls below still resolve.
+    tauri::async_runtime::spawn(async move {
         let start = std::time::Instant::now();
         // Run inside an async context so `Manager::state` works.
         let state = app.state::<MLState>();
