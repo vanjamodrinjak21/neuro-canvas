@@ -191,15 +191,26 @@ jobs:
       # `write-manifest` job below ingests those .sig files into latest.json so
       # the in-app updater can verify downloads with the public key baked into
       # tauri.conf.json — see AER-14.
+      - name: Force dynamic CRT on Windows (ort + esaxx-rs link compat)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "RUSTFLAGS=-C target-feature=-crt-static" >> "$GITHUB_ENV"
+          echo "CFLAGS=/MD" >> "$GITHUB_ENV"
+          echo "CXXFLAGS=/MD" >> "$GITHUB_ENV"
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # nuxt generate is memory-heavy; the macOS CI runner (~7 GB) OOMs the
+          # default Node heap during beforeBuildCommand. Match tauri-beta.yml.
+          NODE_OPTIONS: '--max-old-space-size=6144'
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.resolve-version.outputs.tag }}
-          releaseName: 'NeuroCanvas ${{ needs.resolve-version.outputs.version }}'
+          releaseName: ${{ needs.resolve-version.outputs.tag == 'beta' && 'NeuroCanvas BETA' || format('NeuroCanvas {0}', needs.resolve-version.outputs.version) }}
           releaseBody: |
             ## NeuroCanvas v${{ needs.resolve-version.outputs.version }}
 

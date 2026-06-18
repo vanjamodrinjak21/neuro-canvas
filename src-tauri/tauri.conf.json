@@ -34,6 +34,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "resources": [
       "resources/models/nomic-embed-text-v1.5/model_quantized.onnx",
@@ -83,7 +84,7 @@
       "endpoints": [
         "https://cdn.neuro-canvas.com/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwRkM2QTU0RDMwRkVCNwpSV1MzL2pCTnBjWVBESjhBVHgxR0g1dFdtM0ptZ3JodmxPUXQ2WC92R09oaEJBUUl3NDQ2d2QrKwo="
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZGMDkwRDVBMEM0QkRDM0UKUldRKzNFc01XZzBKLzlRaEMwWGNzMnU4UlBINHVZcys3S092d2lXRW1Ib3dlL1JWTUtKYkN2U2sK"
     },
     "deep-link": {
       "desktop": {
