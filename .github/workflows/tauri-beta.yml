@@ -76,3 +76,30 @@ jobs:
           releaseBody: Rolling beta release. Unsigned — see README for first-launch instructions.
           releaseDraft: false
           prerelease: true
+
+      # ── Mirror installers to R2 so cdn.neuro-canvas.com/beta/<file> resolves.
+      # /api/releases/latest rewrites every download URL to {cdnBaseUrl}/beta/<name>
+      # (server/utils/releases.ts), so without this, push-to-main beta builds leave
+      # the CDN empty and every /download link 404s. No .sig / .app.tar.gz —
+      # updater artifacts are disabled (createUpdaterArtifacts: false).
+      - name: Stage installers for R2
+        shell: bash
+        env:
+          MATRIX_TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p ./r2-upload
+          find "src-tauri/target/${MATRIX_TARGET}/release/bundle" -type f \
+            \( -name '*.dmg' -o -name '*.msi' -o -name '*.exe' -o -name '*.nsis.zip' \) \
+            -exec cp {} ./r2-upload/ \; || true
+          echo "Staged for R2:"; ls -la ./r2-upload
+
+      - name: Upload installers to R2 (beta channel)
+        if: hashFiles('r2-upload/*') != ''
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id:        ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket:            ${{ secrets.R2_BUCKET }}
+          source-dir:           ./r2-upload
+          destination-dir:      beta
