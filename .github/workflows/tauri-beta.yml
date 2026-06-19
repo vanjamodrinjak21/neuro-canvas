@@ -104,6 +104,25 @@ jobs:
           source-dir:           ./r2-upload
           destination-dir:      beta
 
+      # Invalidate the just-uploaded files at Cloudflare's edge. Without this,
+      # the rolling beta reuses filenames but CF caches them (max-age 14400 =
+      # 4h), so users get the stale binary — or a cached 404 from when the
+      # bucket was empty. No-op until CLOUDFLARE_* secrets are set.
+      - name: Purge Cloudflare cache (uploaded installers)
+        if: env.CLOUDFLARE_API_TOKEN != '' && hashFiles('r2-upload/*') != ''
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CDN_BASE: https://cdn.neuro-canvas.com/beta
+        run: |
+          FILES_JSON=$(cd r2-upload && node -e "const fs=require('fs');const b=process.env.CDN_BASE;console.log(JSON.stringify(fs.readdirSync('.').filter(f=>fs.statSync(f).isFile()).map(f=>b+'/'+f)))")
+          echo "Purging: $FILES_JSON"
+          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"files\":${FILES_JSON}}"
+
   # ── Android (Capacitor): build the SIGNED apk/aab, publish to the beta
   # release, and mirror to R2 so the /download Android card resolves. Runs in
   # parallel with the desktop matrix; ensures the beta release exists before
@@ -217,3 +236,20 @@ jobs:
           r2-bucket:            ${{ secrets.R2_BUCKET }}
           source-dir:           ./r2-upload
           destination-dir:      beta
+
+      # Purge ONLY the apk/aab we just uploaded (purge-by-URL, never
+      # purge_everything). No-op until CLOUDFLARE_* secrets are set.
+      - name: Purge Cloudflare cache (uploaded apk/aab)
+        if: env.CLOUDFLARE_API_TOKEN != '' && hashFiles('r2-upload/*') != ''
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CDN_BASE: https://cdn.neuro-canvas.com/beta
+        run: |
+          FILES_JSON=$(cd r2-upload && node -e "const fs=require('fs');const b=process.env.CDN_BASE;console.log(JSON.stringify(fs.readdirSync('.').filter(f=>fs.statSync(f).isFile()).map(f=>b+'/'+f)))")
+          echo "Purging: $FILES_JSON"
+          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"files\":${FILES_JSON}}"
