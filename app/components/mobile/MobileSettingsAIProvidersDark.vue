@@ -96,8 +96,8 @@ interface ProviderRow {
 }
 
 const ALL_PROVIDERS: ProviderRow[] = [
-  { type: 'anthropic', name: 'Anthropic', caption: 'CLAUDE-OPUS-4-7 · 1M CTX', iconKey: 'anthropic' },
-  { type: 'openai', name: 'OpenAI', caption: 'GPT-5 · O4 · WHISPER', iconKey: 'openai' },
+  { type: 'anthropic', name: 'Anthropic', caption: 'CLAUDE-OPUS-4-8 · 1M CTX', iconKey: 'anthropic' },
+  { type: 'openai', name: 'OpenAI', caption: 'GPT-5.5 · GPT-5.4 · WHISPER', iconKey: 'openai' },
   { type: 'openrouter', name: 'OpenRouter', caption: '300+ MODELS · BYO BUDGET', iconKey: 'openrouter', italic: '— gateway' },
   { type: 'ollama', name: 'Ollama (local)', caption: 'LOCALHOST:11434 · OFFLINE', iconKey: 'ollama' }
 ]

@@ -211,7 +211,7 @@ onMounted(() => {
             <div class="demo-row">
               <span class="demo-row-dot" />
               <span class="demo-row-name">Anthropic Claude</span>
-              <span class="demo-row-meta">opus 4.7</span>
+              <span class="demo-row-meta">opus 4.8</span>
             </div>
             <div class="demo-row">
               <span class="demo-row-text">{{ $t('landing.section_02.generating_status') }}</span>
@@ -337,12 +337,12 @@ onMounted(() => {
               <path d="M230 108 L230 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
             </svg>
             <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_decision.node_root') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:18px; top:84px;">{{ $t('landing.section_04.template_decision.node_option_a') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_decision.node_risks') }}</span>
-            <span class="tpl-node tpl-node--mid" style="right:18px; top:84px;">{{ $t('landing.section_04.template_decision.node_option_b') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">{{ $t('landing.section_04.template_decision.node_pro') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_decision.node_mixed') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">{{ $t('landing.section_04.template_decision.node_con') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-l">{{ $t('landing.section_04.template_decision.node_option_a') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-c">{{ $t('landing.section_04.template_decision.node_risks') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-r">{{ $t('landing.section_04.template_decision.node_option_b') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-l">{{ $t('landing.section_04.template_decision.node_pro') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-c">{{ $t('landing.section_04.template_decision.node_mixed') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-r">{{ $t('landing.section_04.template_decision.node_con') }}</span>
           </div>
           <div class="tpl-meta">
             <h3>{{ $t('landing.section_04.template_decision.title') }}</h3>
@@ -361,12 +361,12 @@ onMounted(() => {
               <path d="M230 108 L230 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
             </svg>
             <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_project.node_root') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:24px; top:84px;">{{ $t('landing.section_04.template_project.node_spec') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_project.node_build') }}</span>
-            <span class="tpl-node tpl-node--mid" style="right:24px; top:84px;">{{ $t('landing.section_04.template_project.node_ship') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">{{ $t('landing.section_04.template_project.node_today') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_project.node_wk2') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">{{ $t('landing.section_04.template_project.node_wk4') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-l">{{ $t('landing.section_04.template_project.node_spec') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-c">{{ $t('landing.section_04.template_project.node_build') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-r">{{ $t('landing.section_04.template_project.node_ship') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-l">{{ $t('landing.section_04.template_project.node_today') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-c">{{ $t('landing.section_04.template_project.node_wk2') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-r">{{ $t('landing.section_04.template_project.node_wk4') }}</span>
           </div>
           <div class="tpl-meta">
             <h3>{{ $t('landing.section_04.template_project.title') }}</h3>
@@ -385,10 +385,10 @@ onMounted(() => {
               <path d="M230 108 L140 156" stroke="#00D2BE" stroke-width="1.4" fill="none" stroke-dasharray="3 3" />
             </svg>
             <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_research.node_root') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:18px; top:84px;">{{ $t('landing.section_04.template_research.node_source_1') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_research.node_source_2') }}</span>
-            <span class="tpl-node tpl-node--mid" style="right:18px; top:84px;">{{ $t('landing.section_04.template_research.node_source_3') }}</span>
-            <span class="tpl-node tpl-node--ai" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_research.node_ai') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-l">{{ $t('landing.section_04.template_research.node_source_1') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-c">{{ $t('landing.section_04.template_research.node_source_2') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-r">{{ $t('landing.section_04.template_research.node_source_3') }}</span>
+            <span class="tpl-node tpl-node--ai tpl-node--leaf tpl-node--col-c">{{ $t('landing.section_04.template_research.node_ai') }}</span>
           </div>
           <div class="tpl-meta">
             <h3>{{ $t('landing.section_04.template_research.title') }}</h3>
@@ -407,12 +407,12 @@ onMounted(() => {
               <path d="M230 108 L230 156" stroke="#3F3F46" stroke-width="1.4" fill="none" />
             </svg>
             <span class="tpl-node tpl-node--root">{{ $t('landing.section_04.template_brainstorm.node_root') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:24px; top:84px;">{{ $t('landing.section_04.template_brainstorm.node_idea_1') }}</span>
-            <span class="tpl-node tpl-node--mid" style="left:50%; top:84px; transform:translateX(-50%);">{{ $t('landing.section_04.template_brainstorm.node_idea_2') }}</span>
-            <span class="tpl-node tpl-node--mid" style="right:24px; top:84px;">{{ $t('landing.section_04.template_brainstorm.node_idea_3') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="left:24px; top:162px;">{{ $t('landing.section_04.template_brainstorm.node_sub_a') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="left:50%; top:162px; transform:translateX(-50%);">{{ $t('landing.section_04.template_brainstorm.node_sub_b') }}</span>
-            <span class="tpl-node tpl-node--leaf" style="right:24px; top:162px;">{{ $t('landing.section_04.template_brainstorm.node_sub_c') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-l">{{ $t('landing.section_04.template_brainstorm.node_idea_1') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-c">{{ $t('landing.section_04.template_brainstorm.node_idea_2') }}</span>
+            <span class="tpl-node tpl-node--mid tpl-node--col-r">{{ $t('landing.section_04.template_brainstorm.node_idea_3') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-l">{{ $t('landing.section_04.template_brainstorm.node_sub_a') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-c">{{ $t('landing.section_04.template_brainstorm.node_sub_b') }}</span>
+            <span class="tpl-node tpl-node--leaf tpl-node--col-r">{{ $t('landing.section_04.template_brainstorm.node_sub_c') }}</span>
           </div>
           <div class="tpl-meta">
             <h3>{{ $t('landing.section_04.template_brainstorm.title') }}</h3>
@@ -1467,8 +1467,16 @@ onMounted(() => {
   color: var(--text);
 }
 
-.tpl-node--mid { color: var(--text-2); }
-.tpl-node--leaf { color: var(--text-3); }
+/* Tree rows — vertical positions map 1:1 onto the fixed 208px preview (= SVG viewBox height) */
+.tpl-node--mid { top: 84px; color: var(--text-2); }
+.tpl-node--leaf { top: 162px; color: var(--text-3); }
+
+/* Tree columns — percentages mirror the SVG connector endpoints (x = 50/140/230 of the 280
+   viewBox). The preview width is fluid and the SVG stretches with it (preserveAspectRatio:none),
+   so anchoring nodes proportionally keeps every label glued to its line at any card width. */
+.tpl-node--col-l { left: 17.857%; transform: translateX(-50%); }
+.tpl-node--col-c { left: 50%; transform: translateX(-50%); }
+.tpl-node--col-r { left: 82.143%; transform: translateX(-50%); }
 
 .tpl-node--ai {
   background: var(--accent-soft);
