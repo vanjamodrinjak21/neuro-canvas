@@ -64,7 +64,7 @@ jobs:
           echo "CXXFLAGS=/MD" >> "$GITHUB_ENV"
 
       - name: Build Tauri + upload to beta release
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_OPTIONS: '--max-old-space-size=6144'
@@ -94,6 +94,120 @@ jobs:
           echo "Staged for R2:"; ls -la ./r2-upload
 
       - name: Upload installers to R2 (beta channel)
+        if: hashFiles('r2-upload/*') != ''
+        uses: ryand56/r2-upload-action@b801a390acbdeb034c5e684ff5e1361c06639e7c # v1.4
+        with:
+          r2-account-id:        ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket:            ${{ secrets.R2_BUCKET }}
+          source-dir:           ./r2-upload
+          destination-dir:      beta
+
+  # ── Android (Capacitor): build the SIGNED apk/aab, publish to the beta
+  # release, and mirror to R2 so the /download Android card resolves. Runs in
+  # parallel with the desktop matrix; ensures the beta release exists before
+  # uploading (idempotent — desktop's tauri-action may also create it).
+  android:
+    name: Android (APK + AAB)
+    runs-on: ubuntu-latest
+    env:
+      # Hoisted to job scope so the `if:` guard below can actually see it.
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build web bundle for Capacitor
+        run: |
+          npx prisma generate
+          npm run generate
+        env:
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+          AUTH_ORIGIN: ${{ vars.AUTH_ORIGIN || 'https://neuro-canvas.com' }}
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Decode keystore
+        id: keystore
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "keystore-path=$RUNNER_TEMP/release.keystore" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble signed release APK + AAB
+        working-directory: android
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore-path }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          if [[ -n "${KEYSTORE_PATH}" ]]; then
+            ./gradlew \
+              -PversionName="${VERSION}" \
+              -Pandroid.injected.signing.store.file="${KEYSTORE_PATH}" \
+              -Pandroid.injected.signing.store.password="${KEYSTORE_PASSWORD}" \
+              -Pandroid.injected.signing.key.alias="${KEY_ALIAS}" \
+              -Pandroid.injected.signing.key.password="${KEY_PASSWORD}" \
+              :app:assembleRelease :app:bundleRelease
+          else
+            ./gradlew -PversionName="${VERSION}" :app:assembleRelease :app:bundleRelease
+          fi
+
+      - name: Stage artifacts
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          mkdir -p artifacts r2-upload
+          shopt -s nullglob
+          for f in android/app/build/outputs/apk/release/*.apk; do
+            cp "$f" "artifacts/NeuroCanvas-${VERSION}-android.apk"
+          done
+          for f in android/app/build/outputs/bundle/release/*.aab; do
+            cp "$f" "artifacts/NeuroCanvas-${VERSION}-android.aab"
+          done
+          cp artifacts/* r2-upload/ 2>/dev/null || true
+          echo "Staged:"; ls -la artifacts/
+
+      - name: Publish to beta release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create beta --prerelease --title "NeuroCanvas Beta" \
+            --notes "Rolling beta release." 2>/dev/null || true
+          gh release upload beta artifacts/* --clobber
+
+      - name: Mirror APK + AAB to R2 (beta channel)
         if: hashFiles('r2-upload/*') != ''
         uses: ryand56/r2-upload-action@b801a390acbdeb034c5e684ff5e1361c06639e7c # v1.4
         with:
