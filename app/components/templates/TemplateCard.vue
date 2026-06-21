@@ -35,6 +35,12 @@ const formattedUses = computed(() => {
   if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k uses`
   return `${count} uses`
 })
+
+// Localized text for built-in templates (DB stores English only).
+const builtin = useBuiltinTemplateText()
+const displayTitle = computed(() => builtin.title(props.template))
+const displayDescription = computed(() => builtin.description(props.template))
+const displayCategory = computed(() => builtin.category(props.template.category))
 </script>
 
 <template>
@@ -47,6 +53,16 @@ const formattedUses = computed(() => {
         class="preview-svg"
         preserveAspectRatio="xMidYMid meet"
       >
+        <line
+          v-for="(ln, i) in preview.lines || []"
+          :key="'l' + i"
+          :x1="ln.x1"
+          :y1="ln.y1"
+          :x2="ln.x2"
+          :y2="ln.y2"
+          stroke="#3F3F46"
+          stroke-width="1"
+        />
         <rect
           v-for="(shape, i) in preview.shapes"
           :key="i"
@@ -81,16 +97,16 @@ const formattedUses = computed(() => {
     <!-- Card Info -->
     <div class="card-info">
       <div class="card-header">
-        <span class="card-title">{{ template.title }}</span>
+        <span class="card-title">{{ displayTitle }}</span>
         <span
           class="category-badge"
           :style="{ background: categoryColor + '18', color: categoryColor }"
         >
-          {{ template.category.charAt(0).toUpperCase() + template.category.slice(1) }}
+          {{ displayCategory }}
         </span>
       </div>
 
-      <p class="card-description">{{ template.description }}</p>
+      <p class="card-description">{{ displayDescription }}</p>
 
       <div class="card-footer">
         <div class="card-author">

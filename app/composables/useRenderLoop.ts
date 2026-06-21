@@ -11,7 +11,7 @@
 
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
-import type { Camera, Node, Edge, Point, Anchor } from '~/types'
+import type { Camera, Node, Edge, Point, Anchor, CanvasTool } from '~/types'
 import type { CanvasColors } from '~/composables/useCanvasTheme'
 import type { NodeAnimationsAPI } from '~/composables/useNodeAnimations'
 import type { useEdgeAnimations } from '~/composables/useEdgeAnimations'
@@ -26,6 +26,7 @@ import {
   drawConnectionPreviewLine,
   drawAnchorPoints,
   drawRootIndicator,
+  drawResizeHandles,
 } from '~/components/canvas/renderers/drawOverlays'
 import type { SnapTarget } from '~/components/canvas/renderers/drawOverlays'
 import {
@@ -62,11 +63,14 @@ export interface RenderLoopDeps {
   settings: () => { gridEnabled: boolean; gridSize: number }
   selection: () => { nodeIds: Set<string>; edgeIds: Set<string> }
   rootNodeId: () => string | null
+  // Active tool — resize handles only show in 'select'. Optional for back-compat.
+  tool?: () => CanvasTool
 
   // State from interaction composable
   isDragging: Ref<boolean>
   isPanning: Ref<boolean>
   isConnecting: Ref<boolean>
+  isResizing?: Ref<boolean>
   hoveredNodeId: Ref<string | null>
   editingNodeId: () => string | null
 
@@ -435,6 +439,39 @@ export function useRenderLoop(deps: RenderLoopDeps) {
     if (boxRect) {
       const boxNodeCount = deps.getNodesInBox(nodesMap).length
       drawBoxSelectionRect(ctx, boxRect, cam, boxNodeCount, colorsVal)
+    }
+
+    // --- 13b. Draw resize handles on the lone selected node -------------
+    // Only at full LOD, and never while dragging / connecting / box-selecting
+    // (those gestures own the cursor and would clutter the view). Handles
+    // stay visible during an active resize so the grips track the live size.
+    if (
+      lod === 'full' &&
+      sel.nodeIds.size === 1 &&
+      (!deps.tool || deps.tool() === 'select') &&
+      !deps.isConnecting.value &&
+      !deps.isDragging.value &&
+      !boxRect
+    ) {
+      const onlyId = sel.nodeIds.values().next().value
+      const selNode = onlyId ? nodesMap.get(onlyId) : undefined
+      if (selNode && selNode.id !== editingId && !selNode.locked) {
+        // Skip while the node is mid enter/move animation — handles read the
+        // raw (un-transformed) box and would float detached from the body
+        // that's scaling/sliding into place. getAnimatedProps returns exact
+        // rest values (opacity 1, scale 1, offset 0) once settled.
+        const anim = nodeAnims ? nodeAnims.getAnimatedProps(selNode.id) : null
+        const settled =
+          !anim ||
+          (anim.opacity >= 1 &&
+            anim.scaleX === 1 &&
+            anim.scaleY === 1 &&
+            anim.offsetX === 0 &&
+            anim.offsetY === 0)
+        if (settled) {
+          drawResizeHandles(ctx, selNode, cam, colorsVal.nodeSelected, deps.isLight.value)
+        }
+      }
     }
 
     // --- 14. Restore canvas context (exit world-space) ------------------

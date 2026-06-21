@@ -8,6 +8,12 @@ export const safeString = z.string().max(10_000).trim()
 export const safeTitle = z.string().min(1).max(MAX_TITLE_LENGTH).trim()
 export const safeLabel = z.string().max(MAX_LABEL_LENGTH).trim()
 export const cuid = z.string().min(1).max(128)
+// Strict cuid (v1): leading 'c' + 24 base36 chars. Use where the value is a
+// freshly-minted Prisma id we control end-to-end (e.g. document/map ids passed
+// across presign→upload→confirm). `cuid` above stays lenient for legacy callers.
+export const cuidStrict = z.string().refine(v => /^c[a-z0-9]{24}$/.test(v), {
+  message: 'must be a valid cuid',
+})
 
 const aiProvider = z.enum(['openai', 'anthropic', 'ollama', 'openrouter', 'custom'])
 const optionalUrl = z.string().max(500).optional().transform(v => v === '' ? undefined : v).pipe(z.string().url().optional())
@@ -22,7 +28,7 @@ export const aiCompletionSchema = z.object({
   model: z.string().max(200).optional(),
   messages: z.array(aiMessage).min(1).max(100),
   systemPrompt: z.string().max(50_000).optional(),
-  maxTokens: z.number().int().min(1).max(200_000).default(500),
+  maxTokens: z.number().int().min(1).max(200_000).default(8000),
   temperature: z.number().min(0).max(2).default(0.7),
   baseUrl: optionalUrl,
 })
@@ -100,7 +106,7 @@ export const vaultStoreV4Schema = z.object({
 export const templateGenerateSchema = z.object({
   topic: z.string().min(1).max(1_000).trim(),
   depth: z.enum(['shallow', 'medium', 'deep']).default('medium'),
-  style: z.enum(['detailed', 'concise', 'creative']).default('detailed'),
+  style: z.enum(['concise', 'detailed', 'academic']).default('concise'),
   domain: z.string().max(200).trim().optional().transform(v => v === '' ? undefined : v),
 })
 
@@ -145,7 +151,7 @@ export const templatePublishSchema = z.object({
 export const templateAdaptSchema = z.object({
   topic: z.string().min(1).max(1_000).trim(),
   depth: z.enum(['shallow', 'medium', 'deep']).default('medium'),
-  style: z.enum(['detailed', 'concise', 'creative']).default('detailed'),
+  style: z.enum(['concise', 'detailed', 'academic']).default('concise'),
   domain: z.string().max(200).trim().optional().transform(v => v === '' ? undefined : v),
 })
 
@@ -187,13 +193,39 @@ export const semanticSearchSchema = z.object({
   queryEmbedding: embeddingVector
 })
 
+// Hybrid (RRF) search over DocumentChunk: combines an HNSW semantic leg with a
+// websearch_to_tsquery full-text leg, fused via Reciprocal Rank Fusion in the
+// app layer (server/utils/rrf.ts). Modeled on semanticSearchSchema.
+//   - `queryText` is REQUIRED (drives the FTS leg + server-side query embedding
+//     when no precomputed vector is supplied). \x00 is rejected so it cannot
+//     reach Postgres' text parser.
+//   - `queryEmbedding` is OPTIONAL — when omitted the server embeds queryText
+//     via the server-side pipeline ('query' prefix).
+//   - `documentIds` is REQUIRED and bounded; every id is ownership/readiness
+//     checked before any SQL runs.
+export const hybridSearchSchema = z.object({
+  queryText: z.string().trim().min(1).max(500).regex(/^[^\x00]*$/, 'queryText contains a null byte'),
+  queryEmbedding: embeddingVector.optional(),
+  documentIds: z.array(cuidStrict).min(1).max(100),
+  mapIds: z.array(cuidStrict).max(100).optional(),
+  topK: z.number().int().min(1).max(50).default(10),
+  rrfK: z.number().int().min(1).max(200).default(60),
+  minRrfScore: z.number().min(0).default(0),
+})
+
 export const ragContextSchema = z.object({
   query: z.string().min(1).max(10_000).trim(),
   mapId: cuid,
   maxNodes: z.number().int().min(1).max(50).default(10),
   threshold: z.number().min(0).max(1).default(0.25),
   includeNeighbors: z.boolean().default(true),
-  queryEmbedding: embeddingVector
+  queryEmbedding: embeddingVector,
+  // Optional document-RAG scope. When present, the endpoint retrieves the top
+  // document chunks (scoped to these ids + the caller's userId) and returns
+  // them in a SEPARATE `documentContext` array. Every id is ownership +
+  // readiness checked before any retrieval SQL runs. cuidStrict because these
+  // are freshly-minted Prisma document ids we control end-to-end.
+  documentIds: z.array(cuidStrict).max(100).optional()
 })
 
 export const embeddingsReindexSchema = z.object({
@@ -262,6 +294,66 @@ export const collabTokenSchema = z.object({
 export const templateUseSchema = z.object({
   mapId: cuid.optional(),
   title: safeTitle.optional(),
+})
+
+// --------------------------------------------------------------------------
+// Document RAG ingestion (presigned upload → confirm)
+// --------------------------------------------------------------------------
+//
+// R2 supports presigned PUT only (no POST/content-length-range), so the byte
+// cap declared here is advisory at presign time and enforced server-side via a
+// HeadObject-after-upload check at confirm time (see plan §0(a)).
+
+const DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
+
+const documentMime = z.enum([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/markdown',
+  'text/plain',
+])
+
+export const documentPresignSchema = z.object({
+  filename: z.string().min(1).max(255),
+  declaredMime: documentMime,
+  sizeBytes: z.number().int().min(1).max(DOCUMENT_MAX_BYTES),
+  intent: z.enum(['generate_map', 'attach_source', 'none']).default('none'),
+  attachToMapId: cuidStrict.optional(),
+})
+
+// Confirm carries no body — the document id is in the route path.
+export const documentConfirmSchema = z.object({})
+
+// Generate a mind map FROM an ingested document (POST /api/documents/[id]/
+// generate-map). The document id is in the route path (validated cuidStrict at
+// the call site); the body only selects the AI provider/model/credential —
+// modeled on aiCompletionSchema but trimmed to the fields this NON-STREAMING,
+// no-tools call needs. No `messages`/`systemPrompt`/`baseUrl` here: the prompt
+// is assembled server-side from the document's own chunks via ragPromptGuard,
+// never supplied by the client, and the base URL is resolved from the provider.
+export const documentGenerateMapSchema = z.object({
+  // 'custom' is intentionally excluded: this endpoint never accepts a
+  // client-supplied baseUrl (the prompt is built server-side), and
+  // validateOutboundUrl has no default URL for 'custom', so it could never
+  // resolve. The four providers below all resolve to a known base URL.
+  provider: z.enum(['openai', 'anthropic', 'ollama', 'openrouter']),
+  // Optional: when omitted, resolveCredential falls back to the user's most
+  // recent vault credential (same contract as aiCompletionSchema).
+  credentialId: z.string().max(128).optional(),
+  model: z.string().max(200).optional(),
+})
+
+// Attach an existing document to a map (user-initiated ATTACHED link). The
+// document id is in the route path; the body carries the target mapId. Both
+// ids are server-minted cuids, so cuidStrict.
+export const documentAttachSchema = z.object({
+  mapId: cuidStrict,
+})
+
+// Detach passes the mapId via querystring (?mapId=), so the value arrives as a
+// raw string to be validated with cuidStrict at the call site.
+export const documentDetachQuerySchema = z.object({
+  mapId: cuidStrict,
 })
 
 export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {

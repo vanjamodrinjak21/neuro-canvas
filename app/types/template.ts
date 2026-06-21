@@ -20,9 +20,19 @@ export interface PreviewShape {
   fontSize?: number
 }
 
+/** A connector line between two nodes in a preview (parent → child). */
+export interface PreviewLine {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+}
+
 /** Preview data stored with each template for CSS card rendering */
 export interface TemplatePreviewData {
   shapes: PreviewShape[]
+  /** Connector lines, computed from the same node centers as `shapes`. */
+  lines?: PreviewLine[]
   width: number
   height: number
 }

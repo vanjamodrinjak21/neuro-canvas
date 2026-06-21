@@ -719,8 +719,10 @@ const showVersionHistory = ref(false)
 const showComments = ref(false)
 const viaShareToken = computed(() => (route.query.via as string | undefined) ?? null)
 function reloadAfterRestore() {
-  // The restore endpoint kicks live editors via PartyKit; the local owner
-  // has to refetch too so they see the restored state.
+  // The restore endpoint reconciles the live PartyKit room in place, so other
+  // collaborators converge without reloading. The acting owner still does a
+  // full refetch — bulletproof for both collab and plain-sync maps, and it
+  // re-centres the camera on the restored content.
   window.location.reload()
 }
 function handleShare() {

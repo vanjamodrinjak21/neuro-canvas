@@ -122,6 +122,52 @@ describe('versionsService', () => {
       ;(prisma.map.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(ownedMap())
       await expect(restoreVersion('m1', 'someone-else', 'v1')).rejects.toMatchObject({ statusCode: 403 })
     })
+
+    it('falls back to the JSON data blob when the version has no Y.Doc binary', async () => {
+      const { prisma } = await import('../prisma')
+      ;(prisma.map.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(
+        ownedMap('m1', 'owner1', { ydocVersion: 2, syncVersion: 5 })
+      )
+      // Plain-sync checkpoints (the common solo-editing case) carry only `data`.
+      ;(prisma.mapVersion.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: 'v9',
+        mapId: 'm1',
+        ydocBinary: null,
+        version: 4,
+        data: {
+          nodes: [{ id: 'n1', type: 'text', content: 'hi', position: { x: 1, y: 2 }, size: { width: 80, height: 30 } }],
+          edges: [],
+          camera: { x: 0, y: 0, zoom: 1 },
+          rootNodeId: 'n1',
+          settings: { gridEnabled: true }
+        }
+      })
+      ;(prisma.map.update as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'm1', ydocVersion: 3, syncVersion: 6 })
+
+      const out = await restoreVersion('m1', 'owner1', 'v9')
+      expect(out.restoredFromVersion).toBe(4)
+      const updateCall = (prisma.map.update as ReturnType<typeof vi.fn>).mock.calls[0][0]
+      // A canonical Y.Doc binary is rebuilt from JSON and written back to Map.ydoc.
+      expect(updateCall.data.ydoc).toBeInstanceOf(Uint8Array)
+      expect(updateCall.data.ydoc.byteLength).toBeGreaterThan(0)
+      // Both version counters advance and the JSON snapshot is persisted.
+      expect(updateCall.data.ydocVersion).toBe(3)
+      expect(updateCall.data.syncVersion).toBe(6)
+      expect(updateCall.data.checksum).toBeTruthy()
+      expect(updateCall.data.data.nodes).toHaveLength(1)
+      expect(updateCall.data.data.nodes[0].id).toBe('n1')
+      // The reconcile snapshot is returned for the live-room broadcast.
+      expect(out.snapshot.nodes[0]!.content).toBe('hi')
+    })
+
+    it('throws 404 only when both the binary and JSON snapshot are missing', async () => {
+      const { prisma } = await import('../prisma')
+      ;(prisma.map.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(ownedMap('m1', 'owner1', { ydocVersion: 1 }))
+      ;(prisma.mapVersion.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: 'v1', mapId: 'm1', ydocBinary: null, version: 1, data: null
+      })
+      await expect(restoreVersion('m1', 'owner1', 'v1')).rejects.toMatchObject({ statusCode: 404 })
+    })
   })
 
   describe('diffVersions', () => {

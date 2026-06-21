@@ -31,8 +31,8 @@ export default defineNuxtConfig({
     // lazy code-split — each locale loads on first use, not on boot.
     // The inactive locale's ~70KB JSON stays off the wire until switch.
     locales: [
-      { code: 'en', name: 'English', files: ['en/common.json', 'en/auth.json', 'en/landing.json', 'en/dashboard.json', 'en/canvas.json', 'en/settings.json', 'en/templates.json', 'en/legal.json'] },
-      { code: 'hr', name: 'Hrvatski', files: ['hr/common.json', 'hr/auth.json', 'hr/landing.json', 'hr/dashboard.json', 'hr/canvas.json', 'hr/settings.json', 'hr/templates.json', 'hr/legal.json'] }
+      { code: 'en', name: 'English', files: ['en/common.json', 'en/auth.json', 'en/landing.json', 'en/dashboard.json', 'en/canvas.json', 'en/settings.json', 'en/templates.json', 'en/legal.json', 'en/roadmap.json', 'en/documents.json'] },
+      { code: 'hr', name: 'Hrvatski', files: ['hr/common.json', 'hr/auth.json', 'hr/landing.json', 'hr/dashboard.json', 'hr/canvas.json', 'hr/settings.json', 'hr/templates.json', 'hr/legal.json', 'hr/roadmap.json', 'hr/documents.json'] }
     ],
     defaultLocale: 'en',
     strategy: 'no_prefix',
@@ -106,6 +106,15 @@ export default defineNuxtConfig({
     // to point here so apps download direct from R2, not GitHub. Pattern:
     //   {cdnBaseUrl}/v{tag}/<filename>
     cdnBaseUrl: process.env.CDN_BASE_URL || 'https://cdn.neuro-canvas.com',
+    // Document RAG — Cloudflare R2 object storage (server-only; presigned PUT
+    // uploads are minted server-side, size enforced via HeadObject after
+    // upload since R2 does not support POST policy content-length-range).
+    // documentsEnabled gates the whole feature; defaults off until R2 is wired.
+    r2Endpoint: process.env.R2_ENDPOINT || '',
+    r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    r2DocumentsBucket: process.env.R2_DOCUMENTS_BUCKET || '',
+    documentsEnabled: process.env.DOCUMENTS_ENABLED === 'true',
     // Public (exposed to client)
     public: {
       authOrigin: process.env.AUTH_ORIGIN || 'http://localhost:3000',
@@ -139,7 +148,8 @@ export default defineNuxtConfig({
     '/docs/**': { ssr: true },
     '/docs': { redirect: '/docs/getting-started/introduction' },
     '/privacy': { ssr: true },
-    '/terms': { ssr: true }
+    '/terms': { ssr: true },
+    '/roadmap': { ssr: true }
   },
 
   // App configuration
@@ -210,6 +220,13 @@ export default defineNuxtConfig({
     },
     prerender: {
       failOnError: false
+    },
+    // unpdf ships PDF.js as WASM; Nitro must enable wasm + inline the package
+    experimental: {
+      wasm: true
+    },
+    externals: {
+      inline: ['unpdf']
     }
   },
 

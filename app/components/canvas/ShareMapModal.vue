@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, reactive } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
+import NcSelect from '~/components/ui/NcSelect.vue'
 
 interface ShareRow {
   id: string
@@ -25,6 +26,18 @@ const newLabel = ref('')
 const newRole = ref<'viewer' | 'commenter' | 'editor'>('editor')
 const newExpiry = ref<'never' | '1d' | '7d' | '30d'>('7d')
 const creating = ref(false)
+
+const roleOptions = computed(() => [
+  { value: 'viewer', label: t('canvas.share_modal.role_viewer') },
+  { value: 'commenter', label: t('canvas.comments.share_modal_role_commenter') },
+  { value: 'editor', label: t('canvas.share_modal.role_editor') },
+])
+const expiryOptions = computed(() => [
+  { value: '1d', label: t('canvas.share_modal.expiry_1d') },
+  { value: '7d', label: t('canvas.share_modal.expiry_7d') },
+  { value: '30d', label: t('canvas.share_modal.expiry_30d') },
+  { value: 'never', label: t('canvas.share_modal.expiry_never') },
+])
 
 // Per-share email-invite form state, keyed by share.id. Lazy: only
 // populated when the user clicks "Email link" on a given row.
@@ -226,17 +239,20 @@ onMounted(load)
               maxlength="64"
               class="text-input"
             >
-            <select v-model="newRole" class="select">
-              <option value="viewer">{{ t('canvas.share_modal.role_viewer') }}</option>
-              <option value="commenter">{{ t('canvas.comments.share_modal_role_commenter') }}</option>
-              <option value="editor">{{ t('canvas.share_modal.role_editor') }}</option>
-            </select>
-            <select v-model="newExpiry" class="select">
-              <option value="1d">{{ t('canvas.share_modal.expiry_1d') }}</option>
-              <option value="7d">{{ t('canvas.share_modal.expiry_7d') }}</option>
-              <option value="30d">{{ t('canvas.share_modal.expiry_30d') }}</option>
-              <option value="never">{{ t('canvas.share_modal.expiry_never') }}</option>
-            </select>
+            <NcSelect
+              :model-value="newRole"
+              :options="roleOptions"
+              :aria-label="t('canvas.share_modal.role_aria')"
+              class="role-select"
+              @update:model-value="v => newRole = v as typeof newRole"
+            />
+            <NcSelect
+              :model-value="newExpiry"
+              :options="expiryOptions"
+              :aria-label="t('canvas.share_modal.expiry_aria')"
+              class="expiry-select"
+              @update:model-value="v => newExpiry = v as typeof newExpiry"
+            />
             <button class="btn-primary" :disabled="creating" @click="createLink">
               {{ creating ? t('canvas.share_modal.creating') : t('canvas.share_modal.create') }}
             </button>
@@ -384,7 +400,8 @@ onMounted(load)
 .row-title { font: 500 13px Inter, system-ui, sans-serif; color: var(--nc-text); }
 .row-hint { font: 400 11px Inter, system-ui, sans-serif; color: var(--nc-text-dim); }
 .row-fields { display: flex; gap: 8px; }
-.text-input, .select {
+.text-input {
+  flex: 1;
   height: 36px; padding: 0 12px;
   background: var(--nc-bg);
   border: 1px solid var(--nc-border);
@@ -392,8 +409,8 @@ onMounted(load)
   color: var(--nc-text);
   font: 400 13px Inter, system-ui, sans-serif;
 }
-.text-input { flex: 1; }
-.select { min-width: 100px; }
+.role-select { width: 136px; }
+.expiry-select { width: 116px; }
 .btn-primary {
   height: 36px; padding: 0 14px;
   background: var(--nc-accent); color: #09090B;

@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 import { requireAuthSession } from '../../utils/syncHelpers'
 import { validateBody, ragContextSchema } from '../../utils/validation'
 import { prisma } from '../../utils/prisma'
-import { toPgVector } from '../../utils/embeddings'
+import { toPgVector, generateEmbeddingFromText } from '../../utils/embeddings'
 import { checkRateLimit } from '../../utils/redis'
 
 interface ContextRow {
@@ -10,6 +10,21 @@ interface ContextRow {
   sourceText: string
   similarity: number
 }
+
+// One retrieved document chunk. `source` is a hard-coded discriminant so the
+// downstream prompt assembler (ragPromptGuard) can tell document-derived,
+// UNTRUSTED text apart from the map's own node context — the two arrays are
+// deliberately NOT merged.
+interface DocumentChunkRow {
+  chunkId: string
+  documentId: string
+  text: string
+  page: number | null
+}
+
+// Max document chunks pulled into a single context response (plan §6). Well
+// under ragPromptGuard's RAG_MAX_CHUNKS=40 ceiling — the guard still caps.
+const MAX_DOC_CHUNKS = 12
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
@@ -20,7 +35,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = validateBody(ragContextSchema, await readBody(event))
-  const { mapId, queryEmbedding, maxNodes, threshold, includeNeighbors } = body
+  const { query, mapId, queryEmbedding, maxNodes, threshold, includeNeighbors, documentIds } = body
 
   // Verify map ownership
   const map = await prisma.map.findFirst({
@@ -93,8 +108,85 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Estimate token count (~4 chars per token)
-  const totalTokensEstimate = context.reduce((sum, c) => sum + Math.ceil(c.text.length / 4), 0)
+  // --------------------------------------------------------------------------
+  // Document-RAG context (optional). Kept in a SEPARATE array from the map's
+  // own node context: node text is the user's own trusted graph, whereas
+  // document chunks are UNTRUSTED extracted text that the downstream prompt
+  // assembler (server/utils/ragPromptGuard.ts) must escape + wrap. Merging the
+  // two would let untrusted document text masquerade as trusted node context.
+  // --------------------------------------------------------------------------
+  const documentContext: Array<{
+    source: 'chunk'
+    documentId: string
+    chunkId: string
+    text: string
+    page: number | null
+  }> = []
 
-  return { context, totalTokensEstimate }
+  if (documentIds && documentIds.length > 0) {
+    // De-dup so the IN-list and the owned-set check stay 1:1 with the request.
+    const requestedIds = Array.from(new Set(documentIds))
+
+    // Pre-flight: every requested document must be owned by the caller, not
+    // soft-deleted, and fully ingested (READY). Anything else → 403. We do NOT
+    // silently drop unowned/not-ready ids: leaking which ids exist (404 vs 403)
+    // or partial-answering on a not-ready doc are both worse than a hard reject.
+    const ownedReady = await prisma.document.findMany({
+      where: {
+        id: { in: requestedIds },
+        userId,
+        deletedAt: null,
+        status: 'READY',
+      },
+      select: { id: true },
+    })
+
+    if (ownedReady.length !== requestedIds.length) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'One or more documents are not owned by you or not ready',
+      })
+    }
+
+    // Compute the query embedding SERVER-SIDE from the raw query text. We never
+    // trust a client-supplied document embedding (§0(f)): the client's
+    // `queryEmbedding` is validated for node retrieval, but document retrieval
+    // re-embeds here so a forged/poisoned vector can't steer chunk selection.
+    const docQueryEmbedding = await generateEmbeddingFromText(query, 'query')
+    const docVectorStr = toPgVector(docQueryEmbedding)
+
+    // Semantic retrieval scoped to BOTH the requested documentIds AND the
+    // caller's userId (defense-in-depth alongside the ownership pre-flight —
+    // the denormalized dc.userId column is the mandatory tenant-isolation
+    // filter). Prisma.join parameterizes the IN-list; the vector and limit are
+    // interpolated as bound params, so nothing is concatenated into the SQL.
+    const docRows = await prisma.$queryRaw<DocumentChunkRow[]>`
+      SELECT dc."id" AS "chunkId",
+             dc."documentId" AS "documentId",
+             dc."text" AS "text",
+             dc."page" AS "page"
+      FROM "DocumentChunk" dc
+      WHERE dc."userId" = ${userId}
+        AND dc."documentId" IN (${Prisma.join(requestedIds)})
+      ORDER BY dc."embedding" <=> ${docVectorStr}::vector
+      LIMIT ${MAX_DOC_CHUNKS}
+    `
+
+    for (const row of docRows) {
+      documentContext.push({
+        source: 'chunk',
+        documentId: row.documentId,
+        chunkId: row.chunkId,
+        text: row.text,
+        page: row.page,
+      })
+    }
+  }
+
+  // Estimate token count (~4 chars per token) across BOTH context channels.
+  const nodeTokens = context.reduce((sum, c) => sum + Math.ceil(c.text.length / 4), 0)
+  const docTokens = documentContext.reduce((sum, c) => sum + Math.ceil(c.text.length / 4), 0)
+  const totalTokensEstimate = nodeTokens + docTokens
+
+  return { context, documentContext, totalTokensEstimate }
 })

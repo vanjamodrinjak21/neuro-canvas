@@ -36,6 +36,7 @@ model User {
   credentials Credential[]
   maps        Map[]
   templates   Template[]
+  documents   Document[]
   syncState   SyncState?
 
   createdAt DateTime @default(now())
@@ -81,25 +82,26 @@ model VerificationToken {
 // ─── Sync & Map Storage ────────────────────────────────────────────
 
 model Map {
-  id          String          @id // Client-generated CUID
-  userId      String
-  title       String
-  data        Json // { nodes, edges, camera, settings, rootNodeId }
-  checksum    String // SHA-256 for integrity + quick diff
-  preview     String?         @db.Text // Base64 thumbnail
-  syncVersion Int             @default(1) // Optimistic concurrency
-  byteSize    Int             @default(0)
-  tags        String[]        @default([])
-  ydoc        Bytes? // Yjs binary state — source of truth once realtime collab ships
-  ydocVersion Int             @default(0) // Monotonic, bumped on every flush
-  deletedAt   DateTime? // Soft-delete for cross-device propagation
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  versions    MapVersion[]
-  embeddings  NodeEmbedding[]
-  shares      MapShare[]
-  comments    Comment[]
+  id            String            @id // Client-generated CUID
+  userId        String
+  title         String
+  data          Json // { nodes, edges, camera, settings, rootNodeId }
+  checksum      String // SHA-256 for integrity + quick diff
+  preview       String?           @db.Text // Base64 thumbnail
+  syncVersion   Int               @default(1) // Optimistic concurrency
+  byteSize      Int               @default(0)
+  tags          String[]          @default([])
+  ydoc          Bytes? // Yjs binary state — source of truth once realtime collab ships
+  ydocVersion   Int               @default(0) // Monotonic, bumped on every flush
+  deletedAt     DateTime? // Soft-delete for cross-device propagation
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions      MapVersion[]
+  embeddings    NodeEmbedding[]
+  shares        MapShare[]
+  comments      Comment[]
+  documentLinks DocumentMapLink[]
 
   @@index([userId, updatedAt])
   @@index([userId])
@@ -161,15 +163,15 @@ model MapShare {
 model Comment {
   id           String           @id @default(cuid())
   mapId        String
-  threadId     String           // First message in a thread reuses its own id; replies share it
-  authorId     String           // userId or "guest:<nanoid>"
+  threadId     String // First message in a thread reuses its own id; replies share it
+  authorId     String // userId or "guest:<nanoid>"
   authorName   String
   authorColor  String
   body         String           @db.Text
-  anchorNodeId String?          // Null when the thread is anchored to a free canvas point
+  anchorNodeId String? // Null when the thread is anchored to a free canvas point
   anchorX      Float?
   anchorY      Float?
-  resolvedAt   DateTime?        // Thread-level state — denormalised onto every message in the thread
+  resolvedAt   DateTime? // Thread-level state — denormalised onto every message in the thread
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   map          Map              @relation(fields: [mapId], references: [id], onDelete: Cascade)
@@ -181,11 +183,11 @@ model Comment {
 }
 
 model CommentMention {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   commentId       String
   mentionedUserId String
   notifiedAt      DateTime?
-  comment         Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  comment         Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, mentionedUserId])
 }
@@ -277,4 +279,88 @@ enum TemplateCategory {
   creative
   planning
   research
+}
+
+// ─── Document RAG ───────────────────────────────────────────────
+
+enum DocumentStatus {
+  PENDING
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum DocumentSource {
+  UPLOAD
+  URL
+  PASTE
+}
+
+enum DocumentMapLinkType {
+  GENERATED
+  ATTACHED
+}
+
+model Document {
+  id           String            @id @default(cuid())
+  userId       String
+  filename     String
+  title        String? // display title (falls back to filename in UI)
+  mimeType     String
+  byteSize     Int
+  sha256       String            @db.Char(64) // raw-file hash for per-user dedup
+  r2Key        String            @unique // docs/{userId}/{id}/{sanitized} — never returned to client
+  status       DocumentStatus    @default(PENDING)
+  source       DocumentSource    @default(UPLOAD)
+  pageCount    Int?
+  chunkCount   Int               @default(0)
+  piiDetected  Boolean           @default(false) // set by ingestion PII scan (§6)
+  errorMessage String? // sanitized; never contains r2Key/stack
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime? // Soft-delete; chunks + R2 objects cleaned by retention sweep
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks       DocumentChunk[]
+  links        DocumentMapLink[]
+
+  @@index([userId])
+  @@index([userId, updatedAt])
+  // Per-user dedup partial unique (userId, sha256) WHERE deletedAt IS NULL — declared in migration SQL
+  @@index([userId, sha256])
+}
+
+model DocumentChunk {
+  id           String                     @id @default(cuid())
+  documentId   String
+  userId       String // DENORMALIZED — mandatory WHERE dc.userId scope for tenant isolation
+  chunkIndex   Int
+  text         String                     @db.Text
+  tokenCount   Int
+  page         Int?
+  embedding    Unsupported("vector(256)")
+  modelVersion String                     @default("nomic-embed-text-v1.5")
+  dimensions   Int                        @default(256)
+  // fts tsvector — GENERATED ALWAYS column, declared in migration SQL only (Prisma cannot express it)
+  fts          Unsupported("tsvector")?
+  document     Document                   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+  @@index([userId])
+}
+
+model DocumentMapLink {
+  id         String              @id @default(cuid())
+  documentId String
+  mapId      String
+  linkType   DocumentMapLinkType
+  userId     String
+  createdAt  DateTime            @default(now())
+  document   Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  map        Map                 @relation(fields: [mapId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, mapId, linkType]) // GENERATED + ATTACHED can co-exist for the same pair
+  @@index([mapId])
+  @@index([documentId])
 }

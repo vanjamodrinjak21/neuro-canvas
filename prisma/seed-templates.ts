@@ -95,33 +95,73 @@ function toRecord<T extends { id: string }>(items: T[]): Record<string, T> {
   return Object.fromEntries(items.map(i => [i.id, i]))
 }
 
-function generatePreview(nodes: SeedNode[]): { shapes: any[]; width: number; height: number } {
-  const previewW = 270, previewH = 140, padding = 20
+function generatePreview(nodes: SeedNode[]): { shapes: any[]; lines: any[]; width: number; height: number } {
+  const previewW = 270, previewH = 140, padding = 24
+  const shown = nodes.slice(0, 12)
+
+  // Fixed render sizes in preview space.
+  const rootW = 52, rootH = 20, nodeW = 42, nodeH = 16
+  const sizeOf = (n: SeedNode) => (n.isRoot ? { w: rootW, h: rootH } : { w: nodeW, h: nodeH })
+
+  // Normalize by node CENTERS (not left edges): redrawing balanced children at
+  // a fixed width from their left edge skews the tree, so we anchor each box on
+  // its center and the layout stays symmetric.
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-  for (const n of nodes) {
-    minX = Math.min(minX, n.position.x)
-    minY = Math.min(minY, n.position.y)
-    maxX = Math.max(maxX, n.position.x + n.size.width)
-    maxY = Math.max(maxY, n.position.y + n.size.height)
+  for (const n of shown) {
+    const cx = n.position.x + n.size.width / 2
+    const cy = n.position.y + n.size.height / 2
+    minX = Math.min(minX, cx); maxX = Math.max(maxX, cx)
+    minY = Math.min(minY, cy); maxY = Math.max(maxY, cy)
   }
   const rangeX = maxX - minX || 1
   const rangeY = maxY - minY || 1
-  const shapes = nodes.slice(0, 12).map(n => {
-    const relX = (n.position.x - minX) / rangeX
-    const relY = (n.position.y - minY) / rangeY
+  const innerW = previewW - padding * 2
+  const innerH = previewH - padding * 2
+
+  const center = new Map<string, { x: number; y: number }>()
+  for (const n of shown) {
+    const cx = n.position.x + n.size.width / 2
+    const cy = n.position.y + n.size.height / 2
+    center.set(n.id, {
+      x: padding + ((cx - minX) / rangeX) * innerW,
+      y: padding + ((cy - minY) / rangeY) * innerH,
+    })
+  }
+
+  const shapes = shown.map(n => {
+    const c = center.get(n.id)!
+    const { w, h } = sizeOf(n)
     return {
-      x: padding + relX * (previewW - padding * 2 - 40),
-      y: padding + relY * (previewH - padding * 2 - 20),
-      width: n.isRoot ? 48 : 28,
-      height: n.isRoot ? 20 : 16,
+      x: c.x - w / 2,
+      y: c.y - h / 2,
+      width: w,
+      height: h,
       color: n.style.fillColor,
       borderColor: n.style.borderColor,
       borderRadius: 4,
-      label: n.isRoot ? n.content.slice(0, 8) : undefined,
-      fontSize: n.isRoot ? 7 : undefined,
+      label: n.content.slice(0, 11),
+      fontSize: n.isRoot ? 7 : 6,
     }
   })
-  return { shapes, width: previewW, height: previewH }
+
+  // Connectors run from each parent's bottom-center to its child's top-center,
+  // computed from the SAME centers as the boxes, so a line always meets a box.
+  const byId = new Map(shown.map(n => [n.id, n]))
+  const lines: any[] = []
+  for (const n of shown) {
+    const parent = n.parentId ? byId.get(n.parentId) : undefined
+    if (!parent) continue
+    const c = center.get(n.id)!
+    const p = center.get(parent.id)!
+    lines.push({
+      x1: p.x,
+      y1: p.y + sizeOf(parent).h / 2,
+      x2: c.x,
+      y2: c.y - sizeOf(n).h / 2,
+    })
+  }
+
+  return { shapes, lines, width: previewW, height: previewH }
 }
 
 // ── Template 1: SWOT Analysis ──
@@ -632,13 +672,32 @@ export async function seedTemplates() {
 
   for (const fn of templateFns) {
     const t = fn()
+    const preview = generatePreview(t.nodes)
     const existing = await prisma.template.findUnique({ where: { slug: t.slug } })
+
     if (existing) {
-      console.log(`  ⏭ Template "${t.title}" already exists, skipping`)
+      // Refresh the regenerated fields (preview layout, structure, copy) so a
+      // re-seed picks up generator fixes, but keep the organic usageCount.
+      await prisma.template.update({
+        where: { slug: t.slug },
+        data: {
+          title: t.title,
+          description: t.description,
+          category: t.category,
+          tags: t.tags,
+          nodes: toRecord(t.nodes),
+          edges: toRecord(t.edges),
+          nodeCount: t.nodeCount,
+          levelCount: t.levelCount,
+          previewData: preview,
+          aiEnhanced: t.aiEnhanced,
+          isSystem: true,
+          isPublic: true,
+        },
+      })
+      console.log(`  ↻ Updated template "${t.title}"`)
       continue
     }
-
-    const preview = generatePreview(t.nodes)
 
     await prisma.template.create({
       data: {

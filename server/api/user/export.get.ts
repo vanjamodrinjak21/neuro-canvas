@@ -92,6 +92,28 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // GDPR Article-20 portability: include the user's document metadata. This is
+  // metadata ONLY — never raw bytes, never the r2Key (internal storage path),
+  // never chunk text (extracted document contents). deletedAt:null excludes
+  // soft-deleted documents pending retention sweep.
+  const documents = await prisma.document.findMany({
+    where: { userId: user.id, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      filename: true,
+      mimeType: true,
+      byteSize: true,
+      status: true,
+      pageCount: true,
+      chunkCount: true,
+      createdAt: true,
+      links: {
+        select: { mapId: true, linkType: true }
+      }
+    }
+  })
+
   const exportData = {
     exportedAt: new Date().toISOString(),
     version: '1.0',
@@ -108,7 +130,8 @@ export default defineEventHandler(async (event) => {
       provider: c.provider,
       label: c.label,
       createdAt: c.createdAt
-    }))
+    })),
+    documents
   }
 
   // Set headers for JSON download

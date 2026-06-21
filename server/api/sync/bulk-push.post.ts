@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
   const body = validateBody(syncBulkPushSchema, await readBody(event))
 
-  const { allowed } = await checkRateLimit(userId, 120, 60)
+  const { allowed } = await checkRateLimit(cacheKeys.syncRate(userId), 120, 60)
   if (!allowed) {
     throw createError({ statusCode: 429, statusMessage: 'Rate limit exceeded' })
   }

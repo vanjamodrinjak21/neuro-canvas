@@ -108,6 +108,25 @@ export interface DBUserMemory {
   updatedAt: number
 }
 
+// Light offline LISTING cache for documents (Document RAG, plan §8). The server
+// is authoritative — ingest/search are online-only. This table mirrors just
+// enough of /api/documents to render the list while offline; it is never the
+// source of truth and carries no chunks/embeddings.
+export interface DBDocument {
+  id: string
+  userId: string // owner — list queries are scoped to the current user
+  filename: string
+  title: string | null
+  mimeType: string
+  byteSize: number
+  status: 'PENDING' | 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED'
+  source: 'UPLOAD' | 'URL' | 'PASTE'
+  pageCount: number | null
+  chunkCount: number
+  createdAt: number
+  updatedAt: number
+}
+
 // Dexie database class
 class NeuroCanvasDB extends Dexie {
   maps!: EntityTable<DBMapDocument, 'id'>
@@ -118,6 +137,7 @@ class NeuroCanvasDB extends Dexie {
   userMemory!: EntityTable<DBUserMemory, 'id'>
   syncQueue!: EntityTable<DBSyncQueueEntry, 'id'>
   syncMeta!: EntityTable<DBSyncMeta, 'id'>
+  docCache!: EntityTable<DBDocument, 'id'>
 
   constructor() {
     super('neurocanvas')
@@ -167,6 +187,20 @@ class NeuroCanvasDB extends Dexie {
       userMemory: 'id',
       syncQueue: '++id, mapId, status, createdAt',
       syncMeta: 'id'
+    })
+
+    // Version 6: Add docCache — offline LISTING cache for Document RAG (plan §8).
+    // Server is authoritative; this only backs the documents list view offline.
+    this.version(6).stores({
+      maps: 'id, title, updatedAt, createdAt, *tags, userId',
+      preferences: 'id',
+      secrets: 'id, updatedAt',
+      aiSettings: 'id',
+      aiCache: 'key, createdAt, lastAccessed',
+      userMemory: 'id',
+      syncQueue: '++id, mapId, status, createdAt',
+      syncMeta: 'id',
+      docCache: 'id, userId, updatedAt'
     })
   }
 }
@@ -236,6 +270,13 @@ export function useDatabase() {
 
   function getCurrentUserId(): string | null {
     return _currentUserId
+  }
+
+  /** Resolve the opened Dexie instance — for composables that own their own
+   *  table operations (e.g. useDocuments' docCache) without duplicating the
+   *  open/ready bookkeeping. */
+  function rawDB(): Promise<NeuroCanvasDB> {
+    return ensureDBReady()
   }
 
   /** Clear all user-specific data (maps, sync state). Call on sign-out. */
@@ -457,6 +498,7 @@ export function useDatabase() {
     // User scoping
     setCurrentUserId,
     getCurrentUserId,
+    rawDB,
     clearUserData,
     // Map operations
     getAllMaps,

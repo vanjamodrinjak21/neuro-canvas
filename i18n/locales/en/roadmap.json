@@ -1,0 +1,82 @@
+{
+  "roadmap": {
+    "meta_title": "Roadmap — NeuroCanvas",
+    "meta_description": "What's shipped, in progress, and planned for NeuroCanvas — the AI-powered infinite canvas for mind mapping.",
+    "eyebrow": "Roadmap",
+    "title": "Where NeuroCanvas is headed",
+    "subtitle": "A living plan for the canvas — what's already shipped, what we're building now, and what's on the horizon. Built in the open by one developer.",
+    "updated": "Last updated June 2026",
+    "docs_link": "Docs",
+    "legend_label": "Status legend",
+    "skip_to_content": "Skip to content",
+    "a11y": {
+      "switch_language": "Switch to Croatian",
+      "toggle_theme_to_dark": "Switch to dark mode",
+      "toggle_theme_to_light": "Switch to light mode"
+    },
+    "status": {
+      "done": "Shipped",
+      "progress": "In progress",
+      "planned": "Planned",
+      "exploring": "Exploring"
+    },
+    "phases": {
+      "shipped": {
+        "title": "The foundation",
+        "tag": "v1.0 · Live",
+        "description": "Everything that makes NeuroCanvas a complete thinking tool today.",
+        "items": [
+          "Infinite canvas with smooth pan, zoom, minimap and level-of-detail rendering",
+          "AI map generation and smart node expansion across OpenAI, Anthropic, OpenRouter, Ollama and custom providers",
+          "Semantic field visualization powered by on-device embeddings",
+          "Template gallery with AI generation and one-click adaptation",
+          "Cross-device sync with conflict resolution and version history",
+          "Accounts, OAuth, two-factor auth and an encrypted credential vault",
+          "Share links and export to JSON, PNG and Markdown",
+          "Dark and light themes, English and Croatian"
+        ]
+      },
+      "now": {
+        "title": "Building now",
+        "tag": "In progress",
+        "description": "Active work landing over the coming weeks.",
+        "items": [
+          "Real-time multiplayer — live cursors, presence and shared editing",
+          "Version history restore with visual diffing between snapshots",
+          "Desktop (Tauri) and mobile (Capacitor) hardening from beta toward stable",
+          "On-device local LLM inference for private, offline embeddings"
+        ]
+      },
+      "next": {
+        "title": "Up next",
+        "tag": "Planned",
+        "description": "Committed features queued behind current work.",
+        "items": [
+          "Document RAG — upload PDFs and notes, then chat with your maps via hybrid pgvector search",
+          "More interface languages — German, French and Spanish",
+          "Richer export — PDF, SVG and a presenter mode",
+          "New node types and freeform drawing on the canvas"
+        ]
+      },
+      "later": {
+        "title": "On the horizon",
+        "tag": "Exploring",
+        "description": "Ideas we're researching. No dates yet — your feedback shapes what ships.",
+        "items": [
+          "Public API and a plugin system for community extensions",
+          "Offline-first sync that resolves the moment you reconnect",
+          "Team workspaces with shared template libraries",
+          "Native mobile gestures and Apple Pencil support"
+        ]
+      }
+    },
+    "cta": {
+      "title": "Have something you want to see?",
+      "body": "This roadmap is shaped by the people who use NeuroCanvas. Tell us what matters.",
+      "primary": "Open the canvas",
+      "secondary": "Read the docs",
+      "feedback": "Share feedback"
+    },
+    "disclaimer": "Plans change. This page reflects current intent, not a guarantee — features may shift as we learn."
+  }
+}

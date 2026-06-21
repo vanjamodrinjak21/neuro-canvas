@@ -25,6 +25,11 @@ const {
   useTemplate,
 } = useTemplates()
 
+// Localized text for built-in templates (DB stores English only).
+const builtin = useBuiltinTemplateText()
+const displayTitle = computed(() => (template.value ? builtin.title(template.value) : ''))
+const displayDescription = computed(() => (template.value ? builtin.description(template.value) : ''))
+
 const ai = useAI()
 const mapStore = useMapStore()
 const mapRenderer = useMapRenderer()
@@ -240,7 +245,7 @@ onMounted(() => {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18l6-6-6-6" />
         </svg>
-        <span class="breadcrumb-current">{{ template?.title || '...' }}</span>
+        <span class="breadcrumb-current">{{ displayTitle || '...' }}</span>
       </nav>
 
       <!-- Loading -->
@@ -298,7 +303,7 @@ onMounted(() => {
         <div class="detail-info">
           <!-- Title + Badges -->
           <div class="info-header">
-            <h1 class="info-title">{{ template.title }}</h1>
+            <h1 class="info-title">{{ displayTitle }}</h1>
             <div class="info-badges">
               <span
                 class="info-badge"
@@ -311,7 +316,7 @@ onMounted(() => {
           </div>
 
           <!-- Description -->
-          <p class="info-description">{{ template.description }}</p>
+          <p class="info-description">{{ displayDescription }}</p>
 
           <!-- Stats -->
           <div class="info-stats">

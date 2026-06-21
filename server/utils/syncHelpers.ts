@@ -29,8 +29,24 @@ export function computeByteSize(data: unknown): number {
  * Since getToken() bypasses the jwt/session callbacks, we replicate the
  * password-change invalidation check here to maintain security parity.
  */
+// Resolve the JWT secret the SAME way the auth handler signs with
+// (server/api/auth/[...].ts → getSecret). If getToken() resolved a different
+// secret than the encoder used, every authenticated API call would 401 with a
+// valid cookie — pass it explicitly so the two can never drift.
+function getAuthSecret(): string {
+  return process.env.AUTH_SECRET
+    || process.env.NUXT_AUTH_SECRET
+    || process.env.NEXTAUTH_SECRET
+    || ''
+}
+
 export async function requireAuthSession(event: H3Event): Promise<{ userId: string; email: string }> {
-  const token = await getToken({ event })
+  const secret = getAuthSecret()
+  const token = await getToken({
+    event,
+    ...(secret ? { secret } : {}),
+    secureCookie: process.env.NODE_ENV === 'production',
+  })
 
   const id = token?.id as string | undefined
   const email = token?.email as string | undefined

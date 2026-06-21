@@ -4,6 +4,7 @@
         "nav": {
             "home": "Home",
             "maps": "All Maps",
+            "documents": "Documents",
             "templates": "Templates",
             "settings": "Settings"
         },

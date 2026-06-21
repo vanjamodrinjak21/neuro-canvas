@@ -297,6 +297,8 @@
       "create_new": "Create a new link",
       "editor_requires_signin": "Editor links require sign-in",
       "label_placeholder": "Label this link — e.g. Design team",
+      "role_aria": "Access level",
+      "expiry_aria": "Link expiry",
       "role_viewer": "Viewer",
       "role_editor": "Editor",
       "role_viewer_chip": "VIEWER",
@@ -341,12 +343,14 @@
     },
     "version_history": {
       "title": "Version history",
+      "subtitle": "Roll the canvas back to an earlier checkpoint.",
       "close": "Close",
+      "cancel": "Cancel",
       "loading": "Loading versions…",
       "empty": "No saved versions yet — keep editing to start building history.",
       "restore": "Restore",
       "restoring": "Restoring…",
-      "restore_confirm": "Restore this version? Connected collaborators will be reloaded.",
+      "restore_confirm": "Replace the current canvas with this version?",
       "author_unknown": "Unknown",
       "author_guest": "Guest"
     },
@@ -543,6 +547,41 @@
       "clusters": "Clusters",
       "load_now": "Load now",
       "loading": "Loading…"
+    },
+    "document_upload_modal": {
+      "title": "Upload a document",
+      "subtitle": "Turn a PDF, DOCX, Markdown, or text file into a mind map — or attach it as a source.",
+      "dropzone_prompt": "Drag a file here or click to browse",
+      "dropzone_active": "Drop the file to upload",
+      "browse": "Browse files",
+      "accepted": "PDF, DOCX, Markdown, or TXT",
+      "size_limit": "Up to 20 MB",
+      "intent_generate": "Generate mind map from document",
+      "intent_attach": "Attach to current map as source",
+      "target_map_label": "Target map",
+      "target_map_placeholder": "Select a map",
+      "btn_cancel": "Cancel",
+      "btn_upload": "Upload",
+      "btn_open_map": "Open map",
+      "btn_done": "Done",
+      "status_queued": "Queued",
+      "status_processing": "Processing document…",
+      "status_ready": "Ready",
+      "status_failed": "Something went wrong",
+      "error_unsupported": "Unsupported file type. Upload a PDF, DOCX, Markdown, or TXT file.",
+      "error_too_large": "File is too large. The maximum size is 20 MB.",
+      "error_parse_failed": "We couldn't read this document. Try a different file.",
+      "error_upload_failed": "Upload failed. Please try again."
+    },
+    "documents": {
+      "errors": {
+        "unsupported_type": "Unsupported file type. Upload a PDF, DOCX, Markdown, or TXT file.",
+        "too_large": "File is too large. The maximum size is 20 MB.",
+        "presign_failed": "Couldn't start the upload. Please try again.",
+        "upload_failed": "Upload failed. Please try again.",
+        "confirm_failed": "Couldn't finalize the upload. Please try again.",
+        "processing_failed": "We couldn't process this document."
+      }
     }
   }
 }

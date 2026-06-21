@@ -72,7 +72,7 @@ onMounted(() => {
       </div>
       <div class="nav-right">
         <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="nav-signin">{{ $t('landing.nav.signin') }}</NuxtLink>
-        <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signin'" class="nav-dash">
+        <NuxtLink v-else to="/dashboard" class="nav-dash">
           {{ $t('landing.nav.open_dashboard') }}
         </NuxtLink>
       </div>
@@ -476,7 +476,7 @@ onMounted(() => {
           <span class="footer-col-head">{{ $t('landing.footer.product_head') }}</span>
           <NuxtLink to="/templates">{{ $t('landing.footer.templates_link') }}</NuxtLink>
           <NuxtLink to="/download">{{ $t('landing.footer.download_link') }}</NuxtLink>
-          <a href="#" @click.prevent="">{{ $t('landing.footer.roadmap_link') }}</a>
+          <NuxtLink to="/roadmap">{{ $t('landing.footer.roadmap_link') }}</NuxtLink>
         </div>
         <div class="footer-col">
           <span class="footer-col-head">{{ $t('landing.footer.resources_head') }}</span>
@@ -1428,8 +1428,15 @@ onMounted(() => {
 .tpl:hover { border-color: var(--border-4); }
 
 .tpl-preview {
+  /* Lock the tree to its design aspect (280×208) and cap its width so it stays
+     compact and centered instead of stretching flat across wide cards. Because
+     the box aspect now equals the viewBox aspect, preserveAspectRatio:none
+     scales uniformly — no distorted strokes — and every node/line maps 1:1. */
   position: relative;
-  height: 208px;
+  width: 280px;
+  max-width: 100%;
+  aspect-ratio: 280 / 208;
+  margin: 0 auto;
   flex-shrink: 0;
 }
 
@@ -1455,7 +1462,7 @@ onMounted(() => {
 
 .tpl-node--root {
   left: 50%;
-  top: 14px;
+  top: 6.7%;
   transform: translateX(-50%);
   background: var(--surface);
   border-color: var(--border-4);
@@ -1467,9 +1474,10 @@ onMounted(() => {
   color: var(--text);
 }
 
-/* Tree rows — vertical positions map 1:1 onto the fixed 208px preview (= SVG viewBox height) */
-.tpl-node--mid { top: 84px; color: var(--text-2); }
-.tpl-node--leaf { top: 162px; color: var(--text-3); }
+/* Tree rows — vertical positions as a % of the preview height (= SVG viewBox
+   height 208), so they track the box even when it scales down on narrow cards. */
+.tpl-node--mid { top: 40.4%; color: var(--text-2); }
+.tpl-node--leaf { top: 77.9%; color: var(--text-3); }
 
 /* Tree columns — percentages mirror the SVG connector endpoints (x = 50/140/230 of the 280
    viewBox). The preview width is fluid and the SVG stretches with it (preserveAspectRatio:none),

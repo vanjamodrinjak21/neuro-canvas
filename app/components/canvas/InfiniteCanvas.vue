@@ -14,6 +14,7 @@ import { useNodeEditing } from '~/composables/useNodeEditing'
 import { useBoxSelection } from '~/composables/useBoxSelection'
 import { useConnectionTool } from '~/composables/useConnectionTool'
 import { useDragInteraction } from '~/composables/useDragInteraction'
+import { useNodeResize } from '~/composables/useNodeResize'
 import { useCanvasInteraction } from '~/composables/useCanvasInteraction'
 import { useRenderLoop } from '~/composables/useRenderLoop'
 import { useTouchGestures } from '~/composables/useTouchGestures'
@@ -131,6 +132,14 @@ const drag = useDragInteraction({
   bumpNodesVersion: () => { /* moveNode already bumps; extra bump for minimap reactivity */ },
 })
 
+const resize = useNodeResize({
+  nodes: () => mapStore.nodes,
+  beginResizeNode: mapStore.beginResizeNode,
+  setNodeRect: mapStore.setNodeRect,
+  commitResizeNode: mapStore.commitResizeNode,
+  bumpNodesVersion: () => { /* setNodeRect already bumps nodesVersion */ },
+})
+
 const interaction = useCanvasInteraction({
   camera: computed(() => props.camera),
   tool: computed(() => props.tool),
@@ -150,9 +159,11 @@ const interaction = useCanvasInteraction({
   addEdge: (src, tgt, style, sa, ta) => mapStore.addEdge(src, tgt, style, sa, ta),
   deleteEdge: (id) => mapStore.deleteEdge(id),
   deleteSelected: () => mapStore.deleteSelected(),
+  autoSizeNode: (id) => mapStore.autoSizeNode(id),
 
   // Sub-composables
   drag,
+  resize,
   connection,
   boxSelection,
   editing,
@@ -219,11 +230,13 @@ const renderLoop = useRenderLoop({
   settings: () => mapStore.settings,
   selection: () => mapStore.selection,
   rootNodeId: () => mapStore.rootNodeId,
+  tool: () => props.tool,
 
   // Interaction state
   isDragging: drag.isDragging,
   isPanning: interaction.isPanning,
   isConnecting: connection.isConnecting,
+  isResizing: resize.isResizing,
   hoveredNodeId: interaction.hoveredNodeId,
   editingNodeId: () => editing.editingNode.value?.id ?? null,
 
@@ -284,6 +297,11 @@ watch(() => props.tool, (newTool, oldTool) => {
     connection.visibleAnchors.value.clear()
     connection.connectionSnapTarget.value = null
   }
+  // Leaving select mode while hovering a resize handle would otherwise strand
+  // the inline handle cursor (it's only cleared inside the select-tool branch).
+  if (newTool !== 'select' && containerRef.value) {
+    containerRef.value.style.cursor = ''
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -315,6 +333,7 @@ onKeyStroke('z', (e) => {
 
 onKeyStroke('Escape', () => {
   if (editing.editingNode.value) editing.cancelNodeEdit()
+  else if (resize.isResizing.value) resize.cancelResize()
 })
 
 // ---------------------------------------------------------------------------
@@ -357,7 +376,7 @@ defineExpose({
     @pointerdown="interaction.handlePointerDown"
     @pointermove="interaction.handlePointerMove"
     @pointerup="interaction.handlePointerUp"
-    @pointercancel="interaction.handlePointerUp"
+    @pointercancel="interaction.handlePointerCancel"
     @dblclick="interaction.handleDoubleClick"
     @touchstart="touch.handleTouchStart"
     @touchmove="touch.handleTouchMove"

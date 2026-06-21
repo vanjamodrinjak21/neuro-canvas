@@ -1,7 +1,8 @@
 import type * as Party from 'partykit/server'
-import { onConnect, type YPartyKitOptions } from 'y-partykit'
+import { onConnect, unstable_getYDoc, type YPartyKitOptions } from 'y-partykit'
 import { verifyConnectionJwt } from './auth'
 import { scheduleFlush } from './flush'
+import { applyRestoreSnapshot, type RestoreSnapshot } from './restore'
 
 interface RoomVars {
   PARTYKIT_JWT_SECRET: string
@@ -141,19 +142,42 @@ export default class MapRoom implements Party.Server {
   }
 
   async onRequest(req: Party.Request) {
-    // /parties/main/<mapId>/{kick,reload} — Nitro broadcasts these on
+    // /parties/main/<mapId>/{kick,reload,restore} — Nitro broadcasts these on
     // share revocation, user sign-out, password change, and version restore.
     if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
     const url = new URL(req.url)
     const isKick = url.pathname.endsWith('/kick')
     const isReload = url.pathname.endsWith('/reload')
-    if (!isKick && !isReload) return new Response('Not found', { status: 404 })
+    const isRestore = url.pathname.endsWith('/restore')
+    if (!isKick && !isReload && !isRestore) return new Response('Not found', { status: 404 })
 
     const vars = (this.party.context as unknown as { vars: RoomVars }).vars
     const sig = req.headers.get('x-collab-signature') || ''
     const body = await req.text()
     const expected = await hmacHex(body, vars.PARTYKIT_FLUSH_SECRET)
     if (!timingSafeEqual(sig, expected)) return new Response('Unauthorized', { status: 401 })
+
+    if (isRestore) {
+      // Reconcile the *live* room doc to the restored snapshot. y-partykit keeps
+      // this doc in memory for the room's lifetime, so rewriting Map.ydoc in
+      // Postgres alone never reverts it — clients would just re-sync to the
+      // stale newer state. Mutating it here broadcasts the delta to every
+      // connected client and updates the canonical in-memory doc.
+      let snap: RestoreSnapshot
+      try {
+        snap = JSON.parse(body) as RestoreSnapshot
+      } catch {
+        return new Response('Bad request', { status: 400 })
+      }
+      try {
+        const doc = await unstable_getYDoc(this.party, this.docOptions())
+        applyRestoreSnapshot(doc, snap)
+      } catch (e) {
+        console.error('[collab] live restore reconcile failed', e)
+        return new Response('Restore failed', { status: 500 })
+      }
+      return new Response('ok')
+    }
 
     if (isReload) {
       const reason = (() => {
@@ -193,6 +217,23 @@ export default class MapRoom implements Party.Server {
     })
   }
 
+  /**
+   * Doc-level y-partykit options shared by onConnect and the /restore handler
+   * so both operate on the same logical doc (and a doc created by a restore
+   * while nobody is connected still gets the flush callback wired).
+   */
+  private docOptions(): YPartyKitOptions {
+    return {
+      callback: {
+        handler: async (yDoc) => {
+          await scheduleFlush(this.party, yDoc)
+        },
+        debounceWait: 2000,
+        debounceMaxWait: 10000
+      }
+    }
+  }
+
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const role = (ctx.request.headers.get('x-collab-role') || 'viewer') as ConnectionState['role']
     const state: ConnectionState = {
@@ -208,13 +249,7 @@ export default class MapRoom implements Party.Server {
     // canvas Y.Doc. Commenters post via REST /api/maps/:id/comments.
     const opts: YPartyKitOptions = {
       readOnly: role !== 'editor',
-      callback: {
-        handler: async (yDoc) => {
-          await scheduleFlush(this.party, yDoc)
-        },
-        debounceWait: 2000,
-        debounceMaxWait: 10000
-      }
+      ...this.docOptions()
     }
     return onConnect(conn, this.party, opts)
   }

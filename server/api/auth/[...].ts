@@ -256,7 +256,13 @@ export default NuxtAuthHandler({
 
   session: {
     strategy: 'jwt',
-    maxAge: 6 * 60 * 60, // 6 hours
+    // 30 days. The previous 6h window expired mid-session for daily users, so
+    // every AI call started 401-ing ("Session expired") while the browser still
+    // showed them signed in. updateAge re-issues the JWT on activity (rolling),
+    // so an active user is never logged out and password-change invalidation
+    // still applies via the jwt callback.
+    maxAge: 30 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
   },
 
   useSecureCookies: isProduction,

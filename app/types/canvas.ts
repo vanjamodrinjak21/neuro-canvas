@@ -68,6 +68,8 @@ export interface Node {
     description?: NodeDescription
     category?: string
     relationshipToParent?: string
+    /** User dragged a resize handle — suppress content-driven auto-sizing. */
+    manualSize?: boolean
     /** AI v2 metadata for enhanced intelligence */
     ai?: {
       inferredDomain?: string

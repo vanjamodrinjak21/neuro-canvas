@@ -132,7 +132,11 @@ export const cacheKeys = {
   syncMetrics: () => `sync:metrics:${new Date().toISOString().slice(0, 10)}`,
   syncDevices: (userId: string) => `sync:devices:${userId}`,
   mapMeta: (mapId: string, userId?: string) => userId ? `map:meta:${userId}:${mapId}` : `map:meta:${mapId}`,
-  mapData: (mapId: string, userId?: string) => userId ? `map:data:${userId}:${mapId}` : `map:data:${mapId}`
+  mapData: (mapId: string, userId?: string) => userId ? `map:data:${userId}:${mapId}` : `map:data:${mapId}`,
+  // Per-user document ingestion concurrency reserve (atomic Lua INCR/DECR)
+  docIngestActive: (userId: string) => `doc:ingest:active:${userId}`,
+  // Hybrid (RRF) document search result cache (per user)
+  searchHybrid: (userId: string) => `search:hybrid:${userId}`
 }
 
 /**
@@ -217,12 +221,14 @@ const RATE_LIMIT_LUA = `
  * Rate limiter using atomic Lua script
  */
 export async function checkRateLimit(
-  userId: string,
+  key: string,
   max: number = 120,
   windowSeconds: number = 60
 ): Promise<{ allowed: boolean; remaining: number }> {
   try {
-    const key = cacheKeys.syncRate(userId)
+    // The caller supplies the fully-qualified Redis key (e.g. 'ai:<userId>',
+    // 'sync:rate:<userId>'). Use it verbatim so each purpose gets an isolated
+    // bucket instead of colliding under a single shared 'sync:rate:' namespace.
     // redis.eval executes Lua atomically on Redis server — this is the standard
     // ioredis pattern for atomic INCR+EXPIRE, not arbitrary code evaluation
     const count = await (redis as any).eval(RATE_LIMIT_LUA, 1, key, windowSeconds) as number
@@ -230,6 +236,108 @@ export async function checkRateLimit(
   } catch (error) {
     console.error('checkRateLimit error:', error)
     return { allowed: false, remaining: 0 } // Fail closed — block on Redis outage
+  }
+}
+
+/**
+ * Atomic ingestion-reserve Lua script — claim one concurrency slot for a user.
+ *
+ * INCRs the per-user active-ingestion counter, sets a TTL on first claim (so a
+ * crashed worker that never releases can't permanently wedge the user out), and
+ * — critically — if the new count would EXCEED the cap, DECRs back to undo the
+ * speculative claim and returns -1. This keeps the check-and-claim atomic: two
+ * concurrent confirms can never both squeeze past the cap. ARGV[1]=cap,
+ * ARGV[2]=ttlSeconds. Returns the post-claim count, or -1 when over cap.
+ *
+ * This is redis.eval (server-side Lua on Redis) — NOT JavaScript eval.
+ */
+const RESERVE_INGEST_LUA = `
+  local count = redis.call('INCR', KEYS[1])
+  if count == 1 then
+    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2]))
+  end
+  if count > tonumber(ARGV[1]) then
+    redis.call('DECR', KEYS[1])
+    return -1
+  end
+  return count
+`
+
+/**
+ * Atomic ingestion-release Lua script — free one concurrency slot, floored at 0.
+ *
+ * Never lets the counter go negative (a double-release or a release without a
+ * matching reserve must not create phantom free capacity that lets a user
+ * exceed the cap). Refreshes the TTL while a slot is still held so long-running
+ * ingestion can't have its key expire out from under it. KEYS[1]=counter key,
+ * ARGV[1]=ttlSeconds. Returns the post-release count.
+ */
+const RELEASE_INGEST_LUA = `
+  local count = redis.call('GET', KEYS[1])
+  if not count or tonumber(count) <= 0 then
+    redis.call('SET', KEYS[1], 0)
+    return 0
+  end
+  local next = redis.call('DECR', KEYS[1])
+  if next > 0 then
+    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1]))
+  end
+  return next
+`
+
+/**
+ * Reserve one document-ingestion concurrency slot for a user.
+ *
+ * Atomic INCR+cap-check+EXPIRE in a single Lua round-trip (mirrors
+ * checkRateLimit / syncLock). Returns `{ ok, current }`:
+ *  - ok=true  → slot claimed; `current` is the user's active count (≤ cap).
+ *  - ok=false → at/over cap (the speculative INCR was rolled back); the caller
+ *    should respond 429. `current` reports the observed count (cap on overflow).
+ *
+ * Fails CLOSED on a Redis error (`ok:false`) so an outage cannot be used to
+ * bypass the per-user concurrency ceiling — consistent with checkRateLimit.
+ *
+ * The TTL is a safety net: it auto-frees a slot whose worker died before
+ * calling releaseIngest, preventing a permanent lockout.
+ */
+export async function reserveIngest(
+  userId: string,
+  cap: number = 3,
+  ttlSec: number = 900
+): Promise<{ ok: boolean; current: number }> {
+  try {
+    const key = cacheKeys.docIngestActive(userId)
+    // redis.eval executes Lua atomically on the Redis server — standard ioredis
+    // pattern for an atomic INCR+EXPIRE+cap-check, not arbitrary code evaluation.
+    const count = await (redis as any).eval(RESERVE_INGEST_LUA, 1, key, cap, ttlSec) as number
+    if (count === -1) {
+      // Over cap: the claim was rolled back inside Lua. Report the ceiling.
+      return { ok: false, current: cap }
+    }
+    return { ok: true, current: count }
+  } catch (error) {
+    console.error('reserveIngest error:', error)
+    return { ok: false, current: 0 } // Fail closed — never let a Redis outage open the gate
+  }
+}
+
+/**
+ * Release one document-ingestion concurrency slot for a user.
+ *
+ * Atomic DECR floored at 0 (a double-release or orphaned release cannot drive
+ * the counter negative and silently grant extra capacity). Callers MUST invoke
+ * this on EVERY post-reserve exit path (success and every 4xx), ideally in a
+ * `finally`, per the implementation plan §2/P2.
+ *
+ * Swallows Redis errors (best-effort cleanup); the reserve TTL is the backstop
+ * that reclaims the slot if this never lands.
+ */
+export async function releaseIngest(userId: string, ttlSec: number = 900): Promise<void> {
+  try {
+    const key = cacheKeys.docIngestActive(userId)
+    await (redis as any).eval(RELEASE_INGEST_LUA, 1, key, ttlSec)
+  } catch (error) {
+    console.error('releaseIngest error:', error)
   }
 }
 

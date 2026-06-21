@@ -33,13 +33,13 @@ export function getLanguageInstruction(locale?: string): string {
 function getStyleInstructions(style: GenerationStyle): string {
   switch (style) {
     case 'concise':
-      return 'Keep descriptions brief and to the point. Focus on key facts.'
+      return 'TONE: Concise and punchy. Each summary is one tight sentence carrying a real insight — no filler, no restating the title.'
     case 'detailed':
-      return 'Provide thorough explanations with context and nuance.'
+      return 'TONE: Rich and explanatory. Summaries give context, mechanism, and significance in 1-2 sentences, using concrete nouns and verbs over vague abstractions.'
     case 'academic':
-      return 'Use formal academic language with precise terminology. Include scholarly context.'
+      return 'TONE: Rigorous and precise. Use correct domain terminology, name key theories, figures, or works where relevant, and be careful with claims — scholarly but still readable.'
     default:
-      return ''
+      return 'TONE: Clear, specific, and genuinely informative.'
   }
 }
 
@@ -105,24 +105,24 @@ export function buildEnhancedExpandPrompt(
 
   const langInstruction = getLanguageInstruction(context.locale)
 
-  const system = `You are an expert mind mapping assistant who generates DIVERSE, INTERESTING concept suggestions. Don't just list obvious subcategories - provide a MIX of:
-- Deeper explorations (what lies beneath this concept?)
-- Practical applications (how is this used in real life?)
-- Thought-provoking questions (what's controversial or unknown?)
-- Concrete examples (specific instances, not abstract)
-- Surprising connections (what unexpected things relate?)
+  const system = `You are an expert thinking partner who expands a single mind-map node into DIVERSE, non-obvious directions. Weak expansions list obvious sub-categories. Strong expansions mix:
+- a deeper layer (what mechanism or detail sits beneath this concept?)
+- a practical application (how is it used in the real world?)
+- a sharp open question (something debated, unknown, or counter-intuitive)
+- a concrete example naming a real person, event, product, or case
+- a surprising link to an adjacent idea
 
 ${styleInstructions}${langInstruction}
 
 CRITICAL REQUIREMENTS:
-1. Generate exactly ${maxSuggestions} suggestions with VARIED categories
-2. Include at least 1 question and 1 example in your suggestions
-3. Titles should be 2-8 words, SPECIFIC not generic
-4. Descriptions must explain WHY it matters and HOW it connects
-5. Use diverse relationship types (not all "related-to")
-6. Avoid generic/obvious suggestions - surprise the user!
-7. Don't repeat concepts from existing nodes
-8. Return ONLY valid JSON array`
+1. Generate exactly ${maxSuggestions} suggestions with VARIED categories (never all the same).
+2. At least one must be a genuine question and at least one a concrete real-world example.
+3. Titles are 2-8 words and SPECIFIC. Ban generic labels: "Types of X", "Benefits of X", "Overview", "Other".
+4. Each summary explains WHY it matters or HOW it connects — never just restates the title.
+5. Use diverse, accurate relationship types — not everything is "related-to".
+6. Surprise the user with at least one angle they wouldn't have thought of.
+7. Never duplicate or trivially rephrase an existing node.
+8. Return ONLY a valid JSON array.`
 
   const user = `## Current Node: "${nodeContent}"
 ${context.mapTitle ? `## Map Title: "${context.mapTitle}"` : ''}${domainContext}
@@ -155,15 +155,16 @@ export function buildNodeDescriptionPrompt(
   const styleInstructions = getStyleInstructions(style)
   const langInstruction = getLanguageInstruction(locale)
 
-  const system = `You are an expert knowledge synthesizer. Generate clear, informative descriptions for mind map nodes.
+  const system = `You are an expert knowledge synthesizer. You write mind-map node descriptions that a curious reader actually learns something from.
 
 ${styleInstructions}${langInstruction}
 
 IMPORTANT RULES:
-1. The summary should explain WHY this concept matters, not just define it
-2. Keywords should be useful for searching and categorization
-3. Consider the surrounding context when crafting the description
-4. Return ONLY valid JSON, no additional text`
+1. The summary captures the essence AND why it matters — significance, not a dictionary definition.
+2. "details" (optional) adds mechanism, nuance, a key example, or a common misconception — include it only when it adds real value.
+3. Ground the description in the surrounding nodes so it fits THIS map, not a generic encyclopedia entry.
+4. Keywords are search-useful terms (concepts, named entities, synonyms) — never stopwords.
+5. Return ONLY valid JSON, no additional text.`
 
   const contextList = contextNodes
     .slice(0, 5)
@@ -212,31 +213,25 @@ export function buildMapStructurePrompt(
   const maxChildren = maxDepth >= 3 ? 4 : 3
   const crossConnectionCount = includeCrossConnections ? Math.min(branchCount, 5) : 0
 
-  const system = `You are an expert mind mapping architect who creates rich, interconnected knowledge maps. Your maps should be visually interesting with varied structure - NOT a boring flat hierarchy.
+  const system = `You are a world-class mind-mapping architect. You turn a single topic into a rich, multi-level knowledge map an expert would be proud of — structurally varied, intellectually interesting, and genuinely useful for learning or thinking.
 
 ${styleInstructions}${langInstruction}
 
-CRITICAL STRUCTURE REQUIREMENTS:
-1. Create ${branchCount} main branches with VARIED depths (some shallow, some deep)
-2. Each branch should have ${minChildren}-${maxChildren} children, and grandchildren where appropriate
-3. VARY the number of children per branch - don't make them all identical!
-4. Use ALL category types across the map (concept, fact, question, example, definition, process)
-5. Include thought-provoking questions and concrete examples, not just abstract concepts
-${includeCrossConnections ? `6. Include ${crossConnectionCount}+ meaningful cross-connections between different branches` : ''}
+NON-NEGOTIABLE STRUCTURE:
+1. Create exactly ${branchCount} main branches, each a DISTINCT facet of the topic (not overlapping, not synonyms of each other).
+2. EVERY main branch MUST have children. Depth target: ${maxDepth} level(s) below the root — take some branches the full ${maxDepth} levels deep, where appropriate add grandchildren.
+3. Give each branch ${minChildren}-${maxChildren} children, and VARY the count — never make all branches the same shape.
+4. Aim for ${branchCount * 4}-${branchCount * 6} total nodes. A root with ${branchCount} childless branches is a FAILURE, not a map.
+5. Use ALL category types across the map: concept, fact, question, example, definition, process.
+${includeCrossConnections ? `6. Add ${crossConnectionCount}+ cross-connections between nodes in DIFFERENT branches — the non-obvious links are what make a map insightful.` : ''}
 
-STRUCTURE VARIETY GUIDELINES:
-- Some branches should be deep (3+ levels) exploring details
-- Some branches should be wide (4+ children) covering breadth
-- Include at least 2 "question" nodes to spark curiosity
-- Include at least 2 "example" nodes with real-world instances
-- Make connections between seemingly unrelated branches
-- Total nodes should be ${branchCount * 4}-${branchCount * 6} for an interesting map
+CONTENT QUALITY:
+- Include at least 2 "question" nodes that provoke real curiosity (not "What is X?").
+- Include at least 2 "example" nodes naming concrete real-world instances — people, events, products, cases — not "an example of X".
+- Every title is specific (2-8 words). Reject scaffolding like "Types of X", "Benefits of X", "Overview", "Introduction", "Other".
+- Every summary teaches something — a mechanism, a why-it-matters, or a surprising fact — never just restates the title.
 
-AVOID:
-- Uniform flat structures (1 root + N identical branches)
-- All nodes being the same category
-- Generic/vague descriptions
-- Missing cross-connections between related concepts
+AVOID: flat 1-root + N-identical-branch trees, every node the same category, vague descriptions, and missing cross-connections.
 
 Return ONLY valid JSON, no additional text.`
 
@@ -254,13 +249,9 @@ Return ONLY valid JSON, no additional text.`
 
   const user = `## Topic: "${topic}"${domainContext}
 
-Create a RICH, INTERESTING mind map with varied structure. Remember:
-- Vary branch depths (some 1 level, some 2-3 levels deep)
-- Mix categories (concepts, facts, questions, examples, definitions, processes)
-- Include surprising connections between branches
-- Make it visually interesting, not a flat boring tree!
+Build the richest, most interesting map you can for this topic. Before writing, mentally pick ${branchCount} genuinely different angles on it, then go deep on each one and give every branch real children. Reward the reader with structure variety, concrete examples, and at least one connection they wouldn't have expected.
 
-Return JSON matching this schema:
+Return JSON matching this schema (JSON keys stay in English; values follow the tone/language rules above):
 {
   "rootTopic": "${topic}",
   "rootDescription": {
@@ -309,28 +300,24 @@ export function buildHierarchicalExpandPrompt(
   const domainContext = context.domain ? `\nDomain/Subject Area: ${context.domain}` : ''
   const langInstruction = getLanguageInstruction(context.locale)
 
-  const system = `You are an expert mind mapping assistant creating RICH hierarchical expansions. Your output should create a mini-knowledge tree that explores "${nodeContent}" from multiple angles.
+  const system = `You are an expert mind-mapping assistant building a RICH, multi-level sub-tree under one node. The output is a mini knowledge tree that explores "${nodeContent}" from several genuinely different angles — not a flat list.
 
 ${styleInstructions}${langInstruction}
 
 STRUCTURE REQUIREMENTS:
-1. Generate ${maxPerLevel} DIVERSE main branches (not just categories!)
-2. Each branch gets ${maxPerLevel - 1}-${maxPerLevel} children exploring it deeper
-3. Depth: ${depth} levels - use ALL levels, don't stop at 1
-4. VARY the structure - some branches deeper, some wider
+1. Generate ${maxPerLevel} DIVERSE main branches — distinct facets, not categories of the same thing.
+2. Each main branch gets ${Math.max(1, maxPerLevel - 1)}-${maxPerLevel} children in "suggestedChildren" that explore it deeper.
+3. Go ${depth} level(s) deep. For depth > 1, intermediate nodes MUST carry their own non-empty "suggestedChildren" — never stop at level 1.
+4. VARY the structure — some branches deeper, some wider.
 
 CONTENT REQUIREMENTS:
-1. Mix categories across the tree (questions, examples, processes, etc.)
-2. Include at least 1 "Why does this matter?" type question
-3. Include at least 1 real-world example or case study
-4. Use varied relationship types (causes, enables, opposes, etc.)
-5. Make children GENUINELY explore their parent, not just restate it
+1. Mix categories across the tree (question, example, process, definition, fact, concept).
+2. Include at least 1 question about why this matters or what's contested.
+3. Include at least 1 concrete real-world example or case study (name it).
+4. Use varied, accurate relationship types (causes, enables, opposes, part-of, …).
+5. Children must GENUINELY explore their parent, not restate it.
 
-AVOID:
-- Generic labels like "Types of X", "Benefits of X"
-- All nodes being the same category
-- Flat structures (every branch same depth)
-- Missing suggestedChildren on intermediate nodes
+AVOID: generic labels ("Types of X", "Benefits of X", "Overview", "Other"), every node the same category, uniform depth, and missing suggestedChildren on intermediate nodes.
 
 Return ONLY valid JSON array.`
 
@@ -372,15 +359,15 @@ export function buildConnectionSuggestionPrompt(
   locale?: string
 ): { system: string; user: string } {
   const langInstruction = getLanguageInstruction(locale)
-  const system = `You are an expert at discovering meaningful relationships between concepts. Analyze nodes and suggest connections that reveal hidden relationships and create a more interconnected knowledge graph.${langInstruction}
+  const system = `You are an expert at uncovering the non-obvious relationships that turn a loose set of nodes into a connected knowledge graph. The best suggestions reveal a link the author hadn't drawn yet.${langInstruction}
 
 IMPORTANT RULES:
-1. Only suggest connections that add genuine insight
-2. Don't suggest connections that already exist
-3. Choose the most accurate relationship type
-4. Explain WHY the connection is meaningful
-5. Assign confidence based on how certain the relationship is
-6. Return ONLY valid JSON array, no additional text`
+1. Only suggest a connection that adds genuine insight — skip the trivial or already-implied.
+2. Never suggest a connection that already exists (see the list below).
+3. Pick the single most accurate relationshipType for the direction source → target.
+4. The reason explains, in one specific sentence, why the link matters.
+5. Assign confidence by how certain and meaningful the relationship is.
+6. Return ONLY a valid JSON array, no additional text.`
 
   const nodesList = nodes
     .map(n => `- ID: "${n.id}" | Content: "${n.content}"${n.description?.summary ? ` | Summary: ${n.description.summary}` : ''}`)

@@ -1,0 +1,82 @@
+{
+  "roadmap": {
+    "meta_title": "Plan razvoja — NeuroCanvas",
+    "meta_description": "Što je objavljeno, u tijeku i planirano za NeuroCanvas — AI platno za izradu mentalnih mapa.",
+    "eyebrow": "Plan razvoja",
+    "title": "Kamo ide NeuroCanvas",
+    "subtitle": "Živi plan za platno — što je već objavljeno, što gradimo sada i što je na horizontu. Razvija jedan developer, otvoreno.",
+    "updated": "Zadnja izmjena: lipanj 2026.",
+    "docs_link": "Dokumentacija",
+    "legend_label": "Legenda statusa",
+    "skip_to_content": "Preskoči na sadržaj",
+    "a11y": {
+      "switch_language": "Prebaci na engleski",
+      "toggle_theme_to_dark": "Prebaci na tamni način",
+      "toggle_theme_to_light": "Prebaci na svijetli način"
+    },
+    "status": {
+      "done": "Objavljeno",
+      "progress": "U tijeku",
+      "planned": "Planirano",
+      "exploring": "Istražujemo"
+    },
+    "phases": {
+      "shipped": {
+        "title": "Temelji",
+        "tag": "v1.0 · Uživo",
+        "description": "Sve što NeuroCanvas danas čini potpunim alatom za razmišljanje.",
+        "items": [
+          "Beskonačno platno s glatkim pomicanjem, zumiranjem, minikartom i prikazom prema razini detalja",
+          "AI generiranje mapa i pametno širenje čvorova preko OpenAI, Anthropic, OpenRouter, Ollama i prilagođenih pružatelja",
+          "Vizualizacija semantičkog polja pokretana ugrađivanjima na uređaju",
+          "Galerija predložaka s AI generiranjem i prilagodbom u jednom kliku",
+          "Sinkronizacija među uređajima s razrješavanjem sukoba i poviješću verzija",
+          "Računi, OAuth, dvofaktorska prijava i šifrirani trezor ključeva",
+          "Dijeljenje poveznicama i izvoz u JSON, PNG i Markdown",
+          "Tamna i svijetla tema, engleski i hrvatski"
+        ]
+      },
+      "now": {
+        "title": "Gradimo sada",
+        "tag": "U tijeku",
+        "description": "Aktivan rad koji stiže u nadolazećim tjednima.",
+        "items": [
+          "Suradnja u stvarnom vremenu — kursori uživo, prisutnost i zajedničko uređivanje",
+          "Vraćanje iz povijesti verzija s vizualnom usporedbom snimaka",
+          "Učvršćivanje desktop (Tauri) i mobilne (Capacitor) verzije od bete prema stabilnom",
+          "Lokalno LLM zaključivanje na uređaju za privatna, offline ugrađivanja"
+        ]
+      },
+      "next": {
+        "title": "Slijedi",
+        "tag": "Planirano",
+        "description": "Potvrđene značajke u redu iza trenutnog rada.",
+        "items": [
+          "RAG nad dokumentima — učitaj PDF-ove i bilješke pa razgovaraj sa svojim mapama putem hibridne pgvector pretrage",
+          "Više jezika sučelja — njemački, francuski i španjolski",
+          "Bogatiji izvoz — PDF, SVG i način za prezentaciju",
+          "Novi tipovi čvorova i slobodno crtanje po platnu"
+        ]
+      },
+      "later": {
+        "title": "Na horizontu",
+        "tag": "Istražujemo",
+        "description": "Ideje koje istražujemo. Još bez datuma — vaše povratne informacije oblikuju što stiže.",
+        "items": [
+          "Javni API i sustav dodataka za proširenja zajednice",
+          "Offline-first sinkronizacija koja se razrješava čim se ponovno spojiš",
+          "Timski prostori sa zajedničkim knjižnicama predložaka",
+          "Nativne mobilne geste i podrška za Apple Pencil"
+        ]
+      }
+    },
+    "cta": {
+      "title": "Imaš nešto što bi želio vidjeti?",
+      "body": "Ovaj plan oblikuju ljudi koji koriste NeuroCanvas. Reci nam što ti je važno.",
+      "primary": "Otvori platno",
+      "secondary": "Pročitaj dokumentaciju",
+      "feedback": "Pošalji povratne informacije"
+    },
+    "disclaimer": "Planovi se mijenjaju. Ova stranica odražava trenutnu namjeru, a ne jamstvo — značajke se mogu promijeniti kako učimo."
+  }
+}

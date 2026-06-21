@@ -88,6 +88,32 @@
             "add_tag": "+ Add tag",
             "cancel": "Cancel",
             "publish": "Publish to Community"
+        },
+        "builtin": {
+            "swot-analysis": { "title": "SWOT Analysis", "description": "Analyze your project, product, or business using the SWOT framework. Identify internal strengths and weaknesses, then map external opportunities and threats. AI adapts the structure to your specific topic." },
+            "brainstorm": { "title": "Brainstorm", "description": "Free-form idea generation with radial branches. Start with a central idea and expand outward with related thoughts and concepts." },
+            "study-notes": { "title": "Study Notes", "description": "Hierarchical topic breakdown with key concepts and details. Organize your learning material into structured, reviewable sections." },
+            "project-plan": { "title": "Project Plan", "description": "Phased project breakdown with tasks and milestones. Structure your project into clear phases with actionable tasks." },
+            "competitor-analysis": { "title": "Competitor Analysis", "description": "Compare competitors across features, pricing, and positioning. Map the competitive landscape to identify opportunities." },
+            "research-paper": { "title": "Research Paper", "description": "Structure a thesis with arguments, evidence, and conclusions. Organize your research paper sections from abstract to conclusion." },
+            "pros-and-cons": { "title": "Pros & Cons", "description": "Balanced decision-making with weighted arguments. Visually compare the advantages and disadvantages of any choice." },
+            "sprint-retro": { "title": "Sprint Retro", "description": "What went well, what didn't, and action items. Structure your sprint retrospective for productive team reflection." },
+            "cornell-notes": { "title": "Cornell Notes", "description": "The classic Cornell note-taking layout — cues on the left, detailed notes on the right, summary at the bottom. Designed for retention, not just transcription." },
+            "concept-map": { "title": "Concept Map", "description": "Connect concepts with labelled relationships. Used in education research to expose understanding, not just facts." },
+            "lesson-plan": { "title": "Lesson Plan", "description": "Structure a class around objectives, activities, and assessment — explicit, sequenced, and time-boxed." },
+            "flashcard-set": { "title": "Flashcard Set", "description": "Build a study set as a tree — categories at level one, term/definition pairs as leaves. Export to Anki-style review later." },
+            "okr-tree": { "title": "OKR Tree", "description": "One company-level objective, supporting team objectives, and measurable key results under each. Ladder up to strategy, not vanity metrics." },
+            "business-model-canvas": { "title": "Business Model Canvas", "description": "Nine building blocks of a business — value, customers, channels, costs. The Osterwalder canvas, hierarchical for fast iteration." },
+            "go-to-market": { "title": "Go-to-Market Plan", "description": "Position, target, channels, pricing — a launch plan that survives contact with a real market." },
+            "story-arc": { "title": "Story Arc", "description": "Three-act story structure with rising action, climax, and resolution. Map plot beats before you write a word of prose." },
+            "character-bible": { "title": "Character Bible", "description": "Build a character from the inside out — backstory, motivation, voice, arc. The bible you never break." },
+            "songwriting": { "title": "Song Structure", "description": "Verse, chorus, bridge, hook — sketch a song as a tree before recording. Genre-agnostic skeleton." },
+            "eisenhower-matrix": { "title": "Eisenhower Matrix", "description": "Urgent vs important — sort tasks into Do, Schedule, Delegate, Drop. Cuts through the false-urgency trap." },
+            "weekly-review": { "title": "Weekly Review", "description": "GTD-style weekly review — what shipped, what stalled, what next. Process before you plan." },
+            "event-planner": { "title": "Event Planner", "description": "Logistics, content, and attendees mapped into one place. Catch the dependency you forgot in the spreadsheet." },
+            "literature-review": { "title": "Literature Review", "description": "Group sources by theme, surface gaps, and trace the conversation across papers. The map your supervisor actually wants." },
+            "user-interview": { "title": "User Interview", "description": "Plan a research interview — goals, questions, follow-ups. The script that doesn't feel like a script." },
+            "experiment-design": { "title": "Experiment Design", "description": "Hypothesis, variables, controls, metrics. Frame an experiment so the result actually changes a decision." }
         }
     }
 }

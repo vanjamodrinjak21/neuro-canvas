@@ -133,6 +133,10 @@ export interface MapActions {
   beginMoveNodes(nodeIds: string[]): Map<string, { x: number; y: number }>
   commitMoveNodes(nodeIds: string[], originalPositions: Map<string, { x: number; y: number }>): void
   resizeNode(id: string, width: number, height: number): void
+  beginResizeNode(id: string): { position: { x: number; y: number }; size: { width: number; height: number } } | null
+  setNodeRect(id: string, rect: { x: number; y: number; width: number; height: number }): void
+  commitResizeNode(id: string, original: { position: { x: number; y: number }; size: { width: number; height: number } }): void
+  autoSizeNode(id: string): void
   resolveOverlaps(nodeIds?: string[], options?: { exclude?: string[] }): void
 
   // Edges
@@ -271,6 +275,10 @@ function applySerializableState(serializable: SerializableState) {
   state.edges = new Map(Object.entries(serializable.edges))
   state.camera = serializable.camera
   state.settings = serializable.settings
+  // The Map reference is swapped wholesale here (undo/redo/history apply), so
+  // version-keyed watchers (e.g. the Minimap) must be told geometry changed —
+  // a resize/move undo alters only position/size, leaving counts unchanged.
+  state.nodesVersion++
 }
 
 // Record history with Immer patches
@@ -433,6 +441,8 @@ const actions: MapActions = {
     const INFLATED_SHAPES = new Set(['circle', 'diamond', 'hexagon', 'star'])
     for (const [, node] of state.nodes) {
       if (!node.content) continue
+      // Never override a size the user set by hand.
+      if (node.metadata?.manualSize) continue
       const isLegacyDefault = node.size.width === 150 && node.size.height === 50
       const isInflatedShape = node.style.shape && INFLATED_SHAPES.has(node.style.shape)
       if (!isLegacyDefault && !isInflatedShape) continue
@@ -520,8 +530,12 @@ const actions: MapActions = {
     // We also re-center the node so the visual center stays put when the
     // node grows or shrinks. Without re-centering, the node expands from
     // its top-left corner and the rest of the map appears to shift.
+    // Skip auto-sizing once the user has manually resized the node — they
+    // took control of its dimensions, so editing the text re-wraps inside
+    // the box they chose instead of snapping back to the measured size.
+    const isManuallySized = node.metadata?.manualSize === true && updates.metadata?.manualSize !== false
     let didGrow = false
-    if (!updates.size) {
+    if (!updates.size && !isManuallySized) {
       const nextContent = updates.content ?? node.content
       const nextStyle = updates.style ? { ...node.style, ...updates.style } : node.style
       const contentChanged = updates.content !== undefined
@@ -675,12 +689,133 @@ const actions: MapActions = {
     const minWidth = 50
     const minHeight = 30
 
+    // Setting an explicit size is a manual size — flag it so a later content
+    // or font edit won't auto-snap the node back to its measured size. Mirrors
+    // commitResizeNode's contract so the programmatic and interactive resize
+    // paths agree.
     actions.updateNode(id, {
       size: {
         width: Math.max(width, minWidth),
         height: Math.max(height, minHeight)
+      },
+      metadata: { ...(node.metadata || {}), manualSize: true },
+    })
+  },
+
+  /** Capture a node's pre-resize rect for undo. Null if missing or locked. */
+  beginResizeNode(id: string) {
+    const node = state.nodes.get(id)
+    if (!node || node.locked) return null
+    return {
+      position: { x: node.position.x, y: node.position.y },
+      size: { width: node.size.width, height: node.size.height },
+    }
+  },
+
+  /**
+   * Apply a position+size rect directly without recording history — used for
+   * the live frames of an interactive resize (mirrors moveNode's no-history
+   * fast path so the drag stays smooth and produces a single undo entry).
+   */
+  setNodeRect(id: string, rect: { x: number; y: number; width: number; height: number }) {
+    const node = state.nodes.get(id)
+    if (!node || node.locked) return
+
+    const width = Math.max(rect.width, 1)
+    const height = Math.max(rect.height, 1)
+
+    // Skip no-op frames (e.g. a grab-and-return jiggle, or the first frame
+    // before the pointer moves) so a zero-delta gesture never marks the doc
+    // dirty and triggers a spurious autosave + cloud push.
+    if (
+      node.position.x === rect.x &&
+      node.position.y === rect.y &&
+      node.size.width === width &&
+      node.size.height === height
+    ) {
+      return
+    }
+
+    state.nodes.set(id, {
+      ...node,
+      position: { x: rect.x, y: rect.y },
+      size: { width, height },
+      updatedAt: Date.now(),
+    })
+    state.isDirty = true
+    state.nodesVersion++
+  },
+
+  /**
+   * Finalise an interactive resize: record one undo entry spanning the whole
+   * gesture and mark the node as manually sized so content edits no longer
+   * auto-resize it. Mirrors commitMoveNodes — restore the original rect into
+   * the live Map first so Immer diffs original → final correctly.
+   */
+  commitResizeNode(id: string, original: { position: { x: number; y: number }; size: { width: number; height: number } }) {
+    const node = state.nodes.get(id)
+    if (!node) return
+
+    const final = {
+      position: { x: node.position.x, y: node.position.y },
+      size: { width: node.size.width, height: node.size.height },
+    }
+
+    const unchanged =
+      final.position.x === original.position.x &&
+      final.position.y === original.position.y &&
+      final.size.width === original.size.width &&
+      final.size.height === original.size.height
+    if (unchanged) return
+
+    // Restore the pre-drag rect so recordHistory's base reflects the origin.
+    state.nodes.set(id, {
+      ...node,
+      position: { x: original.position.x, y: original.position.y },
+      size: { width: original.size.width, height: original.size.height },
+    })
+
+    recordHistory('Resize node', draft => {
+      const d = draft.nodes[id]
+      if (d) {
+        d.position = final.position
+        d.size = final.size
+        d.metadata = { ...(d.metadata || {}), manualSize: true }
+        d.updatedAt = Date.now()
       }
     })
+  },
+
+  /**
+   * Re-fit a node to its text content and clear the manual-size flag, so
+   * future content edits resume auto-sizing. Re-centers like updateNode and
+   * reflows neighbors out of the way.
+   */
+  autoSizeNode(id: string) {
+    const node = state.nodes.get(id)
+    if (!node || node.locked) return
+
+    const measured = measureNodeSize(node.content, node.style.fontSize, node.style.fontWeight, node.style.shape)
+    const changed = measured.width !== node.size.width || measured.height !== node.size.height
+    const hadManual = node.metadata?.manualSize === true
+    if (!changed && !hadManual) return
+
+    recordHistory('Fit node to text', draft => {
+      const d = draft.nodes[id]
+      if (d) {
+        d.position = {
+          x: d.position.x + (d.size.width - measured.width) / 2,
+          y: d.position.y + (d.size.height - measured.height) / 2,
+        }
+        d.size = measured
+        if (d.metadata) delete (d.metadata as Record<string, unknown>).manualSize
+        d.updatedAt = Date.now()
+      }
+    })
+
+    if (measured.width > node.size.width || measured.height > node.size.height) {
+      actions.resolveOverlaps(undefined, { exclude: [id] })
+    }
   },
 
   /**

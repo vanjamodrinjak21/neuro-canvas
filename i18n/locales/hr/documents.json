@@ -1,0 +1,119 @@
+{
+    "documents": {
+        "header": {
+            "eyebrow": "04 — baza znanja",
+            "title_a": "Sve",
+            "title_b": "čime si nahranio AI."
+        },
+        "count_label_one": "{n} dokument",
+        "count_label_other": "{n} dokumenata",
+        "sort": {
+            "label": "Sortiraj",
+            "recent": "Najnovije",
+            "alphabetical": "A – Ž",
+            "status": "Po statusu"
+        },
+        "select": {
+            "button": "Odaberi",
+            "select_all": "Odaberi sve",
+            "deselect_all": "Poništi odabir",
+            "selected_count": "Odabrano: {n}"
+        },
+        "status": {
+            "pending": "Na čekanju",
+            "queued": "U redu",
+            "processing": "Obrada",
+            "ready": "Spremno",
+            "failed": "Neuspjelo"
+        },
+        "meta": {
+            "pages_one": "{n} stranica",
+            "pages_other": "{n} stranica",
+            "chunks_one": "{n} odlomak",
+            "chunks_other": "{n} odlomaka"
+        },
+        "source": {
+            "upload": "Učitana datoteka",
+            "url": "Uvezeno s URL-a",
+            "paste": "Zalijepljen tekst"
+        },
+        "detail": {
+            "back": "Natrag na dokumente",
+            "loading": "Učitavanje dokumenta…",
+            "not_found": {
+                "title": "Dokument nije pronađen",
+                "desc": "Ovaj je dokument možda izbrisan ili nikada nije postojao.",
+                "cta": "Natrag na dokumente"
+            },
+            "meta": {
+                "eyebrow": "Dokument",
+                "type": "Vrsta",
+                "source": "Izvor",
+                "size": "Veličina",
+                "pages": "Stranice",
+                "chunks": "Odlomci",
+                "uploaded": "Učitano",
+                "updated": "Ažurirano"
+            },
+            "links": {
+                "title": "Povezane mape",
+                "generated_label": "Generirana mapa",
+                "generated_empty": "Iz ovog dokumenta još nije generirana nijedna mapa.",
+                "attached_label": "Priloženo uz",
+                "attached_empty": "Ovaj dokument nije priložen nijednoj mapi.",
+                "open_map": "Otvori mapu",
+                "detach": "Odvoji",
+                "untitled_map": "Mapa bez naziva"
+            },
+            "actions": {
+                "title": "Radnje",
+                "generate": "Generiraj mentalnu mapu",
+                "generating": "Generiranje…",
+                "generate_hint": "Pretvori ovaj dokument u novu mentalnu mapu.",
+                "generate_not_ready": "Dostupno nakon dovršetka obrade.",
+                "attach": "Priloži uz mapu",
+                "attaching": "Prilaganje…",
+                "attach_hint": "Koristi ovaj dokument kao izvor za postojeću mapu.",
+                "attach_placeholder": "Odaberi mapu…",
+                "attach_no_maps": "Još nemaš nijednu mapu za prilaganje.",
+                "delete": "Izbriši dokument"
+            },
+            "toast": {
+                "generate_failed": "Nije moguće generirati mapu iz ovog dokumenta.",
+                "attach_success": "Dokument je priložen mapi.",
+                "attach_failed": "Nije moguće priložiti ovaj dokument mapi.",
+                "detach_success": "Dokument je odvojen od mape.",
+                "detach_failed": "Nije moguće odvojiti ovaj dokument.",
+                "delete_failed": "Nije moguće izbrisati ovaj dokument."
+            }
+        },
+        "chips": {
+            "generated_map": "Generirana mapa: {title}",
+            "attached_map": "Priloženo uz: {title}"
+        },
+        "delete_confirm": {
+            "title_one": "Izbriši dokument",
+            "title_other": "Izbriši {n} dokumenata",
+            "description_one": "Ovo će trajno izbrisati ovaj dokument i ukloniti ga iz baze znanja. Ova se radnja ne može poništiti.",
+            "description_other": "Ovo će trajno izbrisati {n} dokumenata i ukloniti ih iz baze znanja. Ova se radnja ne može poništiti."
+        },
+        "delete_single_confirm": {
+            "title": "Izbriši dokument",
+            "description": "Ova se radnja ne može poništiti. Jesi li siguran da želiš izbrisati ovaj dokument?"
+        },
+        "actions": {
+            "upload": "Učitaj dokument"
+        },
+        "empty": {
+            "title": "Još nema dokumenata",
+            "desc": "Učitaj dokument kako bi svoje mape i AI utemeljio na vlastitim izvorima.",
+            "cta": "Učitaj dokument"
+        },
+        "no_results": {
+            "title": "Nema pronađenih dokumenata",
+            "desc": "Nijedan dokument ne odgovara pretrazi. Pokušaj s drugim pojmom."
+        },
+        "loading": "Učitavanje dokumenata…",
+        "search_placeholder": "Pretraži dokumente…"
+    }
+}

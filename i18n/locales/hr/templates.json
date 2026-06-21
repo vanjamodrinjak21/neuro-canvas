@@ -88,6 +88,32 @@
             "add_tag": "+ Dodaj oznaku",
             "cancel": "Odustani",
             "publish": "Objavi u zajednici"
+        },
+        "builtin": {
+            "swot-analysis": { "title": "SWOT analiza", "description": "Analiziraj projekt, proizvod ili posao kroz SWOT okvir. Prepoznaj unutarnje snage i slabosti, pa mapiraj vanjske prilike i prijetnje. AI prilagođava strukturu tvojoj temi." },
+            "brainstorm": { "title": "Brainstorming", "description": "Slobodno generiranje ideja s radijalnim granama. Kreni od središnje ideje i širi se prema van povezanim mislima i konceptima." },
+            "study-notes": { "title": "Bilješke za učenje", "description": "Hijerarhijska razrada teme s ključnim pojmovima i detaljima. Posloži gradivo u strukturirane cjeline za ponavljanje." },
+            "project-plan": { "title": "Plan projekta", "description": "Fazna razrada projekta sa zadacima i prekretnicama. Posloži projekt u jasne faze s konkretnim zadacima." },
+            "competitor-analysis": { "title": "Analiza konkurencije", "description": "Usporedi konkurente po značajkama, cijenama i pozicioniranju. Mapiraj konkurentski krajolik i pronađi prilike." },
+            "research-paper": { "title": "Istraživački rad", "description": "Strukturiraj tezu s argumentima, dokazima i zaključcima. Posloži dijelove rada od sažetka do zaključka." },
+            "pros-and-cons": { "title": "Za i protiv", "description": "Uravnoteženo odlučivanje s vaganim argumentima. Vizualno usporedi prednosti i nedostatke svake odluke." },
+            "sprint-retro": { "title": "Sprint retrospektiva", "description": "Što je dobro prošlo, što nije i koji su sljedeći koraci. Posloži retrospektivu za produktivan osvrt tima." },
+            "cornell-notes": { "title": "Cornell bilješke", "description": "Klasičan Cornell raspored bilježenja — natuknice lijevo, detaljne bilješke desno, sažetak na dnu. Osmišljen za pamćenje, ne samo prepisivanje." },
+            "concept-map": { "title": "Konceptualna mapa", "description": "Poveži koncepte označenim odnosima. Koristi se u obrazovnom istraživanju za otkrivanje razumijevanja, ne samo činjenica." },
+            "lesson-plan": { "title": "Plan nastave", "description": "Posloži sat oko ciljeva, aktivnosti i provjere — jasno, slijedno i vremenski omeđeno." },
+            "flashcard-set": { "title": "Set kartica za učenje", "description": "Izgradi set za učenje kao stablo — kategorije na prvoj razini, parovi pojam/definicija kao listovi. Kasnije izvezi za ponavljanje u Anki stilu." },
+            "okr-tree": { "title": "OKR stablo", "description": "Jedan cilj na razini tvrtke, prateći timski ciljevi i mjerljivi ključni rezultati ispod svakog. Vodi do strategije, a ne taštih metrika." },
+            "business-model-canvas": { "title": "Canvas poslovnog modela", "description": "Devet gradivnih blokova poslovanja — vrijednost, kupci, kanali, troškovi. Osterwalderov canvas, hijerarhijski za brzo iteriranje." },
+            "go-to-market": { "title": "Go-to-Market plan", "description": "Pozicija, ciljana publika, kanali, cijene — plan lansiranja koji preživi susret sa stvarnim tržištem." },
+            "story-arc": { "title": "Narativni luk", "description": "Troaktna struktura priče s usponom radnje, vrhuncem i raspletom. Mapiraj ključne trenutke prije nego napišeš ijednu riječ." },
+            "character-bible": { "title": "Biblija lika", "description": "Izgradi lika iznutra prema van — pozadina, motivacija, glas, razvoj. Temelj kojeg se uvijek držiš." },
+            "songwriting": { "title": "Struktura pjesme", "description": "Strofa, refren, most, udica — skiciraj pjesmu kao stablo prije snimanja. Kostur neovisan o žanru." },
+            "eisenhower-matrix": { "title": "Eisenhowerova matrica", "description": "Hitno naspram važno — razvrstaj zadatke u Učini, Zakaži, Delegiraj, Odbaci. Probija zamku lažne hitnosti." },
+            "weekly-review": { "title": "Tjedni pregled", "description": "Tjedni pregled u GTD stilu — što je isporučeno, što je zapelo, što slijedi. Obradi prije nego planiraš." },
+            "event-planner": { "title": "Planer događaja", "description": "Logistika, sadržaj i uzvanici na jednom mjestu. Uhvati ovisnost koju si zaboravio u tablici." },
+            "literature-review": { "title": "Pregled literature", "description": "Grupiraj izvore po temama, otkrij praznine i prati raspravu kroz radove. Mapa kakvu tvoj mentor zapravo želi." },
+            "user-interview": { "title": "Korisnički intervju", "description": "Isplaniraj istraživački intervju — ciljevi, pitanja, potpitanja. Scenarij koji ne djeluje kao scenarij." },
+            "experiment-design": { "title": "Dizajn eksperimenta", "description": "Hipoteza, varijable, kontrole, metrike. Postavi eksperiment tako da rezultat doista promijeni odluku." }
         }
     }
 }

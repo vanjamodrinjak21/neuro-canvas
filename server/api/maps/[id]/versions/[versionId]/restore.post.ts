@@ -1,6 +1,6 @@
 import { restoreVersion, VersionError } from '../../../../../utils/versionsService'
 import { requireAuthSession } from '../../../../../utils/syncHelpers'
-import { broadcastReloadToRoom } from '../../../../../utils/collabReload'
+import { broadcastRestoreToRoom } from '../../../../../utils/collabReload'
 import { checkRateLimit } from '../../../../../utils/redis'
 
 export default defineEventHandler(async (event) => {
@@ -18,11 +18,20 @@ export default defineEventHandler(async (event) => {
 
   try {
     const result = await restoreVersion(mapId, userId, versionId)
-    // Best-effort broadcast — clients reload to pick up the restored ydoc.
-    broadcastReloadToRoom(mapId, 'version-restored').catch((e) =>
-      console.warn('[collab] reload broadcast failed', e)
+    // Reconcile the live PartyKit room *before* returning so the owner's
+    // post-restore reload reconnects to already-restored room state instead of
+    // merging back to the stale in-memory doc. Best-effort: Map.ydoc/data are
+    // already persisted, so a PartyKit hiccup doesn't fail the restore.
+    await broadcastRestoreToRoom(mapId, result.snapshot).catch((e) =>
+      console.warn('[collab] restore reconcile failed', e)
     )
-    return { ok: true, ...result }
+    return {
+      ok: true,
+      id: result.id,
+      ydocVersion: result.ydocVersion,
+      syncVersion: result.syncVersion,
+      restoredFromVersion: result.restoredFromVersion
+    }
   } catch (err) {
     if (err instanceof VersionError) {
       throw createError({ statusCode: err.statusCode, statusMessage: err.message })

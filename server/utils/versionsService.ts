@@ -5,10 +5,22 @@
  * connected clients catch the change on next sync (and a separate broadcast
  * forces them to reload — see /reload kick).
  */
+import { createHash } from 'node:crypto'
 import * as Y from 'yjs'
 import { prisma } from './prisma'
-import { yDocToMapDocument } from '../../app/utils/ydocConverter'
+import { yDocToMapDocument, mapDocumentToYDoc } from '../../app/utils/ydocConverter'
 import { cache, cacheKeys } from './redis'
+import type { MapDocument, Node, Edge, Camera, MapSettings } from '../../app/types'
+
+// Inlined from syncHelpers (which pulls #auth into its module graph) so this
+// service stays import-light and unit-testable. Same algorithm, so the value
+// is interchangeable with the plain-sync push path.
+function checksumOf(data: unknown): string {
+  return createHash('sha256').update(JSON.stringify(data)).digest('hex')
+}
+function byteSizeOf(data: unknown): number {
+  return Buffer.byteLength(JSON.stringify(data), 'utf8')
+}
 
 export class VersionError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -77,7 +89,7 @@ export interface VersionDiff {
 async function assertOwnership(mapId: string, userId: string) {
   const map = await prisma.map.findUnique({
     where: { id: mapId },
-    select: { id: true, userId: true, ydocVersion: true }
+    select: { id: true, userId: true, ydocVersion: true, syncVersion: true }
   })
   if (!map) throw new VersionError(404, 'Map not found')
   if (map.userId !== userId) throw new VersionError(403, 'Not the map owner')
@@ -193,6 +205,77 @@ export async function previewVersion(
   return snapshotFromDoc(decodeVersionDoc(new Uint8Array(row.ydocBinary)))
 }
 
+/** The plain-JSON shape persisted to Map.data and MapVersion.data. */
+export interface RestoreSnapshot {
+  nodes: Node[]
+  edges: Edge[]
+  camera: Camera
+  rootNodeId: string | null
+  settings: MapSettings
+}
+
+/**
+ * Rebuild a MapVersion into a MapDocument plus a canonical Y.Doc binary.
+ *
+ * Collab checkpoints carry a `ydocBinary`; plain-sync checkpoints (created by
+ * /api/sync/push) only carry the JSON `data` blob and never have a Y.Doc
+ * snapshot. We accept either source so *every* listed version is restorable —
+ * previously a JSON-only version threw 404 "Version has no Y.Doc snapshot",
+ * which is the common case for solo editing without realtime collab.
+ */
+function reconstructVersionDoc(
+  mapId: string,
+  row: { ydocBinary: Uint8Array | null; data: unknown }
+): { mapDoc: MapDocument; ydocBinary: Uint8Array } {
+  if (row.ydocBinary) {
+    const ydoc = decodeVersionDoc(new Uint8Array(row.ydocBinary))
+    const mapDoc = yDocToMapDocument(ydoc, { id: mapId, title: '', createdAt: 0, updatedAt: Date.now() })
+    return { mapDoc, ydocBinary: new Uint8Array(row.ydocBinary) }
+  }
+  const mapDoc = mapDocumentFromData(mapId, row.data)
+  return { mapDoc, ydocBinary: Y.encodeStateAsUpdate(mapDocumentToYDoc(mapDoc)) }
+}
+
+/** Fallback canvas settings, mirroring app/utils/ydocConverter's defaults. */
+function defaultSettings(): MapSettings {
+  return {
+    gridEnabled: true,
+    gridSize: 24,
+    snapToGrid: false,
+    backgroundColor: '#09090B',
+    defaultNodeStyle: {},
+    defaultEdgeStyle: {}
+  }
+}
+
+/** Coerce a stored `data` blob ({ nodes:[], edges:[], camera, ... }) into a MapDocument. */
+function mapDocumentFromData(mapId: string, data: unknown): MapDocument {
+  const d = (data ?? {}) as {
+    nodes?: unknown
+    edges?: unknown
+    camera?: Camera
+    settings?: MapSettings
+    rootNodeId?: string | null
+  }
+  const nodesArr = (Array.isArray(d.nodes) ? d.nodes : Object.values(d.nodes ?? {})) as Node[]
+  const edgesArr = (Array.isArray(d.edges) ? d.edges : Object.values(d.edges ?? {})) as Edge[]
+  const nodes = new Map<string, Node>()
+  for (const n of nodesArr) if (n && n.id) nodes.set(n.id, n)
+  const edges = new Map<string, Edge>()
+  for (const e of edgesArr) if (e && e.id) edges.set(e.id, e)
+  return {
+    id: mapId,
+    title: '',
+    nodes,
+    edges,
+    camera: d.camera ?? { x: 0, y: 0, zoom: 1 },
+    rootNodeId: d.rootNodeId ?? undefined,
+    createdAt: 0,
+    updatedAt: Date.now(),
+    settings: d.settings ?? defaultSettings()
+  }
+}
+
 export async function restoreVersion(
   mapId: string,
   ownerUserId: string,
@@ -201,37 +284,40 @@ export async function restoreVersion(
   const map = await assertOwnership(mapId, ownerUserId)
   const row = await prisma.mapVersion.findFirst({
     where: { id: versionId, mapId },
-    select: { id: true, ydocBinary: true, version: true }
+    select: { id: true, ydocBinary: true, version: true, data: true }
   })
   if (!row) throw new VersionError(404, 'Version not found')
-  if (!row.ydocBinary) throw new VersionError(404, 'Version has no Y.Doc snapshot')
-
-  // Regenerate the JSON snapshot so the existing /api/sync/pull path returns
-  // consistent state immediately after restore. Mirrors collabFlush.applyFlush.
-  const ydoc = decodeVersionDoc(new Uint8Array(row.ydocBinary))
-  const json = yDocToMapDocument(ydoc, {
-    id: mapId,
-    title: '',
-    createdAt: 0,
-    updatedAt: Date.now()
-  })
-  const dataJson = {
-    nodes: Array.from(json.nodes.values()),
-    edges: Array.from(json.edges.values()),
-    camera: json.camera,
-    rootNodeId: json.rootNodeId ?? null,
-    settings: json.settings
+  if (!row.ydocBinary && row.data == null) {
+    throw new VersionError(404, 'Version has no restorable snapshot')
   }
 
-  const nextVersion = (map.ydocVersion ?? 0) + 1
+  // Rebuild from the Y.Doc snapshot when present, else from the JSON blob.
+  const { mapDoc, ydocBinary } = reconstructVersionDoc(mapId, row)
+  const snapshot: RestoreSnapshot = {
+    nodes: Array.from(mapDoc.nodes.values()),
+    edges: Array.from(mapDoc.edges.values()),
+    camera: mapDoc.camera,
+    rootNodeId: mapDoc.rootNodeId ?? null,
+    settings: mapDoc.settings
+  }
+
+  // Recompute checksum/byteSize so the plain-sync layer (/api/sync/pull, which
+  // keys on syncVersion + checksum) treats this as a fresh change, and bump
+  // both version counters so every client — collab or plain-sync — picks it up.
+  const checksum = checksumOf(snapshot)
+  const byteSize = byteSizeOf(snapshot)
   const updated = await prisma.map.update({
     where: { id: mapId },
     data: {
-      ydoc: row.ydocBinary,
-      ydocVersion: nextVersion,
-      data: dataJson as object,
+      ydoc: ydocBinary as unknown as Uint8Array<ArrayBuffer>,
+      ydocVersion: (map.ydocVersion ?? 0) + 1,
+      syncVersion: (map.syncVersion ?? 0) + 1,
+      data: snapshot as object,
+      checksum,
+      byteSize,
       updatedAt: new Date()
-    }
+    },
+    select: { id: true, ydocVersion: true, syncVersion: true }
   })
 
   // Bust the per-user JSON cache so the next /api/sync/pull doesn't hand
@@ -241,7 +327,13 @@ export async function restoreVersion(
     cache.del(cacheKeys.mapMeta(mapId, ownerUserId))
   ]).catch(() => { /* cache best-effort */ })
 
-  return { id: updated.id, ydocVersion: updated.ydocVersion, restoredFromVersion: row.version }
+  return {
+    id: updated.id,
+    ydocVersion: updated.ydocVersion,
+    syncVersion: updated.syncVersion,
+    restoredFromVersion: row.version,
+    snapshot
+  }
 }
 
 function diffMaps<T extends { id: string }>(

@@ -261,6 +261,12 @@ type FeatureExtractionFn = (
 // Lazily-initialised singletons — loaded once per process lifetime.
 let _pipelinePromise: Promise<FeatureExtractionFn> | null = null
 
+// Test-only pipeline override. When set, `getPipeline()` returns this instead
+// of importing/loading the real ~111 MB model. Lets unit tests exercise the
+// batching/stride-slicing logic with deterministic mocked tensors without any
+// network fetch or ONNX runtime. Never set in production code paths.
+let _injectedPipeline: FeatureExtractionFn | null = null
+
 /**
  * Lazily build (and memoise) the feature-extraction pipeline.
  *
@@ -281,6 +287,7 @@ let _pipelinePromise: Promise<FeatureExtractionFn> | null = null
  *               `HF_HUB_CACHE` / `TRANSFORMERS_CACHE` / `~/.cache/huggingface`.
  */
 async function getPipeline(): Promise<FeatureExtractionFn> {
+  if (_injectedPipeline) return _injectedPipeline
   if (_pipelinePromise) return _pipelinePromise
 
   const availability = isServerEmbeddingAvailable()
@@ -410,11 +417,144 @@ export async function generateEmbeddingFromText(
 }
 
 /**
+ * Batch variant of {@link generateEmbeddingFromText}. Embeds many texts in a
+ * SINGLE pipeline invocation, returning one 256d L2-normalised Matryoshka
+ * vector per input (output[i] corresponds to texts[i]).
+ *
+ * Why batch: the dominant cost of server-side ingest is per-call ONNX session
+ * overhead and re-tokenisation scheduling, not the matmul. transformers.js
+ * accepts a `string[]` and runs the whole batch through the graph at once,
+ * then returns the pooled embeddings as ONE flat `Float32Array` with
+ * `dims = [batchSize, nativeDim]`. We stride-slice that flat buffer back into
+ * per-row vectors using the trailing dimension as the stride.
+ *
+ * Parity: each text gets the SAME `applyNomicPrefix` treatment and the SAME
+ * `{ pooling: 'mean', normalize: true }` options as the single-text path, so a
+ * given text embeds identically whether sent alone or inside a batch.
+ *
+ * Empty input (`[]`) short-circuits to `[]` WITHOUT touching the pipeline —
+ * loading the model just to embed nothing would be wasteful, and an empty
+ * batch is a valid no-op (e.g. a document that chunked to zero chunks).
+ *
+ * Throws (never silently returns junk) when:
+ *   - any text is empty after trimming (an empty chunk is a caller bug)
+ *   - the pipeline cannot be initialised
+ *   - the returned tensor shape is inconsistent with `texts.length`
+ *
+ * @param texts      the raw chunk texts (un-prefixed)
+ * @param prefixType nomic task prefix to apply to every text (default
+ *                   `'document'`, the correct prefix for stored chunks)
+ */
+export async function generateEmbeddingsFromTexts(
+  texts: string[],
+  prefixType: NomicPrefixType = 'document',
+): Promise<number[][]> {
+  if (!Array.isArray(texts)) {
+    throw new TypeError('generateEmbeddingsFromTexts: texts must be an array of strings')
+  }
+
+  // Empty batch → empty result. Do NOT spin up the pipeline for zero work.
+  if (texts.length === 0) return []
+
+  const prefixed: string[] = Array.from<string>({ length: texts.length })
+  for (let i = 0; i < texts.length; i++) {
+    const t = texts[i]
+    const trimmed = typeof t === 'string' ? t.trim() : ''
+    if (trimmed.length === 0) {
+      throw new Error(
+        `generateEmbeddingsFromTexts: texts[${i}] must be a non-empty string`,
+      )
+    }
+    prefixed[i] = applyNomicPrefix(trimmed, prefixType)
+  }
+
+  const startedAt = Date.now()
+  const pipe = await getPipeline()
+  // ONE call with the whole batch — this is the entire point of the function.
+  const output = await pipe(prefixed, { pooling: 'mean', normalize: true })
+
+  const data = output?.data
+  if (!(data instanceof Float32Array) || data.length === 0) {
+    throw new Error('Server-side batch embedding produced no output tensor')
+  }
+
+  // Determine the per-row stride. After mean pooling, transformers.js returns
+  // dims = [batch, nativeDim]; the stride is the trailing dimension. If dims
+  // is absent (older shapes) fall back to dividing the flat length evenly,
+  // then assert that division is exact so a malformed tensor fails loud.
+  const dims = output.dims
+  let stride: number
+  if (Array.isArray(dims) && dims.length >= 1) {
+    stride = dims[dims.length - 1]!
+  }
+  else {
+    stride = data.length / texts.length
+  }
+
+  if (!Number.isInteger(stride) || stride <= 0) {
+    throw new Error(
+      `Server-side batch embedding produced a non-integer row stride ` +
+      `(data.length=${data.length}, batch=${texts.length}, dims=${JSON.stringify(dims)})`,
+    )
+  }
+
+  if (stride !== EMBEDDING_NATIVE_DIMS) {
+    throw new Error(
+      `Server-side batch embedding has unexpected native dim ${stride} ` +
+      `(expected ${EMBEDDING_NATIVE_DIMS}); check that ${EMBEDDING_MODEL_ID} is the loaded model.`,
+    )
+  }
+
+  if (data.length !== stride * texts.length) {
+    throw new Error(
+      `Server-side batch embedding tensor length ${data.length} does not match ` +
+      `batch=${texts.length} × stride=${stride}; the pipeline returned a malformed shape.`,
+    )
+  }
+
+  const results: number[][] = Array.from<number[]>({ length: texts.length })
+  for (let row = 0; row < texts.length; row++) {
+    const base = row * stride
+    const native: number[] = Array.from<number>({ length: stride })
+    for (let c = 0; c < stride; c++) native[c] = data[base + c]!
+
+    const truncated = truncateMatryoshka(native, EMBEDDING_DIMS)
+    if (truncated.length !== EMBEDDING_DIMS) {
+      throw new Error(
+        `Server-side batch embedding row ${row} has wrong post-truncation dim ` +
+        `${truncated.length} (expected ${EMBEDDING_DIMS})`,
+      )
+    }
+    results[row] = truncated
+  }
+
+  const telemetry = {
+    op: 'embed',
+    duration_ms: Number((Date.now() - startedAt).toFixed(2)),
+    runtime: 'server-cpu',
+    dimensions: EMBEDDING_DIMS,
+    batch_size: texts.length,
+    prefix: prefixType,
+  }
+  console.log(`[embeddings-telemetry] ${JSON.stringify(telemetry)}`)
+
+  return results
+}
+
+/**
  * Reset the cached pipeline. Test-only — exported under a `_test` namespace
  * so production code can't accidentally invalidate the singleton mid-flight.
  */
 export const _test = {
   resetPipelineCache() {
     _pipelinePromise = null
+  },
+  /**
+   * Inject a fake feature-extraction pipeline so unit tests can drive the
+   * batching/stride logic with deterministic tensors and assert call counts —
+   * no model download, no ONNX runtime. Pass `null` to clear.
+   */
+  injectPipeline(fn: FeatureExtractionFn | null) {
+    _injectedPipeline = fn
   },
 }

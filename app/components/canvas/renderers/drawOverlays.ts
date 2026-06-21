@@ -1,6 +1,7 @@
 import type { Camera, Node, Point, Anchor } from '~/types/canvas'
 import type { AlignmentGuide } from '~/composables/useSmartGuides'
 import { getAnchorPoint } from '~/composables/useAnchors'
+import { getHandlePoints, RESIZE_HANDLES } from '~/utils/resizeHandles'
 import { calculateBezierControlPoints, getEdgeIntersection } from './shared'
 
 /**
@@ -152,6 +153,52 @@ export function drawAnchorPoints(
     ctx.shadowColor = 'transparent'
     ctx.shadowBlur = 0
   }
+}
+
+// ---------------------------------------------------------------------------
+// drawResizeHandles
+// ---------------------------------------------------------------------------
+
+/**
+ * Draw the eight square resize grips around a selected node's bounding box.
+ *
+ * Handle size and stroke are divided by zoom so they stay a constant pixel
+ * size on screen at any zoom level. Positions come from the shared
+ * `getHandlePoints` so the drawn squares line up exactly with the
+ * interaction layer's hit-testing.
+ *
+ * @param ctx     - 2D canvas rendering context (in world space).
+ * @param node    - The selected node to decorate.
+ * @param camera  - Current camera (for zoom-invariant sizing).
+ * @param color   - Accent color for the handle border (node-selected teal).
+ * @param isLight - Whether the light theme is active (handle fill).
+ */
+export function drawResizeHandles(
+  ctx: CanvasRenderingContext2D,
+  node: Node,
+  camera: Camera,
+  color: string,
+  isLight?: boolean
+): void {
+  const pts = getHandlePoints(node)
+  const size = 8 / camera.zoom
+  const half = size / 2
+  const radius = 2 / camera.zoom
+
+  ctx.save()
+  ctx.lineWidth = 1.5 / camera.zoom
+  ctx.strokeStyle = color
+  ctx.fillStyle = isLight ? '#FFFFFF' : '#0A0A0C'
+
+  for (const handle of RESIZE_HANDLES) {
+    const p = pts[handle]
+    ctx.beginPath()
+    ctx.roundRect(p.x - half, p.y - half, size, size, radius)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  ctx.restore()
 }
 
 // ---------------------------------------------------------------------------

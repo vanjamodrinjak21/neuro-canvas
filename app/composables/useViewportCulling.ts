@@ -4,6 +4,13 @@
 import type { Camera, Node, Edge, NodeLOD } from '~/types/canvas'
 import { QuadTree } from '~/utils/QuadTree'
 
+/**
+ * Zoom at/above which nodes render at full detail. Selection-only UI such as
+ * resize handles is both drawn AND hit-tested only at full LOD, so renderer
+ * and interaction share this single threshold and can never drift apart.
+ */
+export const FULL_LOD_ZOOM = 0.4
+
 export function useViewportCulling() {
   let quadTree = new QuadTree({ x: -50000, y: -50000, width: 100000, height: 100000 })
 
@@ -91,7 +98,7 @@ export function useViewportCulling() {
    * Get LOD level based on zoom
    */
   function getNodeLOD(zoom: number): NodeLOD {
-    if (zoom >= 0.4) return 'full'
+    if (zoom >= FULL_LOD_ZOOM) return 'full'
     if (zoom >= 0.15) return 'simplified'
     return 'dot'
   }

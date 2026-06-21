@@ -186,7 +186,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
       </div>
       <div class="dl-nav-right">
         <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="dl-nav-signin">{{ $t('landing.nav.signin') }}</NuxtLink>
-        <NuxtLink :to="isAuthenticated ? '/dashboard' : '/auth/signin'" class="dl-nav-dash">{{ $t('landing.nav.open_dashboard') }}</NuxtLink>
+        <NuxtLink v-else to="/dashboard" class="dl-nav-dash">{{ $t('landing.nav.open_dashboard') }}</NuxtLink>
       </div>
     </nav>
 

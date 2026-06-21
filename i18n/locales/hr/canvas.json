@@ -297,6 +297,8 @@
       "create_new": "Stvori novu poveznicu",
       "editor_requires_signin": "Poveznice za uređivača zahtijevaju prijavu",
       "label_placeholder": "Naziv poveznice — npr. Dizajn tim",
+      "role_aria": "Razina pristupa",
+      "expiry_aria": "Istek poveznice",
       "role_viewer": "Gledatelj",
       "role_editor": "Uređivač",
       "role_viewer_chip": "GLEDATELJ",
@@ -341,12 +343,14 @@
     },
     "version_history": {
       "title": "Povijest verzija",
+      "subtitle": "Vratite platno na raniju spremljenu točku.",
       "close": "Zatvori",
+      "cancel": "Odustani",
       "loading": "Učitavanje verzija…",
       "empty": "Još nema spremljenih verzija — nastavite uređivati za stvaranje povijesti.",
       "restore": "Vrati",
       "restoring": "Vraćanje…",
-      "restore_confirm": "Vratiti ovu verziju? Povezani suradnici će biti ponovno učitani.",
+      "restore_confirm": "Zamijeniti trenutačno platno ovom verzijom?",
       "author_unknown": "Nepoznato",
       "author_guest": "Gost"
     },
@@ -543,6 +547,41 @@
       "clusters": "Klasteri",
       "load_now": "Učitaj sad",
       "loading": "Učitavanje…"
+    },
+    "document_upload_modal": {
+      "title": "Učitaj dokument",
+      "subtitle": "Pretvori PDF, DOCX, Markdown ili tekstualnu datoteku u mentalnu mapu — ili je priloži kao izvor.",
+      "dropzone_prompt": "Povuci datoteku ovamo ili klikni za odabir",
+      "dropzone_active": "Pusti datoteku za učitavanje",
+      "browse": "Pregledaj datoteke",
+      "accepted": "PDF, DOCX, Markdown ili TXT",
+      "size_limit": "Do 20 MB",
+      "intent_generate": "Generiraj mentalnu mapu iz dokumenta",
+      "intent_attach": "Priloži trenutnoj mapi kao izvor",
+      "target_map_label": "Odredišna mapa",
+      "target_map_placeholder": "Odaberi mapu",
+      "btn_cancel": "Odustani",
+      "btn_upload": "Učitaj",
+      "btn_open_map": "Otvori mapu",
+      "btn_done": "Gotovo",
+      "status_queued": "Na čekanju",
+      "status_processing": "Obrađujem dokument…",
+      "status_ready": "Spremno",
+      "status_failed": "Nešto je pošlo po zlu",
+      "error_unsupported": "Nepodržana vrsta datoteke. Učitaj PDF, DOCX, Markdown ili TXT datoteku.",
+      "error_too_large": "Datoteka je prevelika. Najveća dopuštena veličina je 20 MB.",
+      "error_parse_failed": "Ovaj dokument nije bilo moguće pročitati. Pokušaj s drugom datotekom.",
+      "error_upload_failed": "Učitavanje nije uspjelo. Pokušaj ponovno."
+    },
+    "documents": {
+      "errors": {
+        "unsupported_type": "Nepodržana vrsta datoteke. Učitaj PDF, DOCX, Markdown ili TXT datoteku.",
+        "too_large": "Datoteka je prevelika. Najveća dopuštena veličina je 20 MB.",
+        "presign_failed": "Učitavanje nije moguće pokrenuti. Pokušaj ponovno.",
+        "upload_failed": "Učitavanje nije uspjelo. Pokušaj ponovno.",
+        "confirm_failed": "Učitavanje nije moguće dovršiti. Pokušaj ponovno.",
+        "processing_failed": "Ovaj dokument nije bilo moguće obraditi."
+      }
     }
   }
 }

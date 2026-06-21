@@ -3,7 +3,10 @@ import type { Camera, CanvasTool, Point, Node, Edge, Anchor } from '~/types'
 import { screenToWorld } from '~/composables/useCanvasCoordinates'
 import { findNodeAtPosition, findEdgeAtPosition } from '~/composables/useNodeHitTest'
 import { getAnchorPoint } from '~/composables/useAnchors'
+import { hitTestResizeHandle, getHandleCursor } from '~/utils/resizeHandles'
+import { FULL_LOD_ZOOM } from '~/composables/useViewportCulling'
 import type { useDragInteraction } from '~/composables/useDragInteraction'
+import type { useNodeResize } from '~/composables/useNodeResize'
 import type { useConnectionTool } from '~/composables/useConnectionTool'
 import type { useBoxSelection } from '~/composables/useBoxSelection'
 import type { useNodeEditing } from '~/composables/useNodeEditing'
@@ -35,9 +38,11 @@ export interface InteractionDeps {
   addEdge: (sourceId: string, targetId: string, style?: unknown, sourceAnchor?: Anchor, targetAnchor?: Anchor) => Edge
   deleteEdge: (id: string) => void
   deleteSelected: () => void
+  autoSizeNode: (id: string) => void
 
   // Sub-composables
   drag: ReturnType<typeof useDragInteraction>
+  resize: ReturnType<typeof useNodeResize>
   connection: ReturnType<typeof useConnectionTool>
   boxSelection: ReturnType<typeof useBoxSelection>
   editing: ReturnType<typeof useNodeEditing>
@@ -91,6 +96,20 @@ export function useCanvasInteraction(deps: InteractionDeps) {
     return { screenPos, worldPos }
   }
 
+  // ------- helper: the node eligible for handle-resize, or null -------
+  // Resize handles only exist for the lone selected node, in the select tool,
+  // at full LOD — exactly when the renderer draws them. Gating here keeps the
+  // invisible-but-grabbable grips from hijacking select/drag when zoomed out.
+  function resizableSelectedNode(): Node | null {
+    if (tool() !== 'select') return null
+    if (cam().zoom < FULL_LOD_ZOOM) return null
+    const selIds = deps.selection().nodeIds
+    if (selIds.size !== 1) return null
+    const node = deps.nodes().get(selIds.values().next().value!)
+    if (!node || node.locked) return null
+    return node
+  }
+
   // =======================================================================
   // handlePointerDown
   // =======================================================================
@@ -122,6 +141,19 @@ export function useCanvasInteraction(deps: InteractionDeps) {
         container()!.style.cursor = 'crosshair'
       }
     } else if (tool() === 'select') {
+      // Resize handles take priority over node/drag hit-testing. Only the
+      // lone selected node (at full LOD) shows handles, so only it can resize.
+      const resizable = resizableSelectedNode()
+      if (resizable) {
+        const handle = hitTestResizeHandle(resizable, worldPos, cam().zoom)
+        if (handle) {
+          deps.resize.beginResize(resizable, handle)
+          container()!.style.cursor = getHandleCursor(handle)
+          container()!.setPointerCapture(event.pointerId)
+          return
+        }
+      }
+
       const node = findNodeAtPosition(worldPos, deps.nodes())
       if (node) {
         if (event.shiftKey) {
@@ -185,6 +217,16 @@ export function useCanvasInteraction(deps: InteractionDeps) {
     const dx = screenPos.x - lastMousePos.value.x
     const dy = screenPos.y - lastMousePos.value.y
 
+    // Active resize owns the gesture — update the dragged node and bail out
+    // before any hover/drag/pan handling. Shift is read live so the user can
+    // toggle proportional scaling mid-drag.
+    if (deps.resize.isResizing.value) {
+      deps.resize.updateResize(worldPos, event.shiftKey)
+      deps.markCullingDirty()
+      lastMousePos.value = screenPos
+      return
+    }
+
     // Update hover state
     if (
       !deps.drag.isDragging.value &&
@@ -196,6 +238,19 @@ export function useCanvasInteraction(deps: InteractionDeps) {
       const nodeUnderMouse = findNodeAtPosition(worldPos, deps.nodes())
       const previousHovered = hoveredNodeId.value
       hoveredNodeId.value = nodeUnderMouse?.id ?? null
+
+      // Resize-handle cursor feedback on the lone selected node. Setting an
+      // inline cursor overrides the tool's class-based cursor; clearing it to
+      // '' hands control back to that class when no handle is under the mouse.
+      if (tool() === 'select') {
+        let handleCursor = ''
+        const resizable = resizableSelectedNode()
+        if (resizable) {
+          const handle = hitTestResizeHandle(resizable, worldPos, cam().zoom)
+          if (handle) handleCursor = getHandleCursor(handle)
+        }
+        if (container()) container()!.style.cursor = handleCursor
+      }
 
       // Edge hover detection for edge animations
       if (!nodeUnderMouse && deps.edgeAnimations) {
@@ -286,6 +341,17 @@ export function useCanvasInteraction(deps: InteractionDeps) {
   // handlePointerUp
   // =======================================================================
   function handlePointerUp(event: PointerEvent) {
+    // Finalise an active resize first — it owns the gesture exclusively.
+    if (deps.resize.isResizing.value) {
+      deps.resize.commitResize()
+      deps.markCullingDirty()
+      if (container()) {
+        container()!.style.cursor = ''
+        container()!.releasePointerCapture(event.pointerId)
+      }
+      return
+    }
+
     // Handle connection completion
     if (deps.connection.isConnecting.value && deps.connection.connectionSourceNode.value) {
       const rect = container()?.getBoundingClientRect()
@@ -439,12 +505,42 @@ export function useCanvasInteraction(deps: InteractionDeps) {
   }
 
   // =======================================================================
+  // handlePointerCancel
+  // =======================================================================
+  // A system-aborted gesture (OS pinch/scroll takeover, etc.) must NOT be
+  // treated as a deliberate release. For a resize that means revert, not
+  // commit — otherwise we'd record a phantom undo entry and latch manualSize.
+  function handlePointerCancel(event: PointerEvent) {
+    if (deps.resize.isResizing.value) {
+      deps.resize.cancelResize()
+      deps.markCullingDirty()
+      if (container()) {
+        container()!.style.cursor = ''
+        container()!.releasePointerCapture(event.pointerId)
+      }
+      return
+    }
+    // No resize in flight — fall back to the normal release path so drag/pan/
+    // connection/box gestures still finalise (their cancel == up is acceptable).
+    handlePointerUp(event)
+  }
+
+  // =======================================================================
   // handleDoubleClick
   // =======================================================================
   function handleDoubleClick(event: MouseEvent) {
     if (!container()) return
 
     const { worldPos } = eventPositions(event)
+
+    // Double-clicking a resize handle re-fits the node to its text and clears
+    // the manual-size flag, so it resumes auto-sizing on future edits.
+    const resizable = resizableSelectedNode()
+    if (resizable && hitTestResizeHandle(resizable, worldPos, cam().zoom)) {
+      deps.autoSizeNode(resizable.id)
+      deps.markCullingDirty()
+      return
+    }
 
     // Check if double-clicked on a node
     const existingNode = findNodeAtPosition(worldPos, deps.nodes())
@@ -561,6 +657,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
+    handlePointerCancel,
     handleDoubleClick,
     handleContextMenu,
     handleDragOver,

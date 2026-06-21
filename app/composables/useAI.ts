@@ -18,6 +18,7 @@ import {
   buildConnectionSuggestionPrompt
 } from '~/utils/ai-prompts'
 import { aiComplete } from '~/utils/aiClient'
+import { getMaxOutputTokens } from '~/utils/modelTokenLimits'
 import { streamCompletion } from '~/ai/pipeline/StreamingPipeline'
 import { resolveProvider } from '~/ai/utils/resolveProvider'
 import {
@@ -323,7 +324,7 @@ export function useAI() {
     error.value = null
 
     const langNote = locale && locale !== 'en' ? ` Generate all suggestions in ${locale === 'hr' ? 'Croatian' : locale}.` : ''
-    const systemPrompt = `You are a mind mapping assistant. Generate ${maxSuggestions} concise, related concepts for expanding a mind map node. Each suggestion should be 1-5 words, actionable, and directly related to the topic.${langNote} Return ONLY a JSON array of strings, no explanation.`
+    const systemPrompt = `You are a mind mapping assistant. Generate ${maxSuggestions} specific concepts that meaningfully expand the given node — a mix of sub-topics, concrete real-world examples, and adjacent ideas, NOT generic labels like "Types of X", "Benefits of X", or "Overview". Each suggestion is 1-5 words and distinct from the others.${langNote} Return ONLY a JSON array of strings, no explanation.`
 
     const userPrompt = context.length > 0
       ? `Topic: "${nodeContent}"\n\nExisting related nodes: ${context.join(', ')}\n\nGenerate ${maxSuggestions} new, unique related concepts that aren't already covered.`
@@ -338,7 +339,7 @@ export function useAI() {
         model: provider.selectedModelId,
         systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
-        maxTokens: 500,
+        maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'suggest'),
         temperature: 0.7
       })
 
@@ -396,7 +397,7 @@ export function useAI() {
                 model: provider.selectedModelId,
                 systemPrompt: system,
                 messages: [{ role: 'user', content: user }],
-                maxTokens: 2000,
+                maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'expand', { streaming: true, nativeShell: _isNativeShell() }),
                 temperature: 0.7
               },
               { onDelta: (_chunk, accumulated) => options.onPartialResult?.(accumulated) }
@@ -411,7 +412,7 @@ export function useAI() {
             model: provider.selectedModelId,
             systemPrompt: system,
             messages: [{ role: 'user', content: user }],
-            maxTokens: 2000,
+            maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'expand'),
             temperature: 0.7
           })
           return response.content
@@ -474,7 +475,7 @@ export function useAI() {
           model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
-          maxTokens: 500,
+          maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'describe'),
           temperature: 0.6
         })
         return response.content
@@ -534,7 +535,7 @@ export function useAI() {
               model: provider.selectedModelId,
               systemPrompt: system,
               messages: [{ role: 'user', content: user }],
-              maxTokens: _isNativeShell() ? 3000 : 4000,
+              maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'map', { streaming: true, nativeShell: _isNativeShell() }),
               temperature: 0.7
             },
             { onDelta: (_chunk, accumulated) => streamOptions.onPartialResult?.(accumulated) }
@@ -549,7 +550,7 @@ export function useAI() {
           model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
-          maxTokens: 4000,
+          maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'map'),
           temperature: 0.7
         })
         return response.content
@@ -600,7 +601,7 @@ export function useAI() {
           model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
-          maxTokens: 3000,
+          maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'expand'),
           temperature: 0.7
         })
         return response.content
@@ -663,7 +664,7 @@ export function useAI() {
           model: provider.selectedModelId,
           systemPrompt: system,
           messages: [{ role: 'user', content: user }],
-          maxTokens: 1500,
+          maxTokens: getMaxOutputTokens(provider.type, provider.selectedModelId, 'connections'),
           temperature: 0.6
         })
         return response.content

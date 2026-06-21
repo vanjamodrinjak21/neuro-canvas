@@ -280,7 +280,10 @@ function formatDate(timestamp: number): string {
 
       <!-- Desktop top bar (legacy; hidden on mobile) -->
       <div v-if="!isMobile" class="m-top">
-        <h2 class="m-brand">NeuroCanvas</h2>
+        <NuxtLink to="/dashboard" class="m-brand">
+          <NcLogo :size="14" :container-size="24" :radius="6" />
+          <span>NeuroCanvas</span>
+        </NuxtLink>
         <NuxtLink to="/settings" class="m-avatar-link" aria-label="Settings">
           <div class="m-avatar">
             <img v-if="userImage" :src="userImage" :alt="userInitials" class="m-avatar-img">
@@ -1093,9 +1096,11 @@ function formatDate(timestamp: number): string {
     height: 44px;
   }
   .m-brand {
+    display: inline-flex; align-items: center; gap: 8px;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 17px; font-weight: 600; line-height: 22px;
     letter-spacing: -0.01em; color: #FAFAFA; margin: 0;
+    text-decoration: none;
   }
   :root.light .m-brand { color: #18181B; }
   .m-avatar-link { display: flex; align-items: center; text-decoration: none; }

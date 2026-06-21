@@ -33,9 +33,13 @@ export default defineEventHandler(async (event) => {
   // Build the prompt
   const branchCount = depth === 'shallow' ? 3 : depth === 'deep' ? 7 : 5
   const maxDepth = depth === 'shallow' ? 1 : depth === 'deep' ? 3 : 2
+  // Dynamic budget: deeper maps emit a much larger JSON document. A flat 4000
+  // cap truncated it and produced near-empty maps. Stay <=16000 (non-streamed).
+  const maxTokens = depth === 'shallow' ? 6000 : depth === 'deep' ? 16000 : 12000
 
-  const systemPrompt = `You are a mind map structure generator. Generate a hierarchical mind map structure as JSON.
-The response must be valid JSON with this exact structure:
+  const systemPrompt = `You are a world-class mind-map architect. Turn the topic into a rich, multi-level map and return it as STRICT JSON only.
+
+The response must be valid JSON with this exact structure (keys in English):
 {
   "rootTopic": "string",
   "rootDescription": { "summary": "string", "keywords": ["string"] },
@@ -57,9 +61,15 @@ The response must be valid JSON with this exact structure:
     }
   ]
 }
-Style: ${style}. ${domain ? `Domain: ${domain}.` : ''}
-Generate ${branchCount} main branches with up to ${maxDepth} levels of children.
-Each branch should have 2-4 children. Be specific and actionable.
+
+REQUIREMENTS:
+- Exactly ${branchCount} main branches, each a DISTINCT facet of the topic (no overlap, no synonyms).
+- EVERY main branch must have 2-4 children; go up to ${maxDepth} level(s) deep where it adds value. A root with childless branches is a FAILURE.
+- Vary the shape — some branches wider, some deeper. Aim for ${branchCount * 4}-${branchCount * 6} total nodes.
+- Use varied "category" values: concept, fact, question, example, definition, process. Include at least one genuine question and one concrete real-world example.
+- Titles are specific (2-8 words). Never use generic labels like "Types of X", "Benefits of X", "Overview", or "Other".
+- Each "summary" teaches something (mechanism, significance, or a surprising fact) — never just restates the title.
+Style: ${style}.${domain ? ` Domain: ${domain}.` : ''}
 RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
 
   const userPrompt = `Create a mind map structure for: "${topic}"`
@@ -77,7 +87,7 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 4000,
+          max_tokens: maxTokens,
           temperature: 0.7,
           system: systemPrompt,
           messages: [{ role: 'user', content: userPrompt }],
@@ -112,7 +122,7 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
             { role: 'user', content: userPrompt },
           ],
           temperature: 0.7,
-          max_tokens: 4000,
+          max_tokens: maxTokens,
         }),
       })
 

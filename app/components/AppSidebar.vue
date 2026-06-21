@@ -127,14 +127,16 @@ const currentNav = computed(() => {
   if (props.activeNav) return props.activeNav
   if (route.path === '/dashboard') return 'home'
   if (route.path.startsWith('/maps')) return 'maps'
+  if (route.path.startsWith('/documents')) return 'documents'
   if (route.path.startsWith('/templates')) return 'templates'
-  if (route.path === '/settings') return 'settings'
+  if (route.path.startsWith('/settings')) return 'settings'
   return 'home'
 })
 
 const navItems = computed(() => [
   { id: 'home', label: t('common.nav.home'), icon: 'i-lucide-house', to: '/dashboard' },
   { id: 'maps', label: t('common.nav.maps'), icon: 'i-lucide-layout-grid', to: '/maps' },
+  { id: 'documents', label: t('common.nav.documents'), icon: 'i-lucide-file-text', to: '/documents' },
   { id: 'templates', label: t('common.nav.templates'), icon: 'i-lucide-layers', to: '/templates' },
   { id: 'settings', label: t('common.nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
 ])

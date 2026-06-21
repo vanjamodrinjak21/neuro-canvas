@@ -415,7 +415,11 @@ export async function aiComplete(req: AICompletionRequest): Promise<AICompletion
       body,
     })
   } catch (e: unknown) {
-    const fetchError = e as { data?: { data?: { code?: string } }; statusCode?: number }
+    const fetchError = e as {
+      data?: { statusMessage?: string; message?: string; data?: { code?: string } }
+      statusCode?: number
+      statusMessage?: string
+    }
     if (fetchError.statusCode === 401) {
       // Convert 401 to plain Error so it shows in the UI instead of
       // triggering the global auth interceptor redirect
@@ -423,6 +427,14 @@ export async function aiComplete(req: AICompletionRequest): Promise<AICompletion
     }
     if (fetchError.data?.data?.code === 'CREDENTIAL_DECRYPT_FAILED') {
       throw new Error('Failed to decrypt API key. Please re-enter your key in Settings.')
+    }
+    // Surface the server's actual reason (validation failure, provider API
+    // message, bad base URL, …) instead of an opaque "[POST] …: 400".
+    const detail = fetchError.data?.statusMessage
+      || fetchError.data?.message
+      || fetchError.statusMessage
+    if (detail) {
+      throw new Error(detail)
     }
     throw e
   }

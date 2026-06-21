@@ -1,0 +1,119 @@
+{
+    "documents": {
+        "header": {
+            "eyebrow": "04 — knowledge base",
+            "title_a": "Everything",
+            "title_b": "you've fed the AI."
+        },
+        "count_label_one": "{n} document",
+        "count_label_other": "{n} documents",
+        "sort": {
+            "label": "Sort",
+            "recent": "Most recent",
+            "alphabetical": "A – Z",
+            "status": "By status"
+        },
+        "select": {
+            "button": "Select",
+            "select_all": "Select all",
+            "deselect_all": "Deselect all",
+            "selected_count": "{n} selected"
+        },
+        "status": {
+            "pending": "Pending",
+            "queued": "Queued",
+            "processing": "Processing",
+            "ready": "Ready",
+            "failed": "Failed"
+        },
+        "meta": {
+            "pages_one": "{n} page",
+            "pages_other": "{n} pages",
+            "chunks_one": "{n} chunk",
+            "chunks_other": "{n} chunks"
+        },
+        "source": {
+            "upload": "Uploaded file",
+            "url": "Imported from URL",
+            "paste": "Pasted text"
+        },
+        "detail": {
+            "back": "Back to documents",
+            "loading": "Loading document…",
+            "not_found": {
+                "title": "Document not found",
+                "desc": "This document may have been deleted or never existed.",
+                "cta": "Back to documents"
+            },
+            "meta": {
+                "eyebrow": "Document",
+                "type": "Type",
+                "source": "Source",
+                "size": "Size",
+                "pages": "Pages",
+                "chunks": "Chunks",
+                "uploaded": "Uploaded",
+                "updated": "Updated"
+            },
+            "links": {
+                "title": "Linked maps",
+                "generated_label": "Generated map",
+                "generated_empty": "No map has been generated from this document yet.",
+                "attached_label": "Attached to",
+                "attached_empty": "This document isn't attached to any maps.",
+                "open_map": "Open map",
+                "detach": "Detach",
+                "untitled_map": "Untitled map"
+            },
+            "actions": {
+                "title": "Actions",
+                "generate": "Generate mind map",
+                "generating": "Generating…",
+                "generate_hint": "Distill this document into a new mind map.",
+                "generate_not_ready": "Available once processing completes.",
+                "attach": "Attach to a map",
+                "attaching": "Attaching…",
+                "attach_hint": "Use this document as a source for an existing map.",
+                "attach_placeholder": "Choose a map…",
+                "attach_no_maps": "You don't have any maps to attach to yet.",
+                "delete": "Delete document"
+            },
+            "toast": {
+                "generate_failed": "Couldn't generate a map from this document.",
+                "attach_success": "Document attached to the map.",
+                "attach_failed": "Couldn't attach this document to the map.",
+                "detach_success": "Document detached from the map.",
+                "detach_failed": "Couldn't detach this document.",
+                "delete_failed": "Couldn't delete this document."
+            }
+        },
+        "chips": {
+            "generated_map": "Generated map: {title}",
+            "attached_map": "Attached to: {title}"
+        },
+        "delete_confirm": {
+            "title_one": "Delete document",
+            "title_other": "Delete {n} documents",
+            "description_one": "This will permanently delete this document and remove it from the knowledge base. This action cannot be undone.",
+            "description_other": "This will permanently delete {n} documents and remove them from the knowledge base. This action cannot be undone."
+        },
+        "delete_single_confirm": {
+            "title": "Delete document",
+            "description": "This action cannot be undone. Are you sure you want to delete this document?"
+        },
+        "actions": {
+            "upload": "Upload document"
+        },
+        "empty": {
+            "title": "No documents yet",
+            "desc": "Upload a document to ground your maps and AI in your own sources.",
+            "cta": "Upload document"
+        },
+        "no_results": {
+            "title": "No documents found",
+            "desc": "No documents match your search. Try a different term."
+        },
+        "loading": "Loading documents…",
+        "search_placeholder": "Search documents…"
+    }
+}

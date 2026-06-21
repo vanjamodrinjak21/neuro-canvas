@@ -22,6 +22,8 @@ const versions = ref<VersionRow[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const restoringId = ref<string | null>(null)
+/** Row currently showing the inline "are you sure?" confirm. */
+const pendingId = ref<string | null>(null)
 
 async function load() {
   loading.value = true
@@ -39,9 +41,17 @@ async function load() {
   }
 }
 
-async function restore(versionId: string) {
-  if (!window.confirm(t('canvas.version_history.restore_confirm'))) return
+function askRestore(versionId: string) {
+  if (restoringId.value) return
+  pendingId.value = versionId
+}
+function cancelRestore() {
+  pendingId.value = null
+}
+
+async function confirmRestore(versionId: string) {
   restoringId.value = versionId
+  pendingId.value = null
   error.value = null
   try {
     await $fetch(`/api/maps/${props.mapId}/versions/${versionId}/restore`, {
@@ -88,89 +98,162 @@ function authorLabel(v: VersionRow): string {
   return shortAuthor(v.authorId)
 }
 
+function onBackdrop() {
+  if (restoringId.value) return
+  emit('close')
+}
+
 onMounted(load)
-onKeyStroke('Escape', () => emit('close'))
+onKeyStroke('Escape', () => {
+  if (pendingId.value) { pendingId.value = null; return }
+  if (!restoringId.value) emit('close')
+})
 </script>
 
 <template>
-  <aside class="vh-panel" role="dialog" aria-modal="true" :aria-label="t('canvas.version_history.title')">
-    <header class="vh-header">
-      <h2>{{ t('canvas.version_history.title') }}</h2>
-      <button class="vh-close" :aria-label="t('canvas.version_history.close')" @click="emit('close')">
-        <span class="i-lucide-x" />
-      </button>
-    </header>
-
-    <div v-if="error" class="vh-error">{{ error }}</div>
-
-    <div v-if="loading" class="vh-state">{{ t('canvas.version_history.loading') }}</div>
-
-    <ul v-else-if="versions.length" class="vh-list">
-      <li v-for="v in versions" :key="v.id" class="vh-row">
-        <div class="vh-row-main">
-          <div class="vh-row-time">{{ formatDate(v.createdAt) }}</div>
-          <div class="vh-row-meta">
-            <span class="vh-author" :title="v.authorEmail || v.authorId || ''">{{ authorLabel(v) }}</span>
-            <span aria-hidden="true">·</span>
-            <span>{{ formatBytes(v.byteSize) }}</span>
-            <span aria-hidden="true">·</span>
-            <span>v{{ v.version }}</span>
+  <Teleport to="body">
+    <div class="vh-backdrop" @click.self="onBackdrop">
+      <section
+        class="vh-modal"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('canvas.version_history.title')"
+      >
+        <header class="vh-header">
+          <div class="vh-heading">
+            <h2>{{ t('canvas.version_history.title') }}</h2>
+            <p class="vh-subtitle">{{ t('canvas.version_history.subtitle') }}</p>
           </div>
-        </div>
-        <button
-          class="vh-restore"
-          :disabled="restoringId !== null"
-          @click="restore(v.id)"
-        >
-          {{ restoringId === v.id ? t('canvas.version_history.restoring') : t('canvas.version_history.restore') }}
-        </button>
-      </li>
-    </ul>
+          <button
+            class="vh-close"
+            :aria-label="t('canvas.version_history.close')"
+            :disabled="!!restoringId"
+            @click="emit('close')"
+          >
+            <span class="i-lucide-x" />
+          </button>
+        </header>
 
-    <div v-else class="vh-state">{{ t('canvas.version_history.empty') }}</div>
-  </aside>
+        <div v-if="error" class="vh-error">{{ error }}</div>
+
+        <div v-if="loading" class="vh-state">{{ t('canvas.version_history.loading') }}</div>
+
+        <ul v-else-if="versions.length" class="vh-list">
+          <li
+            v-for="v in versions"
+            :key="v.id"
+            class="vh-row"
+            :class="{ 'is-pending': pendingId === v.id }"
+          >
+            <div class="vh-row-main">
+              <div class="vh-row-time">{{ formatDate(v.createdAt) }}</div>
+              <div class="vh-row-meta">
+                <span class="vh-author" :title="v.authorEmail || v.authorId || ''">{{ authorLabel(v) }}</span>
+                <span aria-hidden="true">·</span>
+                <span>{{ formatBytes(v.byteSize) }}</span>
+                <span aria-hidden="true">·</span>
+                <span>v{{ v.version }}</span>
+              </div>
+            </div>
+
+            <div v-if="pendingId === v.id" class="vh-confirm">
+              <span class="vh-confirm-q">{{ t('canvas.version_history.restore_confirm') }}</span>
+              <div class="vh-confirm-actions">
+                <button class="vh-btn vh-btn-ghost" @click="cancelRestore">
+                  {{ t('canvas.version_history.cancel') }}
+                </button>
+                <button class="vh-btn vh-btn-primary" @click="confirmRestore(v.id)">
+                  {{ t('canvas.version_history.restore') }}
+                </button>
+              </div>
+            </div>
+            <button
+              v-else
+              class="vh-btn vh-restore"
+              :disabled="!!restoringId"
+              @click="askRestore(v.id)"
+            >
+              {{ restoringId === v.id ? t('canvas.version_history.restoring') : t('canvas.version_history.restore') }}
+            </button>
+          </li>
+        </ul>
+
+        <div v-else class="vh-state">{{ t('canvas.version_history.empty') }}</div>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
-.vh-panel {
+.vh-backdrop {
   position: fixed;
-  top: 64px;
-  right: 0;
-  bottom: 0;
-  width: 360px;
-  background: var(--nc-surface, #111113);
-  border-left: 1px solid #27272A;
-  color: #FAFAFA;
-  display: flex;
-  flex-direction: column;
-  z-index: 120;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.18);
-}
-.vh-header {
+  inset: 0;
+  z-index: 200;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #27272A;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 4, 6, 0.62);
+  backdrop-filter: blur(4px);
+  animation: vh-fade 140ms ease;
 }
-.vh-header h2 {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+@keyframes vh-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.vh-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: var(--nc-surface, #111113);
+  border: 1px solid var(--nc-border, #27272A);
+  border-radius: 14px;
+  color: var(--nc-ink, #FAFAFA);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: vh-rise 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes vh-rise {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.vh-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--nc-border, #27272A);
+}
+.vh-heading h2 {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   margin: 0;
 }
+.vh-subtitle {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--nc-ink-soft, #A1A1AA);
+}
 .vh-close {
+  flex-shrink: 0;
   width: 32px; height: 32px;
   display: inline-flex; align-items: center; justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--nc-ink-soft, #A1A1AA);
   font-size: 16px;
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
-.vh-close:hover {
+.vh-close:hover:not(:disabled) {
   color: var(--nc-ink, #FAFAFA);
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--nc-border, #27272A);
@@ -179,19 +262,20 @@ onKeyStroke('Escape', () => emit('close'))
   outline: none;
   border-color: var(--nc-accent, #00D2BE);
 }
+.vh-close:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .vh-error {
-  margin: 12px 20px;
+  margin: 14px 22px 0;
   padding: 10px 12px;
   background: rgba(220, 38, 38, 0.12);
   border: 1px solid rgba(220, 38, 38, 0.4);
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12px;
   color: #FCA5A5;
 }
 .vh-state {
-  padding: 28px 20px;
-  color: #71717A;
+  padding: 40px 22px;
+  color: var(--nc-ink-soft, #71717A);
   font-size: 13px;
   text-align: center;
 }
@@ -199,46 +283,85 @@ onKeyStroke('Escape', () => emit('close'))
 .vh-list {
   list-style: none;
   margin: 0;
-  padding: 8px 0;
+  padding: 6px 0;
   overflow-y: auto;
   flex: 1;
 }
 .vh-row {
-  padding: 10px 20px;
+  padding: 12px 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid #1A1A1D;
+  gap: 14px;
+  border-bottom: 1px solid var(--nc-border-soft, #1A1A1D);
+  transition: background 120ms ease;
 }
-.vh-row:hover { background: #161618; }
-.vh-row-time { font-size: 13px; font-weight: 500; }
+.vh-row:last-child { border-bottom: none; }
+.vh-row:hover { background: rgba(255, 255, 255, 0.025); }
+.vh-row.is-pending { background: rgba(0, 210, 190, 0.06); }
+.vh-row-main { min-width: 0; }
+.vh-row-time { font-size: 13.5px; font-weight: 550; }
 .vh-row-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   font-size: 11px;
-  color: #71717A;
-  margin-top: 2px;
+  color: var(--nc-ink-soft, #71717A);
+  margin-top: 3px;
 }
-.vh-author { color: #A1A1AA; }
+.vh-author { color: var(--nc-ink-soft, #A1A1AA); }
 
-.vh-restore {
-  border: 1px solid #27272A;
-  background: transparent;
-  color: #FAFAFA;
-  font-size: 11px;
-  padding: 6px 10px;
-  border-radius: 4px;
+.vh-btn {
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 550;
+  padding: 7px 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+.vh-restore {
+  flex-shrink: 0;
+  border: 1px solid var(--nc-border, #27272A);
+  background: transparent;
+  color: var(--nc-ink, #FAFAFA);
 }
 .vh-restore:hover:not(:disabled) {
-  background: #1A1A1D;
+  background: rgba(255, 255, 255, 0.05);
   border-color: #3F3F46;
 }
-.vh-restore:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.vh-restore:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.vh-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.vh-confirm-q {
+  font-size: 11.5px;
+  color: var(--nc-ink-soft, #A1A1AA);
+  max-width: 180px;
+  text-align: right;
+  line-height: 1.35;
+}
+.vh-confirm-actions { display: flex; gap: 8px; }
+.vh-btn-ghost {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--nc-ink-soft, #A1A1AA);
+}
+.vh-btn-ghost:hover { color: var(--nc-ink, #FAFAFA); background: rgba(255, 255, 255, 0.05); }
+.vh-btn-primary {
+  border: 1px solid transparent;
+  background: var(--nc-accent, #00D2BE);
+  color: #04201D;
+  font-weight: 650;
+}
+.vh-btn-primary:hover { filter: brightness(1.06); }
+
+@media (max-width: 560px) {
+  .vh-confirm { flex-direction: column; align-items: flex-end; gap: 8px; }
+  .vh-confirm-q { max-width: none; }
 }
 </style>
