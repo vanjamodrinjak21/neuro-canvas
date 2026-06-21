@@ -154,6 +154,15 @@ export interface GenerationContext {
   contextSnapshot?: import('~/ai/types/context').RichContext
   /** Locale code for AI-generated content language (e.g. 'hr', 'en') */
   locale?: string
+  /**
+   * Optional ids of READY documents ATTACHED to the current map. When present,
+   * the AI composable fetches the server-built, ragPromptGuard-wrapped
+   * `documentKnowledge` block from POST /api/ai/context and appends it to the
+   * system prompt as untrusted reference material. Empty/absent ⇒ no change
+   * (generation behaves identically to the no-documents path). The client NEVER
+   * wraps raw document text itself — only the server-built block is injected.
+   */
+  documentIds?: string[]
 }
 
 /**
@@ -172,6 +181,12 @@ export interface MapGenerationOptions {
   domain?: string
   /** Locale code for AI-generated content language */
   locale?: string
+  /**
+   * Optional ids of READY documents ATTACHED to the map. When present, the
+   * server-built `documentKnowledge` block is appended to the system prompt as
+   * untrusted reference material (same contract as GenerationContext.documentIds).
+   */
+  documentIds?: string[]
 }
 
 /**

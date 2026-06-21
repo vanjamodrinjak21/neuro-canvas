@@ -28,6 +28,26 @@ export function getLanguageInstruction(locale?: string): string {
 }
 
 /**
+ * Append a server-built document-knowledge block to a system prompt.
+ *
+ * SECURITY: `documentKnowledge` MUST be the string already assembled +
+ * ragPromptGuard-wrapped SERVER-SIDE (see server/api/ai/context.post.ts /
+ * server/utils/ragPromptGuard.ts). This helper does the appending ONLY — it
+ * never wraps, escapes, or builds a block from raw document text. Passing raw
+ * chunk text here would defeat the prompt-injection defense and is forbidden.
+ *
+ * When the block is empty/whitespace, the original system prompt is returned
+ * unchanged, so generation behaves identically to the no-documents path.
+ */
+export function appendDocumentKnowledge(
+  systemPrompt: string,
+  documentKnowledge?: string | null,
+): string {
+  if (!documentKnowledge || !documentKnowledge.trim()) return systemPrompt
+  return `${systemPrompt}\n\n${documentKnowledge}`
+}
+
+/**
  * Get style-specific instructions for prompts
  */
 function getStyleInstructions(style: GenerationStyle): string {

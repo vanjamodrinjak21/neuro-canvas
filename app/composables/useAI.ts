@@ -15,7 +15,8 @@ import {
   buildNodeDescriptionPrompt,
   buildMapStructurePrompt,
   buildHierarchicalExpandPrompt,
-  buildConnectionSuggestionPrompt
+  buildConnectionSuggestionPrompt,
+  appendDocumentKnowledge
 } from '~/utils/ai-prompts'
 import { aiComplete } from '~/utils/aiClient'
 import { getMaxOutputTokens } from '~/utils/modelTokenLimits'
@@ -354,6 +355,70 @@ export function useAI() {
   }
 
   /**
+   * Fetch the SERVER-BUILT document-knowledge block for a RAG-augmented
+   * generation.
+   *
+   * Given a query, the current mapId, and the ids of READY documents ATTACHED
+   * to the map, this POSTs to /api/ai/context and returns the server's
+   * `documentKnowledge` string — already escaped + wrapped by ragPromptGuard
+   * SERVER-SIDE. The client NEVER assembles this block from raw chunk text.
+   *
+   * Returns `null` (⇒ caller leaves the prompt untouched) when:
+   *  - no documentIds are supplied,
+   *  - running inside a native shell (no Nitro /api server),
+   *  - no mapId is available,
+   *  - the request fails, or
+   *  - the server returns no usable `documentKnowledge` string.
+   *
+   * The endpoint requires a 256-dim query embedding for its node-context leg;
+   * we compute it via the existing embedding pipeline. Document-chunk retrieval
+   * is re-embedded server-side, so this vector never steers chunk selection.
+   */
+  async function fetchDocumentKnowledge(
+    query: string,
+    documentIds?: string[],
+    mapId?: string
+  ): Promise<string | null> {
+    if (!documentIds || documentIds.length === 0) return null
+    // Native shells (Tauri/Capacitor) talk to the LLM directly and have no
+    // server-side RAG endpoint — skip silently, identical to the no-docs path.
+    if (_isNativeShell()) return null
+    const resolvedMapId = mapId ?? semanticStore.currentMapId
+    if (!resolvedMapId) return null
+
+    try {
+      const trimmedQuery = (query ?? '').trim()
+      if (!trimmedQuery) return null
+
+      // 256-dim embedding for the node-context leg (required by the endpoint).
+      const [queryEmbedding] = await generateEmbeddings([trimmedQuery])
+      if (!queryEmbedding || queryEmbedding.length === 0) return null
+
+      const response = await $fetch<{ documentKnowledge?: string | null }>(
+        '/api/ai/context',
+        {
+          method: 'POST',
+          body: {
+            query: trimmedQuery,
+            mapId: resolvedMapId,
+            queryEmbedding,
+            documentIds
+          }
+        }
+      )
+
+      const knowledge = response?.documentKnowledge
+      return typeof knowledge === 'string' && knowledge.trim().length > 0
+        ? knowledge
+        : null
+    } catch (e) {
+      // RAG augmentation is best-effort — never block generation on it.
+      console.debug('[useAI] document-knowledge fetch failed:', e)
+      return null
+    }
+  }
+
+  /**
    * Enhanced Smart Expand - Generate rich suggestions with descriptions
    * Supports streaming, caching via Redis, and retry with backoff.
    */
@@ -369,7 +434,13 @@ export function useAI() {
     error.value = null
 
     try {
-      const { system, user } = buildEnhancedExpandPrompt(nodeContent, context, maxSuggestions)
+      const base = buildEnhancedExpandPrompt(nodeContent, context, maxSuggestions)
+      // RAG: when documents are attached, append the SERVER-BUILT, guard-wrapped
+      // knowledge block to the system prompt. Done BEFORE the cache key is
+      // derived so RAG-augmented and plain prompts never collide in the cache.
+      const documentKnowledge = await fetchDocumentKnowledge(nodeContent, context.documentIds)
+      const system = appendDocumentKnowledge(base.system, documentKnowledge)
+      const user = base.user
 
       // Check Redis-backed cache first
       const cache = getSemanticCache()
@@ -514,7 +585,13 @@ export function useAI() {
         ? { ...options, branchCount: Math.min(options.branchCount || 4, 4), maxDepth: 1, includeCrossConnections: false }
         : options
 
-      const { system, user } = buildMapStructurePrompt(topic, effectiveOptions)
+      const base = buildMapStructurePrompt(topic, effectiveOptions)
+      // RAG: append the SERVER-BUILT, guard-wrapped knowledge block when docs
+      // are attached. The topic is the retrieval query. Done before the cache
+      // key so RAG and plain prompts never collide.
+      const documentKnowledge = await fetchDocumentKnowledge(topic, options.documentIds)
+      const system = appendDocumentKnowledge(base.system, documentKnowledge)
+      const user = base.user
 
       // Check Redis cache
       const cache = getSemanticCache()
@@ -583,7 +660,13 @@ export function useAI() {
     error.value = null
 
     try {
-      const { system, user } = buildHierarchicalExpandPrompt(nodeContent, context, options)
+      const base = buildHierarchicalExpandPrompt(nodeContent, context, options)
+      // RAG: append the SERVER-BUILT, guard-wrapped knowledge block when docs
+      // are attached. Done before the cache key so RAG and plain prompts never
+      // collide.
+      const documentKnowledge = await fetchDocumentKnowledge(nodeContent, context.documentIds)
+      const system = appendDocumentKnowledge(base.system, documentKnowledge)
+      const user = base.user
 
       const cache = getSemanticCache()
       const cached = await cache.get(system, user)

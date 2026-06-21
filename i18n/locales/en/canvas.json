@@ -126,7 +126,10 @@
       "hint": "Type to search by text or meaning",
       "match_text": "Text",
       "match_semantic": "Semantic",
-      "match_both": "Both"
+      "match_both": "Both",
+      "document_badge": "Document",
+      "document_page": "p. {page}",
+      "document_open_hint": "This is a document excerpt — open the source document to read more"
     },
     "generate_map": {
       "title": "Generate Mind Map",

@@ -359,6 +359,38 @@ const showSemanticSearch = ref(false)
 const showSemanticSettings = ref(false)
 const semanticSearchRef = ref<{ setResults: (r: import('~/types/semantic').SemanticSearchResult[]) => void; setSearching: (v: boolean) => void } | null>(null)
 
+// Document RAG: ids of READY documents ATTACHED to this map. Used as AI
+// context (server-built, guard-wrapped knowledge block) and to surface
+// document chunks in semantic search. Empty ⇒ all AI/search behaves identically
+// to the no-documents path.
+const attachedDocumentIds = ref<string[]>([])
+
+/**
+ * Refresh the attached-document id list from the server. Only READY docs are
+ * usable for RAG (chunks exist + embeddings computed). Best-effort: failures
+ * (offline, guest, native shell with no /api) leave the list empty so AI/search
+ * fall back to the no-documents path. Safe to call after the map loads and
+ * whenever a document is attached/detached.
+ */
+async function refreshAttachedDocuments() {
+  if (guest.isGuest.value || !mapStore.id || mapStore.id === 'new') {
+    attachedDocumentIds.value = []
+    return
+  }
+  try {
+    const res = await $fetch<{
+      documents: Array<{ id: string; status: string; linkType: string }>
+    }>(`/api/maps/${mapStore.id}/documents`)
+    attachedDocumentIds.value = res.documents
+      .filter(d => d.status === 'READY')
+      .map(d => d.id)
+  } catch (e) {
+    // No attached docs / offline / unauthorized → behave as no-documents.
+    console.debug('[Map] refreshAttachedDocuments failed:', e)
+    attachedDocumentIds.value = []
+  }
+}
+
 // Semantic field visibility (toggle with S key)
 const semanticFieldEnabled = computed({
   get: () => semanticStore.fieldSettings.enabled,
@@ -597,6 +629,10 @@ onMounted(async () => {
 
     // Set up semantic store
     semanticStore.setCurrentMap(mapStore.id)
+
+    // Load the map's attached documents (for RAG context + doc search). Fire and
+    // forget — never blocks map load, and leaves the list empty on failure.
+    refreshAttachedDocuments()
 
     // Only initialize AI for authenticated users
     if (!guest.isGuest.value) {
@@ -1111,6 +1147,7 @@ async function handleAutonomousExpand(targetTotal = DEFAULT_EXPAND_NODE_COUNT) {
         depth: 'medium',
         style: 'detailed',
         locale: currentLocale.value,
+        documentIds: attachedDocumentIds.value,
       }
       try {
         const suggestions = await ai.enhancedSmartExpand(node.content, context, childrenPerNode)
@@ -1176,7 +1213,8 @@ async function handleSmartExpand() {
       })),
       depth: 'medium',
       style: 'detailed',
-      locale: currentLocale.value
+      locale: currentLocale.value,
+      documentIds: attachedDocumentIds.value
     }
 
     // Try enhanced expand first
@@ -1434,7 +1472,8 @@ async function handleGenerateSuggestions() {
       })),
       depth: 'medium',
       style: 'detailed',
-      locale: currentLocale.value
+      locale: currentLocale.value,
+      documentIds: attachedDocumentIds.value
     }
 
     // Try enhanced expand
@@ -1548,7 +1587,8 @@ async function handleDeepExpand() {
       })),
       depth: 'deep',
       style: 'detailed',
-      locale: currentLocale.value
+      locale: currentLocale.value,
+      documentIds: attachedDocumentIds.value
     }
 
     const suggestions = await ai.hierarchicalExpand(node.content, context, {
@@ -1638,6 +1678,7 @@ async function handleMobileGenerateMap(topic: string, depth: 'shallow' | 'medium
         style: 'concise',
         includeCrossConnections: depth !== 'shallow',
         locale: currentLocale.value,
+        documentIds: attachedDocumentIds.value,
       },
       {
         stream: true,
@@ -1699,7 +1740,8 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
       style: options.style as 'concise' | 'detailed' | 'academic',
       includeCrossConnections: options.depth !== 'shallow',
       domain: options.domain,
-      locale: currentLocale.value
+      locale: currentLocale.value,
+      documentIds: attachedDocumentIds.value
     })
 
     // Clear existing nodes if desired or render at offset
@@ -1803,6 +1845,7 @@ watch(
 async function handleSemanticSearch(query: string) {
   if (!query.trim()) return
   semanticSearchRef.value?.setSearching(true)
+  type SearchResult = import('~/types/semantic').SemanticSearchResult
   try {
     const nodesWithEmbeddings = semanticStore.nodesWithEmbeddings
     const nodes = nodesWithEmbeddings.map(n => ({
@@ -1811,19 +1854,62 @@ async function handleSemanticSearch(query: string) {
       embedding: n.embedding
     })).filter(n => n.content)
 
-    if (nodes.length === 0) {
-      semanticSearchRef.value?.setResults([])
-      return
-    }
+    // Node leg (existing behaviour — unchanged when no docs are attached).
+    const nodeResultsPromise: Promise<SearchResult[]> = nodes.length > 0
+      ? ai.sendMessage<{ results: SearchResult[] }>('hybrid-search', { query, nodes, topK: 10 })
+          .then(r => r.results)
+      : Promise.resolve([])
 
-    const result = await ai.sendMessage<{
-      results: import('~/types/semantic').SemanticSearchResult[]
-    }>('hybrid-search', { query, nodes, topK: 10 })
+    // Document leg — only when READY documents are attached. Best-effort: a
+    // failure here never affects the node results.
+    const docResultsPromise: Promise<SearchResult[]> = attachedDocumentIds.value.length > 0
+      ? $fetch<{
+          results: Array<{
+            chunkId: string
+            documentId: string
+            text: string
+            page: number | null
+            rrfScore: number
+          }>
+        }>('/api/search/hybrid', {
+          method: 'POST',
+          body: {
+            queryText: query.trim(),
+            documentIds: attachedDocumentIds.value,
+            topK: 5
+          }
+        })
+          .then(r => r.results.map((c): SearchResult => ({
+            // Synthetic, unique key (chunks have no node id). The component
+            // guards against navigation for document chunks.
+            nodeId: `doc:${c.chunkId}`,
+            content: c.text,
+            similarity: c.rrfScore,
+            matchType: 'hybrid',
+            isDocumentChunk: true,
+            documentId: c.documentId,
+            chunkId: c.chunkId,
+            page: c.page
+          })))
+          .catch((e) => {
+            console.debug('Document search failed:', e)
+            return [] as SearchResult[]
+          })
+      : Promise.resolve([])
 
-    semanticSearchRef.value?.setResults(result.results)
+    const [nodeResults, docResults] = await Promise.all([nodeResultsPromise, docResultsPromise])
+
+    // Merge node + document results, sorted by similarity, capped at ~10.
+    const merged = [...nodeResults, ...docResults]
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 10)
+
+    semanticSearchRef.value?.setResults(merged)
   } catch (e) {
     console.error('Semantic search failed:', e)
     semanticSearchRef.value?.setResults([])
+  } finally {
+    semanticSearchRef.value?.setSearching(false)
   }
 }
 

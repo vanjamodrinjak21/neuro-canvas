@@ -126,7 +126,10 @@
       "hint": "Pretražujte po tekstu ili značenju",
       "match_text": "Tekst",
       "match_semantic": "Semantičko",
-      "match_both": "Oboje"
+      "match_both": "Oboje",
+      "document_badge": "Dokument",
+      "document_page": "str. {page}",
+      "document_open_hint": "Ovo je isječak iz dokumenta — otvorite izvorni dokument za više"
     },
     "generate_map": {
       "title": "Generiraj mentalnu mapu",

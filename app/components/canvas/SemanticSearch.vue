@@ -63,19 +63,23 @@ function handleKeyDown(e: KeyboardEvent) {
   } else if (e.key === 'Enter' && results.value.length > 0) {
     e.preventDefault()
     const selected = results.value[selectedIndex.value]
-    if (selected) {
-      emit('navigate-to-node', selected.nodeId)
-      emit('close')
-    }
+    if (selected) selectResult(selected)
   }
 }
 
 function selectResult(result: SemanticSearchResult) {
+  // Document chunks aren't nodes — don't navigate. Surface a gentle hint and
+  // keep the palette open so the user can pick a node result instead.
+  if (result.isDocumentChunk) {
+    toast.info(t('canvas.semantic_search.document_open_hint'))
+    return
+  }
   emit('navigate-to-node', result.nodeId)
   emit('close')
 }
 
 const { t } = useI18n()
+const toast = useToast()
 
 function matchTypeBadgeI18n(type: SemanticSearchResult['matchType']) {
   switch (type) {
@@ -124,15 +128,31 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
             <button
               v-for="(result, index) in results"
               :key="result.nodeId"
-              :class="['nc-search-result', index === selectedIndex && 'selected']"
+              :class="['nc-search-result', index === selectedIndex && 'selected', result.isDocumentChunk && 'is-document']"
               @click="selectResult(result)"
               @mouseenter="selectedIndex = index"
             >
               <div class="nc-result-content">
                 <span class="nc-result-text">{{ result.content }}</span>
-                <span class="nc-result-similarity">{{ Math.round(result.similarity * 100) }}%</span>
+                <span
+                  v-if="result.isDocumentChunk && result.page != null"
+                  class="nc-result-page"
+                >{{ $t('canvas.semantic_search.document_page', { page: result.page }) }}</span>
+                <span
+                  v-else-if="!result.isDocumentChunk"
+                  class="nc-result-similarity"
+                >{{ Math.round(result.similarity * 100) }}%</span>
               </div>
-              <span :class="['nc-result-badge', matchTypeBadgeI18n(result.matchType).class]">
+              <span
+                v-if="result.isDocumentChunk"
+                class="nc-result-badge nc-badge-document"
+              >
+                {{ $t('canvas.semantic_search.document_badge') }}
+              </span>
+              <span
+                v-else
+                :class="['nc-result-badge', matchTypeBadgeI18n(result.matchType).class]"
+              >
                 {{ matchTypeBadgeI18n(result.matchType).label }}
               </span>
             </button>
@@ -306,6 +326,23 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 .nc-badge-hybrid {
   background: rgba(0, 210, 190, 0.2);
   color: var(--nc-accent, #00D2BE);
+}
+
+/* Document-chunk result: distinct amber badge + non-clickable affordance. */
+.nc-badge-document {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+}
+
+.nc-result-page {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.nc-search-result.is-document {
+  cursor: default;
 }
 
 .nc-search-empty,

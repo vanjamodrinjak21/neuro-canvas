@@ -142,6 +142,35 @@ export function buildRagPrompt(
 }
 
 /**
+ * Convenience assembler that turns retrieved, UNTRUSTED document chunk texts
+ * into the single, self-contained string the prompt layer injects VERBATIM into
+ * the system prompt.
+ *
+ * This is the server-side wrapping boundary: callers pass raw chunk text and get
+ * back a block that is (a) prefixed with the non-overridable untrusted-data
+ * declaration and (b) fully escaped + wrapped in the one hard-coded
+ * `<document_context source="user_document">` element. The client must NEVER do
+ * this wrapping itself — it receives only the finished, safe string.
+ *
+ * Returns '' (empty string) when there are no chunks, so the handler can return
+ * an empty `documentKnowledge` field with no extra branching and the client can
+ * treat "" as "no document knowledge to inject".
+ */
+export function buildDocumentKnowledge(chunkTexts: string[]): string {
+  // Drop empty/whitespace-only chunks so a block of blank lines never produces a
+  // misleading non-empty knowledge string.
+  const nonEmpty = chunkTexts.filter((t) => t.trim().length > 0)
+  if (nonEmpty.length === 0) return ''
+
+  const { systemPrefix, context } = buildRagPrompt(nonEmpty)
+
+  // systemPrefix carries the hard-coded source attribution + never-instructions
+  // declaration; context is the escaped + wrapped untrusted block. Concatenated,
+  // they form the verbatim-injectable knowledge string.
+  return `${systemPrefix}\n\n${context}`
+}
+
+/**
  * Keys that signal an attempt to escalate from data into control — a model that
  * has been manipulated into emitting tool/function invocation or a chat-role
  * directive. Matched case-insensitively, anywhere in the object graph.

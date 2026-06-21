@@ -4,6 +4,7 @@ import { validateBody, ragContextSchema } from '../../utils/validation'
 import { prisma } from '../../utils/prisma'
 import { toPgVector, generateEmbeddingFromText } from '../../utils/embeddings'
 import { checkRateLimit } from '../../utils/redis'
+import { buildDocumentKnowledge } from '../../utils/ragPromptGuard'
 
 interface ContextRow {
   nodeId: string
@@ -188,5 +189,13 @@ export default defineEventHandler(async (event) => {
   const docTokens = documentContext.reduce((sum, c) => sum + Math.ceil(c.text.length / 4), 0)
   const totalTokensEstimate = nodeTokens + docTokens
 
-  return { context, documentContext, totalTokensEstimate }
+  // SERVER-SIDE prompt-injection wrapping (plan §0(f), §6). When document chunks
+  // were retrieved, we assemble the SAFE, escaped, source-attributed block here —
+  // NEVER trusting the client to do it. The client injects `documentKnowledge`
+  // VERBATIM into the system prompt; `documentContext[]` stays as raw reference
+  // data and must NOT be sent to the LLM. With no chunks this is '' (empty), and
+  // the rest of the response is byte-for-byte the legacy shape — additive only.
+  const documentKnowledge = buildDocumentKnowledge(documentContext.map(c => c.text))
+
+  return { context, documentContext, totalTokensEstimate, documentKnowledge }
 })

@@ -103,6 +103,18 @@ export interface SemanticSearchResult {
   content: string
   similarity: number
   matchType: 'exact' | 'semantic' | 'hybrid'
+  /**
+   * True when this result is a chunk from an ATTACHED document (RAG) rather
+   * than a node in the current map. Document-chunk results carry document
+   * provenance (documentId/chunkId/page) and must NOT trigger node navigation.
+   */
+  isDocumentChunk?: boolean
+  /** Source document id (only for document-chunk results). */
+  documentId?: string
+  /** Source chunk id (only for document-chunk results). */
+  chunkId?: string
+  /** 1-based page number the chunk came from, when known. */
+  page?: number | null
 }
 
 // ═══════════════ INSIGHTS ═══════════════
