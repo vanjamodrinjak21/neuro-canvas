@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../../generated/prisma'
 import { requireAuthSession } from '../../utils/syncHelpers'
 import { validateBody, ragContextSchema } from '../../utils/validation'
 import { prisma } from '../../utils/prisma'

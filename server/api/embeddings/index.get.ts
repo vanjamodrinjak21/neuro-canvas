@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../../generated/prisma'
 import { cache, cacheKeys } from '../../utils/redis'
 import { requireAuthSession } from '../../utils/syncHelpers'
 import { prisma } from '../../utils/prisma'

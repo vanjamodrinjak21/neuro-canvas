@@ -40,7 +40,7 @@
 // ---------------------------------------------------------------------------
 
 import { randomUUID, createHash } from 'node:crypto'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../generated/prisma'
 import { prisma } from './prisma'
 import { getObjectBuffer } from './r2'
 import { releaseIngest } from './redis'

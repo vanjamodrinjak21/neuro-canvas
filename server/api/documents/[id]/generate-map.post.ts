@@ -31,7 +31,7 @@
 // manipulated document therefore cannot escalate from data into control.
 // ---------------------------------------------------------------------------
 
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '../../../generated/prisma'
 import { nanoid } from 'nanoid'
 import { requireAuthSession, generateChecksum, computeByteSize } from '../../../utils/syncHelpers'
 import { validateBody, documentGenerateMapSchema, cuidStrict } from '../../../utils/validation'
