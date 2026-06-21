@@ -64,10 +64,28 @@ export default defineNitroPlugin(async () => {
 
   // Dedicated consumer connection — mirrors documentQueue.ts getConnection():
   // REDIS_URL, maxRetriesPerRequest: null (REQUIRED by BullMQ workers).
+  //
+  // IMPORTANT: read process.env.REDIS_URL FIRST, NOT config.redisUrl. Nuxt
+  // runtimeConfig is BAKED AT BUILD TIME — during the Docker build REDIS_URL is
+  // unset, so config.redisUrl bakes to the 'redis://localhost:6379' fallback and
+  // is only overridable at runtime by a NUXT_-prefixed var (NUXT_REDIS_URL).
+  // Preferring config.redisUrl made the worker dial localhost:6379 inside its own
+  // container → ECONNREFUSED loop. redis.ts + documentQueue.ts both read
+  // process.env.REDIS_URL directly; this MUST match them.
   const redisUrl =
-    (config.redisUrl as string) || process.env.REDIS_URL || 'redis://localhost:6379'
+    process.env.REDIS_URL || (config.redisUrl as string) || 'redis://localhost:6379'
   const connection = new IORedis(redisUrl, {
     maxRetriesPerRequest: null,
+  })
+  // Positive, secret-free connection signal (host only — never the credentials).
+  let redisHost = 'unknown'
+  try {
+    redisHost = `${new URL(redisUrl).hostname}:${new URL(redisUrl).port || '6379'}`
+  } catch {
+    /* keep 'unknown' */
+  }
+  connection.once('ready', () => {
+    console.log(`[ingestion-worker] redis ready (${redisHost})`)
   })
 
   const concurrency = Number(process.env.INGEST_CONCURRENCY || '10')
@@ -100,11 +118,15 @@ export default defineNitroPlugin(async () => {
         (err instanceof Error ? err.message : String(err)),
     )
   })
+  // Surface enough detail that a connection failure isn't a blind, empty-message
+  // loop (an ECONNREFUSED Error can carry its detail on .code, not .message).
   worker.on('error', (err) => {
-    console.warn(
-      '[ingestion-worker] worker error: ' +
-        (err instanceof Error ? err.message : String(err)),
-    )
+    const e = err as { message?: string; code?: string; name?: string; address?: string; port?: number }
+    const detail =
+      [e?.name, e?.code, e?.message, e?.address && `${e.address}:${e.port ?? ''}`]
+        .filter(Boolean)
+        .join(' ') || '(no detail)'
+    console.warn(`[ingestion-worker] worker error: ${detail}`)
   })
   worker.on('stalled', (jobId) => {
     console.warn(`[ingestion-worker] stalled job ${jobId}`)
