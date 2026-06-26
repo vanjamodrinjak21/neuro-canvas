@@ -181,5 +181,66 @@
             "copy": "Kopiraj k\u00f4d",
             "copied": "Kopirano!"
         }
+    },
+    "generation": {
+        "dock_title": "Generiranje mape",
+        "in_progress": "Generiranje\u2026",
+        "building": "Gradim \u201e{topic}\u201d",
+        "ready": "Spremno",
+        "ready_title": "\u201e{topic}\u201d je spremna",
+        "failed": "Generiranje nije uspjelo",
+        "open": "Otvori mapu",
+        "retry": "Poku\u0161aj ponovno",
+        "dismiss": "Odbaci",
+        "toast_started": "Generiram \u201e{topic}\u201d u pozadini \u2014 mo\u017eete nastaviti raditi.",
+        "notify_title": "Va\u0161a mapa je spremna",
+        "notify_body": "\u201e{topic}\u201d je zavr\u0161ila s generiranjem."
+    },
+    "command_palette": {
+        "placeholder": "Pretra\u017ei sve\u2026",
+        "escape_key": "Esc",
+        "searching": "Pretra\u017eivanje\u2026",
+        "no_results": "Nema rezultata za \u201e{query}\u201d",
+        "untitled": "Bezimena mapa",
+        "nodes_count": "{n} \u010dvorova",
+        "empty": {
+            "subtitle": "Pretra\u017eite mape, dokumente, predlo\u0161ke \u2014 ili pokrenite naredbu"
+        },
+        "groups": {
+            "generate": "Generiraj",
+            "actions": "Radnje",
+            "maps": "Mape",
+            "documents": "Dokumenti",
+            "templates": "Predlo\u0161ci",
+            "navigation": "Idi na"
+        },
+        "nav": {
+            "dashboard": "Nadzorna plo\u010da",
+            "maps": "Sve mape",
+            "documents": "Dokumenti",
+            "templates": "Predlo\u0161ci",
+            "settings": "Postavke",
+            "roadmap": "Plan razvoja"
+        },
+        "actions": {
+            "new_map": "Nova mapa",
+            "generate_map": "Generiraj mapu pomo\u0107u AI-ja",
+            "generate_query": "Generiraj mapu: \u201e{query}\u201d",
+            "upload_document": "U\u010ditaj dokument"
+        },
+        "doc_status": {
+            "pending": "Na \u010dekanju",
+            "queued": "U redu",
+            "processing": "Obrada",
+            "failed": "Neuspjelo"
+        },
+        "footer": {
+            "navigate": "Kretanje",
+            "select": "Otvori",
+            "dismiss": "Zatvori"
+        },
+        "errors": {
+            "action_failed": "Ne\u0161to je po\u0161lo po zlu"
+        }
     }
 }

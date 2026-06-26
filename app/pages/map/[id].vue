@@ -2,7 +2,7 @@
 import type { Camera, Node, Edge, Point } from '~/types/canvas'
 import type { NodeTemplate } from '~/components/canvas/NodeTemplates.vue'
 import type { ContextMenuItem } from '~/components/ui/NcContextMenu.vue'
-import type { AISuggestion, RichNodeSuggestion, GenerationContext } from '~/types'
+import type { AISuggestion, RichNodeSuggestion, GenerationContext, GenerationStyle, GenerationTone } from '~/types'
 import type { SidebarAction } from '~/types/sidebar'
 import { useMapStore, attachUndoEngine } from '~/stores/mapStore'
 import { useUserStore } from '~/stores/userStore'
@@ -318,10 +318,15 @@ const showGenerateMapDialog = ref(false)
 const DEFAULT_EXPAND_NODE_COUNT = 12
 const showExpandDialog = ref(false)
 const expandNodeCount = ref(DEFAULT_EXPAND_NODE_COUNT)
-function handleExpandConfirm(count: number) {
+// Remembered per session so the picker re-opens on the user's last choice.
+const expandStyle = ref<GenerationStyle>('detailed')
+const expandTone = ref<GenerationTone>('neutral')
+function handleExpandConfirm(count: number, style: GenerationStyle = 'detailed', tone: GenerationTone = 'neutral') {
   expandNodeCount.value = count
+  expandStyle.value = style
+  expandTone.value = tone
   showExpandDialog.value = false
-  void handleAutonomousExpand(count)
+  void handleAutonomousExpand(count, style, tone)
 }
 
 // Overflow menu (managed by OverflowMenu component internally)
@@ -940,10 +945,23 @@ onKeyStroke('s', (e) => {
   }
 }, { eventName: 'keyup' })
 onKeyStroke('\\', () => { if (!isTyping()) sidebarCollapsed.value = !sidebarCollapsed.value })
-onKeyStroke('k', (e) => {
-  if (e.ctrlKey || e.metaKey) {
+// Cmd/Ctrl+SHIFT+K toggles the in-map semantic node search. Plain Cmd/Ctrl+K is
+// reserved for the GLOBAL command palette (app/components/CommandPalette.vue),
+// so this requires Shift to avoid shadowing it on the map page.
+// Array form ['k','K'] is REQUIRED: holding Shift makes KeyboardEvent.key the
+// uppercase 'K', so a string predicate keyed on 'k' would never match Cmd+Shift+K.
+onKeyStroke(['k', 'K'], (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
     e.preventDefault()
     showSemanticSearch.value = !showSemanticSearch.value
+  }
+})
+// Cmd/Ctrl+E — AI-expand the selected node. Wires up the shortcut that
+// ShortcutsModal already documents but was never bound.
+onKeyStroke('e', (e) => {
+  if ((e.ctrlKey || e.metaKey) && !isTyping()) {
+    e.preventDefault()
+    void handleSmartExpand()
   }
 })
 
@@ -1110,7 +1128,11 @@ function handleAddNode() {
  * map's frontier the way the generator builds one: expand each leaf node with a
  * few AI-generated children so the map extends itself, no node-picking required.
  */
-async function handleAutonomousExpand(targetTotal = DEFAULT_EXPAND_NODE_COUNT) {
+async function handleAutonomousExpand(
+  targetTotal = DEFAULT_EXPAND_NODE_COUNT,
+  style: GenerationStyle = 'detailed',
+  tone: GenerationTone = 'neutral',
+) {
   if (mapStore.nodes.size === 0) return
 
   isAILoading.value = true
@@ -1145,7 +1167,8 @@ async function handleAutonomousExpand(targetTotal = DEFAULT_EXPAND_NODE_COUNT) {
           label: e.label,
         })),
         depth: 'medium',
-        style: 'detailed',
+        style,
+        tone,
         locale: currentLocale.value,
         documentIds: attachedDocumentIds.value,
       }
@@ -1723,7 +1746,7 @@ async function handleMobileGenerateMap(topic: string, depth: 'shallow' | 'medium
   }
 }
 
-async function handleGenerateMap(topic: string, options: { depth: string; style: string; domain?: string }) {
+async function handleGenerateMap(topic: string, options: { depth: string; style: string; domain?: string; nodeCount?: number; tone?: GenerationTone }) {
   isAILoading.value = true
   showGenerateMapDialog.value = false
 
@@ -1737,7 +1760,9 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
     const structure = await ai.generateMapStructure(topic, {
       branchCount: depthMap[options.depth] || 5,
       maxDepth: options.depth === 'shallow' ? 1 : options.depth === 'deep' ? 3 : 2,
+      nodeCount: options.nodeCount,
       style: options.style as 'concise' | 'detailed' | 'academic',
+      tone: options.tone,
       includeCrossConnections: options.depth !== 'shallow',
       domain: options.domain,
       locale: currentLocale.value,
@@ -2286,6 +2311,8 @@ useHead({
       :visible="showExpandDialog"
       :is-loading="isAILoading"
       :initial="expandNodeCount"
+      :initial-style="expandStyle"
+      :initial-tone="expandTone"
       @close="showExpandDialog = false"
       @confirm="handleExpandConfirm"
     />

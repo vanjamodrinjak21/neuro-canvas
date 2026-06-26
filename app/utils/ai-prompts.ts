@@ -3,6 +3,7 @@
 import type {
   GenerationContext,
   GenerationStyle,
+  GenerationTone,
   GenerationDepth,
   MapGenerationOptions,
   HierarchicalExpandOptions,
@@ -64,6 +65,28 @@ function getStyleInstructions(style: GenerationStyle): string {
 }
 
 /**
+ * Get tone-specific instructions for prompts. Tone shapes the VOICE/register of
+ * generated text (word choice, formality), independent of `style` (verbosity).
+ * Returns '' for the neutral default so the prompt stays unchanged when no tone
+ * is chosen.
+ */
+function getToneInstructions(tone?: GenerationTone): string {
+  switch (tone) {
+    case 'academic':
+      return 'VOICE: Formal academic register. Precise terminology, measured claims, third-person; write as if for a scholarly reader.'
+    case 'professional':
+      return 'VOICE: Crisp professional register. Direct, confident, action-oriented business language; no slang, no fluff.'
+    case 'casual':
+      return 'VOICE: Friendly and conversational. Plain everyday language, approachable and warm, as if explaining to a curious friend.'
+    case 'creative':
+      return 'VOICE: Vivid and imaginative. Evocative phrasing, fresh metaphors, and energy that sparks new ideas — while staying accurate.'
+    case 'neutral':
+    default:
+      return ''
+  }
+}
+
+/**
  * Get depth-specific instructions for prompts
  */
 function getDepthInstructions(depth: GenerationDepth): { branchCount: number; childDepth: number } {
@@ -121,6 +144,7 @@ export function buildEnhancedExpandPrompt(
   maxSuggestions: number = 5
 ): { system: string; user: string } {
   const styleInstructions = getStyleInstructions(context.style)
+  const toneInstructions = getToneInstructions(context.tone)
   const domainContext = context.domain ? `\nDomain/Subject Area: ${context.domain}` : ''
 
   const langInstruction = getLanguageInstruction(context.locale)
@@ -132,7 +156,7 @@ export function buildEnhancedExpandPrompt(
 - a concrete example naming a real person, event, product, or case
 - a surprising link to an adjacent idea
 
-${styleInstructions}${langInstruction}
+${styleInstructions}${toneInstructions ? `\n${toneInstructions}` : ''}${langInstruction}
 
 CRITICAL REQUIREMENTS:
 1. Generate exactly ${maxSuggestions} suggestions with VARIED categories (never all the same).
@@ -218,13 +242,16 @@ export function buildMapStructurePrompt(
   const {
     branchCount = 5,
     maxDepth = 2,
+    nodeCount,
     style = 'detailed',
+    tone,
     includeCrossConnections = true,
     domain,
     locale
   } = options
 
   const styleInstructions = getStyleInstructions(style)
+  const toneInstructions = getToneInstructions(tone)
   const domainContext = domain ? `\nDomain/Subject Area: ${domain}` : ''
   const langInstruction = getLanguageInstruction(locale)
 
@@ -233,15 +260,20 @@ export function buildMapStructurePrompt(
   const maxChildren = maxDepth >= 3 ? 4 : 3
   const crossConnectionCount = includeCrossConnections ? Math.min(branchCount, 5) : 0
 
+  // Node-count target. When the caller specifies an explicit nodeCount, target a
+  // tight band around it; otherwise fall back to the branchCount-derived range.
+  const targetLow = nodeCount ? Math.max(branchCount + 1, Math.round(nodeCount * 0.85)) : branchCount * 4
+  const targetHigh = nodeCount ? Math.round(nodeCount * 1.15) : branchCount * 6
+
   const system = `You are a world-class mind-mapping architect. You turn a single topic into a rich, multi-level knowledge map an expert would be proud of — structurally varied, intellectually interesting, and genuinely useful for learning or thinking.
 
-${styleInstructions}${langInstruction}
+${styleInstructions}${toneInstructions ? `\n${toneInstructions}` : ''}${langInstruction}
 
 NON-NEGOTIABLE STRUCTURE:
 1. Create exactly ${branchCount} main branches, each a DISTINCT facet of the topic (not overlapping, not synonyms of each other).
 2. EVERY main branch MUST have children. Depth target: ${maxDepth} level(s) below the root — take some branches the full ${maxDepth} levels deep, where appropriate add grandchildren.
 3. Give each branch ${minChildren}-${maxChildren} children, and VARY the count — never make all branches the same shape.
-4. Aim for ${branchCount * 4}-${branchCount * 6} total nodes. A root with ${branchCount} childless branches is a FAILURE, not a map.
+4. Aim for ${targetLow}-${targetHigh} total nodes. A root with ${branchCount} childless branches is a FAILURE, not a map.
 5. Use ALL category types across the map: concept, fact, question, example, definition, process.
 ${includeCrossConnections ? `6. Add ${crossConnectionCount}+ cross-connections between nodes in DIFFERENT branches — the non-obvious links are what make a map insightful.` : ''}
 
@@ -315,14 +347,15 @@ export function buildHierarchicalExpandPrompt(
   context: GenerationContext,
   options: HierarchicalExpandOptions = {}
 ): { system: string; user: string } {
-  const { depth = 2, maxPerLevel = 3, style = 'detailed' } = options
+  const { depth = 2, maxPerLevel = 3, style = 'detailed', tone } = options
   const styleInstructions = getStyleInstructions(style)
+  const toneInstructions = getToneInstructions(tone)
   const domainContext = context.domain ? `\nDomain/Subject Area: ${context.domain}` : ''
   const langInstruction = getLanguageInstruction(context.locale)
 
   const system = `You are an expert mind-mapping assistant building a RICH, multi-level sub-tree under one node. The output is a mini knowledge tree that explores "${nodeContent}" from several genuinely different angles — not a flat list.
 
-${styleInstructions}${langInstruction}
+${styleInstructions}${toneInstructions ? `\n${toneInstructions}` : ''}${langInstruction}
 
 STRUCTURE REQUIREMENTS:
 1. Generate ${maxPerLevel} DIVERSE main branches — distinct facets, not categories of the same thing.

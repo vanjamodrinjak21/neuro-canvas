@@ -157,6 +157,7 @@
   --nc-z-toolbar: 100;
   --nc-z-dropdown: 200;
   --nc-z-modal: 300;
+  --nc-z-dock: 350; /* background-generation dock — above modals, below toasts */
   --nc-z-toast: 400;
   --nc-z-cursor: 9999;
 

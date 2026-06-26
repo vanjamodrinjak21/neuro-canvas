@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { GenerationTone } from '~/types/ai-generation'
+
 const props = defineProps<{
   visible: boolean
   isLoading?: boolean
@@ -6,16 +8,44 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'close': []
-  'generate': [topic: string, options: { depth: string; style: string; domain?: string }]
+  'generate': [topic: string, options: { depth: string; style: string; domain?: string; nodeCount: number; tone: GenerationTone }]
 }>()
+
+// Node-count bounds. Slider covers the practical single-pass range; the numeric
+// input + presets allow far larger targets (grown in the background).
+const COUNT_MIN = 4
+const COUNT_SLIDER_MAX = 60
+const COUNT_MAX = 10000
+const COUNT_PRESETS = [12, 24, 50, 100]
 
 // Form state
 const topic = ref('')
 const depth = ref<'shallow' | 'medium' | 'deep'>('medium')
 const style = ref<'concise' | 'detailed' | 'academic'>('detailed')
+const tone = ref<GenerationTone>('neutral')
+const nodeCount = ref(24)
 const domain = ref('')
 
 const { t } = useI18n()
+
+function clampCount(value: number) {
+  if (Number.isNaN(value)) return COUNT_MIN
+  return Math.min(COUNT_MAX, Math.max(COUNT_MIN, Math.round(value)))
+}
+
+function setCount(value: number) {
+  nodeCount.value = clampCount(value)
+}
+
+const isLargeTarget = computed(() => nodeCount.value > COUNT_SLIDER_MAX)
+
+const toneOptions = computed(() => [
+  { value: 'neutral', label: t('canvas.gen_options.tone_neutral') },
+  { value: 'academic', label: t('canvas.gen_options.tone_academic') },
+  { value: 'professional', label: t('canvas.gen_options.tone_professional') },
+  { value: 'casual', label: t('canvas.gen_options.tone_casual') },
+  { value: 'creative', label: t('canvas.gen_options.tone_creative') },
+])
 
 // Depth options with more interesting descriptions
 const depthOptions = computed(() => [
@@ -37,7 +67,9 @@ function handleGenerate() {
   emit('generate', topic.value.trim(), {
     depth: depth.value,
     style: style.value,
-    domain: domain.value.trim() || undefined
+    domain: domain.value.trim() || undefined,
+    nodeCount: clampCount(nodeCount.value),
+    tone: tone.value
   })
 }
 
@@ -51,6 +83,8 @@ watch(() => props.visible, (isVisible) => {
     topic.value = ''
     depth.value = 'medium'
     style.value = 'detailed'
+    tone.value = 'neutral'
+    nodeCount.value = 24
     domain.value = ''
   }
 })
@@ -145,6 +179,57 @@ watch(() => props.visible, (isVisible) => {
                   </button>
                 </div>
               </div>
+
+              <!-- Node count (broj nodova) -->
+              <div class="nc-field">
+                <label class="nc-label">{{ $t('canvas.generate_map.count_label') }}</label>
+                <div class="nc-count-row">
+                  <input
+                    :value="nodeCount"
+                    type="number"
+                    class="nc-count-input"
+                    :min="COUNT_MIN"
+                    :max="COUNT_MAX"
+                    :disabled="isLoading"
+                    @input="setCount(Number(($event.target as HTMLInputElement).value))"
+                  >
+                  <span class="nc-count-suffix">{{ $t('canvas.generate_map.count_suffix') }}</span>
+                </div>
+                <input
+                  :value="Math.min(nodeCount, COUNT_SLIDER_MAX)"
+                  type="range"
+                  class="nc-slider"
+                  :min="COUNT_MIN"
+                  :max="COUNT_SLIDER_MAX"
+                  step="1"
+                  :disabled="isLoading"
+                  @input="setCount(Number(($event.target as HTMLInputElement).value))"
+                >
+                <div class="nc-count-presets">
+                  <button
+                    v-for="preset in COUNT_PRESETS"
+                    :key="preset"
+                    type="button"
+                    :class="['nc-preset-btn', nodeCount === preset && 'active']"
+                    :disabled="isLoading"
+                    @click="setCount(preset)"
+                  >
+                    {{ preset }}
+                  </button>
+                </div>
+                <p class="nc-hint">
+                  {{ isLargeTarget ? $t('canvas.generate_map.count_hint_large') : $t('canvas.generate_map.count_hint') }}
+                </p>
+              </div>
+
+              <!-- Tone (ton) -->
+              <CanvasGenOptionPills
+                :label="$t('canvas.gen_options.tone_label')"
+                :options="toneOptions"
+                :model-value="tone"
+                :disabled="isLoading"
+                @update:model-value="tone = $event as GenerationTone"
+              />
 
               <!-- Domain input (optional) -->
               <div class="nc-field">
@@ -355,6 +440,93 @@ watch(() => props.visible, (isVisible) => {
   font-size: 11px;
   color: var(--nc-ink-muted);
   line-height: 1.3;
+}
+
+.nc-count-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.nc-count-input {
+  width: 120px;
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--nc-border, #1E1E22);
+  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--nc-ink, #FAFAFA);
+  -moz-appearance: textfield;
+}
+
+.nc-count-input:focus {
+  outline: none;
+  border-bottom-color: #00D2BE;
+}
+
+.nc-count-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nc-count-input::-webkit-outer-spin-button,
+.nc-count-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.nc-count-suffix {
+  font-size: 13px;
+  color: var(--nc-ink-muted);
+}
+
+.nc-slider {
+  width: 100%;
+  accent-color: var(--nc-accent, #00D2BE);
+  cursor: pointer;
+}
+
+.nc-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nc-count-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.nc-preset-btn {
+  padding: 8px 0;
+  background: var(--nc-surface-3, #0D0D10);
+  border: 1px solid var(--nc-border, #1E1E22);
+  border-radius: 10px;
+  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--nc-ink-soft);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nc-preset-btn:hover:not(:disabled) {
+  border-color: #2A2A30;
+  background: var(--nc-surface, #141418);
+}
+
+.nc-preset-btn.active {
+  border-color: #00D2BE;
+  background: rgba(0, 210, 190, 0.05);
+  color: var(--nc-ink, #FAFAFA);
+}
+
+.nc-preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .nc-dialog-footer {

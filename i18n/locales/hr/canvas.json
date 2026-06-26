@@ -151,6 +151,10 @@
       "style_detailed_desc": "Bogata objašnjenja",
       "style_academic": "Akademski",
       "style_academic_desc": "Znanstvena dubina",
+      "count_label": "Broj čvorova",
+      "count_suffix": "čvorova",
+      "count_hint": "Otprilike koliko čvorova mapa treba sadržavati.",
+      "count_hint_large": "Velike mape grade se u pozadini — možete nastaviti raditi.",
       "domain_label": "Domena",
       "domain_optional": "(neobavezno)",
       "domain_placeholder": "npr. računarstvo, biologija, poslovanje...",
@@ -159,12 +163,22 @@
       "generating": "Generiranje...",
       "generate": "Generiraj mapu"
     },
+    "gen_options": {
+      "style_label": "Stil",
+      "tone_label": "Ton",
+      "tone_neutral": "Neutralan",
+      "tone_academic": "Akademski",
+      "tone_professional": "Profesionalan",
+      "tone_casual": "Ležeran",
+      "tone_creative": "Kreativan"
+    },
     "expand_map": {
       "title": "Proširi mapu",
       "subtitle": "Automatski proširi cijelu mapu",
       "count_label": "Broj čvorova",
       "nodes_suffix": "novih čvorova",
       "hint": "AI proširuje rub mape — raspoređeno po krajnjim čvorovima kad ih je više.",
+      "hint_large": "Velika proširenja grade se u pozadini — možete nastaviti raditi.",
       "cancel": "Odustani",
       "expand": "Proširi",
       "expanding": "Proširujem..."

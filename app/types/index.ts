@@ -10,6 +10,7 @@ export {
   type MapStructure,
   type GenerationDepth,
   type GenerationStyle,
+  type GenerationTone,
   type GenerationContext,
   type MapGenerationOptions,
   type HierarchicalExpandOptions,

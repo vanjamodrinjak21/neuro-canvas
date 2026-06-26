@@ -2,11 +2,11 @@
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { parseLosslessMarkdown, parseMapJson, MapImportError } from '~/utils/mapImport'
 import { useMapStore } from '~/stores/mapStore'
-import { useAI } from '~/composables/useAI'
 import { useAISettings } from '~/composables/useAISettings'
-import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { useGenerationQueue } from '~/composables/useGenerationQueue'
 import { safeImageUrl } from '~/utils/safeUrl'
+import type { GenerationTone } from '~/types'
 
 const { t, locale: currentLocale } = useI18n()
 const { isMobile } = usePlatform()
@@ -75,10 +75,10 @@ onMounted(async () => {
 const db = useDatabase()
 const mapStore = useMapStore()
 const router = useRouter()
-const ai = useAI()
 const syncEngine = useSyncEngine()
 const aiSettings = useAISettings()
-const mapRenderer = useMapRenderer()
+const genQueue = useGenerationQueue()
+const toast = useToast()
 const { handleSignOut, isLoading: signOutLoading } = useAuthStore()
 
 // State
@@ -90,46 +90,22 @@ const isCreatingMap = ref(false)
 const deleteConfirmVisible = ref(false)
 const deleteTargetId = ref<string | null>(null)
 
-// AI Quick Start
+// AI Quick Start — generation runs in the BACKGROUND via the generation queue
+// (see GenerationProgressDock) so the user can leave this page while a map
+// builds, watch progress in the corner dock, and get a notification when done.
 const showAIModal = ref(false)
 const aiTopic = ref('')
-const aiLoading = ref(false)
 const aiError = ref<string | null>(null)
+const aiTone = ref<GenerationTone>('neutral')
+const aiNodeCount = ref(24)
 
-// AI Generation Progress
-interface AIStep {
-  label: string
-  status: 'pending' | 'active' | 'done'
-  elapsed?: string
-}
-const aiSteps = ref<AIStep[]>([])
-const aiProgressPct = ref(0)
-
-function resetAIProgress() {
-  aiSteps.value = [
-    { label: t('dashboard.ai_modal.analyzing_topic'), status: 'pending' },
-    { label: t('dashboard.ai_modal.generating_branches'), status: 'pending' },
-    { label: t('dashboard.ai_modal.adding_sub_nodes'), status: 'pending' },
-    { label: t('dashboard.ai_modal.finding_connections'), status: 'pending' },
-  ]
-  aiProgressPct.value = 0
-}
-
-function advanceStep(index: number, elapsed?: string) {
-  if (index > 0 && aiSteps.value[index - 1]) {
-    aiSteps.value[index - 1].status = 'done'
-    aiSteps.value[index - 1].elapsed = elapsed
-  }
-  if (aiSteps.value[index]) {
-    aiSteps.value[index].status = 'active'
-  }
-  aiProgressPct.value = Math.round(((index + 0.5) / aiSteps.value.length) * 100)
-}
-
-function completeAllSteps() {
-  aiSteps.value.forEach((s) => { s.status = 'done' })
-  aiProgressPct.value = 100
-}
+const aiToneOptions = computed(() => [
+  { value: 'neutral', label: t('canvas.gen_options.tone_neutral') },
+  { value: 'academic', label: t('canvas.gen_options.tone_academic') },
+  { value: 'professional', label: t('canvas.gen_options.tone_professional') },
+  { value: 'casual', label: t('canvas.gen_options.tone_casual') },
+  { value: 'creative', label: t('canvas.gen_options.tone_creative') },
+])
 
 // Templates
 const showTemplatesModal = ref(false)
@@ -496,69 +472,31 @@ function formatDate(timestamp: number): string {
   return t('dashboard.map_card.edited', { time: date.toLocaleDateString() })
 }
 
-// AI Quick Start
-async function handleAIQuickStart() {
-  if (!aiTopic.value.trim()) return
-  aiLoading.value = true
+// AI Quick Start — enqueue a background generation and close the modal so the
+// user is free immediately. Progress + the "open map" handoff live in the
+// global GenerationProgressDock; we don't block or navigate here.
+function handleAIQuickStart() {
+  const topic = aiTopic.value.trim()
+  if (!topic) return
   aiError.value = null
-  resetAIProgress()
 
-  const startTime = Date.now()
-  function elapsed() {
-    return `${((Date.now() - startTime) / 1000).toFixed(1)}s`
-  }
+  genQueue.enqueueMapGeneration(topic, {
+    branchCount: 5,
+    maxDepth: 2,
+    nodeCount: aiNodeCount.value,
+    style: 'detailed',
+    tone: aiTone.value,
+    includeCrossConnections: true,
+    locale: currentLocale.value,
+  })
 
-  try {
-    // Step 1: Analyzing
-    advanceStep(0)
-    await new Promise(r => setTimeout(r, 400))
+  toast.success(t('generation.toast_started', { topic }))
+  aiTopic.value = ''
+  showAIModal.value = false
+}
 
-    // Step 2: Generating branches (actual AI call happens here)
-    advanceStep(1, elapsed())
-    const structure = await ai.generateMapStructure(aiTopic.value, {
-      branchCount: 5,
-      maxDepth: 2,
-      style: 'detailed',
-      includeCrossConnections: true,
-      locale: currentLocale.value
-    })
-
-    // Step 3: Building nodes
-    advanceStep(2, elapsed())
-    mapStore.newDocument()
-    mapStore.setTitle(aiTopic.value)
-    await new Promise(r => setTimeout(r, 300))
-
-    // Step 4: Rendering & connecting
-    advanceStep(3, elapsed())
-    mapRenderer.renderMapStructure(structure, { x: 0, y: 0 })
-    const doc = mapStore.toSerializable()
-    await db.saveMap(doc)
-    if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(doc.id)
-
-    completeAllSteps()
-    await new Promise(r => setTimeout(r, 500))
-
-    showAIModal.value = false
-    aiTopic.value = ''
-    aiError.value = null
-    await navigateTo(`/map/${doc.id}`)
-  } catch (error: any) {
-    console.error('AI generation failed:', error)
-    const msg = error?.message || ''
-    aiError.value = msg.includes('Session expired')
-      ? msg
-      : msg.includes('No AI provider configured')
-        ? 'Please configure an AI provider with an API key in Settings first.'
-        : msg.includes('No API key') || msg.includes('No API key configured')
-          ? 'Please add an API key for your AI provider in Settings. If you already added one, try removing and re-adding it.'
-          : msg.includes('API error')
-            ? msg
-            : `Failed to generate map. ${msg || 'Please check your AI settings and try again.'}`
-    resetAIProgress()
-  } finally {
-    aiLoading.value = false
-  }
+function setAiNodeCount(value: number) {
+  aiNodeCount.value = Math.min(10000, Math.max(4, Math.round(value) || 4))
 }
 
 // Import
@@ -1048,87 +986,71 @@ async function createFromTemplate(template: typeof templates.value[0]) {
         <div
           v-if="showAIModal"
           class="modal-overlay modal-overlay--fullscreen"
-          @click.self="!aiLoading && (showAIModal = false)"
+          @click.self="showAIModal = false"
         >
           <div class="ai-modal ai-modal--fullscreen">
-            <!-- Dismiss affordance — visible top-right in both phases
-                 except during generation when we deliberately lock the
-                 user in (clicking the backdrop is gated by aiLoading too). -->
             <button
-              v-if="!aiLoading"
               class="ai-fullscreen-close"
               :aria-label="$t('dashboard.ai_modal.cancel')"
               @click="showAIModal = false"
             >
               <span class="i-lucide-x" />
             </button>
-            <template v-if="!aiLoading">
-              <div class="ai-modal-content ai-modal-content--fullscreen">
-                <div class="ai-fullscreen-stack">
-                  <div class="ai-fullscreen-eyebrow">{{ $t('dashboard.ai_modal.title') }}</div>
-                  <h2 class="ai-fullscreen-title">{{ $t('dashboard.ai_modal.description') }}</h2>
-                  <p class="ai-fullscreen-subtitle">{{ $t('dashboard.ai_modal.subtitle') }}</p>
-                  <div class="ai-fullscreen-input-row">
-                    <input
-                      v-model="aiTopic"
-                      type="text"
-                      class="ai-fullscreen-input"
-                      :placeholder="$t('dashboard.ai_modal.placeholder')"
-                      autofocus
-                      @keyup.enter="handleAIQuickStart"
-                    >
-                    <button
-                      class="ai-fullscreen-generate"
-                      :disabled="!aiTopic.trim()"
-                      @click="handleAIQuickStart"
-                    >
-                      <span>{{ $t('dashboard.ai_modal.generate') }}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </button>
-                  </div>
-                  <div v-if="aiError" class="ai-error-banner">
-                    <span class="i-lucide-alert-triangle ai-error-icon" />
-                    <span class="ai-error-text">{{ aiError }}</span>
-                    <button class="ai-error-dismiss" @click="aiError = null"><span class="i-lucide-x" /></button>
-                  </div>
+            <div class="ai-modal-content ai-modal-content--fullscreen">
+              <div class="ai-fullscreen-stack">
+                <div class="ai-fullscreen-eyebrow">{{ $t('dashboard.ai_modal.title') }}</div>
+                <h2 class="ai-fullscreen-title">{{ $t('dashboard.ai_modal.description') }}</h2>
+                <p class="ai-fullscreen-subtitle">{{ $t('dashboard.ai_modal.subtitle') }}</p>
+                <div class="ai-fullscreen-input-row">
+                  <input
+                    v-model="aiTopic"
+                    type="text"
+                    class="ai-fullscreen-input"
+                    :placeholder="$t('dashboard.ai_modal.placeholder')"
+                    autofocus
+                    @keyup.enter="handleAIQuickStart"
+                  >
+                  <button
+                    class="ai-fullscreen-generate"
+                    :disabled="!aiTopic.trim()"
+                    @click="handleAIQuickStart"
+                  >
+                    <span>{{ $t('dashboard.ai_modal.generate') }}</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </button>
                 </div>
-              </div>
-            </template>
-            <template v-else>
-              <!-- Fullscreen generation view: a hero loading state instead
-                   of a tiny dialog. Generation can take 20-30s; the
-                   takeover signals "this is happening" and prevents the
-                   user from feeling that the canvas behind is the active
-                   surface. The input phase stays compact (see above). -->
-              <div class="ai-modal-content ai-modal-content--fullscreen">
-                <div class="ai-fullscreen-stack">
-                  <div class="ai-fullscreen-eyebrow ai-fullscreen-eyebrow--live">
-                    <span class="ai-eyebrow-spinner i-lucide-loader-circle" />
-                    {{ $t('dashboard.ai_modal.building_structure') }}
-                    <span class="ai-eyebrow-dots" aria-hidden="true">
-                      <span class="ai-eyebrow-dot" />
-                      <span class="ai-eyebrow-dot" />
-                      <span class="ai-eyebrow-dot" />
-                    </span>
-                  </div>
-                  <h2 class="ai-fullscreen-title">{{ $t('dashboard.ai_modal.generating', { topic: aiTopic }) }}</h2>
-                  <div class="ai-fullscreen-progress">
-                    <div class="ai-progress-bar"><div class="ai-progress-fill" :style="{ width: aiProgressPct + '%' }" /></div>
-                    <div class="ai-fullscreen-pct">{{ aiProgressPct }}%</div>
-                  </div>
-                  <div class="ai-steps ai-steps--fullscreen">
-                    <div v-for="(step, i) in aiSteps" :key="i" :class="['ai-step', `ai-step--${step.status}`]">
-                      <div class="ai-step-indicator">
-                        <svg v-if="step.status === 'done'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                        <div v-else-if="step.status === 'active'" class="ai-step-dot" />
-                      </div>
-                      <span class="ai-step-label">{{ step.label }}</span>
-                      <span v-if="step.elapsed" class="ai-step-elapsed">{{ step.elapsed }}</span>
+
+                <!-- Generation options: broj nodova + ton -->
+                <div class="ai-fullscreen-options">
+                  <div class="ai-opt-count-field">
+                    <label class="ai-opt-label">{{ $t('canvas.generate_map.count_label') }}</label>
+                    <div class="ai-opt-count">
+                      <input
+                        :value="aiNodeCount"
+                        type="number"
+                        min="4"
+                        max="10000"
+                        class="ai-opt-count-input"
+                        @input="setAiNodeCount(Number(($event.target as HTMLInputElement).value))"
+                      >
+                      <span class="ai-opt-count-suffix">{{ $t('canvas.generate_map.count_suffix') }}</span>
                     </div>
                   </div>
+                  <CanvasGenOptionPills
+                    :label="$t('canvas.gen_options.tone_label')"
+                    :options="aiToneOptions"
+                    :model-value="aiTone"
+                    @update:model-value="aiTone = ($event as GenerationTone)"
+                  />
+                </div>
+
+                <div v-if="aiError" class="ai-error-banner">
+                  <span class="i-lucide-alert-triangle ai-error-icon" />
+                  <span class="ai-error-text">{{ aiError }}</span>
+                  <button class="ai-error-dismiss" @click="aiError = null"><span class="i-lucide-x" /></button>
                 </div>
               </div>
-            </template>
+            </div>
           </div>
         </div>
       </Teleport>
@@ -2043,6 +1965,55 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   display: flex;
   gap: 10px;
   align-items: stretch;
+}
+.ai-fullscreen-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+  text-align: left;
+}
+.ai-opt-count-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-opt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--d-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ai-opt-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ai-opt-count-input {
+  width: 110px;
+  padding: 4px 8px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-border-2);
+  border-radius: 8px;
+  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--d-text);
+  -moz-appearance: textfield;
+}
+.ai-opt-count-input:focus {
+  outline: none;
+  border-color: var(--d-accent);
+}
+.ai-opt-count-input::-webkit-outer-spin-button,
+.ai-opt-count-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ai-opt-count-suffix {
+  font-size: 13px;
+  color: var(--d-text-3);
 }
 .ai-fullscreen-input {
   flex: 1;

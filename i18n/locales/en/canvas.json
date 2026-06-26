@@ -151,6 +151,10 @@
       "style_detailed_desc": "Rich explanations",
       "style_academic": "Academic",
       "style_academic_desc": "Scholarly depth",
+      "count_label": "Number of nodes",
+      "count_suffix": "nodes",
+      "count_hint": "Roughly how many nodes the map should contain.",
+      "count_hint_large": "Large maps build in the background — you can keep working.",
       "domain_label": "Domain",
       "domain_optional": "(optional)",
       "domain_placeholder": "e.g., Computer Science, Biology, Business...",
@@ -159,12 +163,22 @@
       "generating": "Generating...",
       "generate": "Generate Map"
     },
+    "gen_options": {
+      "style_label": "Style",
+      "tone_label": "Tone",
+      "tone_neutral": "Neutral",
+      "tone_academic": "Academic",
+      "tone_professional": "Professional",
+      "tone_casual": "Casual",
+      "tone_creative": "Creative"
+    },
     "expand_map": {
       "title": "Expand Map",
       "subtitle": "Grow the whole map automatically",
       "count_label": "Number of nodes",
       "nodes_suffix": "new nodes",
       "hint": "AI grows the map's frontier — spread across leaf nodes when there are several.",
+      "hint_large": "Large expansions build in the background — you can keep working.",
       "cancel": "Cancel",
       "expand": "Expand",
       "expanding": "Expanding..."

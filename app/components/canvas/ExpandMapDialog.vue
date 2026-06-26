@@ -1,20 +1,48 @@
 <script setup lang="ts">
+import type { GenerationStyle, GenerationTone } from '~/types/ai-generation'
+
 const props = defineProps<{
   visible: boolean
   isLoading?: boolean
   initial?: number
+  initialStyle?: GenerationStyle
+  initialTone?: GenerationTone
 }>()
 
 const emit = defineEmits<{
   'close': []
-  'confirm': [count: number]
+  'confirm': [count: number, style: GenerationStyle, tone: GenerationTone]
 }>()
 
+const { t } = useI18n()
+
 const MIN = 3
-const MAX = 40
-const PRESETS = [6, 12, 18, 24]
+// Slider covers the practical single-pass range; the numeric input + presets
+// allow going far higher (large maps are grown in the background).
+const SLIDER_MAX = 60
+const MAX = 10000
+const PRESETS = [6, 12, 24, 50, 100]
 
 const count = ref(props.initial ?? 12)
+const style = ref<GenerationStyle>(props.initialStyle ?? 'detailed')
+const tone = ref<GenerationTone>(props.initialTone ?? 'neutral')
+
+const styleOptions = computed(() => [
+  { value: 'concise', label: t('canvas.generate_map.style_concise') },
+  { value: 'detailed', label: t('canvas.generate_map.style_detailed') },
+  { value: 'academic', label: t('canvas.generate_map.style_academic') },
+])
+
+const toneOptions = computed(() => [
+  { value: 'neutral', label: t('canvas.gen_options.tone_neutral') },
+  { value: 'academic', label: t('canvas.gen_options.tone_academic') },
+  { value: 'professional', label: t('canvas.gen_options.tone_professional') },
+  { value: 'casual', label: t('canvas.gen_options.tone_casual') },
+  { value: 'creative', label: t('canvas.gen_options.tone_creative') },
+])
+
+// Show a heads-up when the target exceeds what one pass produces well.
+const isLargeTarget = computed(() => count.value > SLIDER_MAX)
 
 function clamp(value: number) {
   if (Number.isNaN(value)) return MIN
@@ -27,16 +55,20 @@ function setCount(value: number) {
 
 function handleConfirm() {
   if (props.isLoading) return
-  emit('confirm', clamp(count.value))
+  emit('confirm', clamp(count.value), style.value, tone.value)
 }
 
 function handleClose() {
   emit('close')
 }
 
-// Seed from the last-used value each time the dialog opens.
+// Seed from the last-used values each time the dialog opens.
 watch(() => props.visible, (isVisible) => {
-  if (isVisible) count.value = clamp(props.initial ?? 12)
+  if (isVisible) {
+    count.value = clamp(props.initial ?? 12)
+    style.value = props.initialStyle ?? 'detailed'
+    tone.value = props.initialTone ?? 'neutral'
+  }
 })
 </script>
 
@@ -86,16 +118,24 @@ watch(() => props.visible, (isVisible) => {
                 <label class="nc-label">{{ $t('canvas.expand_map.count_label') }}</label>
 
                 <div class="nc-count-readout">
-                  <span class="nc-count-value">{{ count }}</span>
+                  <input
+                    :value="count"
+                    type="number"
+                    class="nc-count-input"
+                    :min="MIN"
+                    :max="MAX"
+                    :disabled="isLoading"
+                    @input="setCount(Number(($event.target as HTMLInputElement).value))"
+                  >
                   <span class="nc-count-suffix">{{ $t('canvas.expand_map.nodes_suffix') }}</span>
                 </div>
 
                 <input
-                  :value="count"
+                  :value="Math.min(count, SLIDER_MAX)"
                   type="range"
                   class="nc-slider"
                   :min="MIN"
-                  :max="MAX"
+                  :max="SLIDER_MAX"
                   step="1"
                   :disabled="isLoading"
                   @input="setCount(Number(($event.target as HTMLInputElement).value))"
@@ -113,8 +153,28 @@ watch(() => props.visible, (isVisible) => {
                   </button>
                 </div>
 
-                <p class="nc-hint">{{ $t('canvas.expand_map.hint') }}</p>
+                <p class="nc-hint">
+                  {{ isLargeTarget ? $t('canvas.expand_map.hint_large') : $t('canvas.expand_map.hint') }}
+                </p>
               </div>
+
+              <!-- Style (način) -->
+              <CanvasGenOptionPills
+                :label="$t('canvas.gen_options.style_label')"
+                :options="styleOptions"
+                :model-value="style"
+                :disabled="isLoading"
+                @update:model-value="style = $event as GenerationStyle"
+              />
+
+              <!-- Tone (ton) -->
+              <CanvasGenOptionPills
+                :label="$t('canvas.gen_options.tone_label')"
+                :options="toneOptions"
+                :model-value="tone"
+                :disabled="isLoading"
+                @update:model-value="tone = $event as GenerationTone"
+              />
             </div>
 
             <!-- Footer -->
@@ -238,6 +298,36 @@ watch(() => props.visible, (isVisible) => {
   font-weight: 600;
   line-height: 1;
   color: var(--nc-ink, #FAFAFA);
+}
+
+.nc-count-input {
+  width: 140px;
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--nc-border, #1E1E22);
+  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--nc-ink, #FAFAFA);
+  -moz-appearance: textfield;
+}
+
+.nc-count-input:focus {
+  outline: none;
+  border-bottom-color: #00D2BE;
+}
+
+.nc-count-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nc-count-input::-webkit-outer-spin-button,
+.nc-count-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .nc-count-suffix {

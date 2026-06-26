@@ -91,6 +91,12 @@ useHead({
          when no update is available. -->
     <UpdateNotification />
 
+    <!-- Global command palette (Cmd/Ctrl+K) — Spotlight-style app-wide search -->
+    <CommandPalette />
+
+    <!-- Background map-generation dock (corner progress + done notification) -->
+    <GenerationProgressDock />
+
     <!-- Global toast stack -->
     <Toast />
   </div>

@@ -181,5 +181,66 @@
             "copy": "Copy code",
             "copied": "Copied!"
         }
+    },
+    "generation": {
+        "dock_title": "Map generation",
+        "in_progress": "Generating…",
+        "building": "Building “{topic}”",
+        "ready": "Ready",
+        "ready_title": "“{topic}” is ready",
+        "failed": "Generation failed",
+        "open": "Open map",
+        "retry": "Retry",
+        "dismiss": "Dismiss",
+        "toast_started": "Generating “{topic}” in the background — you can keep working.",
+        "notify_title": "Your map is ready",
+        "notify_body": "“{topic}” has finished generating."
+    },
+    "command_palette": {
+        "placeholder": "Search everything…",
+        "escape_key": "Esc",
+        "searching": "Searching…",
+        "no_results": "No results for “{query}”",
+        "untitled": "Untitled map",
+        "nodes_count": "{n} nodes",
+        "empty": {
+            "subtitle": "Search maps, documents, templates — or run a command"
+        },
+        "groups": {
+            "generate": "Generate",
+            "actions": "Actions",
+            "maps": "Maps",
+            "documents": "Documents",
+            "templates": "Templates",
+            "navigation": "Go to"
+        },
+        "nav": {
+            "dashboard": "Dashboard",
+            "maps": "All maps",
+            "documents": "Documents",
+            "templates": "Templates",
+            "settings": "Settings",
+            "roadmap": "Roadmap"
+        },
+        "actions": {
+            "new_map": "New map",
+            "generate_map": "Generate map with AI",
+            "generate_query": "Generate map: “{query}”",
+            "upload_document": "Upload document"
+        },
+        "doc_status": {
+            "pending": "Pending",
+            "queued": "Queued",
+            "processing": "Processing",
+            "failed": "Failed"
+        },
+        "footer": {
+            "navigate": "Navigate",
+            "select": "Open",
+            "dismiss": "Close"
+        },
+        "errors": {
+            "action_failed": "Something went wrong"
+        }
     }
 }

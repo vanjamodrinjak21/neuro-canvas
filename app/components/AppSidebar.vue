@@ -196,28 +196,11 @@ function onSignOut() {
   handleSignOut()
 }
 
-// Search
-const searchQuery = ref('')
-const searchInput = ref<HTMLInputElement | null>(null)
-
-function handleSearchKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    searchQuery.value = ''
-    searchInput.value?.blur()
-  }
-}
-
-onMounted(() => {
-  function onKeydown(e: KeyboardEvent) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault()
-      if (collapsed.value) collapsed.value = false
-      nextTick(() => searchInput.value?.focus())
-    }
-  }
-  window.addEventListener('keydown', onKeydown)
-  onUnmounted(() => window.removeEventListener('keydown', onKeydown))
-})
+// Search → launches the global command palette (Cmd/Ctrl+K). The old sidebar
+// search box was inert (no results were ever wired to it); it now opens the
+// real Spotlight-style palette (app/components/CommandPalette.vue), which also
+// owns the global Cmd+K listener — so no local keydown handler is needed here.
+const palette = useCommandPalette()
 </script>
 
 <template>
@@ -236,20 +219,20 @@ onMounted(() => {
       <span class="i-lucide-panel-left-open collapse-icon" />
     </button>
 
-    <!-- Search -->
-    <div v-if="!collapsed" class="sidebar-search">
+    <!-- Search → opens the global command palette -->
+    <div v-if="!collapsed" class="sidebar-search" role="button" tabindex="0" @click="palette.open()" @keydown.enter="palette.open()">
       <span class="i-lucide-search search-icon" />
       <input
-        ref="searchInput"
-        v-model="searchQuery"
         type="text"
+        readonly
+        tabindex="-1"
         :placeholder="$t('canvas.sidebar.search_placeholder')"
         class="search-input"
-        @keydown="handleSearchKeydown"
+        @mousedown.prevent
       >
       <kbd class="search-kbd">⌘K</kbd>
     </div>
-    <button v-else class="collapsed-search" :title="$t('canvas.sidebar.search_tooltip')" @click="toggleCollapse">
+    <button v-else class="collapsed-search" :title="$t('canvas.sidebar.search_tooltip')" @click="palette.open()">
       <span class="i-lucide-search" />
     </button>
 

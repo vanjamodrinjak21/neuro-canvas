@@ -127,6 +127,21 @@ export type GenerationDepth = 'shallow' | 'medium' | 'deep'
 export type GenerationStyle = 'concise' | 'detailed' | 'academic'
 
 /**
+ * Generation tone presets — the VOICE/register of generated content, distinct
+ * from `style` (which controls how much detail each node carries). Tone shapes
+ * word choice and formality; style shapes verbosity/rigor.
+ */
+export type GenerationTone =
+  | 'neutral'       // Clear, balanced, encyclopedic — the default
+  | 'academic'      // Formal, scholarly, precise terminology
+  | 'professional'  // Crisp business register, action-oriented
+  | 'casual'        // Friendly, plain-language, approachable
+  | 'creative'      // Vivid, evocative, idea-sparking
+
+/** Default tone when none is specified. */
+export const DEFAULT_GENERATION_TONE: GenerationTone = 'neutral'
+
+/**
  * Context provided to AI for better generation
  */
 export interface GenerationContext {
@@ -148,6 +163,8 @@ export interface GenerationContext {
   depth: GenerationDepth
   /** Writing style for descriptions */
   style: GenerationStyle
+  /** Voice/register of generated content (defaults to 'neutral') */
+  tone?: GenerationTone
   /** Optional domain/subject area for specialized vocabulary */
   domain?: string
   /** Optional rich context snapshot from v2 Context Engine */
@@ -173,8 +190,17 @@ export interface MapGenerationOptions {
   branchCount?: number
   /** Maximum depth of children (1-3 recommended) */
   maxDepth?: number
+  /**
+   * Target total number of nodes for the whole map. When set, the prompt aims
+   * for roughly this many nodes (root + branches + children). Large targets
+   * (beyond what a single LLM call can produce reliably) are fulfilled by the
+   * background generation engine, which expands the tree in batches.
+   */
+  nodeCount?: number
   /** Generation style */
   style?: GenerationStyle
+  /** Voice/register of generated content (defaults to 'neutral') */
+  tone?: GenerationTone
   /** Include cross-connections between branches */
   includeCrossConnections?: boolean
   /** Optional domain specialization */
@@ -199,6 +225,8 @@ export interface HierarchicalExpandOptions {
   maxPerLevel?: number
   /** Generation style */
   style?: GenerationStyle
+  /** Voice/register of generated content (defaults to 'neutral') */
+  tone?: GenerationTone
 }
 
 /**
