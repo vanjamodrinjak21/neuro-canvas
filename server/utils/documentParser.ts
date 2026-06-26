@@ -396,8 +396,16 @@ type WorkerParseResponse =
  * inlined via a build plugin). The tsx/vitest path resolves it fine; validate
  * the bundled path before relying on worker isolation in production.
  */
-function resolveWorkerUrl(): URL {
-  return pathToFileURL(join(import.meta.dirname, 'documentParser.worker.ts'))
+function resolveWorkerUrl(): URL | null {
+  // `import.meta.dirname` is UNDEFINED in the bundled Nitro `.output` (the chunk
+  // isn't a real on-disk ESM module there), so guard it: `join(undefined, …)`
+  // throws `TypeError: The "path" argument must be of type string. Received
+  // undefined` — which is exactly what crashed ingestion in production, BEFORE
+  // the existsSync() fallback below could run. Returning null routes the caller
+  // to the in-process parser instead of spawning a worker.
+  const dir = import.meta.dirname
+  if (!dir) return null
+  return pathToFileURL(join(dir, 'documentParser.worker.ts'))
 }
 
 /**
@@ -425,6 +433,12 @@ export async function parseInWorkerThread(
   // thread-vs-inline within an already-isolated process. In dev/tsx the .ts
   // resolves and we keep true worker_thread isolation.
   const workerUrl = resolveWorkerUrl()
+  // No resolvable worker entry (bundled prod where import.meta.dirname is
+  // undefined) → parse in-process. The dedicated BullMQ worker SERVICE already
+  // gives process-level isolation, so this only swaps thread-vs-inline.
+  if (!workerUrl) {
+    return parseDocument(buf, mime)
+  }
   const { existsSync } = await import('node:fs')
   if (!existsSync(workerUrl)) {
     return parseDocument(buf, mime)
