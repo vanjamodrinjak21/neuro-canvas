@@ -313,12 +313,13 @@ function onChipClick(mapId: string, event: Event) {
   border-radius: 6px;
   color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
-  opacity: 0;
+  opacity: 0.5;
   font-size: 15px;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 
-.doc-card:hover .card-menu {
+.doc-card:hover .card-menu,
+.card-menu:focus-visible {
   opacity: 1;
 }
 

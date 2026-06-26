@@ -1,0 +1,14 @@
+# Canonical author identities for this repository.
+#
+# Git and GitHub honour .mailmap to coalesce commits authored under
+# alternate names/emails into a single canonical contributor. We use it to
+# fold automated dependency-bump commits (Dependabot) into the maintainer so
+# the bot does not appear as a separate contributor — no history rewrite,
+# no force-push.
+#
+# Format: Canonical Name <canonical-email> <commit-email-to-remap>
+
+vanjamodrinjak21 <119818144+vanjamodrinjak21@users.noreply.github.com> <49699333+dependabot[bot]@users.noreply.github.com>
+vanjamodrinjak21 <119818144+vanjamodrinjak21@users.noreply.github.com> Vanja <vanja@Vanjas-MacBook-Pro.local>
+vanjamodrinjak21 <119818144+vanjamodrinjak21@users.noreply.github.com> Vanja Modrinjak <adynamics21@gmail.com>
+vanjamodrinjak21 <119818144+vanjamodrinjak21@users.noreply.github.com> Vanja <vanja@Mac.home>
