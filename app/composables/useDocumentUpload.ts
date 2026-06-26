@@ -82,6 +82,32 @@ const ALLOWED_MIME = new Set<string>([
 ])
 const ALLOWED_EXT = new Set<string>(['pdf', 'docx', 'md', 'markdown', 'txt'])
 
+// Extension → canonical MIME (the exact 4 values of the server `documentMime`
+// enum in validation.ts). Browsers report an empty or alternate `file.type` for
+// these — '' or text/plain for .md/.txt, '' / application/zip /
+// application/octet-stream for .docx — which the server's STRICT enum rejects
+// with a 400 (surfacing as documents.errors.presign_failed). We therefore
+// canonicalize the MIME from the extension before it leaves the client.
+const EXT_TO_MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  md: 'text/markdown',
+  markdown: 'text/markdown',
+  txt: 'text/plain',
+}
+
+/**
+ * Resolve the canonical MIME the server will accept. Trust the browser's
+ * `file.type` only when it is already an allowed value; otherwise derive it from
+ * the file extension. The SAME value MUST be used for the presign `declaredMime`
+ * AND the Content-Type header of every PUT — R2 signs the Content-Type into the
+ * presigned URL, so a mismatch turns the 400 into a 403 on upload.
+ */
+function canonicalMime(f: File): string {
+  if (ALLOWED_MIME.has(f.type)) return f.type
+  return EXT_TO_MIME[fileExtension(f.name)] ?? f.type
+}
+
 // Mirrors server DOCUMENT_MAX_BYTES (validation.ts).
 const MAX_BYTES = 20 * 1024 * 1024
 
@@ -224,6 +250,10 @@ export function useDocumentUpload() {
   }
 
   async function runFlow(f: File, opts: StartOptions): Promise<void> {
+    // Canonical MIME used in BOTH the presign body and the PUT Content-Type
+    // header — they must be identical (R2 signs Content-Type into the URL).
+    const mime = canonicalMime(f)
+
     // ── Phase 1: presign ──
     let presigned: PresignResponse
     try {
@@ -231,7 +261,7 @@ export function useDocumentUpload() {
         method: 'POST',
         body: {
           filename: f.name,
-          declaredMime: f.type,
+          declaredMime: mime,
           sizeBytes: f.size,
           intent: opts.intent,
           ...(opts.attachToMapId ? { attachToMapId: opts.attachToMapId } : {}),
@@ -254,9 +284,9 @@ export function useDocumentUpload() {
     //            progress is indeterminate.
     try {
       if (isNative.value) {
-        await putBytesNative(f, presigned.uploadUrl)
+        await putBytesNative(f, presigned.uploadUrl, mime)
       } else {
-        await putBytesWeb(f, presigned.uploadUrl)
+        await putBytesWeb(f, presigned.uploadUrl, mime)
       }
     } catch {
       indeterminate.value = false
@@ -282,13 +312,14 @@ export function useDocumentUpload() {
   }
 
   // ── Phase 2 transport: WEB (XHR, real upload progress) ──
-  function putBytesWeb(f: File, uploadUrl: string): Promise<void> {
+  function putBytesWeb(f: File, uploadUrl: string, mime: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
       activeXhr = xhr
       xhr.open('PUT', uploadUrl)
-      // R2 signed the Content-Type into the presigned URL → must match exactly.
-      xhr.setRequestHeader('Content-Type', f.type)
+      // R2 signed the Content-Type into the presigned URL → must match the
+      // canonical MIME sent at presign exactly (NOT the raw browser f.type).
+      xhr.setRequestHeader('Content-Type', mime)
       xhr.upload.onprogress = (e: ProgressEvent) => {
         if (e.lengthComputable && e.total > 0) {
           progress.value = Math.min(100, Math.round((e.loaded / e.total) * 100))
@@ -323,7 +354,7 @@ export function useDocumentUpload() {
   //
   // These native layers do NOT expose byte-level upload progress, so the caller
   // has already set `indeterminate` and we never touch `progress` here.
-  async function putBytesNative(f: File, uploadUrl: string): Promise<void> {
+  async function putBytesNative(f: File, uploadUrl: string, mime: string): Promise<void> {
     const buffer = await f.arrayBuffer()
 
     if (isTauri.value) {
@@ -332,8 +363,9 @@ export function useDocumentUpload() {
       const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
       const res = await tauriFetch(uploadUrl, {
         method: 'PUT',
-        // R2 signed the Content-Type into the presigned URL → must match exactly.
-        headers: { 'Content-Type': f.type },
+        // R2 signed the Content-Type into the presigned URL → must match the
+        // canonical MIME sent at presign exactly (NOT the raw browser f.type).
+        headers: { 'Content-Type': mime },
         body: new Uint8Array(buffer),
       })
       if (!res.ok) {
@@ -353,8 +385,9 @@ export function useDocumentUpload() {
       const res = await CapacitorHttp.request({
         url: uploadUrl,
         method: 'PUT',
-        // R2 signed the Content-Type into the presigned URL → must match exactly.
-        headers: { 'Content-Type': f.type },
+        // R2 signed the Content-Type into the presigned URL → must match the
+        // canonical MIME sent at presign exactly (NOT the raw browser f.type).
+        headers: { 'Content-Type': mime },
         data: base64,
         dataType: 'file',
       })

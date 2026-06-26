@@ -64,6 +64,8 @@ function makeFile(name: string, type: string, sizeBytes: number): File {
 }
 
 const PDF_MIME = 'application/pdf'
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+const MD_MIME = 'text/markdown'
 
 /** A controllable fake XMLHttpRequest capturing the last instance. */
 class FakeXHR {
@@ -231,6 +233,40 @@ describe('useDocumentUpload', () => {
       await done
       expect(up.state.value).toBe('ready')
       expect(up.documentId.value).toBe('doc_abc')
+    })
+
+    // Regression for the presign 400 (documents.errors.presign_failed): browsers
+    // report '' / application/zip / octet-stream for .docx and '' for some .md,
+    // which the server's strict MIME enum rejected. The client must canonicalize
+    // from the extension and use that SAME value for presign + the PUT header.
+    it('canonicalizes an empty .docx file.type to the OOXML MIME for presign AND the PUT header', async () => {
+      vi.useFakeTimers()
+      routeFetch({ statuses: [{ id: 'doc_abc', status: 'READY' }] })
+
+      const up = useDocumentUpload()
+      up.addFile(makeFile('report.docx', '', 4096)) // empty browser MIME, valid extension
+      expect(up.state.value).toBe('idle') // accepted via the extension gate
+      up.start({ intent: 'generate_map' })
+
+      await vi.advanceTimersByTimeAsync(0)
+      const presignCall = fetchMock.mock.calls.find(c => c[0] === '/api/documents/presign')!
+      expect(presignCall[1].body).toMatchObject({ declaredMime: DOCX_MIME })
+      // The signed Content-Type must equal the presign declaredMime exactly.
+      expect(FakeXHR.last!.requestHeaders['Content-Type']).toBe(DOCX_MIME)
+    })
+
+    it('canonicalizes an empty .md file.type to text/markdown for presign AND the PUT header', async () => {
+      vi.useFakeTimers()
+      routeFetch({ statuses: [{ id: 'doc_abc', status: 'READY' }] })
+
+      const up = useDocumentUpload()
+      up.addFile(makeFile('notes.md', '', 2048))
+      up.start({ intent: 'none' })
+
+      await vi.advanceTimersByTimeAsync(0)
+      const presignCall = fetchMock.mock.calls.find(c => c[0] === '/api/documents/presign')!
+      expect(presignCall[1].body).toMatchObject({ declaredMime: MD_MIME })
+      expect(FakeXHR.last!.requestHeaders['Content-Type']).toBe(MD_MIME)
     })
 
     it('first poll delay is 3s (not before)', async () => {
