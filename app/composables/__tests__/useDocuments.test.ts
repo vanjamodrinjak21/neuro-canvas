@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
+import { useDocuments, type DocumentSummary } from '../useDocuments'
+
 // ---------------------------------------------------------------------------
 // Test harness
 // ---------------------------------------------------------------------------
@@ -57,8 +59,6 @@ vi.mock('../useDatabase', () => ({
     rawDB: async () => fakeDB,
   }),
 }))
-
-import { useDocuments, type DocumentSummary } from '../useDocuments'
 
 let fetchMock: ReturnType<typeof vi.fn>
 

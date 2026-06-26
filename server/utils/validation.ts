@@ -204,7 +204,7 @@ export const semanticSearchSchema = z.object({
 //   - `documentIds` is REQUIRED and bounded; every id is ownership/readiness
 //     checked before any SQL runs.
 export const hybridSearchSchema = z.object({
-  queryText: z.string().trim().min(1).max(500).regex(/^[^\x00]*$/, 'queryText contains a null byte'),
+  queryText: z.string().trim().min(1).max(500).refine(v => !v.includes('\0'), 'queryText contains a null byte'),
   queryEmbedding: embeddingVector.optional(),
   documentIds: z.array(cuidStrict).min(1).max(100),
   mapIds: z.array(cuidStrict).max(100).optional(),

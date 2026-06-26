@@ -34,8 +34,10 @@ const WorkerCtor = vi.fn(function (
 vi.mock('bullmq', () => ({ Worker: WorkerCtor }))
 
 // --- ioredis mock: constructible (used with `new`); capture ctor args. ---
+// The connection exposes no-op event methods (`once`/`on`) because the worker
+// attaches a `connection.once('ready', …)` secret-free connection signal.
 const IORedisCtor = vi.fn(function (this: unknown, _url: string, _opts: unknown) {
-  return { __ioredis: true }
+  return { __ioredis: true, once: vi.fn(), on: vi.fn() }
 })
 vi.mock('ioredis', () => ({ default: IORedisCtor }))
 
@@ -138,7 +140,7 @@ describe('ingestion-worker plugin', () => {
     expect((redisOpts as { maxRetriesPerRequest: number | null }).maxRetriesPerRequest).toBe(null)
 
     // The connection passed to the Worker is the one we just built.
-    expect((opts as { connection: unknown }).connection).toEqual({ __ioredis: true })
+    expect((opts as { connection: unknown }).connection).toMatchObject({ __ioredis: true })
   })
 
   it('processor calls processDocument(job.data.documentId)', async () => {
