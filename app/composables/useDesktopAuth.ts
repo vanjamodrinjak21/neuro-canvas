@@ -14,6 +14,18 @@ const AUTH_BASE_URL = 'https://neuro-canvas.com'
 //   - src-tauri/windows/hooks.nsh  GOOGLE_OAUTH_SCHEME
 const REGISTERED_GOOGLE_SCHEME_PREFIX = 'com.googleusercontent.apps.1025021574887-effk89v1d8s52cjgc4m7mi4nmipruk6c'
 
+// The desktop OAuth client ID is PINNED by the reverse-client-ID scheme baked
+// into the build (tauri.conf.json / hooks.nsh): the OS only routes that exact
+// compile-time scheme, so the client ID cannot vary at runtime. We therefore
+// derive it from the registered scheme as the source of truth, rather than
+// depending on a build-time env (`GOOGLE_DESKTOP_CLIENT_ID`) that CI desktop
+// builds did not set — which baked an EMPTY client ID and broke Google sign-in
+// on every CI build (notably the Windows installer). The client ID is public
+// (it appears in the redirect URL), so pinning it in source is safe. The env,
+// when present, still wins and is validated by the drift guard below.
+const DERIVED_GOOGLE_CLIENT_ID
+  = `${REGISTERED_GOOGLE_SCHEME_PREFIX.replace(/^com\.googleusercontent\.apps\./, '')}.apps.googleusercontent.com`
+
 // Module-level shared state (singleton across all callers)
 const _showAuthModal = ref(false)
 const _isSignedIn = ref(false)
@@ -183,7 +195,10 @@ export function useDesktopAuth() {
     }
 
     const config = useRuntimeConfig()
-    const clientId = (config.public as Record<string, string>).googleDesktopClientId || ''
+    // Prefer the build-time env if set, else fall back to the client ID derived
+    // from the registered scheme (the compile-time source of truth). This makes
+    // sign-in resilient to a desktop build that shipped without the env baked in.
+    const clientId = (config.public as Record<string, string>).googleDesktopClientId || DERIVED_GOOGLE_CLIENT_ID
     if (!clientId) {
       throw new Error('GOOGLE_DESKTOP_CLIENT_ID is not configured on the server.')
     }
