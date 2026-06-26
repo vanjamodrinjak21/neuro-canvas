@@ -192,7 +192,7 @@ const navItems = computed<PaletteItem[]>(() => [
 
 const actionItems = computed<PaletteItem[]>(() => [
   { id: 'act-new-map', group: 'actions', label: t('command_palette.actions.new_map'), icon: 'i-lucide-plus', keywords: 'create blank new map', run: createNewMap },
-  { id: 'act-generate', group: 'actions', label: t('command_palette.actions.generate_map'), icon: 'i-lucide-sparkles', keywords: 'ai generate create', run: () => go('/dashboard') },
+  { id: 'act-generate', group: 'actions', label: t('command_palette.actions.generate_map'), icon: 'i-lucide-waypoints', keywords: 'ai generate create', run: () => go('/dashboard') },
   { id: 'act-upload', group: 'actions', label: t('command_palette.actions.upload_document'), icon: 'i-lucide-upload', keywords: 'document pdf upload import file', run: () => go('/documents') },
 ])
 
@@ -285,7 +285,7 @@ const view = computed<{ groups: ResultGroup[]; flat: ScoredItem[] }>(() => {
         id: 'act-generate-query',
         group: 'generate',
         label: t('command_palette.actions.generate_query', { query: q }),
-        icon: 'i-lucide-wand-sparkles',
+        icon: 'i-lucide-waypoints',
         run: generateFromQuery,
       },
       ranges: [],

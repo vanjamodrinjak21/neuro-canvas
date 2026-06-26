@@ -128,7 +128,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
             class="ai-panel__generate-btn ai-panel__generate-btn--small"
             @click="dispatch({ type: 'ai:generate-description' })"
           >
-            <span class="i-lucide-wand-2" />
+            <span class="i-lucide-pen-line" />
             {{ $t('canvas.ai_suggestions.generate_description') }}
           </button>
         </template>

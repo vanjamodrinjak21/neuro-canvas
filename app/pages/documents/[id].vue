@@ -343,7 +343,7 @@ onMounted(async () => {
                   class="link-item link-item--generated"
                   @click="openMap(generatedMap.id)"
                 >
-                  <span class="i-lucide-sparkles link-icon" />
+                  <span class="i-lucide-waypoints link-icon" />
                   <span class="link-text">{{ mapTitle(generatedMap) }}</span>
                   <span class="i-lucide-arrow-up-right link-go" />
                 </button>
@@ -386,7 +386,7 @@ onMounted(async () => {
                   @click="generate"
                 >
                   <span v-if="generating" class="i-lucide-loader-circle spin-icon" />
-                  <span v-else class="i-lucide-sparkles" />
+                  <span v-else class="i-lucide-waypoints" />
                   {{ generating ? $t('documents.detail.actions.generating') : $t('documents.detail.actions.generate') }}
                 </button>
                 <p class="action-hint">

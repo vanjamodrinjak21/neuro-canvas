@@ -128,7 +128,7 @@ const intentOptions = computed(() => [
   {
     value: 'generate_map' as const,
     label: t('canvas.document_upload_modal.intent_generate'),
-    icon: 'i-lucide-sparkles',
+    icon: 'i-lucide-waypoints',
   },
   {
     value: 'attach_source' as const,
