@@ -255,25 +255,40 @@ export function buildMapStructurePrompt(
   const domainContext = domain ? `\nDomain/Subject Area: ${domain}` : ''
   const langInstruction = getLanguageInstruction(locale)
 
-  // Calculate complexity based on depth setting
-  const minChildren = maxDepth >= 2 ? 2 : 1
-  const maxChildren = maxDepth >= 3 ? 4 : 3
-  const crossConnectionCount = includeCrossConnections ? Math.min(branchCount, 5) : 0
+  // Derive the tree GEOMETRY from the node-count target. Without this, the fixed
+  // "exactly ${branchCount} branches, ${maxChildren} children, depth ${maxDepth}"
+  // rules physically cap the map at ~30 nodes — so a request for 100 returns ~30.
+  // Scaling branch count + depth + children-per-branch with the target lets the
+  // structure actually hold it. (Targets in the hundreds+ exceed what one LLM
+  // pass produces coherently; those are grown in batches by the background
+  // generator — this just removes the artificial ceiling for normal sizes.)
+  const target = nodeCount && nodeCount > 0 ? nodeCount : null
+  const effBranchCount = target
+    ? Math.min(14, Math.max(branchCount, Math.round(Math.sqrt(target) * 1.3)))
+    : branchCount
+  const effMaxDepth = target
+    ? (target > 60 ? 4 : target > 28 ? 3 : target > 12 ? 2 : 1)
+    : maxDepth
+  const minChildren = effMaxDepth >= 2 ? 2 : 1
+  const maxChildren = target
+    ? Math.min(7, Math.max(3, Math.ceil(target / effBranchCount)))
+    : (effMaxDepth >= 3 ? 4 : 3)
+  const crossConnectionCount = includeCrossConnections ? Math.min(effBranchCount, 6) : 0
 
-  // Node-count target. When the caller specifies an explicit nodeCount, target a
-  // tight band around it; otherwise fall back to the branchCount-derived range.
-  const targetLow = nodeCount ? Math.max(branchCount + 1, Math.round(nodeCount * 0.85)) : branchCount * 4
-  const targetHigh = nodeCount ? Math.round(nodeCount * 1.15) : branchCount * 6
+  // Node-count target band. With an explicit nodeCount, aim tightly around it;
+  // otherwise fall back to the branch-derived range.
+  const targetLow = target ? Math.max(effBranchCount + 1, Math.round(target * 0.85)) : branchCount * 4
+  const targetHigh = target ? Math.round(target * 1.15) : branchCount * 6
 
   const system = `You are a world-class mind-mapping architect. You turn a single topic into a rich, multi-level knowledge map an expert would be proud of — structurally varied, intellectually interesting, and genuinely useful for learning or thinking.
 
 ${styleInstructions}${toneInstructions ? `\n${toneInstructions}` : ''}${langInstruction}
 
 NON-NEGOTIABLE STRUCTURE:
-1. Create exactly ${branchCount} main branches, each a DISTINCT facet of the topic (not overlapping, not synonyms of each other).
-2. EVERY main branch MUST have children. Depth target: ${maxDepth} level(s) below the root — take some branches the full ${maxDepth} levels deep, where appropriate add grandchildren.
+1. Create exactly ${effBranchCount} main branches, each a DISTINCT facet of the topic (not overlapping, not synonyms of each other).
+2. EVERY main branch MUST have children. Go ${effMaxDepth} level(s) deep below the root — take MOST branches the full ${effMaxDepth} levels deep, adding grandchildren (and great-grandchildren) as needed to reach the total below.
 3. Give each branch ${minChildren}-${maxChildren} children, and VARY the count — never make all branches the same shape.
-4. Aim for ${targetLow}-${targetHigh} total nodes. A root with ${branchCount} childless branches is a FAILURE, not a map.
+4. TOTAL NODE COUNT IS THE PRIORITY: produce ${targetLow}-${targetHigh} total nodes (root + all branches + all descendants). If the tree is short of the target, keep expanding the deepest branches with more children until you reach it — do NOT stop early. A small or shallow map is a FAILURE.
 5. Use ALL category types across the map: concept, fact, question, example, definition, process.
 ${includeCrossConnections ? `6. Add ${crossConnectionCount}+ cross-connections between nodes in DIFFERENT branches — the non-obvious links are what make a map insightful.` : ''}
 
@@ -301,7 +316,7 @@ Return ONLY valid JSON, no additional text.`
 
   const user = `## Topic: "${topic}"${domainContext}
 
-Build the richest, most interesting map you can for this topic. Before writing, mentally pick ${branchCount} genuinely different angles on it, then go deep on each one and give every branch real children. Reward the reader with structure variety, concrete examples, and at least one connection they wouldn't have expected.
+Build the richest, most interesting map you can for this topic. Before writing, mentally pick ${effBranchCount} genuinely different angles on it, then go deep on each one and give every branch real children until the map reaches ${targetLow}-${targetHigh} total nodes. Reward the reader with structure variety, concrete examples, and at least one connection they wouldn't have expected.
 
 Return JSON matching this schema (JSON keys stay in English; values follow the tone/language rules above):
 {
