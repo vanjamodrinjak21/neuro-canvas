@@ -10,6 +10,7 @@ import { useSemanticStore } from '~/stores/semanticStore'
 import { useDatabase } from '~/composables/useDatabase'
 import { useAutoSave } from '~/composables/useAutoSave'
 import { useAI } from '~/composables/useAI'
+import { useBatchedGeneration, BATCH_THRESHOLD } from '~/composables/useBatchedGeneration'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSpringCamera } from '~/composables/useSpringCamera'
 import { useSmoothZoom } from '~/composables/useSmoothZoom'
@@ -50,6 +51,7 @@ const semanticStore = useSemanticStore()
 const db = useDatabase()
 const autoSave = useAutoSave()
 const ai = useAI()
+const batchedGen = useBatchedGeneration()
 const aiSettings = useAISettings()
 const mapRenderer = useMapRenderer()
 const guest = useGuestMode()
@@ -307,6 +309,9 @@ const contextMenuTargetEdge = ref<Edge | null>(null)
 
 // AI
 const isAILoading = ref(false)
+// Live node-count readout while a large in-canvas generation grows in batches
+// (null for normal single-pass generations).
+const aiGenNodeProgress = ref<{ count: number; target: number } | null>(null)
 const aiSuggestions = ref<AISuggestion[]>([])
 const richSuggestions = ref<RichNodeSuggestion[]>([])
 
@@ -1757,7 +1762,7 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
       deep: 7
     }
 
-    const structure = await ai.generateMapStructure(topic, {
+    const genOptions = {
       branchCount: depthMap[options.depth] || 5,
       maxDepth: options.depth === 'shallow' ? 1 : options.depth === 'deep' ? 3 : 2,
       nodeCount: options.nodeCount,
@@ -1766,12 +1771,21 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
       includeCrossConnections: options.depth !== 'shallow',
       domain: options.domain,
       locale: currentLocale.value,
-      documentIds: attachedDocumentIds.value
-    }, {
-      // Stream so a long generation doesn't blow the ~100s edge timeout (524) on
-      // the non-streaming /api/ai/completions path.
-      stream: true,
-    })
+      documentIds: attachedDocumentIds.value,
+    }
+
+    // Large targets exceed what one LLM pass can produce coherently — grow the
+    // tree in batches so the requested node count is actually reached. Smaller
+    // targets keep the proven single streamed pass (streamed so a long
+    // generation doesn't blow the ~100s edge timeout / 524).
+    const structure =
+      (options.nodeCount ?? 0) > BATCH_THRESHOLD
+        ? await batchedGen.generateLargeMap(topic, genOptions, {
+            onProgress: (count, target) => {
+              aiGenNodeProgress.value = { count, target }
+            },
+          })
+        : await ai.generateMapStructure(topic, genOptions, { stream: true })
 
     // Clear existing nodes if desired or render at offset
     const startPosition = { x: 0, y: 0 }
@@ -1798,6 +1812,7 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
     useToast().error(userFriendlyError(error, t))
   } finally {
     isAILoading.value = false
+    aiGenNodeProgress.value = null
   }
 }
 
@@ -2304,6 +2319,18 @@ useHead({
       @navigate-to-node="handleNavigateToNode"
     />
 
+    <!-- Live progress while a large in-canvas generation grows in batches -->
+    <Teleport to="body">
+      <Transition name="nc-genbadge">
+        <div v-if="aiGenNodeProgress" class="nc-genbadge" role="status" aria-live="polite">
+          <span class="i-lucide-loader-circle nc-genbadge-spin" />
+          <span class="nc-genbadge-text">
+            {{ t('generation.expanding', { count: aiGenNodeProgress.count, target: aiGenNodeProgress.target }) }}
+          </span>
+        </div>
+      </Transition>
+    </Teleport>
+
     <LazyCanvasGenerateMapDialog
       :visible="showGenerateMapDialog"
       :is-loading="isAILoading"
@@ -2545,6 +2572,56 @@ body:has(.detail-panel) .minimap-wrapper {
 
 /* Platform tweaks */
 :root.platform-android .nc-segment { border-radius: 999px; }
+
+/* Large in-canvas generation progress badge */
+.nc-genbadge {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: var(--nc-z-dock, 350);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--nc-surface, #111114);
+  border: 1px solid rgba(0, 210, 190, 0.4);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.6);
+  color: var(--nc-ink, #FAFAFA);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.nc-genbadge-spin {
+  font-size: 16px;
+  color: #00D2BE;
+  animation: nc-genbadge-rotate 0.9s linear infinite;
+}
+
+.nc-genbadge-text {
+  font-variant-numeric: tabular-nums;
+}
+
+.nc-genbadge-enter-active,
+.nc-genbadge-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.nc-genbadge-enter-from,
+.nc-genbadge-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+}
+
+@keyframes nc-genbadge-rotate {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nc-genbadge-spin { animation: none; }
+}
 </style>
 
 <!-- Global styles: reach into child components via body:has() without :deep().

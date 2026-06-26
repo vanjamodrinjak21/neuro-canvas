@@ -29,6 +29,11 @@
 
 import type { MapGenerationOptions, MapStructure } from '~/types/ai-generation'
 import { useAI } from '~/composables/useAI'
+import {
+  useBatchedGeneration,
+  BATCH_THRESHOLD,
+  type GrowSignal,
+} from '~/composables/useBatchedGeneration'
 import { useMapStore } from '~/stores/mapStore'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useDatabase } from '~/composables/useDatabase'
@@ -51,6 +56,11 @@ export interface GenJob {
   createdAt: number
   /** Dock side-effect guard so a toast/notification fires exactly once. */
   notified: boolean
+  /**
+   * Live node-count readout for batched (large-target) jobs — drives the dock's
+   * "Expanding… 342 / 1000 nodes" line. Null for single-pass jobs.
+   */
+  nodeProgress: { count: number; target: number } | null
 }
 
 const STORAGE_KEY = 'nc:generation-queue'
@@ -59,6 +69,9 @@ const MAX_PERSISTED = 12
 // ── Module-singleton state (shared across every useGenerationQueue() caller) ──
 const jobs = ref<GenJob[]>([])
 const activeTimers = new Map<string, ReturnType<typeof setInterval>>()
+// Cooperative-cancel flags for batched jobs — dismissing one flips `aborted` so
+// the grower stops instead of burning the rest of its API-call budget.
+const activeSignals = new Map<string, GrowSignal>()
 let initialized = false
 
 function genId(): string {
@@ -87,8 +100,9 @@ function restoreOnce() {
     if (!raw) return
     const saved = JSON.parse(raw) as GenJob[]
     if (Array.isArray(saved)) {
-      // Mark notified so restored jobs don't re-fire a stale "done" toast.
-      jobs.value = saved.map(j => ({ ...j, notified: true }))
+      // Mark notified so restored jobs don't re-fire a stale "done" toast, and
+      // default fields added after older payloads were written.
+      jobs.value = saved.map(j => ({ ...j, notified: true, nodeProgress: j.nodeProgress ?? null }))
     }
   } catch {
     /* corrupt payload — start clean */
@@ -100,6 +114,7 @@ export function useGenerationQueue() {
   // called from a component's setup (the dock in app.vue, the dashboard, …),
   // never at module top-level. The instances are cheap singleton wrappers.
   const ai = useAI()
+  const batched = useBatchedGeneration()
   const mapStore = useMapStore()
   const mapRenderer = useMapRenderer()
   const db = useDatabase()
@@ -141,6 +156,7 @@ export function useGenerationQueue() {
       mapId: null,
       createdAt: Date.now(),
       notified: false,
+      nodeProgress: null,
     })
     jobs.value = [...jobs.value, job]
 
@@ -149,6 +165,39 @@ export function useGenerationQueue() {
   }
 
   async function runJob(job: GenJob) {
+    const target = job.options.nodeCount ?? 0
+    const useBatched = target > BATCH_THRESHOLD
+
+    try {
+      const structure = useBatched
+        ? await runBatchedJob(job, target)
+        : await runSinglePassJob(job)
+      // If the job was dismissed mid-run it's no longer tracked — don't mutate
+      // (or resurrect) it; just let the finally clean up.
+      if (jobs.value.some(j => j.id === job.id)) {
+        job.structure = structure
+        job.nodeProgress = null
+        job.progress = 1
+        job.status = 'ready'
+      }
+    } catch (e) {
+      if (jobs.value.some(j => j.id === job.id)) {
+        job.error = e instanceof Error ? e.message : 'Generation failed'
+        job.status = 'error'
+      }
+    } finally {
+      const timer = activeTimers.get(job.id)
+      if (timer) {
+        clearInterval(timer)
+        activeTimers.delete(job.id)
+      }
+      activeSignals.delete(job.id)
+      persist()
+    }
+  }
+
+  /** Proven single streamed pass — for normal-sized targets (≤ BATCH_THRESHOLD). */
+  async function runSinglePassJob(job: GenJob): Promise<MapStructure> {
     // Smooth progress creep toward 0.9 while the LLM call is in flight. As a
     // floor it climbs on a timer; streamed tokens (below) nudge it faster.
     const timer = setInterval(() => {
@@ -156,31 +205,40 @@ export function useGenerationQueue() {
     }, 650)
     activeTimers.set(job.id, timer)
 
-    try {
-      // STREAM the generation. A big map can take >100s, which blows Cloudflare's
-      // ~100s edge timeout on the non-streaming /api/ai/completions path (HTTP
-      // 524). Streaming via /api/ai/stream returns headers immediately and keeps
-      // bytes flowing, so the edge never idle-times-out. onPartialResult also
-      // gives us real progress from the growing response.
-      const structure = await ai.generateMapStructure(job.topic, job.options, {
-        stream: true,
-        onPartialResult: (partial) => {
-          // Heuristic: a typical map JSON is a few KB; map length → 0.15..0.9.
-          const est = Math.min(0.9, 0.15 + partial.length / 6000)
-          if (est > job.progress) job.progress = est
-        },
-      })
-      job.structure = structure
-      job.progress = 1
-      job.status = 'ready'
-    } catch (e) {
-      job.error = e instanceof Error ? e.message : 'Generation failed'
-      job.status = 'error'
-    } finally {
-      clearInterval(timer)
-      activeTimers.delete(job.id)
-      persist()
-    }
+    // STREAM the generation. A big map can take >100s, which blows Cloudflare's
+    // ~100s edge timeout on the non-streaming /api/ai/completions path (HTTP
+    // 524). Streaming via /api/ai/stream returns headers immediately and keeps
+    // bytes flowing, so the edge never idle-times-out. onPartialResult also
+    // gives us real progress from the growing response.
+    return ai.generateMapStructure(job.topic, job.options, {
+      stream: true,
+      onPartialResult: (partial) => {
+        // Heuristic: a typical map JSON is a few KB; map length → 0.15..0.9.
+        const est = Math.min(0.9, 0.15 + partial.length / 6000)
+        if (est > job.progress) job.progress = est
+      },
+    })
+  }
+
+  /**
+   * Large target (> BATCH_THRESHOLD): seed a skeleton then grow it across many
+   * expansion passes until the node count approaches the target. Progress is
+   * count-driven (real nodes / target), and the job is cancellable mid-grow.
+   */
+  async function runBatchedJob(job: GenJob, target: number): Promise<MapStructure> {
+    const signal: GrowSignal = { aborted: false }
+    activeSignals.set(job.id, signal)
+    job.nodeProgress = { count: 0, target }
+
+    return batched.generateLargeMap(job.topic, job.options, {
+      signal,
+      onProgress: (count, tgt) => {
+        job.nodeProgress = { count, target: tgt }
+        // Reserve the last sliver for materialization; never go backwards.
+        const ratio = tgt > 0 ? count / tgt : 0
+        job.progress = Math.min(0.97, Math.max(job.progress, ratio))
+      },
+    })
   }
 
   /** Re-run a failed job from scratch. */
@@ -191,6 +249,7 @@ export function useGenerationQueue() {
     job.error = null
     job.progress = 0.06
     job.notified = false
+    job.nodeProgress = null
     persist()
     void runJob(job)
   }
@@ -201,6 +260,13 @@ export function useGenerationQueue() {
     if (timer) {
       clearInterval(timer)
       activeTimers.delete(id)
+    }
+    // Trip the cancel flag so an in-flight batched grow stops promptly (and
+    // doesn't keep spending its API-call budget on a job nobody will open).
+    const signal = activeSignals.get(id)
+    if (signal) {
+      signal.aborted = true
+      activeSignals.delete(id)
     }
     jobs.value = jobs.value.filter(j => j.id !== id)
     persist()

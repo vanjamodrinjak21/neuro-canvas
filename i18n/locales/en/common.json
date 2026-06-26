@@ -185,6 +185,7 @@
     "generation": {
         "dock_title": "Map generation",
         "in_progress": "Generating…",
+        "expanding": "Expanding… {count} / {target} nodes",
         "building": "Building “{topic}”",
         "ready": "Ready",
         "ready_title": "“{topic}” is ready",

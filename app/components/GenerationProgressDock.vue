@@ -81,7 +81,11 @@ watch(
           <div class="nc-gen-topic">{{ job.title || job.topic }}</div>
 
           <div v-if="job.status === 'running'" class="nc-gen-status">
-            <span>{{ $t('generation.in_progress') }}</span>
+            <span>{{
+              job.nodeProgress
+                ? $t('generation.expanding', { count: job.nodeProgress.count, target: job.nodeProgress.target })
+                : $t('generation.in_progress')
+            }}</span>
             <span class="nc-gen-pct">{{ pct(job) }}%</span>
           </div>
           <div v-else-if="job.status === 'ready'" class="nc-gen-status nc-gen-status--ok">

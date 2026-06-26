@@ -185,6 +185,7 @@
     "generation": {
         "dock_title": "Generiranje mape",
         "in_progress": "Generiranje\u2026",
+        "expanding": "Pro\u0161irujem\u2026 {count} / {target} \u010dvorova",
         "building": "Gradim \u201e{topic}\u201d",
         "ready": "Spremno",
         "ready_title": "\u201e{topic}\u201d je spremna",
