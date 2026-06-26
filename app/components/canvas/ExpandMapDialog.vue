@@ -207,6 +207,11 @@ watch(() => props.visible, (isVisible) => {
 .nc-dialog {
   width: 100%;
   max-width: 420px;
+  /* Cap to the viewport (minus the wrapper's p-4 = 16px each side) so a tall
+     dialog never overflows the screen; the body scrolls instead. */
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
   background: var(--nc-surface, #111114);
   border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 16px;
@@ -220,6 +225,7 @@ watch(() => props.visible, (isVisible) => {
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid var(--nc-border, #1E1E22);
+  flex-shrink: 0;
 }
 
 .nc-dialog-icon {
@@ -270,6 +276,11 @@ watch(() => props.visible, (isVisible) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* Take the slack between header and footer and scroll when content is taller
+     than the capped dialog. min-height:0 lets a flex child actually shrink. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .nc-field {
@@ -394,6 +405,7 @@ watch(() => props.visible, (isVisible) => {
   padding: 16px 24px;
   background: var(--nc-surface-3, #0D0D10);
   border-top: 1px solid var(--nc-border, #1E1E22);
+  flex-shrink: 0;
 }
 
 .nc-btn {
