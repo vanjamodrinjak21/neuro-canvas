@@ -149,16 +149,27 @@ export function useGenerationQueue() {
   }
 
   async function runJob(job: GenJob) {
-    // Smooth progress creep toward 0.9 while the single LLM await is in flight
-    // (the real work is one network round-trip, so there are no honest discrete
-    // steps to report — a steady crawl reads better than a frozen bar).
+    // Smooth progress creep toward 0.9 while the LLM call is in flight. As a
+    // floor it climbs on a timer; streamed tokens (below) nudge it faster.
     const timer = setInterval(() => {
       job.progress = Math.min(0.9, job.progress + (0.9 - job.progress) * 0.16)
     }, 650)
     activeTimers.set(job.id, timer)
 
     try {
-      const structure = await ai.generateMapStructure(job.topic, job.options)
+      // STREAM the generation. A big map can take >100s, which blows Cloudflare's
+      // ~100s edge timeout on the non-streaming /api/ai/completions path (HTTP
+      // 524). Streaming via /api/ai/stream returns headers immediately and keeps
+      // bytes flowing, so the edge never idle-times-out. onPartialResult also
+      // gives us real progress from the growing response.
+      const structure = await ai.generateMapStructure(job.topic, job.options, {
+        stream: true,
+        onPartialResult: (partial) => {
+          // Heuristic: a typical map JSON is a few KB; map length → 0.15..0.9.
+          const est = Math.min(0.9, 0.15 + partial.length / 6000)
+          if (est > job.progress) job.progress = est
+        },
+      })
       job.structure = structure
       job.progress = 1
       job.status = 'ready'

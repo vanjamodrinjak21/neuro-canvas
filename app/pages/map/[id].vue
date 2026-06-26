@@ -1767,6 +1767,10 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
       domain: options.domain,
       locale: currentLocale.value,
       documentIds: attachedDocumentIds.value
+    }, {
+      // Stream so a long generation doesn't blow the ~100s edge timeout (524) on
+      // the non-streaming /api/ai/completions path.
+      stream: true,
     })
 
     // Clear existing nodes if desired or render at offset
