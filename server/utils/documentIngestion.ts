@@ -318,7 +318,19 @@ export async function processDocument(documentId: string): Promise<void> {
         })
         .catch(() => {})
     }
-    console.error('[ingestion] processing failed', documentId, sanitizeErrorMessage(err))
+    // The DB/client `errorMessage` stays sanitized (above). But the SERVER log
+    // is operator-only, so emit the REAL error (name/message + stack) here —
+    // otherwise a generic "Ingestion failed" is impossible to diagnose in prod.
+    console.error(
+      '[ingestion] processing failed',
+      documentId,
+      sanitizeErrorMessage(err),
+      '— cause:',
+      err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+    )
+    if (err instanceof Error && err.stack) {
+      console.error('[ingestion] stack', documentId, err.stack)
+    }
   } finally {
     // (10) ALWAYS release the slot we claimed. If we never resolved the userId
     // (doc vanished before the read), fall back to releasing by re-reading; the
