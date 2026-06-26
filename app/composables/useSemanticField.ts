@@ -12,10 +12,16 @@ const prefersReducedMotion = typeof window !== 'undefined'
   : false
 
 // Performance limits (defaults; adaptive overrides these)
-const MAX_PARTICLES = prefersReducedMotion ? 0 : isMobile ? 50 : 200
-const MAX_FIELD_LINES_CAP = isMobile ? 20 : 50
+const MAX_PARTICLES = prefersReducedMotion ? 0 : isMobile ? 50 : 120
+const MAX_FIELD_LINES_CAP = isMobile ? 20 : 40
 const PULSE_DURATION = 1500 // ms
 const HIGH_SIMILARITY_THRESHOLD = 0.7
+// Hard cap (world px) on how far a field-line's bezier control points may bow
+// away from the straight chord between two node centers. Curvature scales with
+// (1 - similarity) * distance, which is UNBOUNDED for far-apart weakly-similar
+// pairs and was bowing lines thousands of px into empty canvas (the "teal
+// hairball"). Capping the bow keeps every line visually attached to its nodes.
+const MAX_CURVE_BOW = 140
 // Slowed from 300ms → 800ms so fade-ins/outs read as intentional motion
 // instead of stuttering. The field is decorative — it should never grab
 // attention by changing fast.
@@ -145,8 +151,11 @@ export function useSemanticField() {
       const dy = targetCenter.y - sourceCenter.y
       const distance = Math.sqrt(dx * dx + dy * dy)
 
-      // Curvature based on similarity — high similarity = more direct path
-      const curveIntensity = (1 - pair.similarity) * 0.4 * distance
+      // Curvature based on similarity — high similarity = more direct path.
+      // CLAMPED to MAX_CURVE_BOW: uncapped, (1 - similarity) * 0.4 * distance
+      // grew with map size and bowed weakly-similar long lines far into empty
+      // canvas (the "teal hairball"). The cap keeps every line near its chord.
+      const curveIntensity = Math.min((1 - pair.similarity) * 0.4 * distance, MAX_CURVE_BOW)
 
       // Perpendicular offset for control points
       const perpX = distance > 0 ? -dy / distance : 0

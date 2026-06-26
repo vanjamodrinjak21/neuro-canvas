@@ -34,6 +34,13 @@ const colors = {
   pulse: 'rgba(0, 210, 190, 0.4)'
 }
 
+// Hard cap (world px) on the cluster-glow radial gradient. A cluster's raw
+// radius scales with how far its member nodes are spread, which on a large map
+// can be thousands of px — rendered as a giant bright teal disc with a hard
+// gradient edge (the "teal blob"). Capping keeps the glow a tasteful halo
+// centered on the cluster instead of flooding the canvas.
+const MAX_GLOW_RADIUS = 600
+
 // Category color map for cluster glow
 const categoryColors: Record<string, string> = {
   concept: '#00D2BE',
@@ -187,11 +194,16 @@ function drawClusterGlow(ctx: CanvasRenderingContext2D, cluster: SemanticCluster
     ? categoryColors[cluster.dominantCategory] ?? colors.fieldLine
     : colors.fieldLine
 
-  // Parse color to get RGB components
-  const alpha = cluster.averageSimilarity * intensity * 0.15
+  // Bound the rendered radius — an uncapped cluster.radius floods the canvas
+  // with a giant teal disc on large maps.
+  const glowRadius = Math.min(cluster.radius, MAX_GLOW_RADIUS)
+
+  // Parse color to get RGB components. Alpha lowered 0.15 → 0.10 so overlapping
+  // cluster halos stay a subtle backdrop rather than stacking into a bright blob.
+  const alpha = cluster.averageSimilarity * intensity * 0.1
   const gradient = ctx.createRadialGradient(
     cluster.centroid.x, cluster.centroid.y, 0,
-    cluster.centroid.x, cluster.centroid.y, cluster.radius
+    cluster.centroid.x, cluster.centroid.y, glowRadius
   )
   gradient.addColorStop(0, colorWithAlpha(color, alpha))
   gradient.addColorStop(0.7, colorWithAlpha(color, alpha * 0.3))
@@ -199,7 +211,7 @@ function drawClusterGlow(ctx: CanvasRenderingContext2D, cluster: SemanticCluster
 
   ctx.fillStyle = gradient
   ctx.beginPath()
-  ctx.arc(cluster.centroid.x, cluster.centroid.y, cluster.radius, 0, Math.PI * 2)
+  ctx.arc(cluster.centroid.x, cluster.centroid.y, glowRadius, 0, Math.PI * 2)
   ctx.fill()
 }
 

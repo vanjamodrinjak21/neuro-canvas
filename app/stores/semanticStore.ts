@@ -74,9 +74,12 @@ const DEFAULT_FIELD_SETTINGS: FieldSettings = {
   intensity: 0.7,
   showParticles: true,
   showPulses: true,
-  similarityThreshold: 0.5,
-  maxFieldLines: 50,
-  maxParticles: 200,
+  // 0.5 was too permissive: on a single-topic map most node pairs score
+  // 0.5–0.7, so nearly every pair drew a line → dense, meaningless tangle.
+  // 0.62 keeps only genuinely-related pairs while still showing a field.
+  similarityThreshold: 0.62,
+  maxFieldLines: 40,
+  maxParticles: 120,
   showClusterGlow: true,
   showClusterLabels: true,
   interactiveExploration: false,
