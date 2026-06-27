@@ -181,9 +181,12 @@ jobs:
           git tag -f "$TAG"
           git push origin "$TAG" --force
 
-      # Code-signing (APPLE_* / Windows cert) is deliberately omitted — macOS
-      # shows Gatekeeper, Windows shows SmartScreen on first run; the release
-      # body explains the one-time bypass.
+      # macOS code-signing + notarization is WIRED but GATED on secrets: when the
+      # APPLE_* secrets below are empty (the default), tauri-action skips signing
+      # and produces the same unsigned .dmg as before (Gatekeeper on first run).
+      # Once the Apple Developer ID cert + notarization creds are added as repo
+      # secrets, the SAME build automatically signs + notarizes — no YAML change.
+      # (Windows cert is still omitted → SmartScreen; release body explains both.)
       #
       # Updater signing (TAURI_SIGNING_*) IS enabled. When these env vars are
       # set, `tauri build` automatically generates a `.sig` file next to each
@@ -208,6 +211,15 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=6144'
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS Apple code-signing + notarization (empty until the Apple
+          # Developer ID artifacts are added as secrets → tauri-action then
+          # skips signing and behaves exactly as before). Ignored on Windows.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ needs.resolve-version.outputs.tag }}
           releaseName: ${{ needs.resolve-version.outputs.tag == 'beta' && 'NeuroCanvas BETA' || format('NeuroCanvas {0}', needs.resolve-version.outputs.version) }}
