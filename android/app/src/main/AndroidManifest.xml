@@ -22,6 +22,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- OAuth deep-link callback. After Google/Apple sign-in completes in
+                 the Custom Tab, /auth/mobile-callback redirects to
+                 neurocanvas://auth/callback?session=… — without this filter
+                 Android drops that URL and the app never receives the session,
+                 so OAuth sign-in silently fails. iOS registers the same scheme
+                 in Info.plist (CFBundleURLSchemes). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="neurocanvas" />
+            </intent-filter>
+
         </activity>
 
         <provider
