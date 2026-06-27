@@ -191,10 +191,10 @@ function categoryLabel(c: TemplateCategory): string {
 
 <style scoped>
 .mtpl {
-  --mtpl-bg: #09090B;
-  --mtpl-ink: #FAFAFA;
-  --mtpl-body: #A1A1AA;
-  --mtpl-mute: #52525B;
+  --mtpl-bg: var(--nc-bg);
+  --mtpl-ink: var(--nc-ink);
+  --mtpl-body: var(--nc-ink-soft);
+  --mtpl-mute: var(--nc-ink-faint);
   --mtpl-mint: #00D2BE;
   --mtpl-surface: rgba(250, 250, 250, 0.04);
   --mtpl-stroke: rgba(250, 250, 250, 0.10);
@@ -235,7 +235,7 @@ function categoryLabel(c: TemplateCategory): string {
   font-size: 19px;
   line-height: 1;
   letter-spacing: -0.01em;
-  color: var(--mtpl-ink, #FAFAFA);
+  color: var(--mtpl-ink, var(--nc-ink));
 }
 .mtpl-wordmark-em {
   font-style: italic;
@@ -370,7 +370,7 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-pill--active {
   background: var(--mtpl-mint);
   border-color: var(--mtpl-mint);
-  color: #09090B;
+  color: var(--nc-bg);
   font-weight: 600;
 }
 .mtpl-pill-count {
@@ -498,7 +498,7 @@ function categoryLabel(c: TemplateCategory): string {
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600; font-size: 12px; line-height: 14px;
-  color: #09090B;
+  color: var(--nc-bg);
 }
 .mtpl-use-btn:active { transform: scale(0.96); }
 
@@ -508,5 +508,30 @@ function categoryLabel(c: TemplateCategory): string {
   font-size: 11px;
   color: var(--mtpl-mute);
   text-align: center;
+}
+
+/* Light theme */
+:root.light .mtpl {
+  --mtpl-surface: var(--nc-surface);
+  --mtpl-stroke: var(--nc-border);
+  --mtpl-stroke-soft: var(--nc-border);
+}
+:root.light .mtpl-avatar {
+  background: var(--nc-surface-3);
+}
+:root.light .mtpl-search-input,
+:root.light .mtpl-sort-btn {
+  border-color: var(--nc-border);
+}
+:root.light .mtpl-card:active {
+  background: var(--nc-surface-3);
+}
+/* Dark contrast text on the constant teal accent (accent stays teal in both themes) */
+:root.light .mtpl-pill--active,
+:root.light .mtpl-use-btn {
+  color: #09090B;
+}
+:root.light .mtpl-pill--active .mtpl-pill-count {
+  color: rgba(9, 9, 11, 0.55);
 }
 </style>

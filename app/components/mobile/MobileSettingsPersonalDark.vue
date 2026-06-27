@@ -293,10 +293,10 @@ const layout = ref<'radial' | 'tree'>('radial')
   outline: none;
 }
 .mper {
-  --mper-bg: #09090B;
-  --mper-ink: #FAFAFA;
-  --mper-body: #A1A1AA;
-  --mper-mute: #52525B;
+  --mper-bg: var(--nc-bg);
+  --mper-ink: var(--nc-ink);
+  --mper-body: var(--nc-ink-soft);
+  --mper-mute: var(--nc-ink-faint);
   --mper-mint: #00D2BE;
   --mper-surface: rgba(250, 250, 250, 0.04);
   --mper-stroke: rgba(250, 250, 250, 0.10);
@@ -576,15 +576,31 @@ const layout = ref<'radial' | 'tree'>('radial')
 .mper-toggle-knob {
   position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
-  background: #52525B;
+  background: var(--nc-ink-faint);
   transition: transform 180ms ease, background 150ms ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
 }
 .mper-toggle--on { background: var(--mper-mint); border-color: var(--mper-mint); }
-.mper-toggle--on .mper-toggle-knob { transform: translateX(18px); background: #FAFAFA; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40); }
+.mper-toggle--on .mper-toggle-knob { transform: translateX(18px); background: var(--nc-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40); }
 
 .mper-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
+}
+
+/* Light theme */
+:root.light .mper {
+  /* White-on-dark overlays read as invisible on warm paper — swap to dark-on-light */
+  --mper-surface: rgba(17, 17, 17, 0.04);
+  --mper-stroke: rgba(17, 17, 17, 0.12);
+  --mper-stroke-soft: rgba(17, 17, 17, 0.07);
+}
+:root.light .mper-icon {
+  background: rgba(17, 17, 17, 0.04);
+  border-color: rgba(17, 17, 17, 0.08);
+}
+:root.light .mper-toggle {
+  background: rgba(17, 17, 17, 0.10);
+  border-color: rgba(17, 17, 17, 0.08);
 }
 </style>

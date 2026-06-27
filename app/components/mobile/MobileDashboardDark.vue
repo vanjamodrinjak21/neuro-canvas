@@ -269,10 +269,10 @@ function onRow(id: string) {
  * Tokens (mirrors Paper Try-Free / G13-0 / GJJ-0)
  * ────────────────────────────────────────────────────────────────────── */
 .mdash {
-  --mdash-bg: #09090B;
-  --mdash-ink: #FAFAFA;
-  --mdash-body: #A1A1AA;
-  --mdash-mute: #52525B;
+  --mdash-bg: var(--nc-bg);
+  --mdash-ink: var(--nc-ink);
+  --mdash-body: var(--nc-ink-soft);
+  --mdash-mute: var(--nc-ink-faint);
   --mdash-mint: #00D2BE;
   --mdash-surface: rgba(250, 250, 250, 0.04);
   --mdash-surface-2: rgba(250, 250, 250, 0.06);
@@ -644,4 +644,39 @@ function onRow(id: string) {
 }
 .mdash-fab:active { transform: scale(0.92); }
 .mdash-fab:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Light theme ─────────────────────────────────────────────────────── */
+/* Dark-specific white-tint overlays (surfaces, strokes, shimmer) read as
+ * invisible on a light background — flip them to dark-tint equivalents and
+ * pull surface/stroke values from the light token palette. */
+:root.light .mdash {
+  --mdash-surface: rgba(17, 17, 17, 0.04);
+  --mdash-surface-2: rgba(17, 17, 17, 0.06);
+  --mdash-stroke: rgba(17, 17, 17, 0.10);
+  --mdash-stroke-soft: rgba(17, 17, 17, 0.08);
+}
+:root.light .mdash-avatar {
+  background: rgba(17, 17, 17, 0.05);
+}
+:root.light .mdash-row:active {
+  background: rgba(17, 17, 17, 0.06);
+}
+:root.light .mdash-row-thumb {
+  border-color: rgba(17, 17, 17, 0.08);
+}
+:root.light .mdash-skel-shimmer {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(17, 17, 17, 0.04) 0%,
+      rgba(17, 17, 17, 0.08) 50%,
+      rgba(17, 17, 17, 0.04) 100%
+    );
+  background-size: 200% 100%;
+}
+:root.light .mdash-fab {
+  box-shadow:
+    0 12px 32px rgba(0, 210, 190, 0.30),
+    0 4px 12px rgba(0, 0, 0, 0.12);
+}
 </style>

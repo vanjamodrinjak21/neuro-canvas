@@ -221,10 +221,10 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 
 <style scoped>
 .mset {
-  --mset-bg: #09090B;
-  --mset-ink: #FAFAFA;
-  --mset-body: #A1A1AA;
-  --mset-mute: #52525B;
+  --mset-bg: var(--nc-bg);
+  --mset-ink: var(--nc-ink);
+  --mset-body: var(--nc-ink-soft);
+  --mset-mute: var(--nc-ink-faint);
   --mset-mint: #00D2BE;
   --mset-surface: rgba(250, 250, 250, 0.04);
   --mset-stroke: rgba(250, 250, 250, 0.10);
@@ -266,7 +266,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   font-size: 19px;
   line-height: 1;
   letter-spacing: -0.01em;
-  color: var(--mset-ink, #FAFAFA);
+  color: var(--mset-ink, var(--nc-ink));
 }
 .mset-wordmark-em {
   font-style: italic;
@@ -564,5 +564,10 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 .mset-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
+}
+
+/* Light theme */
+:root.light .mset-footer-mute {
+  color: rgba(161, 161, 170, 0.7); /* --nc-ink-faint (#A1A1AA) @ 70% */
 }
 </style>

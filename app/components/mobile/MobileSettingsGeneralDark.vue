@@ -389,10 +389,10 @@ async function manualUpdateCheck() {
   outline: none;
 }
 .mgen {
-  --mgen-bg: #09090B;
-  --mgen-ink: #FAFAFA;
-  --mgen-body: #A1A1AA;
-  --mgen-mute: #52525B;
+  --mgen-bg: var(--nc-bg);
+  --mgen-ink: var(--nc-ink);
+  --mgen-body: var(--nc-ink-soft);
+  --mgen-mute: var(--nc-ink-faint);
   --mgen-mint: #00D2BE;
   --mgen-surface: rgba(250, 250, 250, 0.04);
   --mgen-stroke: rgba(250, 250, 250, 0.10);
@@ -650,7 +650,7 @@ async function manualUpdateCheck() {
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
-  background: #52525B;
+  background: var(--nc-ink-faint);
   transition: transform 180ms ease, background 150ms ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
 }
@@ -758,5 +758,27 @@ async function manualUpdateCheck() {
 .mgen-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
+}
+
+/* Light theme */
+:root.light .mgen {
+  /* White-on-dark overlays become black-on-light so subtle surfaces/strokes
+     stay legible against the warm-paper background. */
+  --mgen-surface: rgba(17, 17, 17, 0.03);
+  --mgen-stroke: rgba(17, 17, 17, 0.10);
+  --mgen-stroke-soft: rgba(17, 17, 17, 0.06);
+  --mgen-stroke-icon: rgba(17, 17, 17, 0.08);
+}
+:root.light .mgen-icon,
+:root.light .mgen-tile-mini {
+  background: rgba(17, 17, 17, 0.03);
+  border-color: rgba(17, 17, 17, 0.08);
+}
+:root.light .mgen-toggle {
+  background: rgba(17, 17, 17, 0.10);
+  border-color: rgba(17, 17, 17, 0.06);
+}
+:root.light .mgen-slider-track {
+  background: rgba(17, 17, 17, 0.08);
 }
 </style>

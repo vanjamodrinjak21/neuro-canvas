@@ -229,10 +229,10 @@ const totalEdges = computed(() =>
 
 <style scoped>
 .mmaps {
-  --mmaps-bg: #09090B;
-  --mmaps-ink: #FAFAFA;
-  --mmaps-body: #A1A1AA;
-  --mmaps-mute: #52525B;
+  --mmaps-bg: var(--nc-bg);
+  --mmaps-ink: var(--nc-ink);
+  --mmaps-body: var(--nc-ink-soft);
+  --mmaps-mute: var(--nc-ink-faint);
   --mmaps-mint: #00D2BE;
   --mmaps-surface: rgba(250, 250, 250, 0.04);
   --mmaps-stroke: rgba(250, 250, 250, 0.10);
@@ -275,7 +275,7 @@ const totalEdges = computed(() =>
   font-size: 19px;
   line-height: 1;
   letter-spacing: -0.01em;
-  color: var(--mmaps-ink, #FAFAFA);
+  color: var(--mmaps-ink, var(--nc-ink));
 }
 .mmaps-wordmark-em {
   font-style: italic;
@@ -512,5 +512,24 @@ const totalEdges = computed(() =>
   font-size: 11px;
   color: var(--mmaps-mute);
   text-align: center;
+}
+
+/* Light theme — the white-based surface/stroke overlays vanish on a light
+   background, so remap the local surface/stroke vars to opaque light tokens. */
+:root.light .mmaps {
+  --mmaps-surface: var(--nc-surface);
+  --mmaps-stroke: var(--nc-border-active);
+  --mmaps-stroke-soft: var(--nc-border);
+}
+:root.light .mmaps-search-input,
+:root.light .mmaps-sort-btn,
+:root.light .mmaps-row-thumb {
+  border-color: var(--nc-border);
+}
+:root.light .mmaps-avatar {
+  background: var(--nc-surface);
+}
+:root.light .mmaps-row:active {
+  background: var(--nc-surface-3);
 }
 </style>

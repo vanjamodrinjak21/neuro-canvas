@@ -435,10 +435,10 @@ function maskKey(type: string): string {
   outline: none;
 }
 .map {
-  --map-bg: #09090B;
-  --map-ink: #FAFAFA;
-  --map-body: #A1A1AA;
-  --map-mute: #52525B;
+  --map-bg: var(--nc-bg);
+  --map-ink: var(--nc-ink);
+  --map-body: var(--nc-ink-soft);
+  --map-mute: var(--nc-ink-faint);
   --map-mint: #00D2BE;
   --map-surface: rgba(250, 250, 250, 0.04);
   --map-stroke: rgba(250, 250, 250, 0.10);
@@ -933,5 +933,10 @@ function maskKey(type: string): string {
 .map-sheet-enter-from, .map-sheet-leave-to { opacity: 0; }
 .map-sheet-enter-from .map-sheet, .map-sheet-leave-to .map-sheet {
   transform: translateY(100%);
+}
+
+/* Light theme */
+:root.light .map-sheet {
+  background: #F5F5F3;
 }
 </style>

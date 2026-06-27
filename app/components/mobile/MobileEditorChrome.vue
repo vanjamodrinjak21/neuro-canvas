@@ -215,10 +215,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .medc {
-  --medc-bg: #09090B;
-  --medc-ink: #FAFAFA;
-  --medc-body: #A1A1AA;
-  --medc-mute: #52525B;
+  --medc-bg: var(--nc-bg);
+  --medc-ink: var(--nc-ink);
+  --medc-body: var(--nc-ink-soft);
+  --medc-mute: var(--nc-ink-faint);
   --medc-mint: #00D2BE;
   --medc-surface: rgba(250, 250, 250, 0.04);
   --medc-stroke: rgba(250, 250, 250, 0.10);
@@ -340,7 +340,7 @@ onBeforeUnmount(() => {
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 500; font-size: 28px; line-height: 32px;
   letter-spacing: -0.025em;
-  color: #FAFAFA;
+  color: var(--nc-ink);
   caret-color: #00D2BE;
 }
 .medc-title-input::placeholder { color: rgba(250, 250, 250, 0.30); }
@@ -472,12 +472,9 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-/* Light mode */
+/* Light theme */
 :root.light .medc {
-  --medc-bg: #FAFAF9;
-  --medc-ink: #18181B;
-  --medc-body: #52525B;
-  --medc-mute: #71717A;
+  /* --medc-bg/ink/body/mute now resolve from --nc-* tokens (auto-switch in light) */
   --medc-surface: rgba(0, 0, 0, 0.03);
   --medc-stroke: rgba(0, 0, 0, 0.10);
   --medc-stroke-soft: rgba(0, 0, 0, 0.08);

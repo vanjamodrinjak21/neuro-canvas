@@ -54,8 +54,8 @@ defineEmits<{
   flex-direction: column;
   width: 100%;
   height: 100dvh;
-  background: #09090B;
-  color: #FAFAFA;
+  background: var(--nc-bg);
+  color: var(--nc-ink);
   z-index: 30;
   overflow: hidden;
 }
@@ -72,9 +72,5 @@ defineEmits<{
   padding-top: 0;
   width: 100%;
   height: 100%;
-}
-:root.light .mme {
-  background: #FAFAF9;
-  color: #18181B;
 }
 </style>

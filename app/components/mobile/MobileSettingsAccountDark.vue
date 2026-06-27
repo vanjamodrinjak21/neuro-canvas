@@ -274,10 +274,10 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   outline: none;
 }
 .macc {
-  --macc-bg: #09090B;
-  --macc-ink: #FAFAFA;
-  --macc-body: #A1A1AA;
-  --macc-mute: #52525B;
+  --macc-bg: var(--nc-bg);
+  --macc-ink: var(--nc-ink);
+  --macc-body: var(--nc-ink-soft);
+  --macc-mute: var(--nc-ink-faint);
   --macc-mint: #00D2BE;
   --macc-red: #EF4444;
   --macc-surface: rgba(250, 250, 250, 0.04);
@@ -454,12 +454,12 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 .macc-toggle-knob {
   position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
-  background: #52525B;
+  background: var(--nc-ink-faint);
   transition: transform 180ms ease, background 150ms ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
 }
 .macc-toggle--on { background: var(--macc-mint); border-color: var(--macc-mint); }
-.macc-toggle--on .macc-toggle-knob { transform: translateX(18px); background: #FAFAFA; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40); }
+.macc-toggle--on .macc-toggle-knob { transform: translateX(18px); background: var(--nc-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40); }
 
 .macc-pill {
   padding: 5px 9px;
@@ -522,5 +522,22 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 .macc-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
+}
+
+/* Light theme */
+:root.light .macc {
+  /* White-on-dark overlays disappear on a light surface — flip to dark-ink overlays */
+  --macc-surface: rgba(17, 17, 17, 0.04);
+  --macc-stroke: rgba(17, 17, 17, 0.12);
+  --macc-stroke-soft: rgba(17, 17, 17, 0.08);
+}
+:root.light .macc-row:active { background: rgba(17, 17, 17, 0.04); }
+:root.light .macc-icon {
+  background: rgba(17, 17, 17, 0.04);
+  border: 1px solid rgba(17, 17, 17, 0.08);
+}
+:root.light .macc-toggle {
+  border: 1px solid rgba(17, 17, 17, 0.10);
+  background: rgba(17, 17, 17, 0.12);
 }
 </style>
