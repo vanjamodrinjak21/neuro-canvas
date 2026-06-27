@@ -1,9 +1,11 @@
 import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
+import AppleProvider from 'next-auth/providers/apple'
 import EmailProvider from 'next-auth/providers/email'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
+import { sign as cryptoSign } from 'node:crypto'
 import bcrypt from 'bcrypt'
 import { Resend } from 'resend'
 import { prisma } from '../../utils/prisma'
@@ -17,8 +19,44 @@ function resolveProvider<T>(mod: T & { default?: T }): T {
 
 const Google = resolveProvider(GoogleProvider)
 const GitHub = resolveProvider(GitHubProvider)
+const Apple = resolveProvider(AppleProvider)
 const Email = resolveProvider(EmailProvider)
 const Credentials = resolveProvider(CredentialsProvider)
+
+// ─── Sign in with Apple — client-secret JWT ─────────────────────────
+// Apple doesn't hand out a static client secret: it's a short-lived ES256 JWT
+// you sign with the .p8 key from your Apple Developer account, valid ≤6 months.
+// We generate it at module load (every deploy/restart re-mints it, so it never
+// gets close to expiry on an actively-deployed service).
+//
+// dsaEncoding:'ieee-p1363' makes Node emit the raw r||s signature JOSE wants —
+// no DER→JOSE conversion, no async jose, no top-level await.
+function b64url(input: string): string {
+  return Buffer.from(input).toString('base64url')
+}
+
+function generateAppleClientSecret(
+  teamId: string,
+  clientId: string,
+  keyId: string,
+  privateKeyPem: string,
+): string {
+  const header = { alg: 'ES256', kid: keyId, typ: 'JWT' }
+  const now = Math.floor(Date.now() / 1000)
+  const payload = {
+    iss: teamId,
+    iat: now,
+    exp: now + 60 * 60 * 24 * 180, // 180 days (Apple's hard ceiling is 6 months)
+    aud: 'https://appleid.apple.com',
+    sub: clientId, // the Services ID, e.g. com.neurocanvas.signin
+  }
+  const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`
+  const signature = cryptoSign('sha256', Buffer.from(signingInput), {
+    key: privateKeyPem,
+    dsaEncoding: 'ieee-p1363',
+  })
+  return `${signingInput}.${signature.toString('base64url')}`
+}
 
 // ─── Runtime secret resolution ──────────────────────────────────────
 // CRITICAL: Read secrets from process.env at runtime, not from
@@ -63,6 +101,12 @@ const googleClientId = process.env.GOOGLE_CLIENT_ID || ''
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ''
 const githubClientId = process.env.GITHUB_CLIENT_ID || ''
 const githubClientSecret = process.env.GITHUB_CLIENT_SECRET || ''
+// Sign in with Apple. Services ID + the .p8 key's team/key ids + the key body.
+// APPLE_PRIVATE_KEY may carry literal "\n" (env-var friendly) — unescape it.
+const appleClientId = process.env.APPLE_CLIENT_ID || '' // Services ID, e.g. com.neurocanvas.signin
+const appleTeamId = process.env.APPLE_TEAM_ID || ''
+const appleKeyId = process.env.APPLE_KEY_ID || ''
+const applePrivateKey = (process.env.APPLE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
 
 if (googleClientId && googleClientSecret) {
   providers.push(
@@ -146,6 +190,27 @@ if (githubClientId && githubClientSecret) {
       },
     })
   )
+}
+
+if (appleClientId && appleTeamId && appleKeyId && applePrivateKey) {
+  try {
+    const appleClientSecret = generateAppleClientSecret(
+      appleTeamId,
+      appleClientId,
+      appleKeyId,
+      applePrivateKey,
+    )
+    providers.push(
+      Apple({
+        clientId: appleClientId,
+        clientSecret: appleClientSecret,
+      }),
+    )
+  } catch (err) {
+    // A malformed .p8 / wrong key shouldn't take down the whole auth handler —
+    // log and continue with the other providers.
+    console.error('[Auth] Apple provider init failed:', (err as Error)?.message)
+  }
 }
 
 if (resend) {

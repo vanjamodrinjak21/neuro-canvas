@@ -120,6 +120,10 @@ export default defineNuxtConfig({
       authOrigin: process.env.AUTH_ORIGIN || 'http://localhost:3000',
       collabEnabled: process.env.NUXT_PUBLIC_COLLAB_ENABLED === 'true',
       partykitHost: process.env.NUXT_PUBLIC_PARTYKIT_HOST || '',
+      // Show the "Sign in with Apple" button. Flip to 'true' once the server
+      // APPLE_* env (Services ID + .p8 key) is configured, so the button never
+      // appears before the provider can actually handle it.
+      appleAuthEnabled: process.env.NUXT_PUBLIC_APPLE_AUTH_ENABLED === 'true',
       // Public read-only for the /download page; if unset the client falls
       // back to /api/releases/latest, which derives the repo server-side.
       releasesRepo: process.env.NUXT_PUBLIC_RELEASES_REPO || '',
