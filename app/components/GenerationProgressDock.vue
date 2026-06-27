@@ -177,7 +177,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   background: rgba(0, 210, 190, 0.1);
   color: #00D2BE;
 }
@@ -200,7 +200,7 @@ watch(
 }
 
 .nc-gen-topic {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink, #FAFAFA);
   white-space: nowrap;
@@ -213,7 +213,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
 }
 
@@ -261,7 +261,7 @@ watch(
   flex: 1;
   padding: 7px 10px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   background: transparent;

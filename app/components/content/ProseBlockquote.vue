@@ -35,7 +35,7 @@
 }
 
 .blockquote-content {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: var(--nc-text-secondary);
   min-width: 0;

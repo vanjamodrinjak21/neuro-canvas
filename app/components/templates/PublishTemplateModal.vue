@@ -324,7 +324,7 @@ if (typeof document !== 'undefined') {
 
 .header-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--m-text, #E8E8EC);
   margin: 0;
@@ -333,7 +333,7 @@ if (typeof document !== 'undefined') {
 
 .header-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--m-muted, #71717A);
   margin: 2px 0 0;
 }
@@ -363,7 +363,7 @@ if (typeof document !== 'undefined') {
 
 .field-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 500;
+  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--m-text, #E8E8EC);
 }
 
@@ -375,7 +375,7 @@ if (typeof document !== 'undefined') {
   border: 1px solid var(--m-border, #1A1A1E);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--m-text, #E8E8EC);
   outline: none;
   transition: border-color 0.15s;
@@ -451,7 +451,7 @@ if (typeof document !== 'undefined') {
 .source-map-empty {
   margin: 0;
   padding: 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--m-muted, #71717A);
   text-align: center;
 }
@@ -475,7 +475,7 @@ if (typeof document !== 'undefined') {
 
 .source-map-item-title {
   flex: 1;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--m-text, #E8E8EC);
   white-space: nowrap;
   overflow: hidden;
@@ -484,7 +484,7 @@ if (typeof document !== 'undefined') {
 
 .source-map-item-meta {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--m-muted, #71717A);
 }
 
@@ -495,7 +495,7 @@ if (typeof document !== 'undefined') {
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 6px;
   color: #ef4444;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
 .btn-spinner {
@@ -515,12 +515,12 @@ if (typeof document !== 'undefined') {
   background: #00D2BE;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px; font-weight: 700; color: #09090B;
+  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 700; color: #09090B;
 }
 
 .source-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px; color: var(--m-text, #E8E8EC);
+  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--m-text, #E8E8EC);
 }
 
 /* Toggle Switch */
@@ -536,7 +536,7 @@ if (typeof document !== 'undefined') {
 
 .toggle-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px; color: var(--m-text, #E8E8EC);
+  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--m-text, #E8E8EC);
   flex: 1;
 }
 
@@ -584,7 +584,7 @@ if (typeof document !== 'undefined') {
   background: var(--m-hover, #1A1A1E);
   border-radius: 4px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--m-text, #E8E8EC);
 }
 
@@ -603,7 +603,7 @@ if (typeof document !== 'undefined') {
 .tag-input {
   border: none; background: none; outline: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--m-text, #E8E8EC);
   min-width: 60px;
   flex: 1;
@@ -625,7 +625,7 @@ if (typeof document !== 'undefined') {
   border: 1px solid var(--m-border, #1A1A1E);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px; font-weight: 500;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--m-text, #E8E8EC);
   cursor: pointer;
   transition: background 0.15s;
@@ -639,7 +639,7 @@ if (typeof document !== 'undefined') {
   background: #00D2BE;
   border: none; border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px; font-weight: 600;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600;
   color: #09090B;
   cursor: pointer;
   transition: opacity 0.15s;

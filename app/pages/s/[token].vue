@@ -97,7 +97,7 @@ useHead({ title: 'Opening shared map · NeuroCanvas' })
 }
 
 .nc-share-spin {
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   color: var(--nc-accent, #00D2BE);
   animation: nc-share-spin 0.9s linear infinite;
 }
@@ -105,12 +105,12 @@ useHead({ title: 'Opening shared map · NeuroCanvas' })
 @keyframes nc-share-spin { to { transform: rotate(360deg); } }
 
 .nc-share-err-icon {
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   color: #EF4444;
 }
 
 .nc-share-msg {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-secondary, #A1A1AA);
   line-height: 1.5;
   margin: 0;
@@ -123,7 +123,7 @@ useHead({ title: 'Opening shared map · NeuroCanvas' })
   background: var(--nc-accent, #00D2BE);
   color: #09090B;
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   text-decoration: none;
 }
 </style>

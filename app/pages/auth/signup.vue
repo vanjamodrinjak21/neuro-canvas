@@ -303,7 +303,7 @@ async function handleSignup() {
 }
 
 .logo-text {
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -317,7 +317,7 @@ async function handleSignup() {
 
 .brand-headline {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 44px;
+  font-size: calc(44px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;
   line-height: 52px;
@@ -327,7 +327,7 @@ async function handleSignup() {
 }
 
 .brand-desc {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   line-height: 26px;
   color: var(--a-text-3);
   margin: 0;
@@ -349,7 +349,7 @@ async function handleSignup() {
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--a-text);
@@ -361,7 +361,7 @@ async function handleSignup() {
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
 }
 
@@ -389,14 +389,14 @@ async function handleSignup() {
 
 .form-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--a-text-4, #52525B);
 }
 
 .form-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 36px;
+  font-size: calc(36px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.05;
@@ -411,7 +411,7 @@ async function handleSignup() {
 }
 
 .form-subtitle {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
   margin: 0;
   line-height: 1.55;
@@ -435,7 +435,7 @@ async function handleSignup() {
   border: 1px solid var(--a-border);
   color: var(--a-text);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: border-color 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out);
@@ -479,7 +479,7 @@ async function handleSignup() {
 }
 
 .divider-text {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
 }
 
@@ -497,7 +497,7 @@ async function handleSignup() {
 }
 
 .field-label {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--a-text-2);
 }
@@ -515,7 +515,7 @@ async function handleSignup() {
   border-radius: 6px;
   color: var(--a-text);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   outline: none;
   transition: border-color 150ms var(--nc-ease-out);
 }
@@ -545,7 +545,7 @@ async function handleSignup() {
   border: none;
   color: var(--a-text-3);
   cursor: pointer;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   display: flex;
   align-items: center;
 }
@@ -561,7 +561,7 @@ async function handleSignup() {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
   transition: color 120ms var(--nc-ease-out);
 }
@@ -571,7 +571,7 @@ async function handleSignup() {
 }
 
 .pw-req-icon {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   flex-shrink: 0;
 }
 
@@ -579,7 +579,7 @@ async function handleSignup() {
 .form-message {
   padding: 10px 14px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 18px;
 }
 
@@ -602,7 +602,7 @@ async function handleSignup() {
   background: var(--a-accent);
   color: #09090B;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
   cursor: pointer;
@@ -632,7 +632,7 @@ async function handleSignup() {
 }
 
 .terms-text {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #444450;
   margin: 0;
   line-height: 18px;
@@ -650,7 +650,7 @@ async function handleSignup() {
 }
 
 .form-footer {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
   margin: 0;
 }
@@ -711,12 +711,12 @@ async function handleSignup() {
   }
 
   .brand-headline {
-    font-size: 38px;
+    font-size: calc(38px * var(--nc-text-scale, 1));
     line-height: 46px;
   }
 
   .brand-desc {
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
     line-height: 24px;
   }
 
@@ -726,7 +726,7 @@ async function handleSignup() {
   }
 
   .form-title {
-    font-size: 28px;
+    font-size: calc(28px * var(--nc-text-scale, 1));
     line-height: 34px;
   }
 }
@@ -753,14 +753,14 @@ async function handleSignup() {
   }
 
   .form-title {
-    font-size: 32px;
+    font-size: calc(32px * var(--nc-text-scale, 1));
     line-height: 40px;
     letter-spacing: -0.03em;
     font-weight: 800;
   }
 
   .form-subtitle {
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
     line-height: 22px;
     margin-bottom: 12px;
   }
@@ -773,7 +773,7 @@ async function handleSignup() {
   .oauth-btn {
     height: 52px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
   }
 
   .divider {
@@ -781,31 +781,31 @@ async function handleSignup() {
   }
 
   .divider span {
-    font-size: 12px;
+    font-size: calc(12px * var(--nc-text-scale, 1));
   }
 
   .field-input {
     height: 52px;
     border-radius: 8px;
     padding: 0 16px;
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
   }
 
   .submit-btn {
     height: 52px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
     font-weight: 700;
     margin-bottom: 16px;
   }
 
   .form-footer {
-    font-size: 14px;
+    font-size: calc(14px * var(--nc-text-scale, 1));
     justify-content: center;
   }
 
   .form-footer a {
-    font-size: 14px;
+    font-size: calc(14px * var(--nc-text-scale, 1));
     font-weight: 600;
   }
 }

@@ -255,7 +255,7 @@ function handleBlank() {
 .head-id,
 .head-step {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
 }
 
@@ -317,7 +317,7 @@ function handleBlank() {
 }
 
 .subtitle {
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   line-height: 1.55;
   max-width: 560px;
@@ -359,13 +359,13 @@ function handleBlank() {
   border: 1px solid rgba(0, 210, 190, 0.22);
   border-radius: 6px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.04em;
   color: var(--nc-accent, #00D2BE);
 }
 
 .ai-hint {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
 }
 
@@ -395,7 +395,7 @@ function handleBlank() {
   outline: none;
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
-  font-size: 22px;
+  font-size: calc(22px * var(--nc-text-scale, 1));
   color: var(--nc-ink, #FAFAFA);
   min-width: 0;
 }
@@ -421,7 +421,7 @@ function handleBlank() {
   border: none;
   border-radius: 8px;
   color: #09090B;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: background 150ms ease, transform 80ms ease;
@@ -459,7 +459,7 @@ function handleBlank() {
 
 .ai-sug-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--nc-ink-faint, #52525B);
   flex-shrink: 0;
@@ -481,7 +481,7 @@ function handleBlank() {
   border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 6px;
   font-family: inherit;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease;
@@ -524,13 +524,13 @@ function handleBlank() {
 
 .templates-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--nc-ink-faint, #52525B);
 }
 
 .templates-sub {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
 }
 
@@ -538,7 +538,7 @@ function handleBlank() {
   background: none;
   border: none;
   font-family: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
 }
@@ -621,7 +621,7 @@ function handleBlank() {
 
 .tpl-label {
   position: absolute;
-  font-size: 9px;
+  font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 500;
   padding: 4px 10px;
   border-radius: 5px;
@@ -633,7 +633,7 @@ function handleBlank() {
   left: 50%;
   top: 14px;
   transform: translateX(-50%);
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   background: var(--nc-surface-3, #1E1E22);
   border: 1px solid var(--nc-border-hover, #3F3F46);
   color: var(--nc-ink, #FAFAFA);
@@ -676,19 +676,19 @@ function handleBlank() {
 }
 
 .tpl-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink, #FAFAFA);
 }
 
 .tpl-receipt {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
 }
 
 .tpl-desc {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   line-height: 1.5;
 }
@@ -732,7 +732,7 @@ function handleBlank() {
   border: none;
   padding: 0;
   font-family: inherit;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   cursor: pointer;
 }
@@ -753,13 +753,13 @@ function handleBlank() {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
 }
 
 .foot-tip-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
 }
 
@@ -817,7 +817,7 @@ function handleBlank() {
     gap: 12px;
   }
   .foot-tip {
-    font-size: 11px;
+    font-size: calc(11px * var(--nc-text-scale, 1));
   }
 }
 </style>

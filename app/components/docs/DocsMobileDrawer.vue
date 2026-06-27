@@ -142,7 +142,7 @@ onBeforeUnmount(() => {
 
 .docs-drawer__brand-text {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-text);
 }

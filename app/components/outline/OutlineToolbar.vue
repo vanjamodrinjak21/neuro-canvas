@@ -100,7 +100,7 @@ const aiEnabled = ref(false)
   background: transparent;
   border: none;
   color: var(--nc-text-soft, #A1A1AA);
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: all var(--nc-duration-fast) var(--nc-ease);
   -webkit-tap-highlight-color: transparent;

@@ -75,7 +75,7 @@ const actionLabels: Record<string, string> = {
 }
 
 .nc-action-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   text-transform: uppercase;
@@ -83,7 +83,7 @@ const actionLabels: Record<string, string> = {
 }
 
 .nc-action-description {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #888890;
   line-height: 1.5;
   margin-bottom: 8px;
@@ -103,7 +103,7 @@ const actionLabels: Record<string, string> = {
   gap: 4px;
   padding: 5px 8px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;

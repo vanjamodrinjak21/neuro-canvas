@@ -396,24 +396,24 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   text-decoration: none; color: var(--text);
 }
 .dl-brand-name {
-  font-size: 15px; font-weight: 600; line-height: 18px;
+  font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
   letter-spacing: -0.01em; color: var(--text);
 }
 .dl-nav-links { display: flex; gap: 28px; }
 .dl-nav-links a {
-  font-size: 14px; font-weight: 500; line-height: 18px;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
   color: var(--text-2); text-decoration: none;
   transition: color 120ms ease;
 }
 .dl-nav-links a:hover { color: var(--text); }
 .dl-nav-active {
-  font-size: 14px; font-weight: 500; line-height: 18px;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
   color: var(--text);
 }
 .dl-nav-right { display: flex; align-items: center; gap: 12px; }
 .dl-nav-signin {
   padding: 8px 12px;
-  font-size: 14px; font-weight: 500; line-height: 18px;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
   color: var(--text-2); text-decoration: none;
   transition: color 120ms ease;
 }
@@ -423,7 +423,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   padding: 8px 16px;
   border: 1px solid var(--border-active);
   border-radius: 10px;
-  font-size: 14px; font-weight: 500; line-height: 18px;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
   color: var(--text);
   text-decoration: none;
   transition: border-color 120ms ease, background 120ms ease;
@@ -460,7 +460,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   line-height: 1.0;
 }
 .dl-sub {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   color: var(--text-3);
   line-height: 1.55;
   max-width: 560px;
@@ -478,7 +478,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   border: none;
   border-radius: 999px;
   font-family: var(--sans);
-  font-size: 15px; font-weight: 600;
+  font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--on-accent);
   text-decoration: none;
   cursor: pointer;
@@ -492,7 +492,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   padding: 14px 22px;
   border: 1px solid var(--border-active);
   border-radius: 999px;
-  font-size: 15px; font-weight: 500;
+  font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text);
   text-decoration: none;
   transition: background 120ms ease, border-color 120ms ease;
@@ -501,7 +501,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 .dl-receipt {
   display: flex; align-items: center; gap: 8px;
   margin: 0; padding-top: 4px;
-  font-size: 13px; color: var(--text-3);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--text-3);
 }
 .dl-receipt svg { color: var(--text-3); flex-shrink: 0; }
 .dl-receipt-link { color: var(--accent); text-decoration: none; }
@@ -517,7 +517,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
-  font-size: 13px; font-weight: 500;
+  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text-2);
   text-decoration: none;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
@@ -537,13 +537,13 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 }
 .dl-section-eyebrow {
   margin: 0;
-  font-size: 13px; color: var(--text-faint);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--text-faint);
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
 }
 .dl-state {
-  font-size: 14px; color: var(--text-3);
+  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--text-3);
   padding: 24px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -579,12 +579,12 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 .dl-card-title {
   margin: 0;
   font-family: 'Cabinet Grotesk', var(--sans);
-  font-size: 18px; font-weight: 600;
+  font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text);
 }
 .dl-card-sub {
   margin: 0;
-  font-size: 13px; color: var(--text-3);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--text-3);
 }
 .dl-card-chips-wrap {
   position: relative;
@@ -596,7 +596,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   padding: 6px 12px;
   background: var(--surface-3);
   border-radius: 6px;
-  font-size: 12px; font-weight: 500;
+  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text-3);
   transition: opacity 180ms ease, transform 180ms ease;
   pointer-events: none;
@@ -637,7 +637,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   padding: 6px 12px;
   background: var(--surface-3);
   border-radius: 6px;
-  font-size: 12px; font-weight: 500;
+  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text);
   text-decoration: none;
   transition: background 120ms ease, color 120ms ease;
@@ -666,7 +666,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   gap: 12px;
 }
 .dl-notes-gh {
-  font-size: 14px; color: var(--accent);
+  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--accent);
   text-decoration: none;
 }
 .dl-notes-gh:hover { text-decoration: underline; }
@@ -683,7 +683,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   display: flex; align-items: flex-start; gap: 14px;
 }
 .dl-notes-text {
-  font-size: 14px; color: var(--text);
+  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--text);
   line-height: 1.55;
   flex: 1;
 }
@@ -692,7 +692,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   display: inline-flex; align-items: center; justify-content: center;
   padding: 3px 10px;
   border-radius: 6px;
-  font-size: 11px; font-weight: 700;
+  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 700;
   letter-spacing: 0.06em;
   flex-shrink: 0;
 }
@@ -721,11 +721,11 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   display: flex; align-items: center; gap: 8px;
 }
 .dl-foot-brand-name {
-  font-size: 14px; font-weight: 600; color: var(--text);
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--text);
   letter-spacing: -0.01em;
 }
 .dl-foot-meta {
-  font-size: 12px; color: var(--text-faint);
+  font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--text-faint);
 }
 .dl-foot-cols {
   display: flex; gap: 64px;
@@ -737,14 +737,14 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   min-width: 100px;
 }
 .dl-foot-col-head {
-  font-size: 12px; font-weight: 600;
+  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text-faint);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 4px;
 }
 .dl-foot-col a {
-  font-size: 13px; color: var(--text-3);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--text-3);
   text-decoration: none;
   transition: color 120ms ease;
 }
@@ -767,32 +767,32 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   .dl-nav-left { gap: 20px; }
   .dl-nav-links { display: none; }
   .dl-nav-signin { display: none; }
-  .dl-nav-dash { padding: 7px 14px; font-size: 13px; }
+  .dl-nav-dash { padding: 7px 14px; font-size: calc(13px * var(--nc-text-scale, 1)); }
 
   .dl-hero { padding: 32px 20px 28px; gap: 14px; }
-  .dl-h-sans, .dl-h-serif { font-size: 42px; letter-spacing: -0.02em; }
-  .dl-sub { font-size: 15px; max-width: 100%; }
+  .dl-h-sans, .dl-h-serif { font-size: calc(42px * var(--nc-text-scale, 1)); letter-spacing: -0.02em; }
+  .dl-sub { font-size: calc(15px * var(--nc-text-scale, 1)); max-width: 100%; }
   .dl-cta-row { flex-direction: column; align-self: stretch; gap: 10px; }
   .dl-btn-primary, .dl-btn-outline {
     align-self: stretch;
     justify-content: center;
     padding: 12px;
-    font-size: 14px;
+    font-size: calc(14px * var(--nc-text-scale, 1));
   }
-  .dl-receipt { font-size: 12px; align-items: flex-start; }
+  .dl-receipt { font-size: calc(12px * var(--nc-text-scale, 1)); align-items: flex-start; }
   .dl-receipt svg { margin-top: 2px; }
 
   .dl-section { padding: 32px 20px 24px; gap: 14px; }
-  .dl-section-eyebrow { font-size: 12px; }
+  .dl-section-eyebrow { font-size: calc(12px * var(--nc-text-scale, 1)); }
 
   /* Mobile platform list — single column rows with extension chip pulled right */
   .dl-grid { grid-template-columns: 1fr; gap: 10px; }
   .dl-card { flex-direction: row; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; }
   .dl-card-head { flex: 1; gap: 14px; }
   .dl-card-icon { width: 36px; height: 36px; }
-  .dl-card-title { font-size: 14px; font-weight: 600; }
+  .dl-card-title { font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; }
   .dl-card-sub {
-    font-size: 12px;
+    font-size: calc(12px * var(--nc-text-scale, 1));
     grid-column: span 1;
     flex: 1;
     margin-top: -2px;
@@ -803,7 +803,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
     background: transparent;
     color: var(--accent);
     padding: 0;
-    font-size: 12px;
+    font-size: calc(12px * var(--nc-text-scale, 1));
   }
   .dl-card-chips .dl-chip:hover { background: transparent; opacity: 0.8; }
   .dl-chip-ghost { display: none; }
@@ -821,8 +821,8 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 
   .dl-section-notes { padding-bottom: 24px; }
   .dl-notes-card { padding: 16px; gap: 14px; }
-  .dl-notes-text { font-size: 13px; }
-  .dl-tag { padding: 2px 8px; font-size: 10px; border-radius: 4px; }
+  .dl-notes-text { font-size: calc(13px * var(--nc-text-scale, 1)); }
+  .dl-tag { padding: 2px 8px; font-size: calc(10px * var(--nc-text-scale, 1)); border-radius: 4px; }
 
   .dl-footer { flex-direction: column; gap: 16px; padding: 24px 20px 32px; }
   .dl-foot-cols { gap: 24px; }

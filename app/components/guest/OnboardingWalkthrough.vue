@@ -185,7 +185,7 @@ onMounted(() => {
 
 .cm-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--nc-ink-faint, #52525B);
 }
@@ -227,7 +227,7 @@ onMounted(() => {
 
 .cm-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--nc-ink, #FAFAFA);
@@ -238,7 +238,7 @@ onMounted(() => {
 }
 
 .cm-desc {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   line-height: 1.55;
 }
@@ -267,7 +267,7 @@ onMounted(() => {
 
 .cm-status-text {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
 }
 
@@ -288,7 +288,7 @@ onMounted(() => {
   border: none;
   padding: 0;
   font-family: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
 }
@@ -314,7 +314,7 @@ onMounted(() => {
   border: none;
   border-radius: 6px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease, transform 80ms ease;

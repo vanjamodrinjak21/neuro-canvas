@@ -118,7 +118,7 @@ const errorInfo = computed(() => {
 }
 
 .brand-name {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #FAFAFA;
   letter-spacing: -0.03em;
@@ -146,7 +146,7 @@ const errorInfo = computed(() => {
 /* Copy */
 .error-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: #52525B;
   margin-bottom: 12px;
@@ -154,7 +154,7 @@ const errorInfo = computed(() => {
 
 .heading {
   font-family: 'Instrument Serif', serif;
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;
   line-height: 1.1;
@@ -164,7 +164,7 @@ const errorInfo = computed(() => {
 }
 
 .desc {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 1.55;
   color: #A1A1AA;
   margin: 0 0 16px;
@@ -173,7 +173,7 @@ const errorInfo = computed(() => {
 
 .error-receipt {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0 0 28px;
 }
@@ -193,7 +193,7 @@ const errorInfo = computed(() => {
   min-height: 44px;
   background: #00D2BE;
   color: #09090B;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
   border-radius: 6px;
@@ -216,7 +216,7 @@ const errorInfo = computed(() => {
   background: transparent;
   border: 1px solid #27272A;
   color: #A1A1AA;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   border-radius: 6px;
   cursor: pointer;
@@ -241,7 +241,7 @@ const errorInfo = computed(() => {
 
 .error-badge {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
   color: #EF4444;
   opacity: 0.85;
@@ -252,7 +252,7 @@ const errorInfo = computed(() => {
 
 .error-details {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
   color: #71717A;
 }

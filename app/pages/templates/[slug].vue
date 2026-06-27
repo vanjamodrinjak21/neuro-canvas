@@ -408,7 +408,7 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--tpl-muted, #71717A);
   text-decoration: none;
@@ -429,7 +429,7 @@ onMounted(() => {
 
 .breadcrumb-current {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--tpl-muted, #71717A);
 }
 
@@ -467,7 +467,7 @@ onMounted(() => {
   border: 1px solid var(--tpl-border, #1A1A1E);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--tpl-text, #E8E8EC);
 }
@@ -489,7 +489,7 @@ onMounted(() => {
 
 .info-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: var(--tpl-text, #E8E8EC);
   margin: 0;
@@ -506,7 +506,7 @@ onMounted(() => {
   padding: 4px 12px;
   border-radius: 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
 }
 
@@ -517,7 +517,7 @@ onMounted(() => {
 
 .info-description {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 22px;
   color: var(--tpl-muted, #71717A);
   margin: 0;
@@ -542,14 +542,14 @@ onMounted(() => {
 
 .stat-value {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: var(--tpl-text, #E8E8EC);
 }
 
 .stat-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--tpl-muted, #71717A);
 }
 
@@ -569,7 +569,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: var(--tpl-text, #E8E8EC);
   flex-shrink: 0;
@@ -582,14 +582,14 @@ onMounted(() => {
 
 .author-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--tpl-text, #E8E8EC);
 }
 
 .author-date {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--tpl-muted, #71717A);
 }
 
@@ -608,7 +608,7 @@ onMounted(() => {
   padding: 12px 20px;
   border-radius: 10px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s, background 0.15s;
@@ -645,7 +645,7 @@ onMounted(() => {
   border: 1px solid var(--tpl-border, #1A1A1E);
   border-radius: 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--tpl-muted, #71717A);
 }
 

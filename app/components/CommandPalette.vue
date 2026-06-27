@@ -510,7 +510,7 @@ defineExpose({ open, close })
 }
 
 .nc-cmdk-search-icon {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, #A1A1AA);
   flex-shrink: 0;
 }
@@ -522,7 +522,7 @@ defineExpose({ open, close })
   border: none;
   outline: none;
   font-family: inherit;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   color: var(--nc-ink, #FAFAFA);
 }
 
@@ -534,7 +534,7 @@ defineExpose({ open, close })
   flex-shrink: 0;
   padding: 2px 7px;
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, #A1A1AA);
   background: var(--nc-surface-3, #18181B);
   border: 1px solid var(--nc-border, #1A1A1E);
@@ -550,7 +550,7 @@ defineExpose({ open, close })
 
 .nc-cmdk-group-heading {
   padding: 10px 10px 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -583,7 +583,7 @@ defineExpose({ open, close })
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   border-radius: var(--nc-radius-sm, 6px);
   background: var(--nc-surface-3, #18181B);
   color: var(--nc-ink-soft, #A1A1AA);
@@ -613,7 +613,7 @@ defineExpose({ open, close })
 }
 
 .nc-cmdk-item-label {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -626,7 +626,7 @@ defineExpose({ open, close })
 }
 
 .nc-cmdk-item-sub {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
   white-space: nowrap;
   overflow: hidden;
@@ -635,7 +635,7 @@ defineExpose({ open, close })
 
 .nc-cmdk-item-enter {
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
   opacity: 0;
 }
@@ -651,12 +651,12 @@ defineExpose({ open, close })
   justify-content: center;
   gap: 10px;
   padding: 40px 20px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
 }
 
 .nc-cmdk-state-icon {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
 }
 
 /* ── Spinner ── */
@@ -687,7 +687,7 @@ defineExpose({ open, close })
 }
 
 .nc-cmdk-brand-name {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--nc-ink-soft, #A1A1AA);
@@ -697,14 +697,14 @@ defineExpose({ open, close })
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
 }
 
 .nc-cmdk-hints kbd {
   padding: 1px 5px;
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, #A1A1AA);
   background: var(--nc-surface-4, #1C1C1F);
   border: 1px solid var(--nc-border, #1A1A1E);

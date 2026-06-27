@@ -108,14 +108,14 @@ const distanceLabel = computed(() => {
 }
 
 .nc-hud-region {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-accent, #00D2BE);
   letter-spacing: 0.02em;
 }
 
 .nc-hud-stats {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft);
   display: flex;
   align-items: center;
@@ -127,7 +127,7 @@ const distanceLabel = computed(() => {
 }
 
 .nc-hud-distance {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft);
   opacity: 0.7;
 }

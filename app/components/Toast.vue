@@ -60,7 +60,7 @@ const { toasts, dismiss } = useToast()
   border-radius: 8px;
   background: var(--nc-surface-2, #15161A);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.4;
   font-weight: 500;
   cursor: pointer;

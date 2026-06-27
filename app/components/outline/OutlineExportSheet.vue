@@ -128,7 +128,7 @@ async function handleShare() {
 
 .nc-export-title {
   font-family: var(--nc-font-display);
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-text, #FAFAFA);
   margin-bottom: 16px;
@@ -159,13 +159,13 @@ async function handleShare() {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted, #52525B);
 }
 
 .nc-export-preview-loading .nc-spin,
 .nc-export-preview-empty span:first-child {
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
 }
 
 .nc-spin {
@@ -194,7 +194,7 @@ async function handleShare() {
   background: var(--nc-surface-3, #18181B);
   color: var(--nc-text, #FAFAFA);
   font-family: var(--nc-font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all var(--nc-duration-fast) var(--nc-ease);

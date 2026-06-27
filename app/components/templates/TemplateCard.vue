@@ -177,7 +177,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
   background: rgba(0, 210, 190, 0.12);
   color: #00D2BE;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   border-radius: 6px;
   letter-spacing: 0.02em;
@@ -200,7 +200,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
 
 .card-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--tc-text, #E8E8EC);
   line-height: 20px;
@@ -212,7 +212,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
 .category-badge {
   padding: 2px 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   border-radius: 4px;
   white-space: nowrap;
@@ -221,7 +221,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
 
 .card-description {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--tc-muted, #71717A);
   line-height: 18px;
@@ -254,7 +254,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
   align-items: center;
   justify-content: center;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 9px;
+  font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #09090B;
   flex-shrink: 0;
@@ -262,7 +262,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
 
 .author-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--tc-muted, #71717A);
 }
@@ -272,7 +272,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
   align-items: center;
   gap: 4px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--tc-muted, #71717A);
 }

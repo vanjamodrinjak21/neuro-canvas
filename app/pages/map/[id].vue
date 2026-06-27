@@ -2469,14 +2469,14 @@ body:has(.detail-panel) .minimap-wrapper {
 }
 .nc-mobile-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px; font-weight: 600; line-height: 18px;
+  font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
   color: var(--nc-ink, #FAFAFA);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 100%;
 }
 .nc-mobile-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px; font-weight: 500; line-height: 14px;
+  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 14px;
   color: var(--nc-text-secondary, #888890);
 }
 .nc-mobile-aibtn {
@@ -2485,7 +2485,7 @@ body:has(.detail-panel) .minimap-wrapper {
   background: #00D2BE; border: none; border-radius: 8px;
   color: #0A0A0C;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 600; line-height: 16px;
+  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
   cursor: pointer; flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
 }
@@ -2545,7 +2545,7 @@ body:has(.detail-panel) .minimap-wrapper {
 
 .nc-segment-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--nc-text-secondary, #888890);
@@ -2589,13 +2589,13 @@ body:has(.detail-panel) .minimap-wrapper {
   border: 1px solid rgba(0, 210, 190, 0.4);
   box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.6);
   color: var(--nc-ink, #FAFAFA);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   pointer-events: none;
 }
 
 .nc-genbadge-spin {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   color: #00D2BE;
   animation: nc-genbadge-rotate 0.9s linear infinite;
 }

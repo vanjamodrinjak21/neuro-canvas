@@ -111,7 +111,7 @@ const style = computed(() => ({
 
 .nc-hover-badge {
   display: inline-block;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 6px;
@@ -120,7 +120,7 @@ const style = computed(() => ({
 }
 
 .nc-hover-desc {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 1.4;
   color: var(--nc-ink-soft, #AAAAB0);
   margin: 0;
@@ -139,7 +139,7 @@ const style = computed(() => ({
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #888890);
 }
 </style>

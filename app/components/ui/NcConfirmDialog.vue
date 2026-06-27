@@ -143,7 +143,7 @@ function handleCancel() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
 }
 
 .confirm-icon--danger {
@@ -160,7 +160,7 @@ function handleCancel() {
 
 .confirm-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
   margin: 0 0 4px;
   color: #FAFAFA;
@@ -168,7 +168,7 @@ function handleCancel() {
 
 .confirm-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #71717A;
   margin: 4px 0 0;
   line-height: 1.5;
@@ -190,7 +190,7 @@ function handleCancel() {
   padding: 8px 18px;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   border: none;

@@ -183,14 +183,14 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 
 .ai-panel__header-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
 }
 
 .ai-panel__header-context {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
 }
 
@@ -205,7 +205,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   cursor: pointer;
   transition: all 0.15s;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #00D2BE;
 }
@@ -216,7 +216,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 }
 
 .ai-panel__refresh-icon {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
 /* Body */
@@ -280,13 +280,13 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 }
 
 .ai-panel__empty-icon {
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
   color: #27272A;
 }
 
 .ai-panel__empty-text {
   color: #52525B;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   margin-bottom: 4px;
 }
 
@@ -301,7 +301,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   border-radius: 8px;
   color: #00D2BE;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -314,11 +314,11 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 
 .ai-panel__generate-btn--small {
   padding: 6px 12px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
 }
 
 .ai-panel__generate-btn--small span {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
 }
 
 /* Description sub-section */
@@ -333,7 +333,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 }
 
 .ai-panel__description-label {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #27272A;
   text-transform: uppercase;
@@ -342,7 +342,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 }
 
 .ai-panel__description-text {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #71717A;
   line-height: 1.5;
   margin: 4px 0 0;
@@ -358,7 +358,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 
 .ai-panel__keyword {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   padding: 1px 6px;
   /* Tokenised so the chip flips with the theme — was a hardcoded dark fill
      that rendered as dark chips on the light (warm paper) background. */
@@ -386,14 +386,14 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   padding: 8px;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .ai-panel__footer-btn span:first-child {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
 .ai-panel__footer-btn--teal {

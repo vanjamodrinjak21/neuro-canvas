@@ -69,7 +69,7 @@ const style = computed(() => ({
 }
 
 .nc-ms-count {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-soft, #AAAAB0);
   padding: 0 4px;

@@ -230,14 +230,14 @@ onKeyStroke('Escape', () => {
   border-bottom: 1px solid var(--nc-border, #27272A);
 }
 .vh-heading h2 {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 650;
   letter-spacing: -0.01em;
   margin: 0;
 }
 .vh-subtitle {
   margin: 4px 0 0;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--nc-text-scale, 1));
   line-height: 1.4;
   color: var(--nc-ink-soft, #A1A1AA);
 }
@@ -249,7 +249,7 @@ onKeyStroke('Escape', () => {
   border: 1px solid transparent;
   border-radius: 8px;
   color: var(--nc-ink-soft, #A1A1AA);
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
@@ -270,13 +270,13 @@ onKeyStroke('Escape', () => {
   background: rgba(220, 38, 38, 0.12);
   border: 1px solid rgba(220, 38, 38, 0.4);
   border-radius: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #FCA5A5;
 }
 .vh-state {
   padding: 40px 22px;
   color: var(--nc-ink-soft, #71717A);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   text-align: center;
 }
 
@@ -300,12 +300,12 @@ onKeyStroke('Escape', () => {
 .vh-row:hover { background: rgba(255, 255, 255, 0.025); }
 .vh-row.is-pending { background: rgba(0, 210, 190, 0.06); }
 .vh-row-main { min-width: 0; }
-.vh-row-time { font-size: 13.5px; font-weight: 550; }
+.vh-row-time { font-size: calc(13.5px * var(--nc-text-scale, 1)); font-weight: 550; }
 .vh-row-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, #71717A);
   margin-top: 3px;
 }
@@ -313,7 +313,7 @@ onKeyStroke('Escape', () => {
 
 .vh-btn {
   border-radius: 7px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 550;
   padding: 7px 12px;
   cursor: pointer;
@@ -339,7 +339,7 @@ onKeyStroke('Escape', () => {
   flex-shrink: 0;
 }
 .vh-confirm-q {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, #A1A1AA);
   max-width: 180px;
   text-align: right;

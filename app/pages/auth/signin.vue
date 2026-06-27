@@ -402,7 +402,7 @@ onMounted(() => {
 }
 
 .logo-text {
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -416,7 +416,7 @@ onMounted(() => {
 
 .brand-headline {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 44px;
+  font-size: calc(44px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;
   line-height: 52px;
@@ -426,7 +426,7 @@ onMounted(() => {
 }
 
 .brand-desc {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   line-height: 26px;
   color: var(--a-text-3);
   margin: 0;
@@ -442,7 +442,7 @@ onMounted(() => {
 }
 
 .testimonial-quote {
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-style: italic;
   line-height: 24px;
   color: var(--a-text-2);
@@ -463,14 +463,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--a-accent);
   flex-shrink: 0;
 }
 
 .author-name {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--a-text);
 }
@@ -482,7 +482,7 @@ onMounted(() => {
 }
 
 .author-role {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
 }
 
@@ -510,14 +510,14 @@ onMounted(() => {
 
 .form-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--a-text-4, #52525B);
 }
 
 .form-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 36px;
+  font-size: calc(36px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.05;
@@ -532,7 +532,7 @@ onMounted(() => {
 }
 
 .form-subtitle {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
   margin: 0;
   line-height: 1.55;
@@ -556,7 +556,7 @@ onMounted(() => {
   border: 1px solid var(--a-border);
   color: var(--a-text);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: border-color 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out);
@@ -600,7 +600,7 @@ onMounted(() => {
 }
 
 .divider-text {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
 }
 
@@ -624,13 +624,13 @@ onMounted(() => {
 }
 
 .field-label {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--a-text-2);
 }
 
 .forgot-link {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--a-accent);
   text-decoration: none;
@@ -653,7 +653,7 @@ onMounted(() => {
   border-radius: 6px;
   color: var(--a-text);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   outline: none;
   transition: border-color 150ms var(--nc-ease-out);
 }
@@ -683,7 +683,7 @@ onMounted(() => {
   border: none;
   color: var(--a-text-3);
   cursor: pointer;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   display: flex;
   align-items: center;
 }
@@ -692,7 +692,7 @@ onMounted(() => {
 .form-message {
   padding: 10px 14px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 18px;
 }
 
@@ -715,7 +715,7 @@ onMounted(() => {
   background: var(--a-accent);
   color: #09090B;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
   cursor: pointer;
@@ -738,7 +738,7 @@ onMounted(() => {
 
 /* Footer */
 .form-footer {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--a-text-3);
   text-align: center;
   margin: 0;
@@ -782,7 +782,7 @@ onMounted(() => {
   border: none;
   color: var(--a-text-3);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -819,12 +819,12 @@ onMounted(() => {
   }
 
   .brand-headline {
-    font-size: 38px;
+    font-size: calc(38px * var(--nc-text-scale, 1));
     line-height: 46px;
   }
 
   .brand-desc {
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
     line-height: 24px;
   }
 
@@ -834,7 +834,7 @@ onMounted(() => {
   }
 
   .form-title {
-    font-size: 28px;
+    font-size: calc(28px * var(--nc-text-scale, 1));
     line-height: 34px;
   }
 }
@@ -861,14 +861,14 @@ onMounted(() => {
   }
 
   .form-title {
-    font-size: 32px;
+    font-size: calc(32px * var(--nc-text-scale, 1));
     line-height: 40px;
     letter-spacing: -0.03em;
     font-weight: 800;
   }
 
   .form-subtitle {
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
     line-height: 22px;
     margin-bottom: 12px;
   }
@@ -881,7 +881,7 @@ onMounted(() => {
   .oauth-btn {
     height: 52px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
   }
 
   .divider {
@@ -889,31 +889,31 @@ onMounted(() => {
   }
 
   .divider span {
-    font-size: 12px;
+    font-size: calc(12px * var(--nc-text-scale, 1));
   }
 
   .field-input {
     height: 52px;
     border-radius: 8px;
     padding: 0 16px;
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
   }
 
   .submit-btn {
     height: 52px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
     font-weight: 700;
     margin-bottom: 16px;
   }
 
   .form-footer {
-    font-size: 14px;
+    font-size: calc(14px * var(--nc-text-scale, 1));
     justify-content: center;
   }
 
   .form-footer a {
-    font-size: 14px;
+    font-size: calc(14px * var(--nc-text-scale, 1));
     font-weight: 600;
   }
 }

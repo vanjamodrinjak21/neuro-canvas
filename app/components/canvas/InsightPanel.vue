@@ -343,7 +343,7 @@ function getActionText(insight: Insight): string {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink-muted);
   text-transform: uppercase;
@@ -361,7 +361,7 @@ function getActionText(insight: Insight): string {
 .nc-insight-count {
   background: #00D2BE;
   color: #0D0D10;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 10px;
@@ -394,7 +394,7 @@ function getActionText(insight: Insight): string {
   border: 1px solid rgba(0, 210, 190, 0.3);
   border-radius: 6px;
   color: #00D2BE;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -417,7 +417,7 @@ function getActionText(insight: Insight): string {
   align-items: center;
   padding: 8px 0;
   color: var(--nc-ink-muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   text-align: center;
 }
 
@@ -449,7 +449,7 @@ function getActionText(insight: Insight): string {
 
 .nc-insight-title {
   flex: 1;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   white-space: nowrap;
@@ -479,7 +479,7 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-description {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft);
   line-height: 1.5;
   margin-bottom: 10px;
@@ -507,7 +507,7 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-confidence-text {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
   white-space: nowrap;
 }
@@ -528,7 +528,7 @@ function getActionText(insight: Insight): string {
   border: 1px solid #2A2A30;
   border-radius: 4px;
   color: var(--nc-ink-soft);
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -574,7 +574,7 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-ai-badge {
-  font-size: 9px;
+  font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #A78BFA;
   background: rgba(167, 139, 250, 0.15);
@@ -591,7 +591,7 @@ function getActionText(insight: Insight): string {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
   background: none;
   border: none;
@@ -604,7 +604,7 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-reasoning-text {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft);
   line-height: 1.5;
   margin-top: 6px;

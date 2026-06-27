@@ -470,7 +470,7 @@ function maskKey(type: string): string {
   padding: 4px 4px 4px 0;
   background: none; border: none; cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-body);
 }
 .map-live {
@@ -488,7 +488,7 @@ function maskKey(type: string): string {
 @keyframes map-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .map-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--map-mint);
 }
 
@@ -500,7 +500,7 @@ function maskKey(type: string): string {
 }
 .map-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-hero-line {
@@ -509,18 +509,18 @@ function maskKey(type: string): string {
 }
 .map-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 36px; line-height: 38px;
+  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em; color: var(--map-ink);
 }
 .map-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 46px; line-height: 38px;
+  font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em; color: var(--map-mint);
 }
 .map-hero-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; line-height: 20px;
+  font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--map-body); margin-top: 10px;
 }
 
@@ -539,12 +539,12 @@ function maskKey(type: string): string {
 }
 .map-section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-section-status {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--map-mute);
 }
 .map-section-status--mint { color: var(--map-mint); }
@@ -559,11 +559,11 @@ function maskKey(type: string): string {
 }
 .map-empty-title {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-size: 18px; color: var(--map-ink);
+  font-style: italic; font-size: calc(18px * var(--nc-text-scale, 1)); color: var(--map-ink);
 }
 .map-empty-sub {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.04em;
+  font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--map-mute);
 }
 
@@ -592,16 +592,16 @@ function maskKey(type: string): string {
 .map-active-titlebar { display: flex; align-items: baseline; gap: 8px; }
 .map-active-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 16px; line-height: 20px;
+  font-weight: 600; font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
   letter-spacing: -0.01em; color: var(--map-ink);
 }
 .map-active-italic {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-size: 16px; color: var(--map-mint);
+  font-style: italic; font-size: calc(16px * var(--nc-text-scale, 1)); color: var(--map-mint);
 }
 .map-active-sub {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--map-mute);
 }
 .map-status-pill {
@@ -618,7 +618,7 @@ function maskKey(type: string): string {
 }
 .map-status-text {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: 9px; letter-spacing: 0.08em;
+  font-weight: 600; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--map-mint);
 }
 .map-status-pill--cta {
@@ -635,12 +635,12 @@ function maskKey(type: string): string {
 }
 .map-stat-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-stat-value {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 12px; color: var(--map-ink);
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--map-ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .map-stat-divider { width: 1px; background: var(--map-stroke-soft); }
@@ -650,7 +650,7 @@ function maskKey(type: string): string {
 }
 .map-model-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-model-pills {
@@ -670,7 +670,7 @@ function maskKey(type: string): string {
   border-radius: 999px;
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 12px; letter-spacing: -0.005em;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); letter-spacing: -0.005em;
   color: var(--map-body);
   white-space: nowrap;
 }
@@ -690,7 +690,7 @@ function maskKey(type: string): string {
   padding: 8px 12px;
   border-radius: 10px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.02em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.02em;
   line-height: 14px;
 }
 .map-test-result--ok {
@@ -713,7 +713,7 @@ function maskKey(type: string): string {
   border-radius: 10px;
   cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: 10px; letter-spacing: 0.10em;
+  font-weight: 600; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--map-body);
   text-align: center;
 }
@@ -754,18 +754,18 @@ function maskKey(type: string): string {
 }
 .map-row-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 14px; line-height: 18px;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--map-ink);
 }
 .map-row-italic {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 13px; color: var(--map-body);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--map-body);
   margin-left: 4px;
 }
 .map-row-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--map-mute);
 }
 .map-pill {
@@ -774,7 +774,7 @@ function maskKey(type: string): string {
   border: 1px solid var(--map-stroke);
   border-radius: 999px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: 9px; letter-spacing: 0.10em;
+  font-weight: 600; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--map-body);
   flex-shrink: 0;
 }
@@ -794,7 +794,7 @@ function maskKey(type: string): string {
 }
 .map-vault-text {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.04em;
   color: var(--map-body);
 }
@@ -832,12 +832,12 @@ function maskKey(type: string): string {
 }
 .map-sheet-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-sheet-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 28px; line-height: 32px;
+  font-weight: 500; font-size: calc(28px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.02em;
   color: var(--map-ink);
   margin: 10px 0 0 0;
@@ -850,7 +850,7 @@ function maskKey(type: string): string {
 }
 .map-sheet-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; line-height: 19px;
+  font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 19px;
   color: var(--map-body);
   margin: 8px 0 18px 0;
 }
@@ -859,7 +859,7 @@ function maskKey(type: string): string {
 }
 .map-sheet-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-sheet-input-wrap {
@@ -873,7 +873,7 @@ function maskKey(type: string): string {
   flex: 1 1 0;
   background: none; border: none;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 13px; letter-spacing: 0.02em;
+  font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); letter-spacing: 0.02em;
   color: var(--map-ink);
   outline: none;
   min-width: 0;
@@ -886,12 +886,12 @@ function maskKey(type: string): string {
 }
 .map-sheet-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-sheet-error {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--map-red, #EF4444);
 }
 .map-sheet-actions {
@@ -907,7 +907,7 @@ function maskKey(type: string): string {
   border-radius: 12px;
   cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: 11px; letter-spacing: 0.10em;
+  font-weight: 600; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--map-body);
 }
 .map-sheet-btn--primary {

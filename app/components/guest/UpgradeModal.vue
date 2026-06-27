@@ -295,7 +295,7 @@ function handleKeepExploring() {
   border: 1px solid rgba(0, 210, 190, 0.22);
   border-radius: 6px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.04em;
   color: var(--nc-accent, #00D2BE);
   align-self: flex-start;
@@ -335,7 +335,7 @@ function handleKeepExploring() {
 
 .preview-node {
   position: absolute;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   border-radius: 8px;
   font-weight: 500;
   padding: 6px 11px;
@@ -348,7 +348,7 @@ function handleKeepExploring() {
   background: var(--nc-surface-3, #1E1E22);
   border: 1px solid var(--nc-border-hover, #3F3F46);
   color: var(--nc-ink, #FAFAFA);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
 }
 
 :root.light .preview-node.selected {
@@ -389,14 +389,14 @@ function handleKeepExploring() {
   align-items: center;
   gap: 8px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--nc-accent, #00D2BE);
 }
 
 .receipt-text {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   line-height: 1.5;
 }
@@ -422,7 +422,7 @@ function handleKeepExploring() {
 
 .auth-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.01em;
@@ -442,7 +442,7 @@ function handleKeepExploring() {
 }
 
 .auth-desc {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   line-height: 1.55;
   max-width: 340px;
@@ -468,7 +468,7 @@ function handleKeepExploring() {
   height: 44px;
   border-radius: 10px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
@@ -517,7 +517,7 @@ function handleKeepExploring() {
 
 .auth-divider span {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--nc-ink-faint, #52525B);
 }
@@ -541,7 +541,7 @@ function handleKeepExploring() {
   border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 10px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   cursor: pointer;
   text-align: left;
@@ -565,7 +565,7 @@ function handleKeepExploring() {
 
 .auth-kbd {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
 }
 
@@ -573,7 +573,7 @@ function handleKeepExploring() {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
 }
 
@@ -595,7 +595,7 @@ function handleKeepExploring() {
 }
 
 .auth-signin-prompt {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
 }
 
@@ -606,7 +606,7 @@ function handleKeepExploring() {
   margin-left: 4px;
   color: var(--nc-ink-muted, #A1A1AA);
   font-family: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   cursor: pointer;
 }
 
@@ -619,7 +619,7 @@ function handleKeepExploring() {
   border: none;
   padding: 0;
   font-family: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
 }
@@ -653,7 +653,7 @@ function handleKeepExploring() {
     padding: 24px 20px;
   }
   .auth-title {
-    font-size: 26px;
+    font-size: calc(26px * var(--nc-text-scale, 1));
   }
 }
 </style>

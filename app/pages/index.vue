@@ -571,7 +571,7 @@ onMounted(() => {
 
 .brand-name {
   font-family: var(--sans);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 18px;
@@ -585,7 +585,7 @@ onMounted(() => {
 
 .nav-links a {
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--text-2);
@@ -604,7 +604,7 @@ onMounted(() => {
 .nav-signin {
   padding: 8px 12px;
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--text-2);
@@ -619,7 +619,7 @@ onMounted(() => {
   border: 1px solid var(--border-3);
   border-radius: 10px;
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--text);
@@ -717,7 +717,7 @@ onMounted(() => {
   background: var(--accent);
   color: #09090B;
   font-family: var(--sans);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   border: none;
@@ -737,7 +737,7 @@ onMounted(() => {
   background: transparent;
   color: var(--text);
   font-family: var(--sans);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   border: 1px solid var(--border-4);
@@ -750,7 +750,7 @@ onMounted(() => {
 .btn-outline:hover { border-color: var(--text-2); }
 .btn-outline:active { transform: scale(0.97); }
 
-.btn-lg { padding: 16px 24px; font-size: 16px; line-height: 20px; }
+.btn-lg { padding: 16px 24px; font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px; }
 .btn-lg.btn-primary { font-weight: 600; }
 .btn-lg.btn-outline { font-weight: 500; }
 
@@ -796,7 +796,7 @@ onMounted(() => {
 
 .hero-sub {
   font-family: var(--sans);
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   line-height: 30px;
   color: var(--text-2);
   max-width: 480px;
@@ -815,7 +815,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: var(--text-3);
   margin: 0;
@@ -868,7 +868,7 @@ onMounted(() => {
 
 .mc-chip--tc span:not(svg) {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 12px;
   color: var(--accent);
@@ -884,7 +884,7 @@ onMounted(() => {
 
 .mc-chip-text {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
   color: var(--text-2);
@@ -892,7 +892,7 @@ onMounted(() => {
 
 .mc-chip-strong {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
   color: var(--text);
@@ -900,7 +900,7 @@ onMounted(() => {
 
 .mc-chip-mute {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
   color: var(--text-3);
 }
@@ -931,7 +931,7 @@ onMounted(() => {
   border-radius: 10px;
   padding: 10px 14px;
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--text);
@@ -943,7 +943,7 @@ onMounted(() => {
   border: 1px solid var(--accent);
   padding: 18px 22px;
   font-family: var(--sans);
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 22px;
@@ -966,7 +966,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 500;
   letter-spacing: 0.06em;
   line-height: 12px;
@@ -996,7 +996,7 @@ onMounted(() => {
 .mc-prompt-text {
   flex: 1;
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 18px;
   color: var(--text-3);
 }
@@ -1010,7 +1010,7 @@ onMounted(() => {
   border: 1px solid var(--border-3);
   border-radius: 6px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 12px;
   color: var(--text-2);
@@ -1043,7 +1043,7 @@ onMounted(() => {
   flex-shrink: 0;
   padding-top: 6px;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--text-3);
@@ -1073,7 +1073,7 @@ onMounted(() => {
   border: 1px solid var(--border-3);
   border-radius: 10px;
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--text);
@@ -1112,7 +1112,7 @@ onMounted(() => {
 
 .sec-p {
   font-family: var(--sans);
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   line-height: 30px;
   color: var(--text-2);
   margin: 0;
@@ -1140,7 +1140,7 @@ onMounted(() => {
 
 .demo-input-label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
   color: var(--text-3);
@@ -1148,7 +1148,7 @@ onMounted(() => {
 
 .demo-input-text {
   font-family: var(--sans);
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   line-height: 28px;
   color: var(--text);
   margin: 0;
@@ -1194,7 +1194,7 @@ onMounted(() => {
 .demo-row-name,
 .demo-row-text {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--text);
@@ -1205,7 +1205,7 @@ onMounted(() => {
 .demo-row-meta {
   margin-left: auto;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
   color: var(--text-3);
 }
@@ -1236,7 +1236,7 @@ onMounted(() => {
 .demo-node {
   position: absolute;
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--text);
@@ -1250,7 +1250,7 @@ onMounted(() => {
 .demo-node--root {
   background: var(--surface);
   border-color: var(--accent);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   padding: 11px 14px;
@@ -1261,7 +1261,7 @@ onMounted(() => {
   border-color: var(--border-3);
   border-radius: 9px;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--text-2);
 }
@@ -1294,7 +1294,7 @@ onMounted(() => {
 .step-numeral {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 64px;
+  font-size: calc(64px * var(--nc-text-scale, 1));
   line-height: 1;
   color: var(--accent);
 }
@@ -1303,7 +1303,7 @@ onMounted(() => {
 
 .step-label {
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--text-2);
@@ -1327,7 +1327,7 @@ onMounted(() => {
 
 .step-body p {
   font-family: var(--sans);
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   line-height: 28px;
   color: var(--text-2);
   margin: 0;
@@ -1350,7 +1350,7 @@ onMounted(() => {
   border: 1px solid var(--border-4);
   border-radius: 10px;
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--text);
@@ -1362,7 +1362,7 @@ onMounted(() => {
   background: var(--bg-3);
   border-color: var(--border-3);
   border-radius: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--text-2);
 }
@@ -1379,14 +1379,14 @@ onMounted(() => {
 
 .kbd-key {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
   color: var(--text-2);
 }
 
 .kbd-sep {
   font-family: var(--sans);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: var(--text-3);
   margin: 0 4px;
@@ -1394,7 +1394,7 @@ onMounted(() => {
 
 .kbd-text {
   font-family: var(--sans);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: var(--text);
 }
@@ -1454,7 +1454,7 @@ onMounted(() => {
   border: 1px solid var(--border-3);
   border-radius: 6px;
   font-family: var(--sans);
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   line-height: 12px;
   color: var(--text-2);
   white-space: nowrap;
@@ -1468,7 +1468,7 @@ onMounted(() => {
   border-color: var(--border-4);
   border-radius: 8px;
   padding: 5px 10px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
   color: var(--text);
@@ -1502,7 +1502,7 @@ onMounted(() => {
 
 .tpl-meta h3 {
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   color: var(--text);
@@ -1511,7 +1511,7 @@ onMounted(() => {
 
 .tpl-meta p {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: var(--text-3);
   margin: 0;
@@ -1541,7 +1541,7 @@ onMounted(() => {
 
 .privacy-col h4 {
   font-family: var(--sans);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   color: var(--text);
@@ -1550,7 +1550,7 @@ onMounted(() => {
 
 .privacy-col p {
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 22px;
   color: var(--text-2);
   margin: 0;
@@ -1586,7 +1586,7 @@ onMounted(() => {
 
 .cta-receipt {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: var(--text-3);
   margin: 0;
@@ -1615,7 +1615,7 @@ onMounted(() => {
 
 .footer-brand-name {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--text-2);
@@ -1623,7 +1623,7 @@ onMounted(() => {
 
 .footer-meta {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
   color: var(--text-3);
 }
@@ -1649,7 +1649,7 @@ onMounted(() => {
 
 .footer-col-head {
   font-family: var(--sans);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--text-3);
@@ -1657,7 +1657,7 @@ onMounted(() => {
 
 .footer-col a {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: var(--text-2);
   text-decoration: none;
@@ -1710,14 +1710,14 @@ onMounted(() => {
   .sec-grid, .sec-grid--head { flex-direction: column; gap: 16px; }
   .sec-eyebrow, .sec-aside { flex-basis: auto; padding-top: 0; }
   .tpl-rail { grid-template-columns: minmax(0, 1fr); padding-right: 20px; }
-  .sec-h { font-size: 28px; line-height: 1.25; }
-  .sec-h2 { font-size: 24px; }
+  .sec-h { font-size: calc(28px * var(--nc-text-scale, 1)); line-height: 1.25; }
+  .sec-h2 { font-size: calc(24px * var(--nc-text-scale, 1)); }
   .step { flex-direction: column; gap: 16px; padding: 32px 0; }
   .step-num { flex-basis: auto; }
-  .step-numeral { font-size: 48px; }
-  .step-body h3 { font-size: 20px; }
+  .step-numeral { font-size: calc(48px * var(--nc-text-scale, 1)); }
+  .step-body h3 { font-size: calc(20px * var(--nc-text-scale, 1)); }
   .cta { padding: 96px 20px 80px; }
-  .cta-h { font-size: 44px; line-height: 1; }
+  .cta-h { font-size: calc(44px * var(--nc-text-scale, 1)); line-height: 1; }
   .cta-row { flex-direction: column; align-items: stretch; width: 100%; }
   .cta-row .btn-primary, .cta-row .btn-outline { justify-content: center; }
   .footer { flex-direction: column; align-items: flex-start; gap: 32px; padding: 32px 20px; }

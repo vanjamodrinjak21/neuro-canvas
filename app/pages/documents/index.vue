@@ -368,14 +368,14 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
 
 .header-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: #52525B;
 }
 
 .header-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 30px;
+  font-size: calc(30px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0;
@@ -392,7 +392,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
 
 .header-count {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
   line-height: 14px;
 }
@@ -425,7 +425,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
 }
 
 .search-icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #52525B;
   flex-shrink: 0;
 }
@@ -436,7 +436,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   border: none;
   outline: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #FAFAFA;
   min-width: 0;
 }
@@ -456,7 +456,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   border: 1px solid #27272A;
   border-radius: 6px;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
@@ -512,7 +512,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   border-radius: 6px;
   text-align: left;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #A1A1AA;
   cursor: pointer;
 }
@@ -542,14 +542,14 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   border: 1px solid #27272A;
   border-radius: 6px;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
 }
 
 .select-count {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
 }
 
@@ -562,7 +562,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 6px;
   color: #EF4444;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
@@ -583,7 +583,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   padding: 10px 20px;
   background: #00D2BE;
   color: #09090B;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
   border-radius: 6px;
@@ -593,7 +593,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
 
 .btn-primary--header {
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
 .btn-ghost {
@@ -605,7 +605,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   border: 1px solid #27272A;
   border-radius: 6px;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
@@ -630,7 +630,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
 }
 
 .loading-text {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0;
 }
@@ -653,20 +653,20 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
 }
 
 .empty-icon {
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   color: #27272A;
   margin-bottom: 16px;
 }
 
 .empty-title {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0 0 6px;
 }
 
 .empty-desc {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0 0 24px;
   max-width: 360px;
@@ -722,7 +722,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   .m-page-title {
     display: block;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 28px; font-weight: 700; line-height: 34px;
+    font-size: calc(28px * var(--nc-text-scale, 1)); font-weight: 700; line-height: 34px;
     letter-spacing: -0.02em; color: #FAFAFA;
     margin: 12px 0 0;
   }
@@ -731,7 +731,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   .m-count {
     display: block;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 13px; font-weight: 500; line-height: 16px;
+    font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px;
     color: #888890;
     margin: 0 0 4px;
   }
@@ -751,7 +751,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
     min-width: 0;
   }
   :root.light .search-box--mobile { background: #FFFFFF; border-color: #E8E8E6; }
-  .search-box--mobile .search-input { font-size: 15px; line-height: 18px; }
+  .search-box--mobile .search-input { font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 18px; }
 
   .btn-primary--mobile {
     width: 100%;

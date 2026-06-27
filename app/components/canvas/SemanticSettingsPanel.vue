@@ -287,7 +287,7 @@ async function loadBackend() {
 }
 
 .nc-settings-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink, rgba(255, 255, 255, 0.95));
   margin: 0;
@@ -336,7 +336,7 @@ async function loadBackend() {
 }
 
 .nc-setting-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink, rgba(255, 255, 255, 0.8));
 }
 
@@ -347,7 +347,7 @@ async function loadBackend() {
 }
 
 .nc-setting-value {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-accent, #00D2BE);
 }
@@ -422,7 +422,7 @@ async function loadBackend() {
 }
 
 .nc-status-heading {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -437,12 +437,12 @@ async function loadBackend() {
 }
 
 .nc-status-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, rgba(255, 255, 255, 0.5));
 }
 
 .nc-status-value {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink, rgba(255, 255, 255, 0.8));
   font-weight: 500;
 }
@@ -455,7 +455,7 @@ async function loadBackend() {
 }
 .nc-status-spinner {
   display: inline-block;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   animation: nc-status-spin 0.9s linear infinite;
 }
 @keyframes nc-status-spin { to { transform: rotate(360deg); } }
@@ -473,7 +473,7 @@ async function loadBackend() {
   border-radius: 6px;
   color: var(--nc-accent, #00D2BE);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease;
@@ -502,7 +502,7 @@ async function loadBackend() {
 .nc-status-error {
   margin-top: 6px;
   padding: 6px 8px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #FCA5A5;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);

@@ -1106,7 +1106,7 @@ function handleAccountClose() {
 }
 .m-brand {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 17px; font-weight: 600; line-height: 22px;
+  font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 22px;
   letter-spacing: -0.01em; color: var(--ms-text); margin: 0;
 }
 .m-topbar-avatar {
@@ -1114,7 +1114,7 @@ function handleAccountClose() {
   background: #1A1A1E; border: 1px solid var(--ms-border);
   color: var(--ms-accent);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 600; line-height: 16px;
+  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
@@ -1127,7 +1127,7 @@ function handleAccountClose() {
 
 .m-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 34px;
@@ -1165,7 +1165,7 @@ function handleAccountClose() {
 
 .m-avatar-letter {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 700;
   line-height: 24px;
   color: var(--ms-accent);
@@ -1181,7 +1181,7 @@ function handleAccountClose() {
 
 .m-account-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 20px;
   color: var(--ms-text);
@@ -1192,7 +1192,7 @@ function handleAccountClose() {
 
 .m-account-email {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--ms-muted);
@@ -1242,7 +1242,7 @@ function handleAccountClose() {
 
 .m-signin-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 20px;
   color: var(--ms-text);
@@ -1250,7 +1250,7 @@ function handleAccountClose() {
 
 .m-signin-desc {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--ms-muted);
@@ -1265,7 +1265,7 @@ function handleAccountClose() {
   background: var(--ms-accent);
   color: #FFFFFF;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   text-decoration: none;
@@ -1307,7 +1307,7 @@ function handleAccountClose() {
   border: 1px solid var(--ms-border);
   background: var(--ms-card);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--ms-text);
   cursor: pointer;
@@ -1329,7 +1329,7 @@ function handleAccountClose() {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #EF4444;
 }
@@ -1345,7 +1345,7 @@ function handleAccountClose() {
   background: var(--ms-accent);
   color: #FFFFFF;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1359,7 +1359,7 @@ function handleAccountClose() {
   padding: 0 24px;
   margin-bottom: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1400,7 +1400,7 @@ button.m-row { text-align: left; }
 
 .m-row-text {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--ms-text);
@@ -1410,7 +1410,7 @@ button.m-row { text-align: left; }
 
 .m-row-value {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--ms-muted);
@@ -1450,7 +1450,7 @@ button.m-row { text-align: left; }
 
 .m-connected-text {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--ms-green);
@@ -1460,7 +1460,7 @@ button.m-row { text-align: left; }
 
 .m-empty-text {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--ms-muted);
 }
@@ -1475,7 +1475,7 @@ button.m-row { text-align: left; }
   border: 1px solid rgba(239, 68, 68, 0.2);
   background: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   color: var(--ms-red);
@@ -1509,12 +1509,12 @@ button.m-row { text-align: left; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   color: var(--ms-text);
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
 }
 
 .m-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 26px;
@@ -1540,7 +1540,7 @@ button.m-row { text-align: left; }
 
 .m-row-hint {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: rgba(136, 136, 144, 0.6);
@@ -1582,10 +1582,10 @@ button.m-row { text-align: left; }
   -webkit-tap-highlight-color: transparent;
 }
 
-.m-seg-icon { font-size: 16px; color: var(--ms-muted); }
+.m-seg-icon { font-size: calc(16px * var(--nc-text-scale, 1)); color: var(--ms-muted); }
 .m-seg-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--ms-muted);
@@ -1606,7 +1606,7 @@ button.m-row { text-align: left; }
 
 .m-row-sub {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--ms-muted);
@@ -1614,7 +1614,7 @@ button.m-row { text-align: left; }
 
 .m-row-action {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--ms-accent);
@@ -1622,7 +1622,7 @@ button.m-row { text-align: left; }
 
 .m-row-action-text {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--ms-accent);
@@ -1648,7 +1648,7 @@ button.m-row { text-align: left; }
 }
 
 .m-avatar--lg .m-avatar-letter {
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
   line-height: 28px;
 }
 
@@ -1662,7 +1662,7 @@ button.m-row { text-align: left; }
 
 .m-field-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--ms-muted);
@@ -1677,7 +1677,7 @@ button.m-row { text-align: left; }
   background: var(--ms-bg);
   border: 1px solid var(--ms-border);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 18px;
   color: var(--ms-text);
@@ -1725,7 +1725,7 @@ button.m-row { text-align: left; }
 
 .settings-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--s-muted, #555560);
 }
@@ -1745,14 +1745,14 @@ button.m-row { text-align: left; }
   background: rgba(34, 197, 94, 0.1);
   border: 1px solid rgba(34, 197, 94, 0.2);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #22C55E;
   line-height: 16px;
 }
 
 .save-badge-icon {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
 .nc-fade-enter-active { transition: opacity 0.15s ease; }
@@ -1762,7 +1762,7 @@ button.m-row { text-align: left; }
 
 .settings-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -1779,7 +1779,7 @@ button.m-row { text-align: left; }
 
 .settings-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 18px;
   color: var(--s-muted, #555560);
@@ -1796,7 +1796,7 @@ button.m-row { text-align: left; }
   padding: 12px 20px;
   min-height: 44px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 20px;
   color: var(--s-tab-text, #555560);
@@ -1830,7 +1830,7 @@ button.m-row { text-align: left; }
 
 .section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0.06em;
@@ -1858,7 +1858,7 @@ button.m-row { text-align: left; }
 
 .setting-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--s-text, #FAFAFA);
@@ -1866,7 +1866,7 @@ button.m-row { text-align: left; }
 
 .setting-desc {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--s-muted, #555560);
@@ -1901,7 +1901,7 @@ button.m-row { text-align: left; }
 .segment.active { background: var(--s-seg-active, #09090B); }
 
 .segment-icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--s-muted, #555560);
   flex-shrink: 0;
 }
@@ -1910,7 +1910,7 @@ button.m-row { text-align: left; }
 
 .segment-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--s-muted, #555560);
@@ -1960,7 +1960,7 @@ button.m-row { text-align: left; }
 /* Select (model dropdown) */
 .setting-select {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--s-text, #FAFAFA);
   background: var(--s-surface, #0D0D10);
@@ -1981,7 +1981,7 @@ button.m-row { text-align: left; }
 /* Inline "Check now" button used by the Updates section (AER-14). */
 .setting-action-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--s-text, #FAFAFA);
   background: var(--s-surface, #0D0D10);
@@ -2020,7 +2020,7 @@ button.m-row { text-align: left; }
 .key-input {
   width: 200px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--s-text, #FAFAFA);
   background: var(--s-surface, #0D0D10);
   border: none;
@@ -2051,7 +2051,7 @@ button.m-row { text-align: left; }
 .setting-url-input {
   width: 220px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--s-text, #FAFAFA);
   background: var(--s-surface, #0D0D10);
   border: 1px solid var(--s-border, #1A1A1E);

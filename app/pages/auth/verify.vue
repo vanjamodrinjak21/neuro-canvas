@@ -83,7 +83,7 @@ const email = computed(() => route.query.email as string | undefined)
 }
 
 .brand-name {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #FAFAFA;
   letter-spacing: -0.03em;
@@ -111,12 +111,12 @@ const email = computed(() => route.query.email as string | undefined)
 }
 
 .verify-icon {
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
   color: #00D2BE;
 }
 
 .verify-title {
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0 0 8px;
@@ -124,7 +124,7 @@ const email = computed(() => route.query.email as string | undefined)
 }
 
 .verify-message {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #A1A1AA;
   margin: 0 0 4px;
   line-height: 22px;
@@ -136,7 +136,7 @@ const email = computed(() => route.query.email as string | undefined)
 }
 
 .verify-hint {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0 0 24px;
   line-height: 20px;
@@ -153,7 +153,7 @@ const email = computed(() => route.query.email as string | undefined)
 }
 
 .tips-title {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #A1A1AA;
   margin: 0 0 10px;
@@ -169,7 +169,7 @@ const email = computed(() => route.query.email as string | undefined)
 }
 
 .tips-list li {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #A1A1AA;
   padding-left: 16px;
   position: relative;
@@ -199,7 +199,7 @@ const email = computed(() => route.query.email as string | undefined)
   border: none;
   border-radius: 6px;
   color: #09090B;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-decoration: none;
   transition: opacity 0.15s;

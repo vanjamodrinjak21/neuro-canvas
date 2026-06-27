@@ -142,7 +142,7 @@ defineExpose({ focusInput, el: itemRef })
 .nc-outline-content {
   flex: 1;
   font-family: var(--nc-font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 24px;
   color: var(--nc-text, #FAFAFA);
@@ -169,7 +169,7 @@ defineExpose({ focusInput, el: itemRef })
 
 .nc-outline-content :deep(code) {
   font-family: var(--nc-font-mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   background: var(--nc-surface-3, #18181B);
   padding: 1px 5px;
   border-radius: 4px;

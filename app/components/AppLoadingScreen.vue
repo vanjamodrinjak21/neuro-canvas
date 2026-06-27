@@ -128,7 +128,7 @@ defineExpose({ leave })
 .app-loading__wordmark {
   margin-top: 20px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 26px;
+  font-size: calc(26px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #FAFAFA;
   letter-spacing: -0.02em;
@@ -146,7 +146,7 @@ defineExpose({ leave })
 .app-loading__status {
   margin-top: 8px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: rgba(250, 250, 250, 0.35);
   opacity: 0;
@@ -192,7 +192,7 @@ defineExpose({ leave })
   position: absolute;
   bottom: 28px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: rgba(250, 250, 250, 0.12);
   letter-spacing: 0.04em;
   opacity: 0;

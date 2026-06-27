@@ -90,7 +90,7 @@ async function copyCode() {
 
 .code-filename {
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted);
   font-weight: 500;
   user-select: none;
@@ -118,7 +118,7 @@ async function copyCode() {
   padding: 16px 20px;
   background: var(--nc-surface-elevated);
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.7;
   overflow-x: auto;
   margin: 0;

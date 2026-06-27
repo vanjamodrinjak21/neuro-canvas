@@ -216,7 +216,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   min-height: 36px;
   border-radius: var(--nc-radius-md);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 450;
   color: #E4E4E7;
   cursor: pointer;
@@ -238,7 +238,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   outline-offset: -2px;
 }
 .menu-icon {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   color: #A1A1AA;
   flex-shrink: 0;
 }
@@ -246,7 +246,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   color: #D4D4D8;
 }
 .menu-shortcut {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
   font-family: var(--nc-font-mono);
   letter-spacing: 0.02em;
@@ -254,7 +254,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 .menu-label {
   padding: 8px 12px 4px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-soft);
 }
@@ -278,7 +278,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   padding: 8px 12px;
   border-radius: var(--nc-radius-md);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 450;
   color: #E4E4E7;
   cursor: pointer;
@@ -299,13 +299,13 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   color: var(--nc-accent);
 }
 .export-icon {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   color: #A1A1AA;
   flex-shrink: 0;
   transition: color var(--nc-duration-fast) var(--nc-ease-smooth);
 }
 .export-hint {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
 }
 

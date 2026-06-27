@@ -558,7 +558,7 @@ const { t } = useI18n()
 
 .nc-minimap-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-soft);
 }

@@ -160,7 +160,7 @@ function formatSegment(segment: string): string {
 }
 
 .docs-breadcrumb__separator {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-text-dim);
   margin: 0 6px;
   user-select: none;
@@ -169,7 +169,7 @@ function formatSegment(segment: string): string {
 
 .docs-breadcrumb__link {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-soft, var(--nc-text-secondary));
   text-decoration: none;
@@ -183,7 +183,7 @@ function formatSegment(segment: string): string {
 
 .docs-breadcrumb__current {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-secondary);
   line-height: 1;

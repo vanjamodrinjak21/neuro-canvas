@@ -114,7 +114,7 @@ function handleDragStart(event: DragEvent) {
 
 .explorer-item__label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #D4D4D8;
   white-space: nowrap;
@@ -130,7 +130,7 @@ function handleDragStart(event: DragEvent) {
 
 .explorer-item__notes {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #3F3F46;
   white-space: nowrap;
   overflow: hidden;
@@ -140,7 +140,7 @@ function handleDragStart(event: DragEvent) {
 
 .explorer-item__count {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #3F3F46;
   background: #18181B;
   padding: 1px 6px;

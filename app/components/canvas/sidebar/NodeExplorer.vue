@@ -235,7 +235,7 @@ const filterChips = computed(() => [
 }
 
 .explorer__search-icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #3F3F46;
   flex-shrink: 0;
 }
@@ -246,7 +246,7 @@ const filterChips = computed(() => [
   border: none;
   outline: none;
   color: var(--nc-ink);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -262,7 +262,7 @@ const filterChips = computed(() => [
   justify-content: center;
   border-radius: 50%;
   color: var(--nc-ink-faint);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   background: transparent;
   border: none;
   cursor: pointer;
@@ -280,7 +280,7 @@ const filterChips = computed(() => [
   border: 1px solid #27272A;
   border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #3F3F46;
   line-height: 1;
 }
@@ -324,7 +324,7 @@ const filterChips = computed(() => [
 
 .explorer__filter-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #71717A;
 }
@@ -336,7 +336,7 @@ const filterChips = computed(() => [
 
 .explorer__filter-count {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: rgba(0, 210, 190, 0.5);
 }
 
@@ -351,7 +351,7 @@ const filterChips = computed(() => [
 
 .explorer__section-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #27272A;
   letter-spacing: 0.08em;
@@ -365,7 +365,7 @@ const filterChips = computed(() => [
 
 .explorer__section-count {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #27272A;
 }
 
@@ -397,7 +397,7 @@ const filterChips = computed(() => [
   border-radius: 7px;
   flex-shrink: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
 }
 
@@ -411,7 +411,7 @@ const filterChips = computed(() => [
 
 .explorer__root-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   white-space: nowrap;
@@ -421,12 +421,12 @@ const filterChips = computed(() => [
 
 .explorer__root-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #52525B;
 }
 
 .explorer__root-chevron {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #52525B;
   flex-shrink: 0;
 }
@@ -465,7 +465,7 @@ const filterChips = computed(() => [
 }
 
 .explorer__empty-icon {
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint);
   margin-bottom: 8px;
   opacity: 0.5;
@@ -473,7 +473,7 @@ const filterChips = computed(() => [
 
 .explorer__empty-text {
   color: var(--nc-ink-faint);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 1.5;
 }
 

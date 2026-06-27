@@ -231,14 +231,14 @@ onKeyStroke('Escape', () => emit('close'))
 }
 
 .sm-shortcuts-eyebrow {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, #A1A1AA);
   font-weight: 500;
   margin-bottom: 10px;
 }
 
 .sm-shortcuts-title {
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   line-height: 1.05;
   font-weight: 600;
   letter-spacing: -0.022em;
@@ -304,7 +304,7 @@ onKeyStroke('Escape', () => emit('close'))
 .sm-shortcuts-search-icon {
   color: #71717A;
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
 }
 
 .sm-shortcuts-search-input {
@@ -313,7 +313,7 @@ onKeyStroke('Escape', () => emit('close'))
   border: 0;
   outline: 0;
   color: #FAFAFA;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-family: inherit;
   letter-spacing: -0.005em;
 }
@@ -324,7 +324,7 @@ onKeyStroke('Escape', () => emit('close'))
 
 .sm-shortcuts-search-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #71717A;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -380,7 +380,7 @@ onKeyStroke('Escape', () => emit('close'))
 }
 
 .sm-shortcuts-section-label {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #A1A1AA;
@@ -410,7 +410,7 @@ onKeyStroke('Escape', () => emit('close'))
 }
 
 .sm-shortcuts-desc {
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--nc-text-scale, 1));
   color: #D4D4D8;
   letter-spacing: -0.005em;
 }
@@ -430,7 +430,7 @@ onKeyStroke('Escape', () => emit('close'))
   height: 22px;
   padding: 0 7px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #E4E4E7;
   background: rgba(255, 255, 255, 0.045);
@@ -451,7 +451,7 @@ onKeyStroke('Escape', () => emit('close'))
 
 .sm-shortcuts-sep {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
   font-weight: 400;
 }
@@ -469,7 +469,7 @@ onKeyStroke('Escape', () => emit('close'))
 
 .sm-shortcuts-empty p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--nc-text-scale, 1));
 }
 
 /* Footer */
@@ -487,7 +487,7 @@ onKeyStroke('Escape', () => emit('close'))
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #71717A;
 }
 
@@ -498,7 +498,7 @@ onKeyStroke('Escape', () => emit('close'))
   background: transparent;
   border: 0;
   color: #00D2BE;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   padding: 6px 4px;
@@ -579,6 +579,6 @@ onKeyStroke('Escape', () => emit('close'))
   .sm-shortcuts-search { margin: 12px 16px 6px; }
   .sm-shortcuts-body { padding: 12px 16px; }
   .sm-shortcuts-footer { padding: 12px 18px; }
-  .sm-shortcuts-title { font-size: 24px; }
+  .sm-shortcuts-title { font-size: calc(24px * var(--nc-text-scale, 1)); }
 }
 </style>

@@ -114,7 +114,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
 }
 
 .brand-name {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #FAFAFA;
   letter-spacing: -0.03em;
@@ -159,7 +159,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
 /* Copy */
 .heading {
   font-family: 'Instrument Serif', serif;
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;
   line-height: 36px;
@@ -168,7 +168,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
 }
 
 .desc {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 22px;
   color: #71717A;
   margin: 0 0 28px;
@@ -187,7 +187,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
   padding: 10px 18px;
   background: #00D2BE;
   color: #09090B;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   border: none;
   border-radius: 6px;
@@ -209,7 +209,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
   background: transparent;
   border: 1px solid #27272A;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   border-radius: 6px;
   cursor: pointer;
@@ -228,7 +228,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
   position: fixed;
   bottom: 32px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: #3F3F46;
   margin: 0;

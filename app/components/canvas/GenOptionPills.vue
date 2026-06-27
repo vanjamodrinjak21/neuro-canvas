@@ -45,7 +45,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
 }
 
 .nc-pills-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink-soft);
   text-transform: uppercase;
@@ -63,7 +63,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
   background: var(--nc-surface-3, #0D0D10);
   border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 999px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-soft);
   cursor: pointer;

@@ -263,7 +263,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 .mset-wordmark {
   font-family: 'Instrument Serif', Georgia, serif;
   font-weight: 400;
-  font-size: 19px;
+  font-size: calc(19px * var(--nc-text-scale, 1));
   line-height: 1;
   letter-spacing: -0.01em;
   color: var(--mset-ink, var(--nc-ink));
@@ -288,7 +288,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 @keyframes mset-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .mset-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mset-mint);
 }
@@ -302,7 +302,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em; color: var(--mset-mute);
 }
 .mset-hero-line {
@@ -311,18 +311,18 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 36px; line-height: 38px;
+  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em; color: var(--mset-ink);
 }
 .mset-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 46px; line-height: 38px;
+  font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em; color: var(--mset-mint);
 }
 .mset-hero-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 400; font-size: 13px; line-height: 20px;
+  font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--mset-body);
   margin-top: 10px;
 }
@@ -352,20 +352,20 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-signin-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.14em;
   color: var(--mset-mint);
 }
 .mset-signin-title {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 24px; line-height: 28px;
+  font-size: calc(24px * var(--nc-text-scale, 1)); line-height: 28px;
   letter-spacing: -0.01em;
   color: var(--mset-ink);
 }
 .mset-signin-sub {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 400; font-size: 13px; line-height: 18px;
+  font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mset-body);
 }
 .mset-signin-grid {
@@ -379,7 +379,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   border: 1px solid var(--mset-stroke);
   border-radius: 12px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 14px; line-height: 18px;
+  font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mset-ink);
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease;
@@ -415,7 +415,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   border: 1px solid rgba(0, 210, 190, 0.40);
   display: flex; align-items: center; justify-content: center;
   color: var(--mset-mint);
-  font-weight: 500; font-size: 18px; line-height: 20px;
+  font-weight: 500; font-size: calc(18px * var(--nc-text-scale, 1)); line-height: 20px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -427,7 +427,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-profile-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 16px; line-height: 20px;
+  font-weight: 500; font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
   letter-spacing: -0.01em;
   color: var(--mset-ink);
   overflow: hidden;
@@ -436,7 +436,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-profile-email {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 400; font-size: 11px; line-height: 14px;
+  font-weight: 400; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.04em;
   color: var(--mset-body);
   overflow: hidden;
@@ -452,7 +452,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.14em;
   color: var(--mset-mute);
 }
@@ -500,13 +500,13 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-row-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 14px; line-height: 18px;
+  font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.005em;
   color: var(--mset-ink);
 }
 .mset-row-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; line-height: 12px;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.12em;
   color: var(--mset-mute);
 }
@@ -518,7 +518,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   background: rgba(0, 210, 190, 0.14);
   border: 1px solid rgba(0, 210, 190, 0.30);
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   color: var(--mset-mint);
 }
 .mset-chev { flex-shrink: 0; }
@@ -538,7 +538,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   border: 1px solid rgba(239, 68, 68, 0.30);
   border-radius: 14px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 14px; line-height: 18px;
+  font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mset-red);
   cursor: pointer;
   transition: background 150ms ease;
@@ -554,7 +554,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 }
 .mset-footer-line {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.10em;
   color: var(--mset-mute);
 }

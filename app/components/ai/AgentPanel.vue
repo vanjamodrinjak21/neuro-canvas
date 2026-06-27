@@ -187,7 +187,7 @@ function handleEnd() {
 }
 
 .nc-agent-end-btn {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #FB923C;
   background: rgba(251, 146, 60, 0.1);
   border: 1px solid rgba(251, 146, 60, 0.3);
@@ -234,7 +234,7 @@ function handleEnd() {
   border: 1px solid rgba(167, 139, 250, 0.3);
   border-radius: 6px;
   color: #A78BFA;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -271,7 +271,7 @@ function handleEnd() {
   max-width: 85%;
   padding: 8px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -325,7 +325,7 @@ function handleEnd() {
 }
 
 .nc-agent-pending-label {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #666670;
   text-transform: uppercase;
@@ -347,7 +347,7 @@ function handleEnd() {
   border-radius: 8px;
   padding: 8px 12px;
   color: #FAFAFA;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   resize: none;
   outline: none;
   font-family: inherit;

@@ -271,7 +271,7 @@ function saveAvatar() {
 
 .section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0.06em;
@@ -298,7 +298,7 @@ function saveAvatar() {
 
 .setting-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--s-text, #FAFAFA);
@@ -306,7 +306,7 @@ function saveAvatar() {
 
 .setting-desc {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--s-muted, #555560);
@@ -347,7 +347,7 @@ function saveAvatar() {
 
 .avatar-letter {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 22px;
+  font-size: calc(22px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #00D2BE;
 }
@@ -360,7 +360,7 @@ function saveAvatar() {
 
 .profile-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 20px;
   color: var(--s-text, #FAFAFA);
@@ -368,7 +368,7 @@ function saveAvatar() {
 
 .profile-email {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--s-muted, #555560);
@@ -376,7 +376,7 @@ function saveAvatar() {
 
 .change-avatar-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--s-text, #FAFAFA);
   background: none;
@@ -410,7 +410,7 @@ function saveAvatar() {
 
 .avatar-save-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #09090B;
   background: var(--s-accent, #00D2BE);
@@ -436,7 +436,7 @@ function saveAvatar() {
 .setting-input {
   width: 200px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--s-text, #FAFAFA);
   background: var(--s-surface, #0D0D10);
@@ -463,7 +463,7 @@ function saveAvatar() {
 .save-indicator {
   position: absolute;
   right: 10px;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #22C55E;
 }
 
@@ -480,7 +480,7 @@ function saveAvatar() {
 /* Select */
 .setting-select {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--s-text, #FAFAFA);
   background: var(--s-surface, #0D0D10);
@@ -543,7 +543,7 @@ function saveAvatar() {
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #EF4444;
 }
 

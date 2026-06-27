@@ -321,7 +321,7 @@ function getNodeColor(node: Node): string {
   padding: 4px 12px 4px 14px;
   border-radius: 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -355,7 +355,7 @@ function getNodeColor(node: Node): string {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   color: #71717A;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -395,7 +395,7 @@ function getNodeColor(node: Node): string {
 
 .detail-panel__title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #FAFAFA;
   line-height: 1.3;
@@ -414,7 +414,7 @@ function getNodeColor(node: Node): string {
   align-items: center;
   gap: 4px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
 }
 
@@ -423,7 +423,7 @@ function getNodeColor(node: Node): string {
 }
 
 .detail-panel__meta-icon {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
 /* Sections */
@@ -444,13 +444,13 @@ function getNodeColor(node: Node): string {
 }
 
 .detail-panel__section-icon {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #52525B;
 }
 
 .detail-panel__section-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #52525B;
   text-transform: uppercase;
@@ -460,7 +460,7 @@ function getNodeColor(node: Node): string {
 .detail-panel__section-count {
   margin-left: auto;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #3F3F46;
   background: rgba(255, 255, 255, 0.04);
   padding: 1px 6px;
@@ -470,7 +470,7 @@ function getNodeColor(node: Node): string {
 /* Description */
 .detail-panel__summary {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: #D4D4D8;
   margin: 0 0 8px;
@@ -478,7 +478,7 @@ function getNodeColor(node: Node): string {
 
 .detail-panel__details {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: #A1A1AA;
   margin: 0;
@@ -490,7 +490,7 @@ function getNodeColor(node: Node): string {
   display: block;
   margin-top: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #3F3F46;
 }
 
@@ -504,7 +504,7 @@ function getNodeColor(node: Node): string {
 
 .detail-panel__empty-desc p {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #52525B;
   font-style: italic;
   margin: 0;
@@ -520,7 +520,7 @@ function getNodeColor(node: Node): string {
   border-radius: 6px;
   color: #00D2BE;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -532,7 +532,7 @@ function getNodeColor(node: Node): string {
 }
 
 .detail-panel__generate-btn span {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
 /* Keywords */
@@ -549,14 +549,14 @@ function getNodeColor(node: Node): string {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #A1A1AA;
 }
 
 /* Notes */
 .detail-panel__notes {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: #A1A1AA;
   margin: 0;
@@ -577,14 +577,14 @@ function getNodeColor(node: Node): string {
 
 .detail-panel__insight-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #52525B;
 }
 
 .detail-panel__insight-value {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #D4D4D8;
 }
 
@@ -601,7 +601,7 @@ function getNodeColor(node: Node): string {
   border: 1px solid rgba(167, 139, 250, 0.15);
   border-radius: 4px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #A78BFA;
 }
 
@@ -619,7 +619,7 @@ function getNodeColor(node: Node): string {
   align-items: center;
   gap: 5px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #3F3F46;
   text-transform: uppercase;
@@ -628,7 +628,7 @@ function getNodeColor(node: Node): string {
 }
 
 .detail-panel__conn-direction span:first-child {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
 }
 
 .detail-panel__conn-item {
@@ -664,7 +664,7 @@ function getNodeColor(node: Node): string {
 .detail-panel__conn-label {
   flex: 1;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #A1A1AA;
   text-align: left;
   white-space: nowrap;
@@ -677,7 +677,7 @@ function getNodeColor(node: Node): string {
 }
 
 .detail-panel__conn-arrow {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #3F3F46;
   opacity: 0;
   transition: opacity 0.15s;

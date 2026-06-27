@@ -1,18 +1,20 @@
 /* ══════════════════════════════════════════
    GLOBAL FONT-SIZE PREFERENCE
-   Sets html font-size (for rem-based tokens) AND exposes a
-   --nc-text-scale CSS variable that components/canvas code can multiply
-   against their hardcoded px font-sizes. The variable approach is what
-   actually makes the preference visible — 99% of the codebase ships
-   absolute px values, so the html font-size alone is invisible to them.
-   The canvas (drawNode.ts) reads the same scale via a Vue ref.
-   No `zoom` — keeps 100vh, fixed positioning, and Safari layout sane.
+   Two aligned mechanisms so the preference is visible everywhere without
+   `zoom` (which breaks 100vh / fixed positioning in WebKit):
+     1. html font-size — scales the rem-based text.
+     2. --nc-text-scale — every px font-size in the app is authored as
+        `calc(Npx * var(--nc-text-scale, 1))`, so absolute px sizes scale too.
+        The canvas reads the same variable via a Vue ref (useTextScale).
+   The two ratios are kept identical (scale = font-size / 16px) so rem text
+   and px text grow at the same rate. `medium` (scale 1) is a no-op — the
+   default UI is pixel-identical to before.
    ══════════════════════════════════════════ */
 :root                         { --nc-text-scale: 1; }
-html[data-font-size="xs"]     { font-size: 13px; --nc-text-scale: 0.85; }
-html[data-font-size="small"]  { font-size: 14px; --nc-text-scale: 0.92; }
+html[data-font-size="xs"]     { font-size: 13px; --nc-text-scale: 0.8125; }
+html[data-font-size="small"]  { font-size: 14px; --nc-text-scale: 0.875; }
 html[data-font-size="medium"] { font-size: 16px; --nc-text-scale: 1; }
-html[data-font-size="large"]  { font-size: 18px; --nc-text-scale: 1.12; }
+html[data-font-size="large"]  { font-size: 18px; --nc-text-scale: 1.125; }
 html[data-font-size="xl"]     { font-size: 20px; --nc-text-scale: 1.25; }
 
 /* Reduced motion — kill animations / transitions everywhere when enabled */

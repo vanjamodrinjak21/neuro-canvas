@@ -55,7 +55,7 @@ const emit = defineEmits<{
 
 .nc-ghost-text {
   font-family: var(--nc-font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 24px;
   color: var(--nc-accent, #00D2BE);
@@ -64,7 +64,7 @@ const emit = defineEmits<{
 
 .nc-ghost-hint {
   font-family: var(--nc-font-mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted, #52525B);
   padding-top: 2px;
   padding-bottom: 6px;
@@ -74,7 +74,7 @@ const emit = defineEmits<{
 .nc-ghost-hint kbd {
   display: inline-block;
   padding: 1px 5px;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   background: var(--nc-surface-3, #18181B);
   border: 1px solid var(--nc-border, #1A1A1E);
   border-radius: 3px;

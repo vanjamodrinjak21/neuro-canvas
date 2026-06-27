@@ -219,7 +219,7 @@ useHead({
   border: 1px solid var(--nc-border-active);
   color: var(--nc-text);
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-decoration: none;
   transform: translateY(-150%);
@@ -268,13 +268,13 @@ useHead({
 .rm-header__brand-name {
   font-family: 'Inter', var(--nc-font-body);
   font-weight: 600;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 1;
   color: var(--nc-text);
 }
 
 .rm-header__sep {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 300;
   color: var(--nc-text-muted);
   user-select: none;
@@ -284,7 +284,7 @@ useHead({
 .rm-header__label {
   font-family: 'Inter', var(--nc-font-body);
   font-weight: 500;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-secondary);
   line-height: 1;
   white-space: nowrap;
@@ -302,7 +302,7 @@ useHead({
 .rm-header__nav-link {
   font-family: 'Inter', var(--nc-font-body);
   font-weight: 500;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-text-secondary);
   text-decoration: none;
   transition: color var(--nc-duration-fast) ease;
@@ -318,7 +318,7 @@ useHead({
   align-items: center;
   padding: 0 12px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-secondary);
   text-decoration: none;
@@ -348,7 +348,7 @@ useHead({
   align-items: center;
   justify-content: center;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--nc-text-secondary);
@@ -429,7 +429,7 @@ useHead({
 .rm-intro__eyebrow {
   display: inline-block;
   font-family: var(--nc-font-mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -448,7 +448,7 @@ useHead({
 }
 
 .rm-intro__subtitle {
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: var(--nc-text-secondary);
   max-width: 56ch;
@@ -457,7 +457,7 @@ useHead({
 
 .rm-intro__updated {
   font-family: var(--nc-font-mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   letter-spacing: 0.02em;
   color: var(--nc-text-muted);
 }
@@ -483,7 +483,7 @@ useHead({
 
 .rm-legend__label {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-secondary);
 }
@@ -582,7 +582,7 @@ useHead({
 
 .rm-phase__title {
   font-family: var(--nc-font-display);
-  font-size: 22px;
+  font-size: calc(22px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -591,7 +591,7 @@ useHead({
 }
 
 .rm-phase__desc {
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: var(--nc-text-secondary);
   margin: 0 0 18px;
@@ -605,7 +605,7 @@ useHead({
   padding: 0 10px;
   border-radius: 999px;
   font-family: var(--nc-font-mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -694,7 +694,7 @@ useHead({
 }
 
 .rm-item__text {
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: var(--nc-text-secondary);
 }
@@ -711,7 +711,7 @@ useHead({
 
 .rm-cta__title {
   font-family: var(--nc-font-display);
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--nc-text);
@@ -719,7 +719,7 @@ useHead({
 }
 
 .rm-cta__body {
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: var(--nc-text-secondary);
   margin: 0 0 24px;
@@ -740,7 +740,7 @@ useHead({
   padding: 0 18px;
   border-radius: 8px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -780,7 +780,7 @@ useHead({
 .rm-disclaimer {
   margin: 28px 0 0;
   font-family: var(--nc-font-mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 1.6;
   color: var(--nc-text-muted);
 }

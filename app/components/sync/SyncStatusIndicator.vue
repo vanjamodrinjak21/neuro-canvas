@@ -54,7 +54,7 @@ const isClickable = computed(() => syncEngine.syncStatus.value === 'conflict')
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
   background: none;
   border: none;

@@ -446,7 +446,7 @@ const palette = useCommandPalette()
 
 .logo-text {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--sb-text, #FAFAFA);
@@ -480,7 +480,7 @@ const palette = useCommandPalette()
 }
 
 .collapse-icon {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
 }
 
 /* Search */
@@ -507,7 +507,7 @@ const palette = useCommandPalette()
   border: 1px solid var(--sb-border, #1A1A1E);
   border-radius: 6px;
   color: var(--sb-muted, #52525B);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: color 0.15s;
 }
@@ -517,7 +517,7 @@ const palette = useCommandPalette()
 }
 
 .search-icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--sb-muted, #52525B);
   flex-shrink: 0;
 }
@@ -528,7 +528,7 @@ const palette = useCommandPalette()
   border: none;
   outline: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--sb-text, #FAFAFA);
   min-width: 0;
 }
@@ -541,7 +541,7 @@ const palette = useCommandPalette()
   margin-left: auto;
   padding: 2px 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--sb-muted-2, #3F3F46);
   background: var(--sb-kbd-bg, #18181B);
@@ -565,7 +565,7 @@ const palette = useCommandPalette()
   min-height: 40px;
   border-radius: 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--sb-secondary, #A1A1AA);
   text-decoration: none;
@@ -607,7 +607,7 @@ const palette = useCommandPalette()
 }
 
 .nav-icon {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   flex-shrink: 0;
 }
 
@@ -660,7 +660,7 @@ const palette = useCommandPalette()
 
 .theme-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
 }
@@ -734,7 +734,7 @@ const palette = useCommandPalette()
 
 .user-initials {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #09090B;
   line-height: 16px;
@@ -749,7 +749,7 @@ const palette = useCommandPalette()
 
 .user-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--sb-text, #FAFAFA);
   line-height: 16px;
@@ -760,7 +760,7 @@ const palette = useCommandPalette()
 
 .user-email {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--sb-muted, #52525B);
   line-height: 14px;
@@ -770,7 +770,7 @@ const palette = useCommandPalette()
 }
 
 .user-chevron {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--sb-muted-2, #3F3F46);
   flex-shrink: 0;
   transition: transform 0.2s ease;
@@ -797,13 +797,13 @@ const palette = useCommandPalette()
 
 .ladder-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--sb-muted, #52525B);
 }
 
 .ladder-count {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-accent, #00D2BE);
 }
 
@@ -821,7 +821,7 @@ const palette = useCommandPalette()
   align-items: center;
   gap: 10px;
   padding: 8px 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--sb-muted, #A1A1AA);
 }
 
@@ -867,7 +867,7 @@ const palette = useCommandPalette()
 
 .ladder-arrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--sb-muted, #52525B);
 }
 
@@ -908,13 +908,13 @@ const palette = useCommandPalette()
   align-items: center;
   gap: 6px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.04em;
   color: var(--sb-muted, #A1A1AA);
 }
 
 .ladder-cta-title {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--sb-text, #FAFAFA);
   line-height: 1.3;
@@ -925,7 +925,7 @@ const palette = useCommandPalette()
 }
 
 .ladder-cta-desc {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--sb-muted, #A1A1AA);
   line-height: 1.4;
 }
@@ -940,7 +940,7 @@ const palette = useCommandPalette()
   background: var(--nc-accent, #00D2BE);
   border-radius: 8px;
   color: #09090B;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-align: center;
 }
@@ -1053,7 +1053,7 @@ const palette = useCommandPalette()
   border-radius: 6px;
   color: #00D2BE;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -1077,7 +1077,7 @@ const palette = useCommandPalette()
   border-radius: 6px;
   color: #EF4444;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -1191,7 +1191,7 @@ const palette = useCommandPalette()
   }
 
   .logo-text {
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
   }
 }
 

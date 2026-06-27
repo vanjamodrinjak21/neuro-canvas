@@ -92,7 +92,7 @@ function commitTitle() {
   background: transparent;
   border: none;
   color: var(--nc-text-soft, #A1A1AA);
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -111,7 +111,7 @@ function commitTitle() {
 
 .nc-outline-title {
   font-family: var(--nc-font-display);
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-text, #FAFAFA);
   letter-spacing: -0.01em;
@@ -128,7 +128,7 @@ function commitTitle() {
 
 .nc-outline-title-input {
   font-family: var(--nc-font-display);
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-text, #FAFAFA);
   letter-spacing: -0.01em;
@@ -141,7 +141,7 @@ function commitTitle() {
 }
 
 .nc-outline-save-status {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-accent, #00D2BE);
   opacity: 0.7;
@@ -158,7 +158,7 @@ function commitTitle() {
   background: transparent;
   border: none;
   color: var(--nc-text-soft, #A1A1AA);
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }

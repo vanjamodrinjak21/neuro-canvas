@@ -293,7 +293,7 @@ defineExpose({ focusTitleInput })
   color: var(--nc-ink);
   font-family: var(--nc-font-body);
   font-weight: 500;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid var(--nc-accent);
@@ -305,7 +305,7 @@ defineExpose({ focusTitleInput })
   color: var(--nc-ink);
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   letter-spacing: -0.01em;
   background: none;
   border: none;
@@ -331,7 +331,7 @@ defineExpose({ focusTitleInput })
 }
 
 .topbar-crumb {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-soft);
   background: rgba(255, 255, 255, 0.04);
@@ -365,7 +365,7 @@ defineExpose({ focusTitleInput })
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
 }
 
@@ -421,18 +421,18 @@ defineExpose({ focusTitleInput })
   }
 
   .topbar-title-btn {
-    font-size: 16px;
+    font-size: calc(16px * var(--nc-text-scale, 1));
     font-weight: 600;
   }
 
   .topbar-title-edit {
-    font-size: 16px;
+    font-size: calc(16px * var(--nc-text-scale, 1));
     width: 140px;
   }
 
   /* Save status: simplify to just text */
   .topbar-save-status {
-    font-size: 12px;
+    font-size: calc(12px * var(--nc-text-scale, 1));
   }
 
   /* Hide non-essential elements on mobile */
@@ -477,7 +477,7 @@ defineExpose({ focusTitleInput })
   border-radius: 6px;
   color: var(--nc-ink-faint, #52525B);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition:

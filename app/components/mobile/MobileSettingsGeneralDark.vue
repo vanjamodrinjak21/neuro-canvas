@@ -426,7 +426,7 @@ async function manualUpdateCheck() {
   padding: 4px 4px 4px 0;
   background: none; border: none; cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em;
   color: var(--mgen-body);
 }
@@ -445,7 +445,7 @@ async function manualUpdateCheck() {
 @keyframes mgen-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .mgen-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mgen-mint);
 }
@@ -458,7 +458,7 @@ async function manualUpdateCheck() {
 }
 .mgen-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em; color: var(--mgen-mute);
 }
 .mgen-hero-line {
@@ -467,18 +467,18 @@ async function manualUpdateCheck() {
 }
 .mgen-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 36px; line-height: 38px;
+  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em; color: var(--mgen-ink);
 }
 .mgen-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 46px; line-height: 38px;
+  font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em; color: var(--mgen-mint);
 }
 .mgen-hero-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 400; font-size: 13px; line-height: 20px;
+  font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--mgen-body);
   margin-top: 10px;
 }
@@ -499,12 +499,12 @@ async function manualUpdateCheck() {
 }
 .mgen-section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em; color: var(--mgen-mute);
 }
 .mgen-section-status {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.08em; color: var(--mgen-mute);
 }
 .mgen-section-status--mint { color: var(--mgen-mint); }
@@ -553,7 +553,7 @@ async function manualUpdateCheck() {
 .mgen-tile-line--short { width: 55%; }
 .mgen-tile-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mgen-mute);
   text-align: center;
@@ -585,7 +585,7 @@ async function manualUpdateCheck() {
 }
 .mgen-row-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 14px; line-height: 18px;
+  font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--mgen-ink);
 }
 .mgen-row-italic {
@@ -596,12 +596,12 @@ async function manualUpdateCheck() {
 }
 .mgen-row-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 13px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 13px;
   letter-spacing: 0.04em; color: var(--mgen-mute);
 }
 .mgen-row-value {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.04em; color: var(--mgen-body);
   font-variant-numeric: tabular-nums;
 }
@@ -630,7 +630,7 @@ async function manualUpdateCheck() {
 .mgen-tile-mini-text {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
-  font-size: 18px; line-height: 18px; color: var(--mgen-ink);
+  font-size: calc(18px * var(--nc-text-scale, 1)); line-height: 18px; color: var(--mgen-ink);
 }
 .mgen-chev { flex-shrink: 0; }
 
@@ -674,8 +674,8 @@ async function manualUpdateCheck() {
   color: var(--mgen-mute);
   flex-shrink: 0;
 }
-.mgen-slider-cap--sm { font-size: 11px; font-weight: 600; }
-.mgen-slider-cap--lg { font-size: 17px; font-weight: 700; color: var(--mgen-ink); }
+.mgen-slider-cap--sm { font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 600; }
+.mgen-slider-cap--lg { font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 700; color: var(--mgen-ink); }
 .mgen-slider-track {
   position: relative; flex: 1 1 0;
   height: 4px; border-radius: 999px;
@@ -716,7 +716,7 @@ async function manualUpdateCheck() {
   padding: 5px 11px;
   background: none; border: none; cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mgen-mute);
   border-radius: 7px;
@@ -738,7 +738,7 @@ async function manualUpdateCheck() {
   cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 500;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mgen-body);

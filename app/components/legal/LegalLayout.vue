@@ -177,7 +177,7 @@ function applyThemeChange() {
 .legal-header__brand-name {
   font-family: 'Inter', var(--nc-font-body);
   font-weight: 600;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
 }
 
 .legal-header__right {
@@ -193,7 +193,7 @@ function applyThemeChange() {
   gap: 4px;
   padding: 0 12px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-secondary);
   text-decoration: none;
@@ -262,7 +262,7 @@ function applyThemeChange() {
 
 .legal-title {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.2;
@@ -272,7 +272,7 @@ function applyThemeChange() {
 
 .legal-updated {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted);
   margin-bottom: 40px;
 }
@@ -280,7 +280,7 @@ function applyThemeChange() {
 /* ─── Prose ─── */
 .legal-prose :deep(h2) {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 22px;
+  font-size: calc(22px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--nc-text);
@@ -292,7 +292,7 @@ function applyThemeChange() {
 
 .legal-prose :deep(h3) {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-text);
   margin-top: 32px;
@@ -301,7 +301,7 @@ function applyThemeChange() {
 
 .legal-prose :deep(p) {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.75;
   color: var(--nc-text-secondary);
   margin-bottom: 16px;
@@ -315,7 +315,7 @@ function applyThemeChange() {
 
 .legal-prose :deep(li) {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.75;
   color: var(--nc-text-secondary);
   margin-bottom: 6px;
@@ -342,7 +342,7 @@ function applyThemeChange() {
 
 .legal-prose :deep(code) {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   background: rgba(0, 210, 190, 0.08);
   color: #00D2BE;
   padding: 2px 6px;
@@ -369,7 +369,7 @@ function applyThemeChange() {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
 .legal-footer__links a {
@@ -388,7 +388,7 @@ function applyThemeChange() {
 }
 
 .legal-footer__copy {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-text-dim);
 }
 
@@ -408,7 +408,7 @@ function applyThemeChange() {
 @media (max-width: 768px) {
   .legal-header { padding: 0 16px; }
   .legal-main { padding: 32px 16px 60px; }
-  .legal-title { font-size: 26px; }
+  .legal-title { font-size: calc(26px * var(--nc-text-scale, 1)); }
   .legal-header__brand-name { display: none; }
 }
 </style>

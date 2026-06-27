@@ -68,6 +68,6 @@ onMounted(async () => {
   background: #09090B;
   color: #888890;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
 }
 </style>

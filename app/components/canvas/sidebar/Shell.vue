@@ -208,7 +208,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   padding: 10px 12px;
   min-height: 32px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-muted);
   background: none;
@@ -229,7 +229,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
 }
 
 .shell__tab-icon {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
 /* Scrollable tab content */
@@ -277,7 +277,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   padding: 8px;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: 1px solid;
   cursor: pointer;
@@ -308,7 +308,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
 }
 
 .shell__action-icon {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
 /* Solid teal pill — matches the "Start mapping — free forever" CTA on
@@ -324,7 +324,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   padding: 11px 14px;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   background: #00D2BE;
   border: none;

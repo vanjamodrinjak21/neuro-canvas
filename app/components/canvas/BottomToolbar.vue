@@ -195,7 +195,7 @@ function selectTool(tool: CanvasTool) {
   bottom: -14px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-accent, #00D2BE);
   white-space: nowrap;
@@ -242,7 +242,7 @@ function selectTool(tool: CanvasTool) {
 }
 
 .nc-queue-count {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-accent, #00D2BE);
   line-height: 1;

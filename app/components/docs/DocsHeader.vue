@@ -249,13 +249,13 @@ function applyThemeChange() {
 .docs-header__brand-name {
   font-family: 'Inter', var(--nc-font-body);
   font-weight: 600;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 1;
   color: var(--nc-text);
 }
 
 .docs-header__separator {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 300;
   color: var(--nc-text-muted);
   user-select: none;
@@ -265,7 +265,7 @@ function applyThemeChange() {
 .docs-header__docs-link {
   font-family: 'Inter', var(--nc-font-body);
   font-weight: 500;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-secondary);
   text-decoration: none;
   line-height: 1;
@@ -304,7 +304,7 @@ function applyThemeChange() {
 
 .docs-header__search-text {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -315,7 +315,7 @@ function applyThemeChange() {
   margin-left: auto;
   padding: 2px 6px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-muted);
   background: var(--nc-bg);
@@ -339,7 +339,7 @@ function applyThemeChange() {
   align-items: center;
   padding: 0 12px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-secondary);
   text-decoration: none;
@@ -371,7 +371,7 @@ function applyThemeChange() {
   align-items: center;
   justify-content: center;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--nc-text-secondary);

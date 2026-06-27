@@ -270,7 +270,7 @@ watch(() => props.visible, (v) => {
 
 .mms-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.14em;
   color: #00D2BE;
   margin: 6px 4px 14px;
@@ -279,7 +279,7 @@ watch(() => props.visible, (v) => {
 
 .mms-section {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.14em;
   color: #52525B;
   margin: 22px 4px 10px;
@@ -326,19 +326,19 @@ watch(() => props.visible, (v) => {
 }
 .mms-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 14px; line-height: 18px;
+  font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.005em;
   color: #FAFAFA;
 }
 .mms-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; line-height: 12px;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.12em;
   color: #52525B;
 }
 .mms-shortcut {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.06em;
   color: #71717A;
   flex-shrink: 0;

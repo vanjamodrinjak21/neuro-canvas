@@ -155,7 +155,7 @@ function handleRemind() {
   border: 1px solid rgba(0, 210, 190, 0.22);
   border-radius: 6px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.04em;
   color: var(--nc-accent, #00D2BE);
 }
@@ -199,7 +199,7 @@ function handleRemind() {
 
 .sw-title {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 1.05;
   letter-spacing: -0.01em;
@@ -221,7 +221,7 @@ function handleRemind() {
 }
 
 .sw-desc {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   line-height: 1.55;
   margin: 0;
@@ -260,7 +260,7 @@ function handleRemind() {
   align-items: center;
   gap: 8px;
   color: var(--nc-accent, #00D2BE);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
 }
 
@@ -286,7 +286,7 @@ function handleRemind() {
 }
 
 .sw-promise-list li {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   line-height: 1.5;
 }
@@ -312,7 +312,7 @@ function handleRemind() {
   border-radius: 10px;
   color: #09090B;
   font-family: inherit;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: background 150ms ease, transform 80ms ease;
@@ -331,7 +331,7 @@ function handleRemind() {
   align-items: center;
   justify-content: space-between;
   padding: 0 4px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
 }
 
@@ -344,7 +344,7 @@ function handleRemind() {
   border: none;
   padding: 0;
   font-family: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #A1A1AA);
   cursor: pointer;
   text-decoration: underline;
@@ -356,7 +356,7 @@ function handleRemind() {
 }
 
 .sw-card-note {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
 }
 
 .sw-foot {
@@ -376,7 +376,7 @@ function handleRemind() {
   border: none;
   padding: 0;
   font-family: inherit;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
 }
@@ -422,7 +422,7 @@ function handleRemind() {
     padding: 20px;
   }
   .sw-title {
-    font-size: 26px;
+    font-size: calc(26px * var(--nc-text-scale, 1));
   }
 }
 

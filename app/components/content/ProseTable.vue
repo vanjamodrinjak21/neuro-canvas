@@ -30,7 +30,7 @@
 .prose-table :deep(th) {
   text-align: left;
   padding: 10px 16px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -41,7 +41,7 @@
 
 .prose-table :deep(td) {
   padding: 10px 16px;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-secondary);
   border-bottom: 1px solid var(--nc-border);
 }

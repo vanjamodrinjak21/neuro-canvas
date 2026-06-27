@@ -97,21 +97,21 @@ defineExpose({ focusItem })
   border-radius: var(--nc-radius-xl, 16px);
   background: var(--nc-surface-3, #18181B);
   border: 1px solid var(--nc-border, #1A1A1E);
-  font-size: 24px;
+  font-size: calc(24px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted, #52525B);
   margin-bottom: 16px;
 }
 
 .nc-outline-empty-title {
   font-family: var(--nc-font-display);
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-text, #FAFAFA);
   margin-bottom: 6px;
 }
 
 .nc-outline-empty-desc {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted, #52525B);
   max-width: 240px;
   line-height: 1.5;

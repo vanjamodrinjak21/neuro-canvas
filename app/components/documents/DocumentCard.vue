@@ -240,7 +240,7 @@ function onChipClick(mapId: string, event: Event) {
   border-radius: 6px;
   color: #52525B;
   cursor: pointer;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
 }
 
 .doc-card.selected .card-checkbox {
@@ -285,14 +285,14 @@ function onChipClick(mapId: string, event: Event) {
 }
 
 .doc-icon-glyph {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
 }
 
 .card-title {
   flex: 1;
   min-width: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   line-height: 20px;
@@ -314,7 +314,7 @@ function onChipClick(mapId: string, event: Event) {
   color: var(--nc-ink-faint, #52525B);
   cursor: pointer;
   opacity: 0.5;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 
@@ -343,7 +343,7 @@ function onChipClick(mapId: string, event: Event) {
   flex-wrap: wrap;
   gap: 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
   line-height: 16px;
 }
@@ -363,7 +363,7 @@ function onChipClick(mapId: string, event: Event) {
   gap: 5px;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   white-space: nowrap;
 }
@@ -411,14 +411,14 @@ function onChipClick(mapId: string, event: Event) {
   border-radius: 6px;
   border: 1px solid transparent;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .chip-icon {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   flex-shrink: 0;
 }
 

@@ -232,7 +232,7 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-wordmark {
   font-family: 'Instrument Serif', Georgia, serif;
   font-weight: 400;
-  font-size: 19px;
+  font-size: calc(19px * var(--nc-text-scale, 1));
   line-height: 1;
   letter-spacing: -0.01em;
   color: var(--mtpl-ink, var(--nc-ink));
@@ -258,7 +258,7 @@ function categoryLabel(c: TemplateCategory): string {
 @keyframes mtpl-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .mtpl-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mtpl-mint);
 }
@@ -269,7 +269,7 @@ function categoryLabel(c: TemplateCategory): string {
   border: 1px solid var(--mtpl-stroke);
   display: flex; align-items: center; justify-content: center;
   color: var(--mtpl-ink);
-  font-weight: 500; font-size: 13px; line-height: 16px;
+  font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
   text-decoration: none;
   overflow: hidden;
   flex-shrink: 0;
@@ -280,7 +280,7 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-hero { display: flex; flex-direction: column; padding: 28px 20px 0 20px; box-sizing: border-box; }
 .mtpl-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em; color: var(--mtpl-mute);
 }
 .mtpl-hero-line {
@@ -289,18 +289,18 @@ function categoryLabel(c: TemplateCategory): string {
 }
 .mtpl-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 36px; line-height: 38px;
+  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em; color: var(--mtpl-ink);
 }
 .mtpl-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 46px; line-height: 38px;
+  font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em; color: var(--mtpl-mint);
 }
 .mtpl-hero-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 400; font-size: 13px; line-height: 20px;
+  font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--mtpl-body);
   margin-top: 10px;
 }
@@ -328,7 +328,7 @@ function categoryLabel(c: TemplateCategory): string {
   border: none;
   outline: none;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 12px; line-height: 16px;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 16px;
   letter-spacing: 0.04em;
   color: var(--mtpl-ink);
   caret-color: var(--mtpl-mint);
@@ -363,7 +363,7 @@ function categoryLabel(c: TemplateCategory): string {
   flex-shrink: 0;
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 12px; line-height: 14px;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mtpl-body);
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
@@ -375,7 +375,7 @@ function categoryLabel(c: TemplateCategory): string {
 }
 .mtpl-pill-count {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   color: var(--mtpl-mute);
 }
 .mtpl-pill--active .mtpl-pill-count { color: rgba(9, 9, 11, 0.55); }
@@ -390,18 +390,18 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-section-left { display: flex; align-items: baseline; gap: 8px; }
 .mtpl-section-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em; color: var(--mtpl-mute);
 }
 .mtpl-section-value {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 12px; line-height: 14px;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mtpl-ink);
   text-transform: lowercase;
 }
 .mtpl-section-count {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mtpl-mute);
 }
 
@@ -448,7 +448,7 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-card-titlebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .mtpl-card-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 15px; line-height: 20px;
+  font-weight: 600; font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 20px;
   letter-spacing: -0.01em;
   color: var(--mtpl-ink);
 }
@@ -459,14 +459,14 @@ function categoryLabel(c: TemplateCategory): string {
   background: rgba(0, 210, 190, 0.14);
   border: 1px solid rgba(0, 210, 190, 0.30);
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: 9px; line-height: 14px;
+  font-weight: 600; font-size: calc(9px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.08em;
   color: var(--mtpl-mint);
 }
 .mtpl-card-desc {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 400; font-size: 13px; line-height: 18px;
+  font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mtpl-body);
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -476,14 +476,14 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-card-meta { display: flex; align-items: center; gap: 10px; }
 .mtpl-card-cat {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 13px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 13px;
   letter-spacing: 0.06em;
   color: var(--mtpl-mute);
 }
 .mtpl-card-meta-dot { width: 2px; height: 2px; border-radius: 999px; background: var(--mtpl-mute); }
 .mtpl-card-uses {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 13px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 13px;
   letter-spacing: 0.04em;
   color: var(--mtpl-mute);
 }
@@ -497,7 +497,7 @@ function categoryLabel(c: TemplateCategory): string {
   flex-shrink: 0;
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 12px; line-height: 14px;
+  font-weight: 600; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--nc-bg);
 }
 .mtpl-use-btn:active { transform: scale(0.96); }
@@ -505,7 +505,7 @@ function categoryLabel(c: TemplateCategory): string {
 .mtpl-empty {
   padding: 24px 0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--mtpl-mute);
   text-align: center;
 }

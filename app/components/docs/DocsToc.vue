@@ -141,7 +141,7 @@ onBeforeUnmount(() => {
 
 .docs-toc__label {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
 .docs-toc__link {
   display: block;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-muted);
   text-decoration: none;

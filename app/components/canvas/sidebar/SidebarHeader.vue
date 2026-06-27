@@ -85,13 +85,13 @@ const emit = defineEmits<{
 }
 
 .sidebar-header__icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   transition: color 0.2s ease;
 }
 
 .sidebar-header__label {
   font-family: var(--nc-font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink-soft);
   text-transform: uppercase;
@@ -106,7 +106,7 @@ const emit = defineEmits<{
 .sidebar-header__badge {
   background: var(--nc-surface-3);
   color: var(--nc-ink-muted);
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 10px;
@@ -117,7 +117,7 @@ const emit = defineEmits<{
 }
 
 .sidebar-header__chevron {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }

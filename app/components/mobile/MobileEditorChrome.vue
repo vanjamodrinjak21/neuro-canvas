@@ -287,7 +287,7 @@ onBeforeUnmount(() => {
 @keyframes medc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .medc-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--medc-mint);
 }
@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
 }
 .medc-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em;
   color: var(--medc-mint);
 }
@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
   -webkit-appearance: none;
   appearance: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 28px; line-height: 32px;
+  font-weight: 500; font-size: calc(28px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.025em;
   color: var(--nc-ink);
   caret-color: #00D2BE;
@@ -354,20 +354,20 @@ onBeforeUnmount(() => {
 }
 .medc-title-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 28px; line-height: 32px;
+  font-weight: 500; font-size: calc(28px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.025em;
   color: var(--medc-ink);
 }
 .medc-title-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 36px; line-height: 32px;
+  font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.02em;
   color: var(--medc-mint);
 }
 .medc-meta {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em;
   color: var(--medc-mute);
 }
@@ -403,7 +403,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 .medc-genbar-label {
-  font-weight: 600; font-size: 13px; line-height: 18px;
+  font-weight: 600; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.005em;
   color: var(--medc-ink);
   flex: 1 1 0;
@@ -411,7 +411,7 @@ onBeforeUnmount(() => {
 }
 .medc-genbar-meta {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; line-height: 12px;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.14em;
   color: rgba(0, 210, 190, 0.78);
   flex-shrink: 0;
@@ -460,7 +460,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 10px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 13px; line-height: 16px;
+  font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
   letter-spacing: -0.005em;
   color: var(--medc-body);
   cursor: pointer;

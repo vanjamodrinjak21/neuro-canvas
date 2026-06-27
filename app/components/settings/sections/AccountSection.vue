@@ -571,7 +571,7 @@ async function onSignOut() {
 
 .section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0.06em;
@@ -607,7 +607,7 @@ async function onSignOut() {
 
 .setting-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--s-text, #FAFAFA);
@@ -615,7 +615,7 @@ async function onSignOut() {
 
 .setting-desc {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--s-muted, #555560);
@@ -623,7 +623,7 @@ async function onSignOut() {
 
 .setting-value {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--s-muted, #555560);
 }
@@ -631,7 +631,7 @@ async function onSignOut() {
 /* Action button (Change, Export) */
 .action-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--s-text, #FAFAFA);
   background: none;
@@ -655,7 +655,7 @@ async function onSignOut() {
 /* Delete button */
 .delete-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #EF4444;
   background: none;
@@ -721,7 +721,7 @@ async function onSignOut() {
 .setting-input {
   width: 100%;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--s-text, #FAFAFA);
   background: var(--s-bg, #09090B);
   border: 1px solid var(--s-border, #1A1A1E);
@@ -751,7 +751,7 @@ async function onSignOut() {
 
 .cancel-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--s-muted, #555560);
   background: none;
@@ -768,7 +768,7 @@ async function onSignOut() {
 
 .save-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #09090B;
   background: var(--s-accent, #00D2BE);
@@ -786,7 +786,7 @@ async function onSignOut() {
 
 .delete-confirm-btn {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   background: #EF4444;
@@ -812,7 +812,7 @@ async function onSignOut() {
   align-items: center;
   gap: 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #EF4444;
 }
 
@@ -821,7 +821,7 @@ async function onSignOut() {
   align-items: center;
   gap: 6px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #22C55E;
 }
 
@@ -835,7 +835,7 @@ async function onSignOut() {
   border: 1px solid rgba(239, 68, 68, 0.25);
   background: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #EF4444;
   cursor: pointer;
@@ -886,7 +886,7 @@ async function onSignOut() {
 
 .totp-key {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--s-accent, #00D2BE);
   background: var(--s-bg, #09090B);
   padding: 8px 12px;
@@ -903,7 +903,7 @@ async function onSignOut() {
 
 .backup-code {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--s-text, #FAFAFA);
   background: var(--s-bg, #09090B);
   padding: 8px 12px;

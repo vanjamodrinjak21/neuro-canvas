@@ -284,14 +284,14 @@ onKeyStroke('Escape', () => emit('close'))
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 20px; border-bottom: 1px solid #27272A;
 }
-.cm-header h2 { font-size: 14px; font-weight: 600; margin: 0; }
+.cm-header h2 { font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; margin: 0; }
 .cm-close {
   width: 32px; height: 32px;
   display: inline-flex; align-items: center; justify-content: center;
   background: transparent; border: 1px solid transparent;
   border-radius: 6px;
   color: var(--nc-ink-soft, #A1A1AA);
-  font-size: 16px; cursor: pointer;
+  font-size: calc(16px * var(--nc-text-scale, 1)); cursor: pointer;
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 .cm-close:hover {
@@ -308,16 +308,16 @@ onKeyStroke('Escape', () => emit('close'))
   margin: 12px 20px; padding: 10px 12px;
   background: rgba(220, 38, 38, 0.12);
   border: 1px solid rgba(220, 38, 38, 0.4);
-  border-radius: 6px; font-size: 12px; color: #FCA5A5;
+  border-radius: 6px; font-size: calc(12px * var(--nc-text-scale, 1)); color: #FCA5A5;
 }
-.cm-state { padding: 28px 20px; color: #71717A; font-size: 13px; }
+.cm-state { padding: 28px 20px; color: #71717A; font-size: calc(13px * var(--nc-text-scale, 1)); }
 .cm-body { overflow-y: auto; padding: 16px 20px 24px; flex: 1; }
 
 .cm-compose { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #1A1A1D; }
 .cm-textarea {
   width: 100%; box-sizing: border-box;
   background: #161618; border: 1px solid #27272A; border-radius: 6px;
-  color: #FAFAFA; padding: 8px 10px; font: inherit; font-size: 13px;
+  color: #FAFAFA; padding: 8px 10px; font: inherit; font-size: calc(13px * var(--nc-text-scale, 1));
   resize: vertical; min-height: 60px;
 }
 .cm-textarea:focus { outline: none; border-color: #3DD9D6; }
@@ -325,16 +325,16 @@ onKeyStroke('Escape', () => emit('close'))
   display: flex; align-items: center; justify-content: space-between;
   margin-top: 6px;
 }
-.cm-hint { font-size: 11px; color: #71717A; }
+.cm-hint { font-size: calc(11px * var(--nc-text-scale, 1)); color: #71717A; }
 .cm-submit {
   background: #3DD9D6; color: #0D0D0F; border: none; border-radius: 4px;
-  padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  padding: 6px 14px; font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 600; cursor: pointer;
 }
 .cm-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .cm-section { margin-bottom: 24px; }
 .cm-section-title {
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: calc(11px * var(--nc-text-scale, 1)); text-transform: uppercase; letter-spacing: 0.08em;
   color: #71717A; margin: 0 0 8px; font-weight: 600;
 }
 .cm-thread {
@@ -342,20 +342,20 @@ onKeyStroke('Escape', () => emit('close'))
   background: #0D0D0F; margin-bottom: 8px;
 }
 .cm-thread-anchor {
-  font-size: 10px; color: #71717A; margin-bottom: 6px;
+  font-size: calc(10px * var(--nc-text-scale, 1)); color: #71717A; margin-bottom: 6px;
   text-transform: uppercase; letter-spacing: 0.08em;
 }
 .cm-msg + .cm-msg { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1A1A1D; }
 .cm-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .cm-author-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.cm-author-name { font-size: 12px; font-weight: 500; }
-.cm-msg-time { font-size: 11px; color: #71717A; margin-left: auto; }
-.cm-msg-body { font-size: 13px; color: #E4E4E7; white-space: pre-wrap; word-break: break-word; }
+.cm-author-name { font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500; }
+.cm-msg-time { font-size: calc(11px * var(--nc-text-scale, 1)); color: #71717A; margin-left: auto; }
+.cm-msg-body { font-size: calc(13px * var(--nc-text-scale, 1)); color: #E4E4E7; white-space: pre-wrap; word-break: break-word; }
 .cm-msg-actions { margin-top: 4px; }
 
 .cm-link {
   background: none; border: none; color: #71717A;
-  font-size: 11px; cursor: pointer; padding: 2px 4px;
+  font-size: calc(11px * var(--nc-text-scale, 1)); cursor: pointer; padding: 2px 4px;
 }
 .cm-link:hover { color: #A1A1AA; }
 .cm-resolve { color: #3DD9D6; }

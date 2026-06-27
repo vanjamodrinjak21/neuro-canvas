@@ -315,7 +315,7 @@ function onRow(id: string) {
 .mdash-wordmark {
   font-family: 'Instrument Serif', Georgia, serif;
   font-weight: 400;
-  font-size: 19px;
+  font-size: calc(19px * var(--nc-text-scale, 1));
   line-height: 1;
   letter-spacing: -0.01em;
   color: var(--mdash-ink);
@@ -345,7 +345,7 @@ function onRow(id: string) {
 }
 .mdash-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mdash-mint);
 }
@@ -358,7 +358,7 @@ function onRow(id: string) {
   display: flex; align-items: center; justify-content: center;
   color: var(--mdash-ink);
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 13px; line-height: 16px;
+  font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
   text-decoration: none;
   overflow: hidden;
   flex-shrink: 0;
@@ -374,7 +374,7 @@ function onRow(id: string) {
 }
 .mdash-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em;
   color: var(--mdash-mute);
 }
@@ -387,14 +387,14 @@ function onRow(id: string) {
 }
 .mdash-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 34px; line-height: 38px;
+  font-weight: 500; font-size: calc(34px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em;
   color: var(--mdash-ink);
 }
 .mdash-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 44px; line-height: 38px;
+  font-size: calc(44px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em;
   color: var(--mdash-mint);
 }
@@ -406,12 +406,12 @@ function onRow(id: string) {
 .mdash-stat { display: flex; align-items: baseline; gap: 6px; }
 .mdash-stat-num {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 14px; line-height: 18px;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mdash-ink);
 }
 .mdash-stat-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.08em;
   color: var(--mdash-mute);
 }
@@ -453,13 +453,13 @@ function onRow(id: string) {
 }
 .mdash-continue-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.12em;
   color: rgba(9, 9, 11, 0.65);
 }
 .mdash-continue-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 16px; line-height: 20px;
+  font-weight: 600; font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
   letter-spacing: -0.015em;
   color: #09090B;
   white-space: nowrap;
@@ -468,7 +468,7 @@ function onRow(id: string) {
 }
 .mdash-continue-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 12px; line-height: 16px;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 16px;
   color: rgba(9, 9, 11, 0.65);
 }
 .mdash-continue-resume {
@@ -489,18 +489,18 @@ function onRow(id: string) {
 .mdash-section-eyebrow { display: flex; align-items: baseline; gap: 8px; }
 .mdash-eyebrow-strong {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em;
   color: var(--mdash-mute);
 }
 .mdash-eyebrow-faint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mdash-mute);
 }
 .mdash-see-all {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 13px; line-height: 18px;
+  font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mdash-mint);
   background: none;
   border: none;
@@ -554,7 +554,7 @@ function onRow(id: string) {
 }
 .mdash-row-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 14px; line-height: 18px;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em;
   color: var(--mdash-ink);
   white-space: nowrap;
@@ -563,7 +563,7 @@ function onRow(id: string) {
 }
 .mdash-row-sub {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 13px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 13px;
   letter-spacing: 0.04em;
   color: var(--mdash-mute);
 }
@@ -572,7 +572,7 @@ function onRow(id: string) {
 .mdash-empty {
   padding: 24px 0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--mdash-mute);
   text-align: center;

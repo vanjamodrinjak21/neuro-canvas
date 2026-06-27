@@ -99,7 +99,7 @@ defineProps<Props>()
   align-items: center;
   gap: 4px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -114,7 +114,7 @@ defineProps<Props>()
 
 .docs-prev-next__title {
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-accent);
   line-height: 1.4;

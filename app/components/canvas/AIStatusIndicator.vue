@@ -119,7 +119,7 @@ const tooltipText = computed(() => {
   background: var(--status-bg);
   border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--status-color);
   white-space: nowrap;
   flex-shrink: 0;
@@ -134,7 +134,7 @@ const tooltipText = computed(() => {
 }
 
 .nc-ai-status-icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
 }
 
 .nc-ai-status-label {
@@ -158,7 +158,7 @@ const tooltipText = computed(() => {
 }
 
 .nc-ai-gpu-badge {
-  font-size: 9px;
+  font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 700;
   padding: 1px 4px;
   border-radius: 3px;

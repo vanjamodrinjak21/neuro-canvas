@@ -507,19 +507,19 @@ const MdeTreeItem = defineComponent({
    cohesive surface, separated by 1px borders rather than mismatched fills. */
 .mde-tree { width: 248px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--nc-bg); border-right: 1px solid var(--nc-border); }
 .mde-tree-hdr { padding: 16px 16px 10px; }
-.mde-tree-lbl { font-family: var(--nc-font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--nc-text-dim); }
+.mde-tree-lbl { font-family: var(--nc-font-mono); font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--nc-text-dim); }
 .mde-tree-scroll { flex: 1; overflow-y: auto; padding: 0 8px 16px; }
 .mde-tree-scroll::-webkit-scrollbar { width: 6px; }
 .mde-tree-scroll::-webkit-scrollbar-thumb { background: var(--nc-border-active); border-radius: 999px; }
-.mde-tree-empty { padding: 20px 16px; font-size: 12px; color: var(--nc-text-dim); text-align: center; }
+.mde-tree-empty { padding: 20px 16px; font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-text-dim); text-align: center; }
 
 /* Tree nodes */
-.mde-tn { display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px 8px; border-radius: var(--nc-radius-sm); background: none; border: none; color: var(--nc-text-secondary); font: inherit; font-size: 13px; line-height: 16px; cursor: pointer; text-align: left; transition: background var(--nc-duration-fast) var(--nc-ease), color var(--nc-duration-fast) var(--nc-ease); }
+.mde-tn { display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px 8px; border-radius: var(--nc-radius-sm); background: none; border: none; color: var(--nc-text-secondary); font: inherit; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px; cursor: pointer; text-align: left; transition: background var(--nc-duration-fast) var(--nc-ease), color var(--nc-duration-fast) var(--nc-ease); }
 .mde-tn:hover { background: var(--nc-surface-3); color: var(--nc-text); }
 .mde-tn:active { transform: scale(0.99); }
 .mde-tn--sel { background: var(--nc-accent-glow); color: var(--nc-text); font-weight: 500; }
 .mde-tn--root { font-weight: 600; color: var(--nc-accent-text, var(--nc-accent)); }
-.mde-tn-chev { font-size: 11px; color: var(--nc-text-dim); flex-shrink: 0; width: 14px; transition: color var(--nc-duration-fast) var(--nc-ease); }
+.mde-tn-chev { font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--nc-text-dim); flex-shrink: 0; width: 14px; transition: color var(--nc-duration-fast) var(--nc-ease); }
 .mde-tn-chev:hover { color: var(--nc-text-secondary); }
 .mde-tn-chev-sp { width: 14px; flex-shrink: 0; }
 .mde-tn-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
@@ -532,9 +532,9 @@ const MdeTreeItem = defineComponent({
 .mde-bar { display: flex; align-items: center; justify-content: space-between; padding: 13px 24px; border-bottom: 1px solid var(--nc-border); flex-shrink: 0; }
 .mde-bar-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mde-bar-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.mde-bar-name { font-size: 13px; font-weight: 600; color: var(--nc-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mde-bar-name { font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--nc-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mde-bar-r { display: flex; align-items: center; gap: 12px; }
-.mde-bar-meta { font-family: var(--nc-font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--nc-text-dim); flex-shrink: 0; }
+.mde-bar-meta { font-family: var(--nc-font-mono); font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.06em; color: var(--nc-text-dim); flex-shrink: 0; }
 
 /* ── Live-preview editor ── */
 .mde-edit-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
@@ -552,7 +552,7 @@ const MdeTreeItem = defineComponent({
   cursor: text;
   /* Base text style for body lines */
   font-family: var(--nc-font-display);
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.75;
   color: var(--nc-text-secondary);
 }
@@ -598,7 +598,7 @@ const MdeTreeItem = defineComponent({
 }
 
 .mde-line--body {
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 1.75;
   color: var(--nc-text-secondary);
@@ -631,8 +631,8 @@ const MdeTreeItem = defineComponent({
 .mde-right::-webkit-scrollbar-thumb { background: var(--nc-border-active); border-radius: 999px; }
 
 .mde-right-section { padding: 16px; border-bottom: 1px solid var(--nc-border); }
-.mde-right-lbl { font-family: var(--nc-font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--nc-text-dim); display: block; margin-bottom: 10px; }
-.mde-right-meta { font-family: var(--nc-font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--nc-text-dim); }
+.mde-right-lbl { font-family: var(--nc-font-mono); font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--nc-text-dim); display: block; margin-bottom: 10px; }
+.mde-right-meta { font-family: var(--nc-font-mono); font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em; color: var(--nc-text-dim); }
 
 /* Mini graph */
 .mde-mini-graph { padding: 8px; border-bottom: 1px solid var(--nc-border); }
@@ -641,20 +641,20 @@ const MdeTreeItem = defineComponent({
 .mde-mini-dot { cursor: pointer; transition: fill var(--nc-duration-fast) var(--nc-ease); }
 
 /* Selected */
-.mde-sel-name { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--nc-text); margin: 0; }
+.mde-sel-name { font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 1.3; color: var(--nc-text); margin: 0; }
 
 /* Connections */
 .mde-conn-list { display: flex; flex-direction: column; gap: 1px; }
-.mde-conn-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 6px; margin: 0 -6px; border-radius: var(--nc-radius-sm); background: none; border: none; color: var(--nc-accent-text, var(--nc-accent)); font: inherit; font-size: 13px; cursor: pointer; text-align: left; transition: background var(--nc-duration-fast) var(--nc-ease); }
+.mde-conn-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 6px; margin: 0 -6px; border-radius: var(--nc-radius-sm); background: none; border: none; color: var(--nc-accent-text, var(--nc-accent)); font: inherit; font-size: calc(13px * var(--nc-text-scale, 1)); cursor: pointer; text-align: left; transition: background var(--nc-duration-fast) var(--nc-ease); }
 .mde-conn-item:hover { background: var(--nc-surface-3); }
 .mde-conn-item:active { transform: scale(0.99); }
 .mde-conn-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--nc-accent); flex-shrink: 0; }
 
 /* Outline */
 .mde-outline { display: flex; flex-direction: column; gap: 1px; }
-.mde-outline-item { background: none; border: none; color: var(--nc-text-muted); font: inherit; font-size: 12px; line-height: 16px; cursor: pointer; text-align: left; padding: 4px 6px 4px 12px; margin: 0 -6px; border-radius: var(--nc-radius-sm); transition: color var(--nc-duration-fast) var(--nc-ease), background var(--nc-duration-fast) var(--nc-ease); }
+.mde-outline-item { background: none; border: none; color: var(--nc-text-muted); font: inherit; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 16px; cursor: pointer; text-align: left; padding: 4px 6px 4px 12px; margin: 0 -6px; border-radius: var(--nc-radius-sm); transition: color var(--nc-duration-fast) var(--nc-ease), background var(--nc-duration-fast) var(--nc-ease); }
 .mde-outline-item:hover { color: var(--nc-text); background: var(--nc-surface-3); }
-.mde-outline-item--root { font-weight: 600; color: var(--nc-text); padding-left: 6px; font-size: 13px; }
+.mde-outline-item--root { font-weight: 600; color: var(--nc-text); padding-left: 6px; font-size: calc(13px * var(--nc-text-scale, 1)); }
 
 /* ── Responsive (the desktop view; mobile embeds via MobileMapEditor) ── */
 @media (max-width: 1024px) { .mde-right { display: none; } }
@@ -666,7 +666,7 @@ const MdeTreeItem = defineComponent({
     max-width: none;
     padding: 4px 20px calc(env(safe-area-inset-bottom, 0px) + 96px);
     background: transparent;
-    font-size: 15px;
+    font-size: calc(15px * var(--nc-text-scale, 1));
     line-height: 1.65;
     letter-spacing: 0;
     color: var(--nc-text-secondary);
@@ -679,7 +679,7 @@ const MdeTreeItem = defineComponent({
   .mde-line--h2 {
     margin-top: 28px; margin-bottom: 10px; padding: 0;
     font-family: var(--nc-font-mono);
-    font-weight: 600; font-size: 11px; line-height: 14px;
+    font-weight: 600; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
     letter-spacing: 0.14em;
     color: var(--nc-text-dim);
     text-transform: uppercase;
@@ -687,13 +687,13 @@ const MdeTreeItem = defineComponent({
   .mde-line--h3 {
     margin-top: 22px; margin-bottom: 8px; padding: 0;
     font-family: var(--nc-font-mono);
-    font-weight: 600; font-size: 10px; line-height: 14px;
+    font-weight: 600; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
     letter-spacing: 0.12em;
     color: var(--nc-text-muted);
     text-transform: uppercase;
   }
   .mde-line--body {
-    font-size: 15px; line-height: 1.65;
+    font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 1.65;
     color: var(--nc-text-secondary);
     margin: 0 0 6px 0;
   }

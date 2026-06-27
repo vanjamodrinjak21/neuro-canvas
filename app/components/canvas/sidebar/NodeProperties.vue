@@ -278,7 +278,7 @@ const categoryChips = computed(() => [
   border-radius: 8px;
   flex-shrink: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 700;
 }
 
@@ -292,7 +292,7 @@ const categoryChips = computed(() => [
 
 .properties__header-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   white-space: nowrap;
@@ -302,7 +302,7 @@ const categoryChips = computed(() => [
 
 .properties__header-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
 }
 
@@ -316,7 +316,7 @@ const categoryChips = computed(() => [
   border: 1px solid #1A1A1E;
   border-radius: 6px;
   color: #52525B;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -341,7 +341,7 @@ const categoryChips = computed(() => [
 .properties__label {
   display: block;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #52525B;
   letter-spacing: 0.02em;
@@ -361,7 +361,7 @@ const categoryChips = computed(() => [
 
 .properties__char-count {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: #27272A;
 }
 
@@ -382,7 +382,7 @@ const categoryChips = computed(() => [
   border-radius: 6px;
   color: #71717A;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -433,7 +433,7 @@ const categoryChips = computed(() => [
 }
 
 .properties__color-check {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #09090B;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
 }
@@ -476,7 +476,7 @@ const categoryChips = computed(() => [
 }
 
 .properties__shape-icon {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   color: #71717A;
   transition: color 0.15s;
 }
@@ -491,7 +491,7 @@ const categoryChips = computed(() => [
 
 .properties__shape-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 9px;
+  font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #3F3F46;
   letter-spacing: 0.02em;
@@ -514,7 +514,7 @@ const categoryChips = computed(() => [
   border: 1px solid #1A1A1E;
   border-radius: 8px;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 500;
   color: #FAFAFA;
@@ -538,7 +538,7 @@ const categoryChips = computed(() => [
   border: 1px solid #1A1A1E;
   border-radius: 8px;
   padding: 10px 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--nc-ink);
   resize: none;
@@ -577,7 +577,7 @@ const categoryChips = computed(() => [
   border-radius: 8px;
   color: #71717A;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -600,7 +600,7 @@ const categoryChips = computed(() => [
 }
 
 .properties__footer-btn span:first-child {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
 /* Empty */
@@ -611,11 +611,11 @@ const categoryChips = computed(() => [
   gap: 4px;
   padding: 40px 16px;
   color: var(--nc-ink-faint);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
 }
 
 .properties__empty-icon {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   opacity: 0.4;
 }
 

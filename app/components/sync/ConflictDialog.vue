@@ -106,19 +106,19 @@ async function keepRemote() {
 }
 
 .conflict-icon {
-  font-size: 20px;
+  font-size: calc(20px * var(--nc-text-scale, 1));
   color: #f59e0b;
 }
 
 .conflict-header h3 {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink);
   margin: 0;
 }
 
 .conflict-desc {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft);
   margin: 0 0 16px;
 }
@@ -139,7 +139,7 @@ async function keepRemote() {
 }
 
 .version-badge {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -160,7 +160,7 @@ async function keepRemote() {
 }
 
 .version-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink);
   margin: 0 0 6px;
@@ -173,14 +173,14 @@ async function keepRemote() {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
 }
 
 .version-vs {
   display: flex;
   align-items: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
   font-weight: 500;
 }
@@ -194,7 +194,7 @@ async function keepRemote() {
 .btn {
   padding: 8px 16px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;

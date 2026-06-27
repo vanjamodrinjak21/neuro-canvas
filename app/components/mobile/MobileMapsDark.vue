@@ -272,7 +272,7 @@ const totalEdges = computed(() =>
 .mmaps-wordmark {
   font-family: 'Instrument Serif', Georgia, serif;
   font-weight: 400;
-  font-size: 19px;
+  font-size: calc(19px * var(--nc-text-scale, 1));
   line-height: 1;
   letter-spacing: -0.01em;
   color: var(--mmaps-ink, var(--nc-ink));
@@ -299,7 +299,7 @@ const totalEdges = computed(() =>
 @keyframes mmaps-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .mmaps-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mmaps-mint);
 }
@@ -311,7 +311,7 @@ const totalEdges = computed(() =>
   border: 1px solid var(--mmaps-stroke);
   display: flex; align-items: center; justify-content: center;
   color: var(--mmaps-ink);
-  font-weight: 500; font-size: 13px; line-height: 16px;
+  font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
   text-decoration: none;
   overflow: hidden;
   flex-shrink: 0;
@@ -322,7 +322,7 @@ const totalEdges = computed(() =>
 .mmaps-hero { display: flex; flex-direction: column; padding: 28px 20px 0 20px; box-sizing: border-box; }
 .mmaps-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em; color: var(--mmaps-mute);
 }
 .mmaps-hero-line {
@@ -331,18 +331,18 @@ const totalEdges = computed(() =>
 }
 .mmaps-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 36px; line-height: 38px;
+  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em; color: var(--mmaps-ink);
 }
 .mmaps-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 46px; line-height: 38px;
+  font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em; color: var(--mmaps-mint);
 }
 .mmaps-hero-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 400; font-size: 13px; line-height: 20px;
+  font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--mmaps-body);
   margin-top: 10px;
 }
@@ -370,7 +370,7 @@ const totalEdges = computed(() =>
   border: none;
   outline: none;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 12px; line-height: 16px;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 16px;
   letter-spacing: 0.04em;
   color: var(--mmaps-ink);
   caret-color: var(--mmaps-mint);
@@ -405,7 +405,7 @@ const totalEdges = computed(() =>
   flex-shrink: 0;
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 12px; line-height: 14px;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mmaps-body);
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
@@ -417,7 +417,7 @@ const totalEdges = computed(() =>
 }
 .mmaps-pill-count {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   color: var(--mmaps-mute);
 }
 .mmaps-pill--active .mmaps-pill-count { color: rgba(9, 9, 11, 0.55); }
@@ -432,17 +432,17 @@ const totalEdges = computed(() =>
 .mmaps-section-left { display: flex; align-items: baseline; gap: 8px; }
 .mmaps-section-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em; color: var(--mmaps-mute);
 }
 .mmaps-section-value {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 12px; line-height: 14px;
+  font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mmaps-ink);
 }
 .mmaps-section-count {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mmaps-mute);
 }
 
@@ -490,7 +490,7 @@ const totalEdges = computed(() =>
 .mmaps-row-title-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .mmaps-row-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 14px; line-height: 18px;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em;
   color: var(--mmaps-ink);
   white-space: nowrap;
@@ -500,7 +500,7 @@ const totalEdges = computed(() =>
 .mmaps-row-pin { flex-shrink: 0; }
 .mmaps-row-sub {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 13px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 13px;
   letter-spacing: 0.04em;
   color: var(--mmaps-mute);
 }
@@ -509,7 +509,7 @@ const totalEdges = computed(() =>
 .mmaps-empty {
   padding: 24px 0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--mmaps-mute);
   text-align: center;
 }

@@ -467,7 +467,7 @@ onMounted(async () => {
   background: none;
   border: none;
   color: #71717A;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
@@ -503,7 +503,7 @@ onMounted(async () => {
 .doc-icon[data-status="queued"],
 .doc-icon[data-status="pending"] { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
 
-.doc-icon-glyph { font-size: 26px; }
+.doc-icon-glyph { font-size: calc(26px * var(--nc-text-scale, 1)); }
 
 .doc-head-text {
   display: flex;
@@ -514,14 +514,14 @@ onMounted(async () => {
 
 .doc-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: #52525B;
 }
 :root.light .doc-eyebrow { color: #8A8780; }
 
 .doc-title {
-  font-size: 26px;
+  font-size: calc(26px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0;
@@ -539,7 +539,7 @@ onMounted(async () => {
   align-self: flex-start;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
 }
 
@@ -585,7 +585,7 @@ onMounted(async () => {
 :root.light .panel { background: #FFFFFF; border-color: #E8E8E6; }
 
 .panel-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0;
@@ -612,13 +612,13 @@ onMounted(async () => {
 :root.light .meta-row { border-bottom-color: #F0F0EE; }
 
 .meta-key {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #71717A;
   margin: 0;
 }
 
 .meta-val {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #FAFAFA;
   margin: 0;
   text-align: right;
@@ -635,7 +635,7 @@ onMounted(async () => {
 
 .link-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.04em;
   color: #52525B;
 }
@@ -671,7 +671,7 @@ onMounted(async () => {
 }
 
 .link-icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   flex-shrink: 0;
 }
 .link-item--generated .link-icon { color: #00D2BE; }
@@ -680,7 +680,7 @@ onMounted(async () => {
 .link-text {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #FAFAFA;
   overflow: hidden;
@@ -700,7 +700,7 @@ onMounted(async () => {
 .link-text--btn:hover { text-decoration: underline; }
 
 .link-go {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #00D2BE;
   flex-shrink: 0;
 }
@@ -712,7 +712,7 @@ onMounted(async () => {
   border: 1px solid rgba(239, 68, 68, 0.22);
   background: rgba(239, 68, 68, 0.08);
   color: #EF4444;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
@@ -724,7 +724,7 @@ onMounted(async () => {
 }
 
 .link-empty {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0;
 }
@@ -744,14 +744,14 @@ onMounted(async () => {
 :root.light .action-block--danger { border-top-color: #F0F0EE; }
 
 .action-label {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #A1A1AA;
 }
 :root.light .action-label { color: #52525B; }
 
 .action-hint {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0;
   line-height: 16px;
@@ -774,7 +774,7 @@ onMounted(async () => {
   padding: 10px 20px;
   background: #00D2BE;
   color: #09090B;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
   border-radius: 6px;
@@ -793,7 +793,7 @@ onMounted(async () => {
   background: #1A1A1E;
   border: 1px solid #27272A;
   color: #FAFAFA;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
@@ -812,7 +812,7 @@ onMounted(async () => {
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.2);
   color: #EF4444;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
@@ -834,7 +834,7 @@ onMounted(async () => {
   border: 1px solid #27272A;
   border-radius: 6px;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
@@ -856,12 +856,12 @@ onMounted(async () => {
 }
 
 .state-icon {
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   color: #27272A;
 }
 
 .state-title {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0;
@@ -869,7 +869,7 @@ onMounted(async () => {
 :root.light .state-title { color: #111111; }
 
 .state-text {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0;
   max-width: 360px;
@@ -911,7 +911,7 @@ onMounted(async () => {
     gap: 16px;
   }
 
-  .doc-title { font-size: 22px; }
+  .doc-title { font-size: calc(22px * var(--nc-text-scale, 1)); }
 
   :root.platform-ios .doc-detail-main {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);

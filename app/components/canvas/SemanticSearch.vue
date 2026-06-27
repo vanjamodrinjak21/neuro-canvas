@@ -215,7 +215,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 
 .nc-search-icon {
   color: var(--nc-ink-soft, rgba(255, 255, 255, 0.4));
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   flex-shrink: 0;
 }
 
@@ -224,7 +224,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
   background: transparent;
   border: none;
   outline: none;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   color: var(--nc-ink, rgba(255, 255, 255, 0.95));
   font-family: inherit;
 }
@@ -243,7 +243,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 }
 
 .nc-search-kbd {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
@@ -272,7 +272,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
   text-align: left;
   color: var(--nc-ink, rgba(255, 255, 255, 0.9));
   font-family: inherit;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
 .nc-search-result:hover,
@@ -296,14 +296,14 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 }
 
 .nc-result-similarity {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-accent, #00D2BE);
   flex-shrink: 0;
 }
 
 .nc-result-badge {
-  font-size: 9px;
+  font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
@@ -335,7 +335,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 }
 
 .nc-result-page {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #f59e0b;
   flex-shrink: 0;
@@ -349,7 +349,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 .nc-search-hint {
   padding: 20px;
   text-align: center;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, rgba(255, 255, 255, 0.35));
 }
 

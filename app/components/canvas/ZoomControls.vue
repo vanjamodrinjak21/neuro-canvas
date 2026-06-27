@@ -139,7 +139,7 @@ onUnmounted(() => {
 }
 
 .nc-zoom-presets-header {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -154,7 +154,7 @@ onUnmounted(() => {
 
 .nc-zoom-preset-shortcut {
   margin-left: auto;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft);
   font-family: "SF Mono", "Fira Code", monospace;
   background: rgba(255, 255, 255, 0.06);

@@ -112,14 +112,14 @@ onMounted(() => {
 }
 
 .nc-empty-title {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink, #FAFAFA);
   margin: 0;
 }
 
 .nc-empty-subtitle {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft, #AAAAB0);
   margin: 0;
   line-height: 1.5;
@@ -137,7 +137,7 @@ onMounted(() => {
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
@@ -178,7 +178,7 @@ onMounted(() => {
 }
 
 .nc-empty-kbd {
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.06);
@@ -197,12 +197,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #888890);
 }
 
 .nc-empty-hint kbd {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   padding: 1px 4px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.06);

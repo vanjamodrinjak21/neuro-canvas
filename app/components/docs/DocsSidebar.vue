@@ -176,7 +176,7 @@ function isActive(path: string): boolean {
   gap: 6px;
   padding: 8px 20px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -204,7 +204,7 @@ function isActive(path: string): boolean {
   display: block;
   padding: 7px 20px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-muted);
   text-decoration: none;
@@ -235,7 +235,7 @@ function isActive(path: string): boolean {
 .docs-sidebar__empty {
   padding: 24px 20px;
   font-family: 'Inter', var(--nc-font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted);
 }
 

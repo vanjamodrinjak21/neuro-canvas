@@ -308,7 +308,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   padding: 4px 4px 4px 0;
   background: none; border: none; cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--macc-body);
 }
 .macc-live {
@@ -325,7 +325,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 @keyframes macc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .macc-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--macc-mint);
 }
 
@@ -335,7 +335,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 }
 .macc-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--macc-mute);
 }
 .macc-hero-line {
@@ -344,18 +344,18 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 }
 .macc-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 36px; line-height: 38px;
+  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em; color: var(--macc-ink);
 }
 .macc-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 46px; line-height: 38px;
+  font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em; color: var(--macc-mint);
 }
 .macc-hero-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; line-height: 20px;
+  font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--macc-body); margin-top: 10px;
 }
 
@@ -373,19 +373,19 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 }
 .macc-section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--macc-mute);
 }
 .macc-section-status {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--macc-mute);
 }
 .macc-section-status--mint { color: var(--macc-mint); }
 .macc-section-action {
   background: none; border: none; cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--macc-mint);
 }
 
@@ -424,7 +424,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 }
 .macc-row-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 14px; line-height: 18px;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--macc-ink);
 }
 .macc-row-italic {
@@ -434,7 +434,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 }
 .macc-row-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--macc-mute);
 }
 .macc-chev { flex-shrink: 0; }
@@ -467,7 +467,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   border: 1px solid var(--macc-stroke);
   border-radius: 999px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: 9px; letter-spacing: 0.10em;
+  font-weight: 600; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--macc-body);
   flex-shrink: 0;
   cursor: pointer;
@@ -499,24 +499,24 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 }
 .macc-danger-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--macc-red);
 }
 .macc-danger-meta {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: rgba(239, 68, 68, 0.55);
 }
 .macc-danger-body { display: flex; align-items: center; gap: 12px; }
 .macc-danger-info { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-width: 0; }
 .macc-danger-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 14px; line-height: 18px;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--macc-ink);
 }
 .macc-danger-italic {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-size: 13px; color: var(--macc-body);
+  font-style: italic; font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--macc-body);
 }
 
 .macc-spacer {

@@ -253,10 +253,10 @@ async function copyMacCmd() {
 :root.light .dl-nav { background: rgba(250, 250, 249, 0.85); }
 .dl-nav-left { display: flex; align-items: center; gap: 40px; }
 .dl-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
-.dl-brand-name { font-size: 15px; font-weight: 600; line-height: 18px; letter-spacing: -0.01em; }
+.dl-brand-name { font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px; letter-spacing: -0.01em; }
 .dl-nav-links { display: flex; gap: 28px; }
 .dl-nav-links a {
-  font-size: 14px; font-weight: 500; line-height: 18px;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
   color: var(--text-2); text-decoration: none;
   transition: color 120ms ease;
 }
@@ -264,7 +264,7 @@ async function copyMacCmd() {
 .dl-nav-right { display: flex; align-items: center; gap: 12px; }
 .dl-nav-signin {
   padding: 8px 12px;
-  font-size: 14px; font-weight: 500; line-height: 18px;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
   color: var(--text-2); text-decoration: none;
   transition: color 120ms ease;
 }
@@ -274,7 +274,7 @@ async function copyMacCmd() {
   padding: 8px 16px;
   border: 1px solid var(--border-active);
   border-radius: 10px;
-  font-size: 14px; font-weight: 500; line-height: 18px;
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
   color: var(--text); text-decoration: none;
   transition: border-color 120ms ease, background 120ms ease;
 }
@@ -292,7 +292,7 @@ async function copyMacCmd() {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
-  font-size: 12px; font-weight: 500;
+  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text-2);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -316,7 +316,7 @@ async function copyMacCmd() {
 }
 .dl-sub {
   margin: 0;
-  font-size: 18px; line-height: 1.55;
+  font-size: calc(18px * var(--nc-text-scale, 1)); line-height: 1.55;
   color: var(--text-2);
   max-width: 620px;
 }
@@ -341,14 +341,14 @@ async function copyMacCmd() {
 }
 .dl-platform-eyebrow {
   margin: 0 0 2px;
-  font-size: 12px; font-weight: 500;
+  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text-faint);
   letter-spacing: 0.06em; text-transform: uppercase;
 }
 .dl-platform-title {
   margin: 0;
   font-family: 'Cabinet Grotesk', var(--sans);
-  font-size: 28px; font-weight: 600;
+  font-size: calc(28px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text);
   letter-spacing: -0.015em;
 }
@@ -376,7 +376,7 @@ async function copyMacCmd() {
   background: var(--surface-3);
   border: 1px solid var(--border-active);
   border-radius: 999px;
-  font-size: 13px; font-weight: 600;
+  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text);
   line-height: 1;
 }
@@ -390,19 +390,19 @@ async function copyMacCmd() {
 .dl-step-body h3 {
   margin: 0;
   font-family: 'Cabinet Grotesk', var(--sans);
-  font-size: 16px; font-weight: 600;
+  font-size: calc(16px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text);
   letter-spacing: -0.005em;
 }
 .dl-step-body p {
   margin: 0;
-  font-size: 14px; line-height: 1.55;
+  font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 1.55;
   color: var(--text-2);
 }
 .dl-step-body p strong { color: var(--text); font-weight: 600; }
 .dl-step-body p code {
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--nc-text-scale, 1));
   padding: 1px 5px;
   border-radius: 4px;
   background: var(--surface-3);
@@ -428,7 +428,7 @@ async function copyMacCmd() {
   margin: 0;
   font-family: var(--mono);
   font-weight: 500;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--text);
   overflow-x: auto;
   flex: 1; min-width: 0;
@@ -441,7 +441,7 @@ async function copyMacCmd() {
   border: 1px solid var(--border-active);
   border-radius: 6px;
   font-family: var(--sans);
-  font-size: 12px; font-weight: 600;
+  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text);
   cursor: pointer;
   flex-shrink: 0;
@@ -458,26 +458,26 @@ async function copyMacCmd() {
 }
 .dl-verify-eyebrow {
   margin: 0;
-  font-size: 12px; font-weight: 500;
+  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text-faint);
   letter-spacing: 0.06em; text-transform: uppercase;
 }
 .dl-verify-title {
   margin: 0;
   font-family: 'Cabinet Grotesk', var(--sans);
-  font-size: 24px; font-weight: 600;
+  font-size: calc(24px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text);
   letter-spacing: -0.015em;
 }
 .dl-verify-sub {
   margin: 0;
-  font-size: 15px; line-height: 1.6;
+  font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 1.6;
   color: var(--text-2);
   max-width: 720px;
 }
 .dl-verify-sub code {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   padding: 1px 5px;
   border-radius: 4px;
   background: var(--surface);
@@ -494,13 +494,13 @@ async function copyMacCmd() {
   flex-wrap: wrap;
 }
 .dl-foot-brand { display: flex; align-items: center; gap: 10px; }
-.dl-foot-brand-name { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.dl-foot-brand-name { font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500; color: var(--text-2); }
 .dl-foot-links {
   display: flex; align-items: center;
   gap: 24px; flex-wrap: wrap;
 }
 .dl-foot-links a {
-  font-size: 13px; font-weight: 500;
+  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500;
   color: var(--text-2);
   text-decoration: none;
   transition: color 120ms ease;
@@ -520,41 +520,41 @@ async function copyMacCmd() {
   .dl-nav { padding: 14px 20px; }
   .dl-nav-left { gap: 20px; }
   .dl-nav-links, .dl-nav-signin { display: none; }
-  .dl-nav-dash { padding: 7px 14px; font-size: 13px; }
+  .dl-nav-dash { padding: 7px 14px; font-size: calc(13px * var(--nc-text-scale, 1)); }
 
   .dl-hero { padding: 32px 20px 24px; gap: 14px; }
   .dl-h-sans, .dl-h-serif {
-    font-size: 30px; letter-spacing: -0.025em; line-height: 1.1;
+    font-size: calc(30px * var(--nc-text-scale, 1)); letter-spacing: -0.025em; line-height: 1.1;
   }
   .dl-headline { gap: 4px; }
-  .dl-sub { font-size: 14px; }
+  .dl-sub { font-size: calc(14px * var(--nc-text-scale, 1)); }
 
   .dl-platform { padding: 24px 20px; gap: 16px; }
   .dl-platform-icon { display: none; }
-  .dl-platform-title { font-size: 20px; }
+  .dl-platform-title { font-size: calc(20px * var(--nc-text-scale, 1)); }
 
   .dl-steps { gap: 10px; }
   .dl-step { padding: 14px; gap: 12px; border-radius: 10px; }
   .dl-step.is-key { padding: 14px; }
-  .dl-step-num { width: 24px; height: 24px; font-size: 11px; }
-  .dl-step-body h3 { font-size: 13px; }
-  .dl-step-body p { font-size: 12px; }
+  .dl-step-num { width: 24px; height: 24px; font-size: calc(11px * var(--nc-text-scale, 1)); }
+  .dl-step-body h3 { font-size: calc(13px * var(--nc-text-scale, 1)); }
+  .dl-step-body p { font-size: calc(12px * var(--nc-text-scale, 1)); }
 
   .dl-cmd {
     flex-direction: column; align-items: stretch;
     padding: 10px;
     gap: 8px;
   }
-  .dl-cmd pre { font-size: 10px; white-space: pre-wrap; word-break: break-all; }
-  .dl-cmd-copy { width: 100%; justify-content: center; padding: 6px 10px; font-size: 11px; }
+  .dl-cmd pre { font-size: calc(10px * var(--nc-text-scale, 1)); white-space: pre-wrap; word-break: break-all; }
+  .dl-cmd-copy { width: 100%; justify-content: center; padding: 6px 10px; font-size: calc(11px * var(--nc-text-scale, 1)); }
 
   .dl-verify { padding: 24px 20px; gap: 12px; }
-  .dl-verify-title { font-size: 20px; }
-  .dl-verify-sub { font-size: 13px; }
+  .dl-verify-title { font-size: calc(20px * var(--nc-text-scale, 1)); }
+  .dl-verify-sub { font-size: calc(13px * var(--nc-text-scale, 1)); }
 
   .dl-footer { flex-direction: column; align-items: flex-start; padding: 24px 20px; gap: 14px; }
   .dl-foot-links { gap: 18px; }
-  .dl-foot-links a { font-size: 12px; }
+  .dl-foot-links a { font-size: calc(12px * var(--nc-text-scale, 1)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

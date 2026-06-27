@@ -421,14 +421,14 @@ onMounted(load)
 }
 .btn-primary:active { transform: scale(0.97); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary.btn-sm { height: 30px; padding: 0 14px; font-size: 12px; }
+.btn-primary.btn-sm { height: 30px; padding: 0 14px; font-size: calc(12px * var(--nc-text-scale, 1)); }
 .list-section { display: flex; flex-direction: column; }
 .list-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 24px 10px 24px;
   font: 500 13px Inter, system-ui, sans-serif; color: var(--nc-text);
 }
-.list-head .list-meta { font-weight: 400; font-size: 11px; color: var(--nc-text-muted); }
+.list-head .list-meta { font-weight: 400; font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); }
 .list { list-style: none; padding: 0; margin: 0; }
 .row-wrap {
   border-top: 1px solid var(--nc-border);
@@ -479,9 +479,9 @@ onMounted(load)
   flex-wrap: wrap;
   margin-top: 2px;
 }
-.invite-hint { font-size: 11px; color: var(--nc-text-dim); }
-.invite-error { font-size: 12px; color: var(--nc-danger); }
-.invite-status { font-size: 12px; color: var(--nc-accent); }
+.invite-hint { font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--nc-text-dim); }
+.invite-error { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-danger); }
+.invite-status { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-accent); }
 .role-icon {
   width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
@@ -520,8 +520,8 @@ onMounted(load)
 }
 .row-meta .token { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .row-meta .dot { width: 2px; height: 2px; border-radius: 999px; background: var(--nc-text-dim); }
-.error { padding: 16px 24px; color: var(--nc-danger); font-size: 12px; }
-.loading, .empty { padding: 16px 24px; color: var(--nc-text-muted); font-size: 12px; }
+.error { padding: 16px 24px; color: var(--nc-danger); font-size: calc(12px * var(--nc-text-scale, 1)); }
+.loading, .empty { padding: 16px 24px; color: var(--nc-text-muted); font-size: calc(12px * var(--nc-text-scale, 1)); }
 .modal-foot {
   display: flex; align-items: center; gap: 8px;
   padding: 14px 24px;

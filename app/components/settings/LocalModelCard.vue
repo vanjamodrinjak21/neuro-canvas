@@ -108,27 +108,27 @@ async function handleDownload() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   flex-shrink: 0;
 }
 
 .lmc-info { flex: 1; min-width: 0; }
 
 .lmc-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink, #FAFAFA);
   margin: 0 0 2px;
 }
 
 .lmc-desc {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
   margin: 0;
 }
 
 .lmc-badge {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 6px;
@@ -149,7 +149,7 @@ async function handleDownload() {
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 6px;
   color: #f87171;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
 .lmc-actions {
@@ -162,7 +162,7 @@ async function handleDownload() {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
 }
 
@@ -189,7 +189,7 @@ async function handleDownload() {
   border: none;
   border-radius: 8px;
   color: #09090B;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
 }
@@ -203,7 +203,7 @@ async function handleDownload() {
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 6px;
   color: #EF4444;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   cursor: pointer;
 }
 
@@ -230,7 +230,7 @@ async function handleDownload() {
 .lmc-progress-info {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted, #71717A);
 }
 </style>

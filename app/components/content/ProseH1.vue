@@ -12,7 +12,7 @@ defineProps<{
 
 <style scoped>
 .prose-h1 {
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.2;

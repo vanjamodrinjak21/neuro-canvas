@@ -240,14 +240,14 @@ watch(() => props.visible, (isVisible) => {
 }
 
 .nc-dialog-title {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink);
   margin: 0;
 }
 
 .nc-dialog-subtitle {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
   margin: 2px 0 0;
 }
@@ -290,7 +290,7 @@ watch(() => props.visible, (isVisible) => {
 }
 
 .nc-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-ink-soft);
   text-transform: uppercase;
@@ -305,7 +305,7 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-count-value {
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 40px;
+  font-size: calc(40px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 1;
   color: var(--nc-ink, #FAFAFA);
@@ -318,7 +318,7 @@ watch(() => props.visible, (isVisible) => {
   border: none;
   border-bottom: 1px solid var(--nc-border, #1E1E22);
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 40px;
+  font-size: calc(40px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 1;
   color: var(--nc-ink, #FAFAFA);
@@ -342,7 +342,7 @@ watch(() => props.visible, (isVisible) => {
 }
 
 .nc-count-suffix {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
 }
 
@@ -369,7 +369,7 @@ watch(() => props.visible, (isVisible) => {
   border: 1px solid var(--nc-border, #1E1E22);
   border-radius: 10px;
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-ink-soft);
   cursor: pointer;
@@ -393,7 +393,7 @@ watch(() => props.visible, (isVisible) => {
 }
 
 .nc-hint {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
   margin: 0;
 }
@@ -415,7 +415,7 @@ watch(() => props.visible, (isVisible) => {
   gap: 8px;
   padding: 10px 18px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;

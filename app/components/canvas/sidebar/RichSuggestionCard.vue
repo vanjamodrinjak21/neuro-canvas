@@ -127,7 +127,7 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
   border-radius: 7px;
   flex-shrink: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
 }
 
@@ -142,7 +142,7 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
 
 .suggestion-card__title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #E4E4E7;
   line-height: 1.35;
@@ -150,7 +150,7 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
 
 .suggestion-card__summary {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
   line-height: 1.4;
   margin: 0;
@@ -170,7 +170,7 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
 
 .suggestion-card__keyword {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   padding: 1px 6px;
   background: #18181B;
   border-radius: 3px;
@@ -189,7 +189,7 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
   border: 1px solid rgba(0, 210, 190, 0.15);
   border-radius: 6px;
   color: #00D2BE;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;

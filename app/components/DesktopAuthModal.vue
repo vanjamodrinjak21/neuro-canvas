@@ -262,7 +262,7 @@ watch(() => props.visible, (visible) => {
 
 .auth-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #FAFAFA;
   margin: 0 0 6px;
@@ -272,7 +272,7 @@ watch(() => props.visible, (visible) => {
 
 .auth-desc {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: rgba(250, 250, 250, 0.4);
   margin: 0 0 24px;
   line-height: 1.5;
@@ -290,7 +290,7 @@ watch(() => props.visible, (visible) => {
   border-radius: 8px;
   color: #f87171;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.4;
 }
 
@@ -306,7 +306,7 @@ watch(() => props.visible, (visible) => {
 .auth-label {
   display: block;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: rgba(250, 250, 250, 0.5);
   margin-bottom: 6px;
@@ -320,7 +320,7 @@ watch(() => props.visible, (visible) => {
   border: 1px solid #252529;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #FAFAFA;
   outline: none;
   transition: border-color 150ms ease;
@@ -372,7 +372,7 @@ watch(() => props.visible, (visible) => {
   background: none;
   border: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #00D2BE;
   cursor: pointer;
   text-align: left;
@@ -389,7 +389,7 @@ watch(() => props.visible, (visible) => {
 .auth-input-totp {
   text-align: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   letter-spacing: 0.3em;
   padding: 12px 14px;
 }
@@ -406,7 +406,7 @@ watch(() => props.visible, (visible) => {
   border: none;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #09090B;
   cursor: pointer;
@@ -449,7 +449,7 @@ watch(() => props.visible, (visible) => {
 
 .auth-divider span {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: #3F3F46;
 }
 
@@ -465,7 +465,7 @@ watch(() => props.visible, (visible) => {
   background: transparent;
   color: rgba(250, 250, 250, 0.6);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
@@ -490,7 +490,7 @@ watch(() => props.visible, (visible) => {
   background: rgba(255, 255, 255, 0.03);
   color: rgba(250, 250, 250, 0.92);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease, transform 80ms ease;
@@ -523,7 +523,7 @@ watch(() => props.visible, (visible) => {
   background: rgba(255, 255, 255, 0.04);
   color: rgba(250, 250, 250, 0.4);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: background 150ms ease;
 }

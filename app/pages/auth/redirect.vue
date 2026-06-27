@@ -107,7 +107,7 @@ onMounted(() => {
 }
 
 .brand-name {
-  font-size: 18px;
+  font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: #FAFAFA;
   letter-spacing: -0.03em;
@@ -183,7 +183,7 @@ onMounted(() => {
 /* Copy */
 .heading {
   font-family: 'Instrument Serif', serif;
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;
   line-height: 36px;
@@ -192,7 +192,7 @@ onMounted(() => {
 }
 
 .desc {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 22px;
   color: #71717A;
   margin: 0 0 28px;
@@ -225,7 +225,7 @@ onMounted(() => {
 
 .status-text {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: #A1A1AA;
   transition: opacity 0.3s ease;

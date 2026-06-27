@@ -1211,7 +1211,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dheader-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--d-text-4);
   margin: 0;
@@ -1220,7 +1220,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dheader-title {
   font-family: 'Inter', sans-serif;
-  font-size: 28px;
+  font-size: calc(28px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 34px;
@@ -1242,7 +1242,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   padding: 8px 14px;
   border-radius: 6px;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   cursor: pointer;
@@ -1292,7 +1292,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dsection-text {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1311,8 +1311,8 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-family: 'Inter', sans-serif;
 }
 
-.dsort-prefix { font-size: 12px; font-weight: 500; line-height: 16px; color: var(--d-text-4); }
-.dsort-value { font-size: 12px; font-weight: 500; line-height: 16px; color: var(--d-text-2); }
+.dsort-prefix { font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px; color: var(--d-text-4); }
+.dsort-value { font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px; color: var(--d-text-2); }
 .dsort svg { color: var(--d-text-2); }
 
 /* Maps grid */
@@ -1385,7 +1385,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   right: 12px;
   bottom: 10px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
   color: var(--d-text-4);
@@ -1411,7 +1411,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dcard-title {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 18px;
@@ -1424,7 +1424,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dcard-date {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 16px;
   color: var(--d-text-4);
   margin: 0;
@@ -1454,7 +1454,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   background: transparent;
   border: 1px solid var(--d-border);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--d-text-2);
   cursor: pointer;
@@ -1509,7 +1509,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dnew-label {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--d-text-4);
@@ -1537,7 +1537,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 .doverview-eyebrow,
 .doverview-period {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--d-text-4);
   line-height: 14px;
@@ -1561,7 +1561,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dov-num {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 40px;
+  font-size: calc(40px * var(--nc-text-scale, 1));
   letter-spacing: -0.01em;
   line-height: 1;
   color: var(--d-text);
@@ -1571,7 +1571,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dov-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   line-height: 12px;
   color: var(--d-text-4);
@@ -1640,7 +1640,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dai-banner-title {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--d-text);
@@ -1649,7 +1649,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 .dai-banner-quote {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   line-height: 20px;
   color: var(--d-text-2);
 }
@@ -1662,7 +1662,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   background: var(--d-accent-soft-3);
   border-radius: 6px;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--d-accent);
@@ -1705,9 +1705,9 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   border: 1px dashed var(--d-border-2);
   border-radius: 8px;
 }
-.dempty-icon { font-size: 32px; color: var(--d-text-4); margin-bottom: 16px; }
-.dempty-title { font-size: 18px; font-weight: 600; color: var(--d-text); margin: 0 0 8px; }
-.dempty-desc { font-size: 13px; color: var(--d-text-3); margin: 0 0 24px; }
+.dempty-icon { font-size: calc(32px * var(--nc-text-scale, 1)); color: var(--d-text-4); margin-bottom: 16px; }
+.dempty-title { font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0 0 8px; }
+.dempty-desc { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0 0 24px; }
 
 /* Mobile */
 .m-top, .m-actions { display: none; }
@@ -1765,11 +1765,11 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   width: 40px; height: 40px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   background: var(--d-accent-soft); color: var(--d-accent);
-  font-size: 20px; margin-bottom: 16px;
+  font-size: calc(20px * var(--nc-text-scale, 1)); margin-bottom: 16px;
 }
 .modal-icon-danger { background: rgba(220, 38, 38, 0.1); color: #DC2626; }
-.modal-title { font-size: 18px; font-weight: 600; color: var(--d-text); margin: 0 0 6px; }
-.modal-subtitle { font-size: 13px; color: var(--d-text-3); margin: 0; line-height: 1.5; }
+.modal-title { font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0 0 6px; }
+.modal-subtitle { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0; line-height: 1.5; }
 .modal-body { padding: 20px 24px; }
 .modal-footer {
   padding: 16px 24px; border-top: 1px solid var(--d-border);
@@ -1789,22 +1789,22 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   width: 32px; height: 32px; border-radius: 6px;
   background: var(--d-accent-soft); color: var(--d-accent);
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
 }
-.template-name { font-size: 14px; font-weight: 600; color: var(--d-text); margin: 0; }
-.template-desc { font-size: 12px; color: var(--d-text-3); margin: 0; line-height: 1.5; }
+.template-name { font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0; }
+.template-desc { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0; line-height: 1.5; }
 
-.import-hint { font-size: 11px; color: var(--d-text-4); text-align: center; margin: 12px 0 0; }
+.import-hint { font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--d-text-4); text-align: center; margin: 12px 0 0; }
 
 .ai-modal-content { padding: 28px; }
-.ai-modal-title { font-size: 20px; font-weight: 600; color: var(--d-text); margin: 0 0 6px; line-height: 1.3; }
-.ai-modal-subtitle { font-size: 13px; color: var(--d-text-3); margin: 0 0 20px; line-height: 1.5; }
+.ai-modal-title { font-size: calc(20px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0 0 6px; line-height: 1.3; }
+.ai-modal-subtitle { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0 0 20px; line-height: 1.5; }
 .ai-modal-input-wrap { margin-bottom: 16px; }
 .ai-modal-input {
   width: 100%; padding: 12px 14px;
   background: var(--d-surface-2); border: 1px solid var(--d-border-2);
   border-radius: 8px; color: var(--d-text);
-  font-family: 'Inter', sans-serif; font-size: 14px;
+  font-family: 'Inter', sans-serif; font-size: calc(14px * var(--nc-text-scale, 1));
   outline: none; transition: border-color 120ms ease;
 }
 .ai-modal-input:focus { border-color: var(--d-accent); }
@@ -1813,7 +1813,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   padding: 10px 12px; background: rgba(220, 38, 38, 0.08);
   border: 1px solid rgba(220, 38, 38, 0.2);
   border-radius: 6px; margin-bottom: 16px;
-  color: #FCA5A5; font-size: 13px;
+  color: #FCA5A5; font-size: calc(13px * var(--nc-text-scale, 1));
 }
 .ai-error-icon { color: #EF4444; flex-shrink: 0; }
 .ai-error-text { flex: 1; }
@@ -1822,12 +1822,12 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 .ai-modal-cancel {
   padding: 8px 14px; background: transparent;
   border: 1px solid var(--d-border-2); border-radius: 6px;
-  color: var(--d-text-2); font-size: 13px; font-weight: 500; cursor: pointer;
+  color: var(--d-text-2); font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500; cursor: pointer;
 }
 .ai-modal-generate {
   padding: 8px 16px; background: var(--d-accent);
   border: none; border-radius: 6px;
-  color: #09090B; font-size: 13px; font-weight: 600; cursor: pointer;
+  color: #09090B; font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; cursor: pointer;
 }
 .ai-modal-generate:disabled { opacity: 0.5; cursor: not-allowed; }
 .ai-progress-bar {
@@ -1867,7 +1867,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 .ai-steps { display: flex; flex-direction: column; gap: 10px; }
 .ai-step {
   display: flex; align-items: center; gap: 10px;
-  font-size: 13px; color: var(--d-text-4);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-4);
   /* Fade-in when a step appears or its status changes. */
   transition: color 300ms ease;
 }
@@ -1942,7 +1942,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--d-text-3);
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;
 }
@@ -1979,7 +1979,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   gap: 8px;
 }
 .ai-opt-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--d-text-3);
   text-transform: uppercase;
@@ -1997,7 +1997,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   border: 1px solid var(--d-border-2);
   border-radius: 8px;
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 22px;
+  font-size: calc(22px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--d-text);
   -moz-appearance: textfield;
@@ -2012,7 +2012,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   margin: 0;
 }
 .ai-opt-count-suffix {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--d-text-3);
 }
 .ai-fullscreen-input {
@@ -2020,7 +2020,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   height: 52px;
   padding: 0 18px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   color: var(--d-text);
   background: var(--d-surface);
   border: 1px solid var(--d-border-2);
@@ -2041,7 +2041,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   align-items: center;
   gap: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #0A0A0C;
   background: #00D2BE;
@@ -2071,7 +2071,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   background: #00BFAF;
 }
 .ai-fullscreen-eyebrow {
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2100,7 +2100,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 .ai-eyebrow-spinner {
   display: inline-block;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   animation: ai-eyebrow-spin 1s linear infinite;
 }
 @keyframes ai-eyebrow-spin { to { transform: rotate(360deg); } }
@@ -2133,7 +2133,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
    at 65ch for readable line length per Pro Max typography rule. */
 .ai-fullscreen-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 1.55;
   color: var(--d-text-3);
@@ -2152,7 +2152,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 .ai-fullscreen-pct {
   font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--d-text-3);
   min-width: 38px;
@@ -2163,7 +2163,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   gap: 14px;
 }
 .ai-steps--fullscreen .ai-step {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
 }
 .ai-steps--fullscreen .ai-step-indicator {
   width: 20px;
@@ -2177,16 +2177,16 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.8); } }
 .ai-step-label { flex: 1; }
-.ai-step-elapsed { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--d-text-4); }
+.ai-step-elapsed { font-family: 'JetBrains Mono', monospace; font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--d-text-4); }
 
 .hidden { display: none; }
 
 /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
 @media (max-width: 1280px) {
   .dmain { padding: 24px 32px 40px; }
-  .dheader-title { font-size: 24px; line-height: 30px; }
+  .dheader-title { font-size: calc(24px * var(--nc-text-scale, 1)); line-height: 30px; }
   .doverview-stats { gap: 28px; }
-  .dov-num { font-size: 34px; }
+  .dov-num { font-size: calc(34px * var(--nc-text-scale, 1)); }
 }
 
 @media (max-width: 1024px) {
@@ -2218,7 +2218,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   :root.platform-android .m-top { height: 56px; }
   .m-brand {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 17px; font-weight: 600; line-height: 22px;
+    font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 22px;
     letter-spacing: -0.01em; color: var(--d-text); margin: 0;
   }
   .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
@@ -2227,7 +2227,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     background: #1A1A1E; border: 1px solid #1E1E22;
     color: #00D2BE;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 13px; font-weight: 600; line-height: 16px;
+    font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
@@ -2244,7 +2244,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .m-page-title {
     display: block;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 28px; font-weight: 700; line-height: 34px;
+    font-size: calc(28px * var(--nc-text-scale, 1)); font-weight: 700; line-height: 34px;
     letter-spacing: -0.02em; color: var(--d-text);
     margin: 12px 0 16px;
   }
@@ -2260,7 +2260,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     background: #111114; border: 1px solid #1E1E22;
     color: var(--d-text);
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 14px; font-weight: 500; line-height: 18px;
+    font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
     cursor: pointer;
   }
   :root.light .m-action { background: #FFFFFF; border-color: #E8E8E6; color: #18181B; }
@@ -2281,14 +2281,14 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .dsection-text::after {
     content: 'Recent maps';
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 15px; font-weight: 600; line-height: 18px;
+    font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
     letter-spacing: 0; text-transform: none;
     color: inherit;
   }
   .dsort {
     background: none; border: none; padding: 0;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 14px; font-weight: 500; line-height: 18px;
+    font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
     color: #00D2BE; cursor: pointer;
   }
   :root.light .dsection-text { color: #6B6E74; }
@@ -2300,7 +2300,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .dsort-value { color: #00D2BE; }
   .dsort-value::before { content: 'See all'; }
   .dsort-value { font-size: 0; }
-  .dsort-value::before { font-size: 14px; }
+  .dsort-value::before { font-size: calc(14px * var(--nc-text-scale, 1)); }
 
   /* Map list rows */
   .dmaps-grid {
@@ -2341,13 +2341,13 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .dcard-info-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
   .dcard-title {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 15px; font-weight: 600; line-height: 18px;
+    font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
     color: var(--d-text); margin: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .dcard-date {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 13px; line-height: 16px;
+    font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
     color: #888890; margin: 0;
   }
   .dcard-menu {
@@ -2379,7 +2379,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .doverview-eyebrow,
   .doverview-period {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; font-weight: 500;
+    font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 500;
     letter-spacing: 0.06em; line-height: 12px;
     text-transform: uppercase;
     color: #888890;
@@ -2394,7 +2394,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   }
   .dov-num {
     font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 36px; font-weight: 400; line-height: 1;
+    font-size: calc(36px * var(--nc-text-scale, 1)); font-weight: 400; line-height: 1;
     letter-spacing: -0.01em;
     color: #FAFAFA;
   }
@@ -2403,7 +2403,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   :root.light .dov-num.accent { color: #00A89A; }
   .doverview-stats > div > span:last-child {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; font-weight: 500;
+    font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 500;
     letter-spacing: 0.04em; line-height: 12px;
     color: #888890;
   }

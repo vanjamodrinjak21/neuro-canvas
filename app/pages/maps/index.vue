@@ -493,14 +493,14 @@ function formatDate(timestamp: number): string {
 
 .header-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: #52525B;
 }
 
 .header-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 30px;
+  font-size: calc(30px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0;
@@ -517,7 +517,7 @@ function formatDate(timestamp: number): string {
 
 .header-count {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   color: #52525B;
   line-height: 14px;
 }
@@ -554,7 +554,7 @@ function formatDate(timestamp: number): string {
 }
 
 .search-icon {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #52525B;
   flex-shrink: 0;
 }
@@ -565,7 +565,7 @@ function formatDate(timestamp: number): string {
   border: none;
   outline: none;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #FAFAFA;
   min-width: 0;
 }
@@ -585,7 +585,7 @@ function formatDate(timestamp: number): string {
   border: 1px solid #27272A;
   border-radius: 6px;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
@@ -641,7 +641,7 @@ function formatDate(timestamp: number): string {
   border-radius: 6px;
   text-align: left;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: #A1A1AA;
   cursor: pointer;
 }
@@ -670,14 +670,14 @@ function formatDate(timestamp: number): string {
   border: 1px solid #27272A;
   border-radius: 6px;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
 }
 
 .select-count {
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
 }
 
@@ -690,7 +690,7 @@ function formatDate(timestamp: number): string {
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 6px;
   color: #EF4444;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
@@ -741,7 +741,7 @@ function formatDate(timestamp: number): string {
   border-radius: 6px;
   color: #52525B;
   cursor: pointer;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
 }
 
 .map-card.selected .card-checkbox {
@@ -769,7 +769,7 @@ function formatDate(timestamp: number): string {
 }
 
 .preview-placeholder {
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   color: #27272A;
 }
 
@@ -806,7 +806,7 @@ function formatDate(timestamp: number): string {
   right: 12px;
   bottom: 10px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: rgba(161, 161, 170, 0.7);
   letter-spacing: 0.02em;
 }
@@ -832,7 +832,7 @@ function formatDate(timestamp: number): string {
 }
 
 .card-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: #FAFAFA;
   line-height: 20px;
@@ -879,7 +879,7 @@ function formatDate(timestamp: number): string {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-ink-muted);
   line-height: 16px;
 }
@@ -925,20 +925,20 @@ function formatDate(timestamp: number): string {
 }
 
 .empty-icon {
-  font-size: 32px;
+  font-size: calc(32px * var(--nc-text-scale, 1));
   color: #27272A;
   margin-bottom: 16px;
 }
 
 .empty-title {
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #FAFAFA;
   margin: 0 0 6px;
 }
 
 .empty-desc {
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: #52525B;
   margin: 0 0 24px;
 }
@@ -950,7 +950,7 @@ function formatDate(timestamp: number): string {
   padding: 10px 20px;
   background: #00D2BE;
   color: #09090B;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
   border-radius: 6px;
@@ -967,7 +967,7 @@ function formatDate(timestamp: number): string {
   border: 1px solid #27272A;
   border-radius: 6px;
   color: #A1A1AA;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   font-family: 'Inter', system-ui, sans-serif;
@@ -1098,7 +1098,7 @@ function formatDate(timestamp: number): string {
   .m-brand {
     display: inline-flex; align-items: center; gap: 8px;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 17px; font-weight: 600; line-height: 22px;
+    font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 22px;
     letter-spacing: -0.01em; color: #FAFAFA; margin: 0;
     text-decoration: none;
   }
@@ -1109,7 +1109,7 @@ function formatDate(timestamp: number): string {
     background: #1A1A1E; border: 1px solid #1E1E22;
     color: #00D2BE;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 13px; font-weight: 600; line-height: 16px;
+    font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
@@ -1125,7 +1125,7 @@ function formatDate(timestamp: number): string {
   .m-page-title {
     display: block;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 28px; font-weight: 700; line-height: 34px;
+    font-size: calc(28px * var(--nc-text-scale, 1)); font-weight: 700; line-height: 34px;
     letter-spacing: -0.02em; color: #FAFAFA;
     margin: 12px 0 16px;
   }
@@ -1147,7 +1147,7 @@ function formatDate(timestamp: number): string {
   .search-box--mobile .search-input {
     flex: 1; background: none; border: none; outline: none;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 15px; line-height: 18px;
+    font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 18px;
     color: #FAFAFA; padding: 0;
   }
   :root.light .search-box--mobile .search-input { color: #18181B; }
@@ -1157,7 +1157,7 @@ function formatDate(timestamp: number): string {
   .m-count {
     display: block;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 13px; font-weight: 500; line-height: 16px;
+    font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px;
     color: #888890;
     padding: 8px 0 12px;
     margin: 0;
@@ -1200,14 +1200,14 @@ function formatDate(timestamp: number): string {
   .map-card .card-title {
     flex: 1; min-width: 0;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 15px; font-weight: 600; line-height: 18px;
+    font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
     color: #FAFAFA;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   :root.light .map-card .card-title { color: #18181B; }
   .map-card .card-meta {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 13px; font-weight: 400; line-height: 16px;
+    font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 400; line-height: 16px;
     color: #888890;
     display: flex; gap: 4px;
   }

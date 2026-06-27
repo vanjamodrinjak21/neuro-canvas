@@ -216,7 +216,7 @@ watch(() => props.open, (val) => {
 
 .header-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--m-text, #E8E8EC);
   margin: 0;
@@ -225,7 +225,7 @@ watch(() => props.open, (val) => {
 
 .header-subtitle {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--m-muted, #71717A);
   margin: 2px 0 0;
@@ -269,7 +269,7 @@ watch(() => props.open, (val) => {
 
 .field-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--m-text, #E8E8EC);
 }
@@ -282,7 +282,7 @@ watch(() => props.open, (val) => {
 
 .field-optional {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--m-muted, #71717A);
 }
@@ -293,7 +293,7 @@ watch(() => props.open, (val) => {
   border: 1px solid var(--m-border, #1A1A1E);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--m-text, #E8E8EC);
   outline: none;
   transition: border-color 0.15s;
@@ -325,7 +325,7 @@ watch(() => props.open, (val) => {
   border: 1px solid var(--m-border, #1A1A1E);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--m-muted, #71717A);
   cursor: pointer;
@@ -358,7 +358,7 @@ watch(() => props.open, (val) => {
   border: 1px solid var(--m-border, #1A1A1E);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--m-text, #E8E8EC);
   cursor: pointer;
@@ -378,7 +378,7 @@ watch(() => props.open, (val) => {
   border: none;
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: #09090B;
   cursor: pointer;
@@ -424,7 +424,7 @@ watch(() => props.open, (val) => {
 
 .loading-text {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--m-muted, #71717A);
   margin: 0;
@@ -439,7 +439,7 @@ watch(() => props.open, (val) => {
   border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: 8px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 18px;
   color: #EF4444;
 }

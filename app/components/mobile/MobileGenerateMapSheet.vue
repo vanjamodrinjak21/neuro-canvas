@@ -205,7 +205,7 @@ watch(() => props.streamingText, () => {
 
 .mgs-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; line-height: 14px;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.14em;
   color: #00D2BE;
   margin: 6px 4px 14px;
@@ -218,19 +218,19 @@ watch(() => props.streamingText, () => {
 }
 .mgs-title-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 30px; line-height: 32px;
+  font-weight: 500; font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.025em;
   color: #FAFAFA;
 }
 .mgs-title-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 38px; line-height: 32px;
+  font-size: calc(38px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.02em;
   color: #00D2BE;
 }
 .mgs-sub {
-  font-size: 13px; line-height: 18px;
+  font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
   color: #A1A1AA;
   margin: 0 4px 22px;
 }
@@ -242,7 +242,7 @@ watch(() => props.streamingText, () => {
 }
 .mgs-field-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 12px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.14em;
   color: #52525B;
 }
@@ -253,7 +253,7 @@ watch(() => props.streamingText, () => {
   border: 1px solid rgba(250, 250, 250, 0.10);
   border-radius: 12px;
   font-family: inherit;
-  font-size: 16px; line-height: 20px;
+  font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
   color: #FAFAFA;
   outline: none;
   box-sizing: border-box;
@@ -279,7 +279,7 @@ watch(() => props.streamingText, () => {
   border: 1px solid rgba(250, 250, 250, 0.10);
   border-radius: 10px;
   color: #A1A1AA;
-  font-family: inherit; font-weight: 500; font-size: 13px;
+  font-family: inherit; font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1));
   text-transform: capitalize;
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
@@ -297,7 +297,7 @@ watch(() => props.streamingText, () => {
   background: #00D2BE;
   border: none;
   border-radius: 12px;
-  font-family: inherit; font-weight: 600; font-size: 14px;
+  font-family: inherit; font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1));
   color: #09090B;
   cursor: pointer;
   transition: background 150ms ease, transform 120ms ease;
@@ -321,7 +321,7 @@ watch(() => props.streamingText, () => {
 }
 .mgs-progress-meta {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; line-height: 14px;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.10em;
   color: #71717A;
   margin: 0 4px 14px;
@@ -341,7 +341,7 @@ watch(() => props.streamingText, () => {
 .mgs-stream-text {
   margin: 0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px; line-height: 16px;
+  font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 16px;
   color: #A1A1AA;
   white-space: pre-wrap;
   word-break: break-word;
@@ -355,13 +355,13 @@ watch(() => props.streamingText, () => {
   border: 1px solid rgba(250, 250, 250, 0.12);
   border-radius: 10px;
   color: #A1A1AA;
-  font-family: inherit; font-weight: 500; font-size: 13px;
+  font-family: inherit; font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1));
   cursor: pointer;
 }
 
 .mgs-error {
   margin: 14px 4px 0;
-  font-size: 12px; color: #FCA5A5;
+  font-size: calc(12px * var(--nc-text-scale, 1)); color: #FCA5A5;
 }
 
 .mgs-bottom-spacer { height: 8px; }

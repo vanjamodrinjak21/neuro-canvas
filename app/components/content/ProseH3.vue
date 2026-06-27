@@ -17,7 +17,7 @@ defineProps<{
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font-size: 17px;
+  font-size: calc(17px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.4;
@@ -30,7 +30,7 @@ defineProps<{
 .anchor {
   color: var(--nc-text-muted);
   opacity: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   text-decoration: none;
   transition: opacity 0.15s ease, color 0.15s ease;

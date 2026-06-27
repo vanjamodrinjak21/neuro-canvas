@@ -326,7 +326,7 @@ const layout = ref<'radial' | 'tree'>('radial')
   padding: 4px 4px 4px 0;
   background: none; border: none; cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--mper-body);
 }
 .mper-live {
@@ -343,7 +343,7 @@ const layout = ref<'radial' | 'tree'>('radial')
 @keyframes mper-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .mper-live-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--mper-mint);
 }
 
@@ -353,7 +353,7 @@ const layout = ref<'radial' | 'tree'>('radial')
 }
 .mper-eyebrow {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--mper-mute);
 }
 .mper-hero-line {
@@ -362,18 +362,18 @@ const layout = ref<'radial' | 'tree'>('radial')
 }
 .mper-hero-sans {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: 36px; line-height: 38px;
+  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.025em; color: var(--mper-ink);
 }
 .mper-hero-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic; font-weight: 400;
-  font-size: 46px; line-height: 38px;
+  font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em; color: var(--mper-mint);
 }
 .mper-hero-meta {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; line-height: 20px;
+  font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--mper-body); margin-top: 10px;
 }
 
@@ -391,12 +391,12 @@ const layout = ref<'radial' | 'tree'>('radial')
 }
 .mper-section-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--mper-mute);
 }
 .mper-section-status {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--mper-mute);
 }
 
@@ -421,7 +421,7 @@ const layout = ref<'radial' | 'tree'>('radial')
 .mper-avatar-letter {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
-  font-size: 30px; line-height: 30px;
+  font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 30px;
   color: var(--mper-mint);
 }
 .mper-identity-info {
@@ -430,18 +430,18 @@ const layout = ref<'radial' | 'tree'>('radial')
 }
 .mper-identity-name {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 18px; line-height: 22px;
+  font-weight: 600; font-size: calc(18px * var(--nc-text-scale, 1)); line-height: 22px;
   letter-spacing: -0.015em; color: var(--mper-ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mper-identity-handle {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--mper-body);
 }
 .mper-identity-email {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--mper-mute);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -450,12 +450,12 @@ const layout = ref<'radial' | 'tree'>('radial')
 .mper-bio { display: flex; flex-direction: column; gap: 6px; }
 .mper-bio-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 9px; letter-spacing: 0.12em;
+  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--mper-mute);
 }
 .mper-bio-text {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-size: 17px; line-height: 22px;
+  font-style: italic; font-size: calc(17px * var(--nc-text-scale, 1)); line-height: 22px;
   color: var(--mper-ink);
 }
 .mper-actions { display: flex; gap: 8px; }
@@ -467,7 +467,7 @@ const layout = ref<'radial' | 'tree'>('radial')
   border-radius: 10px;
   cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: 10px; letter-spacing: 0.10em;
+  font-weight: 600; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--mper-body);
   text-align: center;
 }
@@ -506,7 +506,7 @@ const layout = ref<'radial' | 'tree'>('radial')
 }
 .mper-icon-text {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 700; font-size: 11px; letter-spacing: 0.04em;
+  font-weight: 700; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--mper-ink);
 }
 .mper-row-text {
@@ -515,7 +515,7 @@ const layout = ref<'radial' | 'tree'>('radial')
 }
 .mper-row-title {
   font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 600; font-size: 14px; line-height: 18px;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--mper-ink);
 }
 .mper-row-italic {
@@ -525,7 +525,7 @@ const layout = ref<'radial' | 'tree'>('radial')
 }
 .mper-row-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--mper-mute);
 }
 .mper-chev { flex-shrink: 0; }
@@ -536,7 +536,7 @@ const layout = ref<'radial' | 'tree'>('radial')
   border-radius: 8px;
   padding: 6px 10px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 11px; letter-spacing: 0.04em;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--mper-body);
   flex-shrink: 0;
 }
@@ -551,7 +551,7 @@ const layout = ref<'radial' | 'tree'>('radial')
   padding: 5px 10px;
   background: none; border: none; cursor: pointer;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: 10px; letter-spacing: 0.08em;
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--mper-mute);
   border-radius: 7px;
 }
