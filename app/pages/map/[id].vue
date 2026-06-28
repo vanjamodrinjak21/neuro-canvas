@@ -477,6 +477,22 @@ function getCanvasViewport(): { width: number; height: number } {
   return { width: Math.max(1, w - inset), height: h }
 }
 
+// Poll a condition until true or timeout (ms). Used to wait out the native
+// cold-start auth race: the auth middleware skips session resolution on
+// Tauri/Capacitor, so the map page can mount before currentUserId is ready.
+function waitUntil(cond: () => boolean, timeoutMs: number, intervalMs = 80): Promise<boolean> {
+  if (cond()) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const start = Date.now()
+    const timer = setInterval(() => {
+      if (cond() || Date.now() - start >= timeoutMs) {
+        clearInterval(timer)
+        resolve(cond())
+      }
+    }, intervalMs)
+  })
+}
+
 // Guest template handler
 function handleGuestTemplateSelect(templateId: string | null) {
   showTemplatePicker.value = false
@@ -653,9 +669,21 @@ onMounted(async () => {
 
     let map = await db.getMap(mapId.value)
 
-    // If not in IndexedDB, try pulling from server (e.g., template-created maps)
-    if (!map && syncEngine.isSyncEnabled.value) {
-      await syncEngine.pullMap(mapId.value)
+    // Not found locally. On native (Tauri/Capacitor) the auth middleware skips
+    // session resolution, so on a cold start currentUserId is briefly null —
+    // isSyncEnabled is false (can't pull a server-only map) and getMap can even
+    // ownership-reject a cached map until the real session lands. That flashed
+    // an empty "Untitled Map" over a real map id on first open (reload fixed
+    // it). For a signed-in (non-guest) user, wait out the session, set the DB
+    // user via initialize(), then pull before giving up.
+    if (!map && !route.query.via && !guest.isGuest.value) {
+      if (!syncEngine.isSyncEnabled.value) {
+        await waitUntil(() => syncEngine.isSyncEnabled.value, 5000)
+      }
+      if (syncEngine.isSyncEnabled.value) {
+        await syncEngine.initialize()        // sets db currentUserId → getMap won't ownership-reject
+        await syncEngine.pullMap(mapId.value)
+      }
       map = await db.getMap(mapId.value)
     }
 
