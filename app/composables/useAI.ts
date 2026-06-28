@@ -20,6 +20,7 @@ import {
 } from '~/utils/ai-prompts'
 import { aiComplete } from '~/utils/aiClient'
 import { getMaxOutputTokens } from '~/utils/modelTokenLimits'
+import { rankHybridSearch, type HybridSearchResult } from '~/utils/hybridSearch'
 import { streamCompletion } from '~/ai/pipeline/StreamingPipeline'
 import { resolveProvider } from '~/ai/utils/resolveProvider'
 import {
@@ -1032,6 +1033,46 @@ export function useAI() {
   }
 
   /**
+   * Hybrid (text + semantic) search across nodes — returns content + match type.
+   *
+   * Native shells (Tauri/Capacitor) are static SPAs: no web worker and no
+   * server-side pgvector/HNSW. There we embed the query on-device via ONNX
+   * (tauriML.embed) and rank in-process with the SAME scorer the worker uses,
+   * so desktop search behaves identically to web. On web we delegate to the
+   * worker's 'hybrid-search' message as before.
+   */
+  async function hybridSearch(
+    query: string,
+    nodes: Array<{ id: string; content: string; embedding: number[] }>,
+    topK = 10
+  ): Promise<HybridSearchResult[]> {
+    if (!query.trim() || nodes.length === 0) return []
+
+    if (!isInitialized.value) {
+      await initialize()
+    }
+
+    try {
+      // ── Native path: on-device ONNX query embedding + in-process scoring ──
+      if (tauriML) {
+        const queryEmbedding = await tauriML.embed(query)
+        return rankHybridSearch(query, nodes, queryEmbedding, topK)
+      }
+
+      // ── Web worker path ──
+      const result = await sendMessage<{ results: HybridSearchResult[] }>('hybrid-search', {
+        query,
+        nodes,
+        topK
+      })
+      return result.results
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Hybrid search failed'
+      throw e
+    }
+  }
+
+  /**
    * Suggest connections between nodes
    */
   async function suggestConnections(
@@ -1324,6 +1365,7 @@ export function useAI() {
     recomputeSimilarities,
     processQueue,
     semanticSearch,
+    hybridSearch,
     suggestConnections,
     dispose,
     // Cache methods
