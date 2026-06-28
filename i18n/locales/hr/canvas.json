@@ -281,7 +281,7 @@
     },
     "ai_status": {
       "idle": "ML neaktivan",
-      "loading_model": "Učitavanje ML-a",
+      "loading_model": "Učitavanje modela",
       "computing": "Računanje",
       "ready": "ML spreman",
       "error": "ML greška",

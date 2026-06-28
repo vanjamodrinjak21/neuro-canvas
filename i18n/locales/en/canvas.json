@@ -281,7 +281,7 @@
     },
     "ai_status": {
       "idle": "ML Idle",
-      "loading_model": "Loading ML",
+      "loading_model": "Loading model",
       "computing": "Computing",
       "ready": "ML Ready",
       "error": "ML Error",
