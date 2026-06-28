@@ -1,7 +1,18 @@
 // Camera intelligence — higher-level navigation commands built on spring camera
 // Provides flyTo, fit, cycle, follow, and breadcrumb navigation
 
+import { ref } from 'vue'
+import type { Ref } from 'vue'
 import type { Camera, Edge, Node } from '~/types/canvas'
+
+/** Viewport the camera frames into. Excludes any UI that overlays the canvas
+ *  (left sidebar, right detail panel) so content centers in the VISIBLE area. */
+export type ViewportGetter = () => { width: number; height: number }
+
+const defaultViewport: ViewportGetter = () =>
+  typeof window !== 'undefined'
+    ? { width: window.innerWidth, height: window.innerHeight }
+    : { width: 1280, height: 800 }
 
 export interface FlyToOptions {
   padding?: number
@@ -35,6 +46,7 @@ export function useCameraIntelligence(
   nodeAnimations?: NodeAnimAPI | null,
   getEdges?: () => Map<string, Edge>,
   getRootNodeId?: () => string | null,
+  getViewport: ViewportGetter = defaultViewport,
 ) {
   // Breadcrumb trail
   const breadcrumbs = ref<NavigationBreadcrumb[]>([])
@@ -57,8 +69,9 @@ export function useCameraIntelligence(
     const cam = springCamera.camera.value
 
     const zoom = options.zoom ?? cam.zoom
-    const targetX = -node.position.x * zoom + window.innerWidth / 2 - (node.size.width * zoom) / 2
-    const targetY = -node.position.y * zoom + window.innerHeight / 2 - (node.size.height * zoom) / 2
+    const vp = getViewport()
+    const targetX = -node.position.x * zoom + vp.width / 2 - (node.size.width * zoom) / 2
+    const targetY = -node.position.y * zoom + vp.height / 2 - (node.size.height * zoom) / 2
 
     // Record breadcrumb before navigating
     recordBreadcrumb()
@@ -114,9 +127,10 @@ export function useCameraIntelligence(
     const contentWidth = maxX - minX + padding * 2
     const contentHeight = maxY - minY + padding * 2
 
+    const vp = getViewport()
     const zoom = Math.min(
-      window.innerWidth / contentWidth,
-      window.innerHeight / contentHeight,
+      vp.width / contentWidth,
+      vp.height / contentHeight,
       2 // Don't zoom in too much
     )
 
@@ -124,8 +138,8 @@ export function useCameraIntelligence(
     const centerY = (minY + maxY) / 2
 
     springCamera.setTarget({
-      x: window.innerWidth / 2 - centerX * zoom,
-      y: window.innerHeight / 2 - centerY * zoom,
+      x: vp.width / 2 - centerX * zoom,
+      y: vp.height / 2 - centerY * zoom,
       zoom
     }, 'navigation')
   }

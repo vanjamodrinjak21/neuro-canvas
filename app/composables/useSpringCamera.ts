@@ -195,6 +195,16 @@ export function useSpringCamera(initial: Camera = { x: 0, y: 0, zoom: 1 }) {
     return animating
   }
 
+  /**
+   * The camera the spring is settling toward (NOT the mid-animation value).
+   * Used when an adjustment must compose with an in-flight flyTo — e.g. panning
+   * to compensate for a side panel that just opened, without discarding the
+   * navigation target already in progress.
+   */
+  function getTarget(): Camera {
+    return { x: springX.target, y: springY.target, zoom: springZoom.target }
+  }
+
   // Cleanup on unmount
   if (getCurrentInstance()) {
     onUnmounted(() => {
@@ -209,6 +219,7 @@ export function useSpringCamera(initial: Camera = { x: 0, y: 0, zoom: 1 }) {
     addVelocity,
     stop,
     isAnimating,
+    getTarget,
     setReducedMotion,
     presets
   }

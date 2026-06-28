@@ -21,6 +21,8 @@ const emit = defineEmits<{
   action: [action: SidebarAction]
 }>()
 
+const { t } = useI18n()
+
 const {
   activeTab,
   setActiveTab,
@@ -33,11 +35,11 @@ watch(() => props.selectedNode, (node) => {
   if (node) setActiveTab('properties')
 })
 
-const tabs: { id: SidebarTab; label: string; icon: string }[] = [
-  { id: 'explorer', label: 'Explorer', icon: 'i-lucide-search' },
-  { id: 'properties', label: 'Properties', icon: 'i-lucide-layout-dashboard' },
-  { id: 'ai', label: 'AI', icon: 'i-lucide-waypoints' },
-]
+const tabs = computed<{ id: SidebarTab; label: string; icon: string }[]>(() => [
+  { id: 'explorer', label: t('canvas.sidebar.tab_explorer'), icon: 'i-lucide-search' },
+  { id: 'properties', label: t('canvas.sidebar.tab_properties'), icon: 'i-lucide-layout-dashboard' },
+  { id: 'ai', label: t('canvas.sidebar.tab_ai'), icon: 'i-lucide-waypoints' },
+])
 
 // Sidebar width resize
 const sidebarWidth = ref(300)
@@ -150,14 +152,14 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
           @click="dispatch({ type: 'ai:smart-expand' })"
         >
           <span class="i-lucide-plus shell__action-icon" />
-          Expand
+          {{ t('canvas.sidebar.action_expand') }}
         </button>
         <button
           class="shell__action-btn shell__action-btn--purple"
           @click="setActiveTab('ai')"
         >
           <span class="i-lucide-info shell__action-icon" />
-          Insights
+          {{ t('canvas.sidebar.action_insights') }}
         </button>
       </div>
       <button
@@ -165,7 +167,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
         @click="dispatch({ type: 'ai:generate-map' })"
       >
         <span class="i-lucide-layout-grid shell__action-icon" />
-        Generate map from topic
+        {{ t('canvas.sidebar.generate_map_from_topic') }}
       </button>
     </template>
 
