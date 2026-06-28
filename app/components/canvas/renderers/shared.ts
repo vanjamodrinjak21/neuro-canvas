@@ -1,5 +1,5 @@
 import type { Node, Point, Anchor } from '~/types/canvas'
-import { getAnchorPoint } from '~/composables/useAnchors'
+import { getAnchorPoint, getBestAnchorPair } from '~/composables/useAnchors'
 
 /** Calculate bezier control points for an edge between two points with optional anchor hints. */
 export function calculateBezierControlPoints(
@@ -46,37 +46,36 @@ export function calculateBezierControlPoints(
   return { cx1, cy1, cx2, cy2 }
 }
 
-/** Resolve edge endpoints from anchor positions or node boundary intersection. */
+/**
+ * Resolve where an edge attaches to each node — at the NEAREST SIDE.
+ *
+ * Any endpoint without an explicit (user-snapped) anchor gets one chosen
+ * dynamically from the current node positions via `getBestAnchorPair`
+ * (dominant-axis: right/left when horizontally apart, top/bottom when
+ * vertically apart). This makes AI-generated / imported / programmatic edges —
+ * which carry no stored anchors — connect to the nearest side and re-pick it
+ * live as nodes move, instead of attaching at an arbitrary center-ray point.
+ * Explicit anchors are still honoured.
+ *
+ * The resolved anchors are returned so the curve handles can emanate
+ * perpendicular to the chosen side (see `calculateBezierControlPoints`).
+ */
 export function resolveEdgeEndpoints(
   sourceNode: Node,
   targetNode: Node,
   sourceAnchor?: Anchor | null,
   targetAnchor?: Anchor | null,
-): { sourcePoint: Point; targetPoint: Point } {
-  let sourcePoint: Point
-  let targetPoint: Point
+): { sourcePoint: Point; targetPoint: Point; sourceAnchor: Anchor; targetAnchor: Anchor } {
+  const best = getBestAnchorPair(sourceNode, targetNode)
+  const sAnchor: Anchor = sourceAnchor ?? best.sourceAnchor
+  const tAnchor: Anchor = targetAnchor ?? best.targetAnchor
 
-  if (sourceAnchor) {
-    sourcePoint = getAnchorPoint(sourceNode, sourceAnchor)
-  } else {
-    const targetCenter = {
-      x: targetNode.position.x + targetNode.size.width / 2,
-      y: targetNode.position.y + targetNode.size.height / 2,
-    }
-    sourcePoint = getEdgeIntersection(sourceNode, targetCenter)
+  return {
+    sourcePoint: getAnchorPoint(sourceNode, sAnchor),
+    targetPoint: getAnchorPoint(targetNode, tAnchor),
+    sourceAnchor: sAnchor,
+    targetAnchor: tAnchor,
   }
-
-  if (targetAnchor) {
-    targetPoint = getAnchorPoint(targetNode, targetAnchor)
-  } else {
-    const sourceCenter = {
-      x: sourceNode.position.x + sourceNode.size.width / 2,
-      y: sourceNode.position.y + sourceNode.size.height / 2,
-    }
-    targetPoint = getEdgeIntersection(targetNode, sourceCenter)
-  }
-
-  return { sourcePoint, targetPoint }
 }
 
 /** Get intersection point of ray from node center toward target with node boundary. */

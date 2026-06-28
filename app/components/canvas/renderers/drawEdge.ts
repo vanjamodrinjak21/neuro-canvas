@@ -162,8 +162,9 @@ export function drawEdge(
   const isConnectedToSelection = selectionNodeIds.has(edge.sourceId) ||
                                   selectionNodeIds.has(edge.targetId)
 
-  // Get edge points - use anchor points if available, otherwise calculate from boundaries
-  const { sourcePoint, targetPoint } = resolveEdgeEndpoints(
+  // Get edge points + the side each end attaches to (nearest side when the edge
+  // carries no explicit anchor). The resolved sides orient the curve handles.
+  const { sourcePoint, targetPoint, sourceAnchor: srcSide, targetAnchor: tgtSide } = resolveEdgeEndpoints(
     sourceNode, targetNode, edge.sourceAnchor, edge.targetAnchor
   )
 
@@ -194,7 +195,7 @@ export function drawEdge(
   if (style.type === 'bezier') {
     // Premium bezier curve with smart control points (via shared utility)
     const { cx1, cy1, cx2, cy2 } = calculateBezierControlPoints(
-      sourcePoint, targetPoint, edge.sourceAnchor, edge.targetAnchor
+      sourcePoint, targetPoint, srcSide, tgtSide
     )
 
     ctx.moveTo(sourcePoint.x, sourcePoint.y)
@@ -285,14 +286,14 @@ export function drawAnimatedEdge(
                                   selectionNodeIds.has(edge.targetId)
   const isHighlighted = isSelected || isConnectedToSelection
 
-  // Get anchor-based points if available, otherwise use boundary calculation
-  const { sourcePoint, targetPoint } = resolveEdgeEndpoints(
+  // Get attach points + the nearest side each end uses (when no explicit anchor)
+  const { sourcePoint, targetPoint, sourceAnchor: srcSide, targetAnchor: tgtSide } = resolveEdgeEndpoints(
     sourceNode, targetNode, edge.sourceAnchor, edge.targetAnchor
   )
 
-  // Calculate bezier control points via shared utility
+  // Calculate bezier control points via shared utility — emanate from each side
   const { cx1, cy1, cx2, cy2 } = calculateBezierControlPoints(
-    sourcePoint, targetPoint, edge.sourceAnchor, edge.targetAnchor
+    sourcePoint, targetPoint, srcSide, tgtSide
   )
 
   // Get animation progress

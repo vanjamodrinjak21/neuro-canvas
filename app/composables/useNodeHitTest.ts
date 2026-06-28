@@ -1,5 +1,5 @@
 import type { Point, Node, Edge, Camera } from '~/types/canvas'
-import { getAnchorPoint } from '~/composables/useAnchors'
+import { resolveEdgeEndpoints } from '~/components/canvas/renderers/shared'
 
 /**
  * Pure geometry hit-testing for nodes and edges.
@@ -49,29 +49,6 @@ export function pointToLineDistance(point: Point, lineStart: Point, lineEnd: Poi
   return Math.sqrt(Math.pow(point.x - projX, 2) + Math.pow(point.y - projY, 2))
 }
 
-/**
- * Get the point on the node's rectangular boundary in the direction of targetPoint.
- * Used for edges that don't have explicit anchor points.
- */
-function getEdgePoint(node: Node, targetPoint: Point): Point {
-  const cx = node.position.x + node.size.width / 2
-  const cy = node.position.y + node.size.height / 2
-  const dx = targetPoint.x - cx
-  const dy = targetPoint.y - cy
-
-  const hw = node.size.width / 2
-  const hh = node.size.height / 2
-
-  // Calculate intersection with rectangle boundary
-  const sx = dx === 0 ? 0 : Math.abs(hw / dx)
-  const sy = dy === 0 ? 0 : Math.abs(hh / dy)
-  const s = Math.min(sx || Infinity, sy || Infinity)
-
-  return {
-    x: cx + dx * s,
-    y: cy + dy * s
-  }
-}
 
 /**
  * Find the edge whose line segment is within threshold distance of the given world-space point.
@@ -89,29 +66,11 @@ export function findEdgeAtPosition(
     const targetNode = nodes.get(edge.targetId)
     if (!sourceNode || !targetNode) continue
 
-    // Get edge endpoint positions
-    let sourcePoint: Point
-    let targetPoint: Point
-
-    if (edge.sourceAnchor) {
-      sourcePoint = getAnchorPoint(sourceNode, edge.sourceAnchor)
-    } else {
-      const targetCenter = {
-        x: targetNode.position.x + targetNode.size.width / 2,
-        y: targetNode.position.y + targetNode.size.height / 2
-      }
-      sourcePoint = getEdgePoint(sourceNode, targetCenter)
-    }
-
-    if (edge.targetAnchor) {
-      targetPoint = getAnchorPoint(targetNode, edge.targetAnchor)
-    } else {
-      const sourceCenter = {
-        x: sourceNode.position.x + sourceNode.size.width / 2,
-        y: sourceNode.position.y + sourceNode.size.height / 2
-      }
-      targetPoint = getEdgePoint(targetNode, sourceCenter)
-    }
+    // Same nearest-side endpoints the renderer uses, so the clickable area
+    // tracks where the edge is actually drawn.
+    const { sourcePoint, targetPoint } = resolveEdgeEndpoints(
+      sourceNode, targetNode, edge.sourceAnchor, edge.targetAnchor
+    )
 
     // Calculate distance from point to line segment
     const distance = pointToLineDistance(worldPos, sourcePoint, targetPoint)
