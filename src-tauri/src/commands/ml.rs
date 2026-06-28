@@ -109,20 +109,24 @@ pub async fn load_model_into_state(
         .map_err(|e| format!("spawn_blocking join: {e}"))?
         .map_err(|e| format!("EmbeddingEngine::new: {e}"))?;
 
-    // Run warmup inference to pre-allocate memory
-    let engine_arc = state.engine.clone();
-    tokio::task::spawn_blocking(move || {
+    // Run warmup inference to pre-allocate memory (blocking CPU work).
+    let engine = tokio::task::spawn_blocking(move || {
         if let Err(e) = engine.warmup() {
             tracing::warn!("Model warmup failed (non-fatal): {e}");
         }
         engine
     })
     .await
-    .map(move |engine| {
-        let mut engine_guard = engine_arc.blocking_lock();
-        *engine_guard = Some(engine);
-    })
     .map_err(|e| format!("warmup spawn_blocking join: {e}"))?;
+
+    // Install the engine on shared state. Use the ASYNC lock — `.blocking_lock()`
+    // here panics ("Cannot block the current thread from within a runtime")
+    // because this runs on the Tokio worker driving this async fn, which left
+    // the engine unset and surfaced as a permanent "AI Error" in the UI.
+    {
+        let mut engine_guard = state.engine.lock().await;
+        *engine_guard = Some(engine);
+    }
 
     let _ = state.progress_tx.send(1.0);
 
