@@ -224,3 +224,10 @@
   --nc-bg-rgb: 250, 250, 249;
   --nc-accent-rgb: 0, 210, 190;
 }
+
+/* Native UI (scrollbars, form controls, date/select popups) must follow the
+   active theme. Without `color-scheme`, WebKit/Chromium — including the Tauri
+   WKWebView — render light-mode native scrollbars, which appear as a bright
+   white bar over the dark canvas. Dark by default; light only under .light. */
+:root { color-scheme: dark; }
+:root.light { color-scheme: light; }
