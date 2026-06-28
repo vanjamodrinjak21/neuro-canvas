@@ -17,8 +17,24 @@ const semanticField = useSemanticField()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const containerRef = ref<HTMLDivElement | null>(null)
 
-// Device pixel ratio
-const dpr = computed(() => typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)
+// Native shells (Tauri desktop, Capacitor mobile) run on WebKit, whose 2D
+// canvas is far slower than Chrome's. The field's per-frame full-canvas
+// redraw (shadowBlur + per-line gradients) is smooth in a browser but janks
+// badly in a WKWebView, especially at Retina dpr. We throttle the renderer on
+// native ONLY (the web path stays pixel-identical): cap dpr, drop shadowBlur,
+// and halve the frame rate.
+const isNativeShell = typeof window !== 'undefined' && (
+  '__TAURI__' in window
+  || '__TAURI_INTERNALS__' in window
+  || ('Capacitor' in window && !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.())
+)
+
+// Device pixel ratio — capped on native shells so the soft glow doesn't pay
+// the full 2×–3× Retina fill cost every frame (visually near-identical).
+const dpr = computed(() => {
+  const raw = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+  return isNativeShell ? Math.min(raw, 1.5) : raw
+})
 
 // Reduced motion
 const reducedMotion = typeof window !== 'undefined'
@@ -106,8 +122,16 @@ function resizeCanvas() {
   canvasRef.value.style.height = `${rect.height}px`
 }
 
-// Main render loop
+// Main render loop. On native shells, draw at ~30fps (skip every other frame)
+// — the soft field animation is imperceptible at 30 vs 60, but it halves the
+// WKWebView redraw cost. Web renders every frame as before.
+let _fieldFrame = 0
 function render() {
+  _fieldFrame++
+  if (isNativeShell && _fieldFrame % 2 === 0) {
+    requestAnimationFrame(render)
+    return
+  }
   try {
     renderFrame()
   } catch (e) {
@@ -234,8 +258,10 @@ function drawFieldLine(
 
   if (lineOpacity < 0.01) return
 
-  // Glow effect (skip in reduced motion for perf)
-  if (!reducedMotion && !isDimmed) {
+  // Glow effect (skip in reduced motion for perf). shadowBlur is the single
+  // most expensive 2D-canvas op in WKWebView, so we skip it on native shells —
+  // the gradient stroke still reads as a glow, minus the soft outer halo.
+  if (!reducedMotion && !isDimmed && !isNativeShell) {
     ctx.shadowColor = isHighlighted
       ? 'rgba(0, 210, 190, 0.6)'
       : colors.fieldLineGlow
@@ -353,8 +379,8 @@ function drawParticle(ctx: CanvasRenderingContext2D, particle: FieldParticle, in
 
   const opacity = particle.opacity * intensity
 
-  // Glow
-  if (!reducedMotion) {
+  // Glow — skipped on native shells (shadowBlur is the WKWebView bottleneck).
+  if (!reducedMotion && !isNativeShell) {
     ctx.shadowColor = colors.particleGlow
     ctx.shadowBlur = 6
   }
