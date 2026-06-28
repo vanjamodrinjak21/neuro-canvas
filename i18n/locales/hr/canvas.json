@@ -280,11 +280,11 @@
       "action_remove": "Ukloni"
     },
     "ai_status": {
-      "idle": "AI neaktivan",
-      "loading_model": "Učitavanje AI-a",
+      "idle": "ML neaktivan",
+      "loading_model": "Učitavanje ML-a",
       "computing": "Računanje",
-      "ready": "AI spreman",
-      "error": "AI greška",
+      "ready": "ML spreman",
+      "error": "ML greška",
       "gpu_badge": "GPU",
       "cpu_badge": "CPU"
     },
@@ -568,7 +568,7 @@
       "interactive_exploration": "Interaktivno istraživanje",
       "max_field_lines": "Maksimalno linija polja",
       "adaptive_line_count": "Adaptivni broj linija",
-      "ai_status": "AI status",
+      "ai_status": "ML status",
       "model": "Model",
       "backend": "Backend",
       "embedded": "Ugrađeno",

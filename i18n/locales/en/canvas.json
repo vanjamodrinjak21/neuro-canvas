@@ -280,11 +280,11 @@
       "action_remove": "Remove"
     },
     "ai_status": {
-      "idle": "AI Idle",
-      "loading_model": "Loading AI",
+      "idle": "ML Idle",
+      "loading_model": "Loading ML",
       "computing": "Computing",
-      "ready": "AI Ready",
-      "error": "AI Error",
+      "ready": "ML Ready",
+      "error": "ML Error",
       "gpu_badge": "GPU",
       "cpu_badge": "CPU"
     },
@@ -568,7 +568,7 @@
       "interactive_exploration": "Interactive Exploration",
       "max_field_lines": "Max Field Lines",
       "adaptive_line_count": "Adaptive Line Count",
-      "ai_status": "AI Status",
+      "ai_status": "ML Status",
       "model": "Model",
       "backend": "Backend",
       "embedded": "Embedded",
