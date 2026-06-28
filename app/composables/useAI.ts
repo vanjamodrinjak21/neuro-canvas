@@ -195,6 +195,7 @@ export function useAI() {
         }, modelVariant)
         isInitialized.value = result.initialized
         backendType.value = 'native'
+        semanticStore.setBackendType('native')
         if (result.modelLoaded) {
           semanticStore.setModelLoaded(true)
         } else {
@@ -244,6 +245,7 @@ export function useAI() {
       isInitialized.value = result.initialized
       hasWebGPU.value = result.webgpu
       backendType.value = 'web'
+      semanticStore.setBackendType('web')
       semanticStore.setHasWebGPU(result.webgpu)
       semanticStore.setModelLoaded(result.modelLoaded)
 

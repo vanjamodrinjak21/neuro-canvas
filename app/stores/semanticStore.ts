@@ -44,6 +44,7 @@ export interface SemanticActions {
   setModelLoaded(loaded: boolean): void
   setModelProgress(progress: number): void
   setHasWebGPU(hasWebGPU: boolean): void
+  setBackendType(backendType: AIState['backendType']): void
   setAIError(error: string | undefined): void
   toggleField(enabled?: boolean): void
   updateFieldSettings(settings: Partial<FieldSettings>): void
@@ -309,6 +310,10 @@ const actions: SemanticActions = {
 
   setHasWebGPU(hasWebGPU: boolean) {
     state.aiState.hasWebGPU = hasWebGPU
+  },
+
+  setBackendType(backendType: AIState['backendType']) {
+    state.aiState.backendType = backendType
   },
 
   setAIError(error: string | undefined) {
