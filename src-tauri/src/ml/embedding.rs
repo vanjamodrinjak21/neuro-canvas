@@ -80,12 +80,31 @@ impl EmbeddingEngine {
         // only declared on Windows targets) AND the `with_execution_providers`
         // move semantics (it consumes `self` and gives back a `Result<Self>`,
         // so a failed register on macOS would otherwise leave `builder` moved).
-        let (builder, execution_provider) = build_session_builder(onnx_path, hw)?;
+        let (builder, mut execution_provider) = build_session_builder(onnx_path, hw)?;
 
-        let session = builder
+        // A GPU EP (CoreML/DirectML) can register successfully yet still fail to
+        // COMPILE the session (e.g. an int8 op the EP doesn't implement). The
+        // EP-registration fallback in build_session_builder can't catch that, so
+        // guard the commit too: on a non-CPU commit failure, rebuild a plain CPU
+        // session. Guarantees the engine always loads — never a hard "AI Error".
+        let session = match builder
             .with_intra_threads(num_cpus())?
             .commit_from_file(onnx_path)
-            .context("load ONNX model")?;
+        {
+            Ok(session) => session,
+            Err(e) if execution_provider != "cpu" => {
+                tracing::warn!(
+                    "{execution_provider} session commit failed ({e}); falling back to CPU"
+                );
+                execution_provider = "cpu";
+                Session::builder()
+                    .context("rebuild CPU session builder")?
+                    .with_intra_threads(num_cpus())?
+                    .commit_from_file(onnx_path)
+                    .context("load ONNX model (CPU fallback)")?
+            }
+            Err(e) => return Err(e).context("load ONNX model"),
+        };
 
         // Visible at startup for ops / debug UI parity-check with the web
         // worker's "[ai-worker] device=…" log line.
@@ -326,41 +345,45 @@ fn build_session_builder(
     hw: &HardwareInfo,
 ) -> Result<(ort::session::builder::SessionBuilder, &'static str)> {
     let builder = ort::session::Session::builder().context("create session builder")?;
+    let _ = onnx_path; // EP choice no longer depends on the model variant
 
-    // ── macOS: CoreML for Apple Silicon, full-precision model only ──
-    // CoreML compile can stall first launch by 30s+ on the quantized model
-    // for negligible gain (CPU is already 3–6ms/embed at q8), so we skip it
-    // for the quantized variant.
+    // ── macOS: always CoreML (Neural Engine / GPU) on Apple Silicon ──
+    // The compiled MLProgram is cached on disk (ModelCacheDirectory), so the
+    // one-time compile (~tens of seconds) only happens on the first launch —
+    // the bundled model never changes, so the cache stays valid afterwards.
+    // CoreML falls back to CPU here (registration) and again at session commit
+    // (new_with_hardware) if the graph can't run on the EP.
     #[cfg(target_os = "macos")]
     {
         if hw.is_apple_silicon {
-            let is_quantized = onnx_path
-                .file_name()
-                .and_then(|f| f.to_str())
-                .map(|f| f.contains("quantized"))
-                .unwrap_or(false);
+            let cache_dir = std::env::var_os("HOME")
+                .map(std::path::PathBuf::from)
+                .map(|home| home.join("Library/Caches/com.neurocanvas.app/coreml"))
+                .unwrap_or_else(std::env::temp_dir);
+            let _ = std::fs::create_dir_all(&cache_dir);
 
-            if !is_quantized {
-                tracing::info!("Apple Silicon + full model — registering CoreML EP");
-                match builder.with_execution_providers([
-                    ort::execution_providers::CoreMLExecutionProvider::default().build(),
-                ]) {
-                    Ok(b) => {
-                        tracing::info!("CoreML EP registered");
-                        return Ok((b, "coreml"));
-                    }
-                    Err(e) => {
-                        tracing::warn!("CoreML EP failed, falling back to CPU: {e}");
-                        // Builder is consumed by the call — rebuild a fresh
-                        // one for the CPU path. Cheap (it's just options).
-                        return Ok((
-                            ort::session::Session::builder().context("rebuild session builder after coreml fail")?,
-                            "cpu",
-                        ));
-                    }
+            tracing::info!(
+                "Apple Silicon — registering CoreML EP (Neural Engine/GPU), cache={}",
+                cache_dir.display()
+            );
+            let coreml = ort::execution_providers::CoreMLExecutionProvider::default()
+                .with_compute_units(ort::execution_providers::coreml::ComputeUnits::All)
+                .with_model_format(ort::execution_providers::coreml::ModelFormat::MLProgram)
+                .with_model_cache_dir(cache_dir.to_string_lossy())
+                .build();
+            match builder.with_execution_providers([coreml]) {
+                Ok(b) => {
+                    tracing::info!("CoreML EP registered");
+                    return Ok((b, "coreml"));
                 }
-            } else {
-                tracing::info!("Apple Silicon + quantized model — using CPU (faster startup)");
+                Err(e) => {
+                    tracing::warn!("CoreML EP failed to register, falling back to CPU: {e}");
+                    // Builder is consumed by the call — rebuild a fresh one.
+                    return Ok((
+                        ort::session::Session::builder().context("rebuild session builder after coreml fail")?,
+                        "cpu",
+                    ));
+                }
             }
         }
     }
