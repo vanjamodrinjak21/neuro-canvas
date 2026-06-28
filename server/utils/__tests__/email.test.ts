@@ -72,6 +72,30 @@ describe('email — buildInviteEmail', () => {
     expect(html).toContain('&lt;script&gt;x&lt;/script&gt;')
   })
 
+  it('renders the brand logo as a hosted image scoped to the share URL origin', () => {
+    const { html } = buildInviteEmail({
+      mapTitle: 'F1',
+      inviterName: 'AeroDynamics',
+      role: 'EDITOR',
+      shareUrl: 'https://neuro-canvas.com/s/mv4M7Ar8r9xlTdz',
+    })
+    expect(html).toContain('<img src="https://neuro-canvas.com/icon-512.png"')
+    expect(html).toContain('alt="NeuroCanvas"')
+    // No empty placeholder square in its place anymore
+    expect(html).not.toContain('background:linear-gradient(135deg,#00D2BE,#00A89A);border-radius:12px;margin-bottom:16px;"></div>')
+  })
+
+  it('falls back to the brand-colour block when the share URL has no parseable origin', () => {
+    const { html } = buildInviteEmail({
+      mapTitle: 'X',
+      inviterName: 'A',
+      role: 'VIEWER',
+      shareUrl: 'not-a-url',
+    })
+    expect(html).not.toContain('<img src=')
+    expect(html).toContain('background:linear-gradient(135deg,#00D2BE,#00A89A)')
+  })
+
   it('omits the note block when no note is supplied', () => {
     const { html } = buildInviteEmail({
       mapTitle: 'My Map',

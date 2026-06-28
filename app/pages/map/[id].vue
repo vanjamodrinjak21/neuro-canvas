@@ -7,7 +7,7 @@ import type { SidebarAction } from '~/types/sidebar'
 import { useMapStore, attachUndoEngine } from '~/stores/mapStore'
 import { useUserStore } from '~/stores/userStore'
 import { useSemanticStore } from '~/stores/semanticStore'
-import { useDatabase } from '~/composables/useDatabase'
+import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useAutoSave } from '~/composables/useAutoSave'
 import { useAI } from '~/composables/useAI'
 import { useBatchedGeneration, BATCH_THRESHOLD } from '~/composables/useBatchedGeneration'
@@ -150,7 +150,15 @@ async function tryStartCollab() {
     collabSession.value = session
     watch(session.remotes, (next) => { collabRemotes.value = next })
   } catch (err) {
-    console.warn('[collab] token mint or session start failed', err)
+    // Editor shares require a signed-in session — mintCollabToken returns 401.
+    // The map is already visible (read-only snapshot loaded on mount), so guide
+    // an anonymous visitor to sign in rather than failing silently.
+    const e = err as { statusCode?: number; data?: { statusMessage?: string }; statusMessage?: string }
+    if (e?.statusCode === 401) {
+      useToast().warning(t('canvas.collab.sign_in_to_edit'), 8000)
+    } else {
+      console.warn('[collab] token mint or session start failed', err)
+    }
   }
 }
 
@@ -248,6 +256,7 @@ const cameraIntel = useCameraIntelligence(
   nodeAnim,
   () => mapStore.edges,
   () => mapStore.rootNodeId ?? null,
+  getCanvasViewport,
 )
 
 // Tools - now includes 'connect' for connection tool
@@ -278,6 +287,19 @@ const selectedNode = computed(() => {
 watch(selectedNode, (node) => {
   showPropertiesPanel.value = !!node
   showDetailPanel.value = !!node
+})
+
+// When the right-hand detail panel opens/closes, the *visible* canvas area
+// changes width by DETAIL_PANEL_WIDTH. Pan (zoom preserved) by half that so
+// whatever was centered stays centered in the visible region instead of being
+// shoved under the panel / leaving a dead gap. We shift the camera TARGET (not
+// the mid-animation value) so this composes with an in-flight flyTo rather than
+// fighting it. Desktop only — mobile has no canvas camera.
+watch(showDetailPanel, (open, wasOpen) => {
+  if (open === wasOpen || isMobile.value) return
+  const shift = DETAIL_PANEL_WIDTH / 2
+  const target = springCamera.getTarget()
+  springCamera.setTarget({ x: target.x + (open ? -shift : shift) }, 'navigation')
 })
 
 // Multi-select action bar
@@ -435,6 +457,25 @@ const canvasRef = ref<{ containerRef: HTMLDivElement | null; canvasRef: HTMLCanv
 // Canvas container dimensions for minimap viewport calculation
 const canvasContainerWidth = ref(0)
 const canvasContainerHeight = ref(0)
+
+// Width of the right-hand NodeDetailPanel overlay (see NodeDetailPanel.vue
+// `.detail-panel { width: 360px }`). It's `position: fixed`, so it does NOT
+// shrink the flex canvas container — we must subtract it ourselves.
+const DETAIL_PANEL_WIDTH = 360
+
+// Effective *visible* canvas viewport used for all camera framing. The container
+// width already excludes the left sidebar (it's the flex-1 element), so we only
+// subtract the right detail-panel overlay when it's showing. This makes content
+// center in the area the user can actually see, instead of under the panel /
+// off behind the sidebar. Mobile has no canvas camera, so no inset there.
+function getCanvasViewport(): { width: number; height: number } {
+  const fallbackW = typeof window !== 'undefined' ? window.innerWidth : 1280
+  const fallbackH = typeof window !== 'undefined' ? window.innerHeight : 800
+  const w = canvasContainerWidth.value || fallbackW
+  const h = canvasContainerHeight.value || fallbackH
+  const inset = (showDetailPanel.value && !isMobile.value) ? DETAIL_PANEL_WIDTH : 0
+  return { width: Math.max(1, w - inset), height: h }
+}
 
 // Guest template handler
 function handleGuestTemplateSelect(templateId: string | null) {
@@ -618,15 +659,52 @@ onMounted(async () => {
       map = await db.getMap(mapId.value)
     }
 
+    // Share-link recipient: the map isn't in their local DB, and device sync
+    // only serves the signed-in user's *own* maps — so without this they'd
+    // land on a blank canvas ("cannot see the shared map"). Load the
+    // authoritative snapshot from the public, token-scoped share endpoint
+    // (the same content the owner synced, no auth required) so they see it
+    // immediately. Live collab (tryStartCollab) then layers real-time sync on
+    // top when the share role permits — exactly as it does for the owner after
+    // their own db.getMap load.
+    if (!map && route.query.via) {
+      try {
+        const shared = await $fetch<{
+          id: string
+          title: string
+          data: Partial<Pick<DBMapDocument, 'nodes' | 'edges' | 'camera' | 'settings' | 'rootNodeId'>>
+          preview?: string | null
+          updatedAt: string
+        }>(`/api/share/${encodeURIComponent(String(route.query.via))}`)
+        if (shared?.id === mapId.value) {
+          const ts = shared.updatedAt ? new Date(shared.updatedAt).getTime() : Date.now()
+          map = {
+            id: shared.id,
+            title: shared.title,
+            nodes: shared.data?.nodes ?? [],
+            edges: shared.data?.edges ?? [],
+            camera: shared.data?.camera ?? { x: 0, y: 0, zoom: 1 },
+            settings: shared.data?.settings ?? ({} as DBMapDocument['settings']),
+            rootNodeId: shared.data?.rootNodeId,
+            preview: shared.preview ?? undefined,
+            createdAt: ts,
+            updatedAt: ts,
+            tags: [],
+          }
+        }
+      } catch (e) {
+        // Invalid / revoked / expired token, or map gone → fall through to a
+        // blank doc; collab (if it connects) may still hydrate it.
+        console.debug('[Map] shared snapshot load failed:', e)
+      }
+    }
+
     if (map) {
       mapStore.fromSerializable(map)
       // Always frame intentionally on open: full map if it fits, else root + 1-hop.
       // Falls back to the saved camera only on empty maps.
       await nextTick()
-      const opened = cameraIntel.fitToOpeningView({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      })
+      const opened = cameraIntel.fitToOpeningView(getCanvasViewport())
       if (!opened) {
         springCamera.setCurrent(map.camera)
       }
@@ -1898,10 +1976,11 @@ async function handleSemanticSearch(query: string) {
       embedding: n.embedding
     })).filter(n => n.content)
 
-    // Node leg (existing behaviour — unchanged when no docs are attached).
+    // Node leg. Routes through ai.hybridSearch, which embeds + ranks natively
+    // (on-device ONNX) inside Tauri/Capacitor — where there is no web worker —
+    // and via the worker on web. Both share one scorer, so results match.
     const nodeResultsPromise: Promise<SearchResult[]> = nodes.length > 0
-      ? ai.sendMessage<{ results: SearchResult[] }>('hybrid-search', { query, nodes, topK: 10 })
-          .then(r => r.results)
+      ? ai.hybridSearch(query, nodes, 10)
       : Promise.resolve([])
 
     // Document leg — only when READY documents are attached. Best-effort: a

@@ -131,6 +131,9 @@
       "document_page": "str. {page}",
       "document_open_hint": "Ovo je isječak iz dokumenta — otvorite izvorni dokument za više"
     },
+    "collab": {
+      "sign_in_to_edit": "Prijavite se za uređivanje — ovu zajedničku mapu trenutačno pregledavate samo za čitanje."
+    },
     "generate_map": {
       "title": "Generiraj mentalnu mapu",
       "subtitle": "Izradite potpunu mapu iz teme",
@@ -397,7 +400,13 @@
       "expand_tooltip": "Proširi bočnu traku",
       "search_placeholder": "Pretraži mape...",
       "search_tooltip": "Pretraži (⌘K)",
-      "save_tooltip": "Spremi mapu"
+      "save_tooltip": "Spremi mapu",
+      "tab_explorer": "Preglednik",
+      "tab_properties": "Svojstva",
+      "tab_ai": "AI",
+      "action_expand": "Proširi",
+      "action_insights": "Uvidi",
+      "generate_map_from_topic": "Generiraj mapu iz teme"
     },
     "multiselect": {
       "duplicate_tooltip": "Dupliciraj odabrano (Ctrl+D)",

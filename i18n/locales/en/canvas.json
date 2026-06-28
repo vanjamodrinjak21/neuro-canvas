@@ -131,6 +131,9 @@
       "document_page": "p. {page}",
       "document_open_hint": "This is a document excerpt — open the source document to read more"
     },
+    "collab": {
+      "sign_in_to_edit": "Sign in to edit — you're viewing this shared map read-only."
+    },
     "generate_map": {
       "title": "Generate Mind Map",
       "subtitle": "Create a complete map from a topic",
@@ -397,7 +400,13 @@
       "expand_tooltip": "Expand sidebar",
       "search_placeholder": "Search maps...",
       "search_tooltip": "Search (⌘K)",
-      "save_tooltip": "Save my map"
+      "save_tooltip": "Save my map",
+      "tab_explorer": "Explorer",
+      "tab_properties": "Properties",
+      "tab_ai": "AI",
+      "action_expand": "Expand",
+      "action_insights": "Insights",
+      "generate_map_from_topic": "Generate map from topic"
     },
     "multiselect": {
       "duplicate_tooltip": "Duplicate selected (Ctrl+D)",

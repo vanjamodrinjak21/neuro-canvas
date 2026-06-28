@@ -104,6 +104,18 @@ export function buildInviteEmail(input: InviteEmailInput): { subject: string; ht
     ? `<div style="background:#1A1A1E;border-left:3px solid #00D2BE;border-radius:6px;padding:14px 18px;margin:20px 0;color:#E8E8EC;font-size:14px;line-height:1.55;white-space:pre-wrap;">${escapeHtml(input.personalNote)}</div>`
     : ''
 
+  // Logo: a hosted PNG referenced by absolute URL (Gmail and most clients
+  // strip inline SVG / base64, so the public icon is the reliable option).
+  // Derive the origin from the share URL — which is already built from
+  // AUTH_ORIGIN server-side — so the logo points at the right environment.
+  // Falls back to the brand-colour block when no valid origin is available
+  // (dev / preview), preserving the previous look.
+  let logoUrl = ''
+  try { logoUrl = new URL(input.shareUrl).origin + '/icon-512.png' } catch { /* keep fallback */ }
+  const logoBlock = logoUrl
+    ? `<img src="${escapeHtml(logoUrl)}" width="48" height="48" alt="NeuroCanvas" style="display:inline-block;width:48px;height:48px;border-radius:12px;margin-bottom:16px;border:0;outline:none;text-decoration:none;">`
+    : `<div style="display:inline-block;width:48px;height:48px;background:linear-gradient(135deg,#00D2BE,#00A89A);border-radius:12px;margin-bottom:16px;"></div>`
+
   const subject = `${input.inviterName} invited you to ${verb} "${input.mapTitle}" on NeuroCanvas`
   const html = `<!DOCTYPE html>
 <html>
@@ -111,7 +123,7 @@ export function buildInviteEmail(input: InviteEmailInput): { subject: string; ht
 <body style="background-color:#0A0A0C;color:#FAFAFA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;">
     <div style="text-align:center;margin-bottom:32px;">
-      <div style="display:inline-block;width:48px;height:48px;background:linear-gradient(135deg,#00D2BE,#00A89A);border-radius:12px;margin-bottom:16px;"></div>
+      ${logoBlock}
       <h1 style="font-size:24px;font-weight:700;margin:0;">NeuroCanvas</h1>
     </div>
     <div style="background:#121216;border:1px solid #252529;border-radius:16px;padding:32px;">
