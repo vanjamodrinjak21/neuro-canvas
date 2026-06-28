@@ -202,6 +202,39 @@ jobs:
           echo "CFLAGS=/MD" >> "$GITHUB_ENV"
           echo "CXXFLAGS=/MD" >> "$GITHUB_ENV"
 
+      # Gate macOS signing on a real certificate. tauri-bundler runs
+      # `security import` whenever APPLE_CERTIFICATE is DEFINED — and an unset
+      # secret expands to an empty string, which it tries to import and fails
+      # ("SecKeychainItemImport: parameters not valid"). Inject the APPLE_* env
+      # into $GITHUB_ENV only when a cert secret exists; otherwise the build is
+      # unsigned (same .dmg as before). Add the secrets to switch signing on.
+      - name: Enable macOS signing when a certificate is configured
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "macOS signing disabled — no APPLE_CERTIFICATE secret. Building unsigned."
+            exit 0
+          fi
+          echo "macOS signing enabled — APPLE_CERTIFICATE present."
+          {
+            echo "APPLE_CERTIFICATE<<__NC_CERT_EOF__"
+            echo "$APPLE_CERTIFICATE"
+            echo "__NC_CERT_EOF__"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+            echo "APPLE_ID=$APPLE_ID"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+          } >> "$GITHUB_ENV"
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
         env:
@@ -211,15 +244,9 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=6144'
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # macOS Apple code-signing + notarization (empty until the Apple
-          # Developer ID artifacts are added as secrets → tauri-action then
-          # skips signing and behaves exactly as before). Ignored on Windows.
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # APPLE_* code-signing env is injected by the step above, only when a
+          # certificate secret is configured (see note there). Defining it here
+          # unconditionally made tauri-bundler import an empty cert and fail.
         with:
           tagName: ${{ needs.resolve-version.outputs.tag }}
           releaseName: ${{ needs.resolve-version.outputs.tag == 'beta' && 'NeuroCanvas BETA' || format('NeuroCanvas {0}', needs.resolve-version.outputs.version) }}

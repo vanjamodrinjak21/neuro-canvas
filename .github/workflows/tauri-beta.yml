@@ -63,20 +63,50 @@ jobs:
           echo "CFLAGS=/MD" >> "$GITHUB_ENV"
           echo "CXXFLAGS=/MD" >> "$GITHUB_ENV"
 
-      - name: Build Tauri + upload to beta release
-        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
+      # macOS code-signing is gated on a real certificate being present.
+      # tauri-bundler runs `security import` whenever APPLE_CERTIFICATE is
+      # DEFINED — even as the empty string GitHub substitutes for an unset
+      # secret — which fails with "SecKeychainItemImport: parameters not valid"
+      # and breaks the (intended) unsigned beta build. So inject the APPLE_*
+      # signing env into $GITHUB_ENV ONLY when a certificate secret is actually
+      # configured; otherwise the var stays absent and the build runs unsigned.
+      # Populate the APPLE_* secrets to switch signing + notarization on.
+      - name: Enable macOS signing when a certificate is configured
+        if: runner.os == 'macOS'
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_OPTIONS: '--max-old-space-size=6144'
-          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
-          # macOS signing + notarization (gated: empty secrets → unsigned, same
-          # as today; populated → signed beta builds, no Gatekeeper warning).
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "macOS signing disabled — no APPLE_CERTIFICATE secret. Building unsigned."
+            exit 0
+          fi
+          echo "macOS signing enabled — APPLE_CERTIFICATE present."
+          {
+            echo "APPLE_CERTIFICATE<<__NC_CERT_EOF__"
+            echo "$APPLE_CERTIFICATE"
+            echo "__NC_CERT_EOF__"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+            echo "APPLE_ID=$APPLE_ID"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Build Tauri + upload to beta release
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: '--max-old-space-size=6144'
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+          # APPLE_* signing env is injected above (only when a cert secret
+          # exists). Defining APPLE_CERTIFICATE here unconditionally made
+          # tauri-bundler import an empty cert and fail every unsigned build.
         with:
           args: --target ${{ matrix.target }}
           tagName: beta
