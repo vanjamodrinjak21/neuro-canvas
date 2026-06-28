@@ -23,6 +23,8 @@ const SHORTCUT_GROUPS = computed<ShortcutGroup[]>(() => [
   {
     label: t('canvas.shortcuts.navigation'),
     items: [
+      { description: t('canvas.shortcuts.command_palette'), keys: ['⌘', 'K'] },
+      { description: t('canvas.shortcuts.semantic_search'), keys: ['⌘', '⇧', 'K'] },
       { description: t('canvas.shortcuts.pan_canvas'), keys: ['Space', 'Drag'] },
       { description: t('canvas.shortcuts.zoom_in'), keys: ['⌘', '+'] },
       { description: t('canvas.shortcuts.zoom_out'), keys: ['⌘', '−'] },

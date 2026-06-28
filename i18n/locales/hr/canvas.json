@@ -189,6 +189,8 @@
     "shortcuts": {
       "title": "Tipkovnički prečaci",
       "navigation": "Navigacija",
+      "command_palette": "Komandna paleta (pretraži sve)",
+      "semantic_search": "Pretraži čvorove (semantički)",
       "pan_canvas": "Pomicanje platna",
       "zoom_in": "Povećaj",
       "zoom_out": "Smanji",

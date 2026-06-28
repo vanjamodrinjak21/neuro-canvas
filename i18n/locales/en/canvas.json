@@ -189,6 +189,8 @@
     "shortcuts": {
       "title": "Keyboard Shortcuts",
       "navigation": "Navigation",
+      "command_palette": "Command palette (search everything)",
+      "semantic_search": "Search nodes (semantic)",
       "pan_canvas": "Pan canvas",
       "zoom_in": "Zoom in",
       "zoom_out": "Zoom out",
