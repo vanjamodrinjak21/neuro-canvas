@@ -122,16 +122,20 @@ function resizeCanvas() {
   canvasRef.value.style.height = `${rect.height}px`
 }
 
-// Main render loop. On native shells, draw at ~30fps (skip every other frame)
-// — the soft field animation is imperceptible at 30 vs 60, but it halves the
-// WKWebView redraw cost. Web renders every frame as before.
-let _fieldFrame = 0
-function render() {
-  _fieldFrame++
-  if (isNativeShell && _fieldFrame % 2 === 0) {
+// Main render loop, capped at ~60fps. requestAnimationFrame fires at the
+// display refresh rate — 120Hz on the M-series ProMotion panel — which would
+// double the field's redraw cost for an ambient effect that gains nothing
+// past 60fps. We gate on the RAF timestamp so it draws at most ~60fps on every
+// display. (Per-frame cost is already cut on native: no shadowBlur + capped
+// dpr; see isNativeShell above.)
+const FIELD_MIN_FRAME_MS = 1000 / 60 - 2 // ~14.7ms: lets a true 60Hz frame through, halves 120Hz
+let _lastFieldDraw = 0
+function render(now = 0) {
+  if (now - _lastFieldDraw < FIELD_MIN_FRAME_MS) {
     requestAnimationFrame(render)
     return
   }
+  _lastFieldDraw = now
   try {
     renderFrame()
   } catch (e) {
