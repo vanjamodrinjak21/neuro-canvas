@@ -75,9 +75,13 @@ export function useTauriML() {
   ): Promise<{ initialized: boolean; modelLoaded: boolean }> {
     onProgress?.(0.1)
     try {
-      // Add a timeout — ONNX model loading can hang with certain execution providers
+      // Generous timeout: the FIRST launch compiles the CoreML MLProgram
+      // (tens of seconds), which is then cached on disk (ModelCacheDirectory)
+      // so every later launch is fast. A 30s cap would falsely report "AI
+      // Error" mid-compile on a cold cache. The race resolves as soon as
+      // ml_init finishes, so a warm cache still returns in well under a second.
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('ONNX model loading timed out after 30s')), 30000)
+        setTimeout(() => reject(new Error('ONNX model loading timed out after 120s')), 120000)
       )
       const init = invoke<InitResult>('ml_init', { modelVariant })
 
