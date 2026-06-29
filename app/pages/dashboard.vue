@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
-import { parseLosslessMarkdown, parseMapJson, MapImportError } from '~/utils/mapImport'
 import { useMapStore } from '~/stores/mapStore'
 import { useAISettings } from '~/composables/useAISettings'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useGenerationQueue } from '~/composables/useGenerationQueue'
+import { useMapImport } from '~/composables/useMapImport'
 import { safeImageUrl } from '~/utils/safeUrl'
 import { resolveDisplayName, resolveAvatarInitials } from '~/utils/userDisplay'
 import type { GenerationTone } from '~/types'
@@ -92,6 +92,13 @@ const isCreatingMap = ref(false)
 const deleteConfirmVisible = ref(false)
 const deleteTargetId = ref<string | null>(null)
 
+// Bounds for AI node count + the dashboard's visible-map window. Named so the
+// clamps below read as intent rather than bare magic numbers.
+const MIN_NODE_COUNT = 4
+const MAX_NODE_COUNT = 10000
+const DEFAULT_NODE_COUNT = 24
+const VISIBLE_MAP_LIMIT = 4
+
 // AI Quick Start — generation runs in the BACKGROUND via the generation queue
 // (see GenerationProgressDock) so the user can leave this page while a map
 // builds, watch progress in the corner dock, and get a notification when done.
@@ -99,7 +106,7 @@ const showAIModal = ref(false)
 const aiTopic = ref('')
 const aiError = ref<string | null>(null)
 const aiTone = ref<GenerationTone>('neutral')
-const aiNodeCount = ref(24)
+const aiNodeCount = ref(DEFAULT_NODE_COUNT)
 
 const aiToneOptions = computed(() => [
   { value: 'neutral', label: t('canvas.gen_options.tone_neutral') },
@@ -221,11 +228,11 @@ const sortedMaps = computed(() => {
 
 // Visible map limit — show 4 most-recent by default; "Show more" reveals the rest
 const showAllMaps = ref(false)
-const visibleLimit = ref(4)
+const visibleLimit = ref(VISIBLE_MAP_LIMIT)
 const mapsGridRef = ref<HTMLElement | null>(null)
 
 function updateVisibleLimit() {
-  visibleLimit.value = 4
+  visibleLimit.value = VISIBLE_MAP_LIMIT
 }
 
 const visibleMaps = computed(() => {
@@ -489,10 +496,13 @@ function handleAIQuickStart() {
 }
 
 function setAiNodeCount(value: number) {
-  aiNodeCount.value = Math.min(10000, Math.max(4, Math.round(value) || 4))
+  aiNodeCount.value = Math.min(MAX_NODE_COUNT, Math.max(MIN_NODE_COUNT, Math.round(value) || MIN_NODE_COUNT))
 }
 
-// Import
+// Import — file parsing + persistence lives in useMapImport() so this page
+// stays focused on presentation. Modal state stays here.
+const mapImport = useMapImport()
+
 function triggerImport() {
   showImportModal.value = true
 }
@@ -500,147 +510,13 @@ function triggerImport() {
 async function handleFileImport(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-  await processImportedFile(file)
+  await mapImport.processImportedFile(file)
   if (fileInput.value) fileInput.value.value = ''
 }
 
 async function handleFilePondFile(file: File) {
-  await processImportedFile(file)
   showImportModal.value = false
-}
-
-async function processImportedFile(file: File) {
-  const text = await file.text()
-  const ext = file.name.split('.').pop()?.toLowerCase()
-
-  // ── JSON: full lossless restore via mapStore.fromSerializable ─────
-  if (ext === 'json') {
-    try {
-      const doc = parseMapJson(text)
-      await importLosslessDoc(doc)
-    } catch (err) {
-      const msg = err instanceof MapImportError ? err.message : 'Failed to import JSON'
-      alert(`Could not import JSON: ${msg}`)
-    }
-    return
-  }
-
-  // ── Markdown: try lossless first, fall back to legacy outline parser ─
-  if (ext === 'md') {
-    try {
-      const lossless = parseLosslessMarkdown(text)
-      if (lossless) {
-        await importLosslessDoc(lossless)
-        return
-      }
-    } catch (err) {
-      const msg = err instanceof MapImportError ? err.message : 'Markdown is not a NeuroCanvas export'
-      alert(`Could not parse markdown export: ${msg}`)
-      return
-    }
-    const nodes = parseMarkdown(text)
-    if (nodes.length === 0) {
-      alert('No content found in file.')
-      return
-    }
-    const title = file.name.replace(/\.[^/.]+$/, '')
-    await createMapFromNodes(nodes, title)
-    return
-  }
-
-  if (ext === 'opml') {
-    const nodes = parseOPML(text)
-    if (nodes.length === 0) { alert('No content found in file.'); return }
-    const title = file.name.replace(/\.[^/.]+$/, '')
-    await createMapFromNodes(nodes, title)
-    return
-  }
-
-  alert('Unsupported file type. Please use .json, .md, or .opml')
-}
-
-/**
- * Persist a fully reconstructed DBMapDocument (from JSON or lossless MD).
- * If a map with the same id already exists locally, overwrite it — the user
- * asked for an exact restore. The id is preserved so subsequent server
- * pushes update the same row.
- */
-async function importLosslessDoc(doc: DBMapDocument) {
-  const now = Date.now()
-  const finalDoc: DBMapDocument = {
-    ...doc,
-    updatedAt: now,
-    userId: undefined  // re-tagged by db.saveMap with the current user
-  }
-  await db.saveMap(finalDoc)
-  if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(finalDoc.id)
-  showImportModal.value = false
-  await navigateTo(`/map/${finalDoc.id}`)
-}
-
-function parseMarkdown(text: string): { content: string; level: number }[] {
-  const lines = text.split('\n')
-  const nodes: { content: string; level: number }[] = []
-  for (const line of lines) {
-    const headerMatch = line.match(/^(#{1,6})\s+(.+)$/)
-    if (headerMatch) {
-      nodes.push({ content: headerMatch[2], level: headerMatch[1].length })
-    }
-  }
-  return nodes
-}
-
-function parseOPML(text: string): { content: string; level: number }[] {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(text, 'text/xml')
-  const nodes: { content: string; level: number }[] = []
-  function traverse(element: Element, level: number) {
-    const outlines = element.querySelectorAll(':scope > outline')
-    outlines.forEach(outline => {
-      const nodeText = outline.getAttribute('text') || outline.getAttribute('title') || ''
-      if (nodeText) {
-        nodes.push({ content: nodeText, level })
-        traverse(outline, level + 1)
-      }
-    })
-  }
-  const body = doc.querySelector('body')
-  if (body) traverse(body, 1)
-  return nodes
-}
-
-async function createMapFromNodes(nodes: { content: string; level: number }[], title: string) {
-  mapStore.newDocument()
-  mapStore.setTitle(title)
-  const nodeStack: { id: string; level: number }[] = []
-  let currentY = 100
-  const xSpacing = 200
-  const levelIndices: Record<number, number> = {}
-  for (const node of nodes) {
-    const level = node.level
-    levelIndices[level] = (levelIndices[level] || 0)
-    const xPos = 100 + (level - 1) * xSpacing
-    const yPos = currentY
-    const newNode = mapStore.addNode({
-      content: node.content,
-      position: { x: xPos, y: yPos }
-    })
-    while (nodeStack.length > 0 && nodeStack[nodeStack.length - 1].level >= level) {
-      nodeStack.pop()
-    }
-    if (nodeStack.length > 0) {
-      const parent = nodeStack[nodeStack.length - 1]
-      mapStore.addEdge(parent.id, newNode.id)
-    }
-    nodeStack.push({ id: newNode.id, level })
-    levelIndices[level]++
-    currentY += newNode.size.height + 30
-  }
-  mapStore.resolveOverlaps()
-  const doc = mapStore.toSerializable()
-  await db.saveMap(doc)
-  if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(doc.id)
-  await navigateTo(`/map/${doc.id}`)
+  await mapImport.processImportedFile(file)
 }
 
 // Templates
@@ -843,17 +719,17 @@ async function createFromTemplate(template: typeof templates.value[0]) {
               <div class="dcard-thumb">
                 <div class="dcard-thumb-rows">
                   <div class="dcard-thumb-row">
-                    <span class="dcard-blob teal" style="width:48px" />
-                    <span class="dcard-blob gray" style="width:56px" />
+                    <span class="dcard-blob teal" />
+                    <span class="dcard-blob gray" />
                   </div>
                   <div class="dcard-thumb-row dcard-thumb-row--mid">
-                    <span class="dcard-blob gray dim" style="width:40px" />
-                    <span class="dcard-blob teal solid" style="width:52px;height:22px" />
-                    <span class="dcard-blob gray dim" style="width:44px" />
+                    <span class="dcard-blob gray dim" />
+                    <span class="dcard-blob teal solid" />
+                    <span class="dcard-blob gray dim" />
                   </div>
                   <div class="dcard-thumb-row">
-                    <span class="dcard-blob teal" style="width:44px" />
-                    <span class="dcard-blob gray dim" style="width:50px" />
+                    <span class="dcard-blob teal" />
+                    <span class="dcard-blob gray dim" />
                   </div>
                 </div>
                 <span class="dcard-count">{{ countItems(map.nodes) }} nodes</span>
@@ -920,21 +796,23 @@ async function createFromTemplate(template: typeof templates.value[0]) {
                   <span class="dov-label">{{ $t('dashboard.overview.connections') }}</span>
                 </div>
               </div>
+              <!-- Decorative activity sparkline; bar heights live in CSS
+                   (.doverview-chart .dov-bar:nth-child(n)) per the no-inline-style rule. -->
               <div class="doverview-chart">
-                <div class="dov-bar" style="height:8px" />
-                <div class="dov-bar" style="height:14px" />
-                <div class="dov-bar" style="height:6px" />
-                <div class="dov-bar dov-bar--t1" style="height:22px" />
-                <div class="dov-bar dov-bar--t2" style="height:18px" />
-                <div class="dov-bar" style="height:10px" />
-                <div class="dov-bar dov-bar--t3" style="height:30px" />
-                <div class="dov-bar dov-bar--t1" style="height:24px" />
-                <div class="dov-bar" style="height:12px" />
-                <div class="dov-bar" style="height:16px" />
-                <div class="dov-bar dov-bar--t4" style="height:28px" />
-                <div class="dov-bar dov-bar--peak" style="height:36px" />
-                <div class="dov-bar dov-bar--t1" style="height:20px" />
-                <div class="dov-bar" style="height:8px" />
+                <div class="dov-bar" />
+                <div class="dov-bar" />
+                <div class="dov-bar" />
+                <div class="dov-bar dov-bar--t1" />
+                <div class="dov-bar dov-bar--t2" />
+                <div class="dov-bar" />
+                <div class="dov-bar dov-bar--t3" />
+                <div class="dov-bar dov-bar--t1" />
+                <div class="dov-bar" />
+                <div class="dov-bar" />
+                <div class="dov-bar dov-bar--t4" />
+                <div class="dov-bar dov-bar--peak" />
+                <div class="dov-bar dov-bar--t1" />
+                <div class="dov-bar" />
               </div>
             </div>
           </div>
@@ -1021,8 +899,8 @@ async function createFromTemplate(template: typeof templates.value[0]) {
                       <input
                         :value="aiNodeCount"
                         type="number"
-                        min="4"
-                        max="10000"
+                        :min="MIN_NODE_COUNT"
+                        :max="MAX_NODE_COUNT"
                         class="ai-opt-count-input"
                         @input="setAiNodeCount(Number(($event.target as HTMLInputElement).value))"
                       >
@@ -1096,7 +974,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
       <!-- Delete Confirm -->
       <Teleport to="body">
         <div v-if="deleteConfirmVisible" class="modal-overlay" @click.self="cancelDeleteMap">
-          <div class="modal" style="max-width: 400px;">
+          <div class="modal modal--narrow">
             <div class="modal-header">
               <div class="modal-icon modal-icon-danger"><span class="i-lucide-trash-2" /></div>
               <h2 class="modal-title">{{ $t('dashboard.delete_confirm.title') }}</h2>
@@ -1366,6 +1244,16 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dcard-thumb-row--mid { gap: 12px; }
 
+/* Per-blob widths for the decorative thumbnail (was inline; moved here per the
+   no-inline-style rule). Positional so the placeholder pattern stays identical. */
+.dcard-thumb-row:nth-child(1) .dcard-blob:nth-child(1) { width: 48px; }
+.dcard-thumb-row:nth-child(1) .dcard-blob:nth-child(2) { width: 56px; }
+.dcard-thumb-row--mid .dcard-blob:nth-child(1) { width: 40px; }
+.dcard-thumb-row--mid .dcard-blob:nth-child(2) { width: 52px; height: 22px; }
+.dcard-thumb-row--mid .dcard-blob:nth-child(3) { width: 44px; }
+.dcard-thumb-row:nth-child(3) .dcard-blob:nth-child(1) { width: 44px; }
+.dcard-thumb-row:nth-child(3) .dcard-blob:nth-child(2) { width: 50px; }
+
 .dcard-blob {
   display: block;
   height: 18px;
@@ -1600,6 +1488,22 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 .dov-bar--t4 { background: rgba(0, 210, 190, 0.3); }
 .dov-bar--peak { background: rgba(0, 210, 190, 0.5); }
 
+/* Decorative bar heights (was inline; moved here per the no-inline-style rule). */
+.doverview-chart .dov-bar:nth-child(1)  { height: 8px; }
+.doverview-chart .dov-bar:nth-child(2)  { height: 14px; }
+.doverview-chart .dov-bar:nth-child(3)  { height: 6px; }
+.doverview-chart .dov-bar:nth-child(4)  { height: 22px; }
+.doverview-chart .dov-bar:nth-child(5)  { height: 18px; }
+.doverview-chart .dov-bar:nth-child(6)  { height: 10px; }
+.doverview-chart .dov-bar:nth-child(7)  { height: 30px; }
+.doverview-chart .dov-bar:nth-child(8)  { height: 24px; }
+.doverview-chart .dov-bar:nth-child(9)  { height: 12px; }
+.doverview-chart .dov-bar:nth-child(10) { height: 16px; }
+.doverview-chart .dov-bar:nth-child(11) { height: 28px; }
+.doverview-chart .dov-bar:nth-child(12) { height: 36px; }
+.doverview-chart .dov-bar:nth-child(13) { height: 20px; }
+.doverview-chart .dov-bar:nth-child(14) { height: 8px; }
+
 /* AI banner */
 .dai-banner {
   display: flex;
@@ -1763,6 +1667,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   justify-content: center;
 }
 .modal-wide { max-width: 720px; }
+.modal--narrow { max-width: 400px; }
 .modal-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--d-border); }
 .modal-icon {
   width: 40px; height: 40px; border-radius: 8px;
