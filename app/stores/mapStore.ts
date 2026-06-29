@@ -17,6 +17,7 @@ import { useLinkIndex } from '~/composables/useLinkIndex'
 import type { DBMapDocument, DBNode, DBEdge } from '~/composables/useDatabase'
 import { resolveCategoryId, LEGACY_CATEGORY_MAP } from '~/constants/categories'
 import { measureNodeSize } from '~/utils/nodeSizing'
+import { capToRootSubset } from '~/utils/capMapNodes'
 
 // Enable Immer patches for undo/redo
 enablePatches()
@@ -427,8 +428,23 @@ const actions: MapActions = {
 
     // Convert arrays or objects back to Maps
     // Server/templates may return nodes as { id: {...} } objects instead of arrays
-    const nodesArr: any[] = Array.isArray(doc.nodes) ? doc.nodes : Object.values(doc.nodes || {})
-    const edgesArr: any[] = Array.isArray(doc.edges) ? doc.edges : Object.values(doc.edges || {})
+    const rawNodes: any[] = Array.isArray(doc.nodes) ? doc.nodes : Object.values(doc.nodes || {})
+    const rawEdges: any[] = Array.isArray(doc.edges) ? doc.edges : Object.values(doc.edges || {})
+
+    // Hard cap: very large maps freeze the canvas/reactivity. Load a bounded,
+    // root-connected subset instead of locking up the page.
+    const capped = capToRootSubset(
+      rawNodes,
+      rawEdges,
+      (doc as DBMapDocument & { rootNodeId?: string }).rootNodeId ?? null,
+    )
+    if (capped.capped) {
+      console.warn(
+        `[mapStore] "${doc.title}" has ${rawNodes.length} nodes; capped to ${capped.nodes.length} to keep the canvas responsive.`,
+      )
+    }
+    const nodesArr = capped.nodes
+    const edgesArr = capped.edges
     state.nodes = new Map(nodesArr.map(node => [node.id, node as Node]))
     state.edges = new Map(edgesArr.map(edge => [edge.id, edge as Edge]))
 
