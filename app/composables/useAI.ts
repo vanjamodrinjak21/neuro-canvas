@@ -1050,18 +1050,25 @@ export function useAI() {
   ): Promise<HybridSearchResult[]> {
     if (!query.trim() || nodes.length === 0) return []
 
-    if (!isInitialized.value) {
-      await initialize()
-    }
-
     try {
-      // ── Native path: on-device ONNX query embedding + in-process scoring ──
-      if (tauriML) {
-        const queryEmbedding = await tauriML.embed(query)
+      // ── Native path (Tauri/Capacitor): text-first so the FIRST search returns
+      // instantly, even on a cold model. The text leg needs no model; we add the
+      // semantic score only when the on-device model is already loaded, and warm
+      // it up in the background otherwise. Never block the search on model init —
+      // that's what made the first query come back empty until a retry. ──
+      if (_isNativeShell()) {
+        let queryEmbedding: number[] = []
+        if (isInitialized.value && tauriML) {
+          try { queryEmbedding = await tauriML.embed(query) }
+          catch (e) { console.debug('[hybridSearch] query embed unavailable, text-only:', e) }
+        } else if (!isInitialized.value) {
+          initialize().catch(() => {}) // warm up for the next query; don't await
+        }
         return rankHybridSearch(query, nodes, queryEmbedding, topK)
       }
 
       // ── Web worker path ──
+      if (!isInitialized.value) await initialize()
       const result = await sendMessage<{ results: HybridSearchResult[] }>('hybrid-search', {
         query,
         nodes,

@@ -71,8 +71,13 @@ export function rankHybridSearch(
       textScore = 0.4
     }
 
-    // Semantic score
-    const semanticScore = dotProductSimilarity(queryEmbedding, node.embedding)
+    // Semantic score — only when BOTH sides have a matching-length embedding.
+    // Nodes may be passed in before they're embedded ([]), and a text-only
+    // search passes an empty queryEmbedding. Guarding here avoids NaN from
+    // undefined slots / length mismatch, so those nodes still rank by text.
+    const semanticScore = (queryEmbedding.length > 0 && node.embedding.length === queryEmbedding.length)
+      ? dotProductSimilarity(queryEmbedding, node.embedding)
+      : 0
 
     // Combined score with weights
     const textWeight = 0.4

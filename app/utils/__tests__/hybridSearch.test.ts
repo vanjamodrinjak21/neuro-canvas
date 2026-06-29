@@ -90,4 +90,28 @@ describe('rankHybridSearch', () => {
   it('returns an empty array for an empty node set', () => {
     expect(rankHybridSearch('anything', [], Q)).toEqual([])
   })
+
+  // Regression: a node passed in before it's embedded ([]) must still text-match
+  // even when the QUERY is embedded — the old code multiplied num*undefined and
+  // produced NaN, which silently dropped every not-yet-embedded node.
+  it('text-matches a not-yet-embedded node even when the query is embedded', () => {
+    const results = rankHybridSearch(
+      'abu dhabi',
+      [{ id: 'n1', content: 'Abu Dhabi GP', embedding: [] }],
+      Q,
+    )
+    expect(results).toHaveLength(1)
+    expect(results[0]!.nodeId).toBe('n1')
+    expect(Number.isFinite(results[0]!.similarity)).toBe(true)
+  })
+
+  it('ignores a length-mismatched embedding (no NaN; text still ranks)', () => {
+    const results = rankHybridSearch(
+      'abu dhabi',
+      [{ id: 'n1', content: 'Abu Dhabi', embedding: [1, 0] }],
+      Q,
+    )
+    expect(results).toHaveLength(1)
+    expect(Number.isFinite(results[0]!.similarity)).toBe(true)
+  })
 })
