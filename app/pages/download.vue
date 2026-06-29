@@ -229,7 +229,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
           <path d="M13.333 4.667L6 12l-3.333-3.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span v-if="recommended">
-          {{ $t('landing.download_page.receipt_prefix') }} {{ chipLabel(recommended) }} · {{ fmtSize(recommended.size) }} · {{ $t('landing.download_page.receipt_unsigned') }} —
+          {{ $t('landing.download_page.receipt_prefix') }} {{ chipLabel(recommended) }} · {{ fmtSize(recommended.size) }} —
           <NuxtLink
             :to="recommended.platform === 'macos' ? '/install?os=mac' : recommended.platform === 'windows' ? '/install?os=windows' : '/install'"
             class="dl-receipt-link"
