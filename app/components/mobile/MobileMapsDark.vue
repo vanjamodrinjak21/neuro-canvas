@@ -5,6 +5,8 @@
  */
 import { safeImageUrl } from '~/utils/safeUrl'
 
+const { t } = useI18n()
+
 interface MapItem {
   id: string
   title: string
@@ -74,19 +76,19 @@ const totalEdges = computed(() =>
 </script>
 
 <template>
-  <section class="mmaps" aria-label="All maps">
+  <section class="mmaps" :aria-label="t('mobile.maps.sectionLabel')">
     <!-- Top bar -->
     <header class="mmaps-top">
       <div class="mmaps-brand" aria-label="NeuroCanvas">
-        <img class="mmaps-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <NcLogo :size="14" :container-size="26" :radius="6" />
         <span class="mmaps-wordmark">Neuro<span class="mmaps-wordmark-em">Canvas</span></span>
       </div>
       <div class="mmaps-top-right">
         <div class="mmaps-live">
           <span class="mmaps-live-dot" />
-          <span class="mmaps-live-label">SYNCED</span>
+          <span class="mmaps-live-label">{{ t('mobile.maps.synced') }}</span>
         </div>
-        <NuxtLink to="/settings" class="mmaps-avatar" aria-label="Settings">
+        <NuxtLink to="/settings" class="mmaps-avatar" :aria-label="t('mobile.maps.settings')">
           <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mmaps-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>
         </NuxtLink>
@@ -95,13 +97,13 @@ const totalEdges = computed(() =>
 
     <!-- Editorial hero -->
     <div class="mmaps-hero">
-      <span class="mmaps-eyebrow">02 — ALL MAPS</span>
+      <span class="mmaps-eyebrow">{{ t('mobile.maps.eyebrow') }}</span>
       <h1 class="mmaps-hero-line">
-        <span class="mmaps-hero-sans">Everything you've</span>
-        <span class="mmaps-hero-serif">mapped.</span>
+        <span class="mmaps-hero-sans">{{ t('mobile.maps.heroSans') }}</span>
+        <span class="mmaps-hero-serif">{{ t('mobile.maps.heroSerif') }}</span>
       </h1>
       <span class="mmaps-hero-meta">
-        {{ totalCount }} maps · {{ totalNodes }} nodes · {{ totalEdges }} connections.
+        {{ t('mobile.maps.heroMeta', { maps: totalCount, nodes: totalNodes, edges: totalEdges }) }}
       </span>
     </div>
 
@@ -120,7 +122,7 @@ const totalEdges = computed(() =>
           @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
         >
       </label>
-      <button type="button" class="mmaps-sort-btn" :aria-label="'Sort: ' + (sortLabel || 'recent')" @click="emit('change-sort')">
+      <button type="button" class="mmaps-sort-btn" :aria-label="t('mobile.maps.sortAria', { label: sortLabel || t('mobile.maps.sortRecent') })" @click="emit('change-sort')">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M3 4H13M5 8H11M7 12H9" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" />
         </svg>
@@ -135,7 +137,7 @@ const totalEdges = computed(() =>
         :class="{ 'mmaps-pill--active': activeFilter === 'all' }"
         @click="setFilter('all')"
       >
-        <span>All</span>
+        <span>{{ t('mobile.maps.filterAll') }}</span>
         <span class="mmaps-pill-count">{{ totalCount }}</span>
       </button>
       <button
@@ -144,7 +146,7 @@ const totalEdges = computed(() =>
         :class="{ 'mmaps-pill--active': activeFilter === 'recent' }"
         @click="setFilter('recent')"
       >
-        <span>Recent</span>
+        <span>{{ t('mobile.maps.filterRecent') }}</span>
       </button>
       <button
         type="button"
@@ -152,7 +154,7 @@ const totalEdges = computed(() =>
         :class="{ 'mmaps-pill--active': activeFilter === 'pinned' }"
         @click="setFilter('pinned')"
       >
-        <span>Pinned</span>
+        <span>{{ t('mobile.maps.filterPinned') }}</span>
         <span v-if="pinnedCount" class="mmaps-pill-count">{{ pinnedCount }}</span>
       </button>
       <button
@@ -161,7 +163,7 @@ const totalEdges = computed(() =>
         :class="{ 'mmaps-pill--active': activeFilter === 'shared' }"
         @click="setFilter('shared')"
       >
-        <span>Shared</span>
+        <span>{{ t('mobile.maps.filterShared') }}</span>
       </button>
       <button
         type="button"
@@ -169,20 +171,20 @@ const totalEdges = computed(() =>
         :class="{ 'mmaps-pill--active': activeFilter === 'archived' }"
         @click="setFilter('archived')"
       >
-        <span>Archived</span>
+        <span>{{ t('mobile.maps.filterArchived') }}</span>
       </button>
     </div>
 
     <!-- Section header -->
     <div class="mmaps-section">
       <div class="mmaps-section-left">
-        <span class="mmaps-section-eyebrow">SORTED BY</span>
-        <span class="mmaps-section-value">{{ sortLabel || 'recent' }}</span>
+        <span class="mmaps-section-eyebrow">{{ t('mobile.maps.sortedBy') }}</span>
+        <span class="mmaps-section-value">{{ sortLabel || t('mobile.maps.sortRecent') }}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
           <path d="M2.5 4L5 6.5L7.5 4" stroke="#A1A1AA" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </div>
-      <span class="mmaps-section-count">{{ maps.length }} OF {{ totalCount }}</span>
+      <span class="mmaps-section-count">{{ t('mobile.maps.countOf', { shown: maps.length, total: totalCount }) }}</span>
     </div>
 
     <!-- Map rows -->
@@ -209,19 +211,19 @@ const totalEdges = computed(() =>
         </div>
         <div class="mmaps-row-meta">
           <span class="mmaps-row-title-line">
-            <span class="mmaps-row-title">{{ m.title || 'Untitled map' }}</span>
+            <span class="mmaps-row-title">{{ m.title || t('mobile.maps.untitledMap') }}</span>
             <svg v-if="m.pinned" class="mmaps-row-pin" width="10" height="10" viewBox="0 0 12 12" fill="#00D2BE">
               <path d="M6 0L7.5 4L11.5 4.5L8.5 7.5L9.5 11.5L6 9.5L2.5 11.5L3.5 7.5L0.5 4.5L4.5 4L6 0Z" />
             </svg>
           </span>
-          <span class="mmaps-row-sub">{{ countOf(m.nodes) }} NODES · {{ relTime(m.updatedAt) }}</span>
+          <span class="mmaps-row-sub">{{ t('mobile.maps.rowSub', { nodes: countOf(m.nodes), time: relTime(m.updatedAt) }) }}</span>
         </div>
         <svg class="mmaps-row-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
       <div v-if="maps.length === 0" class="mmaps-empty">
-        <span>No maps match this view.</span>
+        <span>{{ t('mobile.maps.emptyState') }}</span>
       </div>
     </div>
   </section>

@@ -6,6 +6,8 @@
  */
 import { computed, ref } from 'vue'
 
+const { t } = useI18n()
+
 interface UserLike {
   name?: string | null
   email?: string | null
@@ -41,33 +43,33 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 </script>
 
 <template>
-  <section class="macc" aria-label="Account settings">
+  <section class="macc" :aria-label="t('mobile.settingsAccount.sectionAriaLabel')">
     <header class="macc-top">
       <button class="macc-back" type="button" @click="emit('back')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M15 5L8 12L15 19" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span>SETTINGS</span>
+        <span>{{ t('mobile.settingsAccount.backToSettings') }}</span>
       </button>
       <div class="macc-live">
         <span class="macc-live-dot" />
-        <span class="macc-live-label">{{ twoFactorOn ? '2FA ON' : '2FA OFF' }}</span>
+        <span class="macc-live-label">{{ twoFactorOn ? t('mobile.settingsAccount.twoFactorOn') : t('mobile.settingsAccount.twoFactorOff') }}</span>
       </div>
     </header>
 
     <div class="macc-hero">
-      <span class="macc-eyebrow">04 — ACCOUNT</span>
+      <span class="macc-eyebrow">04 — {{ t('mobile.settingsAccount.eyebrowLabel') }}</span>
       <h1 class="macc-hero-line">
-        <span class="macc-hero-sans">Lock the</span>
-        <span class="macc-hero-serif">door.</span>
+        <span class="macc-hero-sans">{{ t('mobile.settingsAccount.heroLineSans') }}</span>
+        <span class="macc-hero-serif">{{ t('mobile.settingsAccount.heroLineSerif') }}</span>
       </h1>
-      <span class="macc-hero-meta">Security, your data, where you're signed in. Take all three with you.</span>
+      <span class="macc-hero-meta">{{ t('mobile.settingsAccount.heroMeta') }}</span>
     </div>
 
     <div class="macc-scroll">
       <!-- SECURITY -->
       <div class="macc-section-head">
-        <span class="macc-section-label">SECURITY</span>
+        <span class="macc-section-label">{{ t('mobile.settingsAccount.securityLabel') }}</span>
         <span class="macc-section-status macc-section-status--mint">{{ provider }}</span>
       </div>
       <div class="macc-card">
@@ -79,8 +81,8 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
             </svg>
           </div>
           <div class="macc-row-text">
-            <span class="macc-row-title">Password</span>
-            <span class="macc-row-hint">CHANGE · STRONG</span>
+            <span class="macc-row-title">{{ t('mobile.settingsAccount.passwordTitle') }}</span>
+            <span class="macc-row-hint">{{ t('mobile.settingsAccount.passwordHint') }}</span>
           </div>
           <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -98,10 +100,10 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
           </div>
           <div class="macc-row-text">
             <span class="macc-row-title">
-              Two-factor
-              <span class="macc-row-italic">— authenticator</span>
+              {{ t('mobile.settingsAccount.twoFactorTitle') }}
+              <span class="macc-row-italic">— {{ t('mobile.settingsAccount.twoFactorItalic') }}</span>
             </span>
-            <span class="macc-row-hint">TOTP · 6 BACKUP CODES</span>
+            <span class="macc-row-hint">{{ t('mobile.settingsAccount.twoFactorHint') }}</span>
           </div>
           <button
             class="macc-toggle"
@@ -123,8 +125,8 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
             </svg>
           </div>
           <div class="macc-row-text">
-            <span class="macc-row-title">Passkeys</span>
-            <span class="macc-row-hint">2 KEYS · IPHONE 17 PRO · MACBOOK</span>
+            <span class="macc-row-title">{{ t('mobile.settingsAccount.passkeysTitle') }}</span>
+            <span class="macc-row-hint">{{ t('mobile.settingsAccount.passkeysHint', { n: 2 }) }} · IPHONE 17 PRO · MACBOOK</span>
           </div>
           <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -143,7 +145,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
             </svg>
           </div>
           <div class="macc-row-text">
-            <span class="macc-row-title">Connected apps</span>
+            <span class="macc-row-title">{{ t('mobile.settingsAccount.connectedAppsTitle') }}</span>
             <span class="macc-row-hint">GITHUB · LINEAR · OBSIDIAN</span>
           </div>
           <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -154,8 +156,8 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 
       <!-- SESSIONS -->
       <div class="macc-section-head">
-        <span class="macc-section-label">SESSIONS</span>
-        <button class="macc-section-action" type="button" @click="emit('revoke-others')">REVOKE OTHERS</button>
+        <span class="macc-section-label">{{ t('mobile.settingsAccount.sessionsLabel') }}</span>
+        <button class="macc-section-action" type="button" @click="emit('revoke-others')">{{ t('mobile.settingsAccount.revokeOthers') }}</button>
       </div>
       <div class="macc-card">
         <template v-for="(session, idx) in sessions" :key="session.id">
@@ -184,13 +186,13 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
               </span>
               <span class="macc-row-hint">{{ session.meta }}</span>
             </div>
-            <div v-if="session.current" class="macc-pill macc-pill--mint">ACTIVE</div>
+            <div v-if="session.current" class="macc-pill macc-pill--mint">{{ t('mobile.settingsAccount.sessionActive') }}</div>
             <button
               v-else
               class="macc-pill"
               type="button"
               @click="emit('revoke-session', session.id)"
-            >REVOKE</button>
+            >{{ t('mobile.settingsAccount.sessionRevoke') }}</button>
           </div>
           <div v-if="idx < sessions.length - 1" class="macc-divider" />
         </template>
@@ -198,8 +200,8 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 
       <!-- DATA -->
       <div class="macc-section-head">
-        <span class="macc-section-label">DATA</span>
-        <span class="macc-section-status">YOURS TO TAKE</span>
+        <span class="macc-section-label">{{ t('mobile.settingsAccount.dataLabel') }}</span>
+        <span class="macc-section-status">{{ t('mobile.settingsAccount.dataStatus') }}</span>
       </div>
       <div class="macc-card">
         <button class="macc-row" type="button" @click="emit('export-data')">
@@ -210,8 +212,8 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
             </svg>
           </div>
           <div class="macc-row-text">
-            <span class="macc-row-title">Export everything</span>
-            <span class="macc-row-hint">JSON · MARKDOWN · CRDT SNAPSHOTS</span>
+            <span class="macc-row-title">{{ t('mobile.settingsAccount.exportTitle') }}</span>
+            <span class="macc-row-hint">{{ t('mobile.settingsAccount.exportHint') }}</span>
           </div>
           <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -228,8 +230,8 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
             </svg>
           </div>
           <div class="macc-row-text">
-            <span class="macc-row-title">Import maps</span>
-            <span class="macc-row-hint">FROM OBSIDIAN · MIRO · MARKDOWN</span>
+            <span class="macc-row-title">{{ t('mobile.settingsAccount.importTitle') }}</span>
+            <span class="macc-row-hint">{{ t('mobile.settingsAccount.importHint') }}</span>
           </div>
           <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -240,16 +242,16 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
       <!-- DANGER ZONE -->
       <button class="macc-danger" type="button" @click="emit('delete-account')">
         <div class="macc-danger-head">
-          <span class="macc-danger-label">DANGER ZONE</span>
-          <span class="macc-danger-meta">PERMANENT</span>
+          <span class="macc-danger-label">{{ t('mobile.settingsAccount.dangerLabel') }}</span>
+          <span class="macc-danger-meta">{{ t('mobile.settingsAccount.dangerMeta') }}</span>
         </div>
         <div class="macc-danger-body">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M3 6H21M8 6V4C8 3.45 8.45 3 9 3H15C15.55 3 16 3.45 16 4V6M5 6L6 20C6 20.55 6.45 21 7 21H17C17.55 21 18 20.55 18 20L19 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
           <div class="macc-danger-info">
-            <span class="macc-danger-title">Delete account</span>
-            <span class="macc-danger-italic">all your maps, every comment — gone in 30 days.</span>
+            <span class="macc-danger-title">{{ t('mobile.settingsAccount.deleteTitle') }}</span>
+            <span class="macc-danger-italic">{{ t('mobile.settingsAccount.deleteItalic', { n: 30 }) }}</span>
           </div>
         </div>
       </button>

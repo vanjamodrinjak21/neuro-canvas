@@ -19,6 +19,8 @@ const props = withDefaults(defineProps<Props>(), {
   errorText: null,
 })
 
+const { t } = useI18n()
+
 const emit = defineEmits<{
   close: []
   generate: [topic: string, depth: 'shallow' | 'medium' | 'deep']
@@ -77,23 +79,23 @@ watch(() => props.streamingText, () => {
       <div v-if="visible" class="mgs-backdrop" @click="onClose" />
     </Transition>
     <Transition name="mgs-slide">
-      <section v-if="visible" class="mgs" role="dialog" aria-modal="true" aria-label="Generate map with AI">
-        <button class="mgs-handle" type="button" :aria-label="'Close'" @click="onClose">
+      <section v-if="visible" class="mgs" role="dialog" aria-modal="true" :aria-label="t('mobile.generate.dialogLabel')">
+        <button class="mgs-handle" type="button" :aria-label="t('mobile.generate.close')" @click="onClose">
           <span class="mgs-handle-bar" />
         </button>
 
-        <span class="mgs-eyebrow">AI — GENERATE MAP</span>
+        <span class="mgs-eyebrow">{{ t('mobile.generate.eyebrow') }}</span>
 
         <h1 class="mgs-title">
-          <span class="mgs-title-sans">Map</span>
-          <span class="mgs-title-serif">anything.</span>
+          <span class="mgs-title-sans">{{ t('mobile.generate.titleSans') }}</span>
+          <span class="mgs-title-serif">{{ t('mobile.generate.titleSerif') }}</span>
         </h1>
-        <span class="mgs-sub">Type a topic; we'll outline branches, sub-branches and connections.</span>
+        <span class="mgs-sub">{{ t('mobile.generate.subtitle') }}</span>
 
         <!-- INPUT STATE -->
         <template v-if="!isGenerating && progress < 100">
           <label class="mgs-field">
-            <span class="mgs-field-label">TOPIC</span>
+            <span class="mgs-field-label">{{ t('mobile.generate.topicLabel') }}</span>
             <input
               v-model="topic"
               type="text"
@@ -107,7 +109,7 @@ watch(() => props.streamingText, () => {
           </label>
 
           <div class="mgs-depth">
-            <span class="mgs-field-label">DEPTH</span>
+            <span class="mgs-field-label">{{ t('mobile.generate.depthLabel') }}</span>
             <div class="mgs-pill-row">
               <button
                 v-for="d in (['shallow', 'medium', 'deep'] as const)"
@@ -116,7 +118,7 @@ watch(() => props.streamingText, () => {
                 class="mgs-pill"
                 :class="{ 'mgs-pill--active': depth === d }"
                 @click="depth = d"
-              >{{ d }}</button>
+              >{{ t(`mobile.generate.depth_${d}`) }}</button>
             </div>
           </div>
 
@@ -129,7 +131,7 @@ watch(() => props.streamingText, () => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#09090B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
             </svg>
-            <span>Generate</span>
+            <span>{{ t('mobile.generate.generateButton') }}</span>
           </button>
         </template>
 
@@ -139,15 +141,15 @@ watch(() => props.streamingText, () => {
             <div class="mgs-progress-bar" :style="{ width: progress + '%' }" />
           </div>
           <span class="mgs-progress-meta">
-            {{ progress < 100 ? `Generating · ${streamingText.length} chars` : 'Building nodes…' }}
+            {{ progress < 100 ? t('mobile.generate.progressGenerating', { n: streamingText.length }) : t('mobile.generate.progressBuilding') }}
           </span>
 
           <div ref="streamRef" class="mgs-stream" aria-live="polite">
-            <pre class="mgs-stream-text">{{ streamingText || 'Connecting to model…' }}</pre>
+            <pre class="mgs-stream-text">{{ streamingText || t('mobile.generate.connecting') }}</pre>
           </div>
 
           <button v-if="isGenerating" type="button" class="mgs-cancel" @click="emit('cancel')">
-            Cancel
+            {{ t('mobile.generate.cancel') }}
           </button>
         </template>
 

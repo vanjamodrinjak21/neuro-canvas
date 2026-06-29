@@ -16,6 +16,8 @@ const emit = defineEmits<{
   back: []
 }>()
 
+const { t } = useI18n()
+
 const userStore = useUserStore()
 const prefs = userStore.preferences
 
@@ -51,9 +53,9 @@ const sliderPercent = computed(() => {
 })
 
 const themeStatus = computed(() => {
-  if (theme.value === 'system') return 'FOLLOWS SYSTEM'
-  if (theme.value === 'light') return 'LIGHT MODE'
-  return 'DARK MODE'
+  if (theme.value === 'system') return t('mobile.settingsGeneral.themeStatusSystem')
+  if (theme.value === 'light') return t('mobile.settingsGeneral.themeStatusLight')
+  return t('mobile.settingsGeneral.themeStatusDark')
 })
 
 // ── Updates (AER-14) ────────────────────────────────────────────────────
@@ -65,11 +67,11 @@ const autoUpdate = useAutoUpdateToggle()
 const appUpdates = useAppUpdates()
 const checkingForUpdates = ref(false)
 const updateStatus = computed(() => {
-  if (checkingForUpdates.value) return 'CHECKING…'
+  if (checkingForUpdates.value) return t('mobile.settingsGeneral.updateChecking')
   if (appUpdates.updateAvailable.value && appUpdates.latestVersion.value) {
     return `v${appUpdates.currentVersion} → v${appUpdates.latestVersion.value}`
   }
-  return `v${appUpdates.currentVersion} · UP TO DATE`
+  return t('mobile.settingsGeneral.updateUpToDate', { v: appUpdates.currentVersion })
 })
 async function manualUpdateCheck() {
   if (checkingForUpdates.value) return
@@ -83,36 +85,36 @@ async function manualUpdateCheck() {
 </script>
 
 <template>
-  <section class="mgen" aria-label="General settings">
+  <section class="mgen" :aria-label="t('mobile.settingsGeneral.sectionAriaLabel')">
     <!-- Top bar -->
     <header class="mgen-top">
       <button class="mgen-back" type="button" @click="emit('back')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M15 5L8 12L15 19" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span>SETTINGS</span>
+        <span>{{ t('mobile.settingsGeneral.backToSettings') }}</span>
       </button>
       <div class="mgen-live">
         <span class="mgen-live-dot" />
-        <span class="mgen-live-label">SYNCED</span>
+        <span class="mgen-live-label">{{ t('mobile.settingsGeneral.synced') }}</span>
       </div>
     </header>
 
     <!-- Editorial hero -->
     <div class="mgen-hero">
-      <span class="mgen-eyebrow">01 — GENERAL</span>
+      <span class="mgen-eyebrow">01 — {{ t('mobile.settingsGeneral.eyebrowGeneral') }}</span>
       <h1 class="mgen-hero-line">
-        <span class="mgen-hero-sans">Set the</span>
-        <span class="mgen-hero-serif">tone.</span>
+        <span class="mgen-hero-sans">{{ t('mobile.settingsGeneral.heroSans') }}</span>
+        <span class="mgen-hero-serif">{{ t('mobile.settingsGeneral.heroSerif') }}</span>
       </h1>
-      <span class="mgen-hero-meta">Theme, type, and the rhythm of saves.</span>
+      <span class="mgen-hero-meta">{{ t('mobile.settingsGeneral.heroMeta') }}</span>
     </div>
 
     <!-- Scroll body -->
     <div class="mgen-scroll">
       <!-- THEME -->
       <div class="mgen-section-head">
-        <span class="mgen-section-label">THEME</span>
+        <span class="mgen-section-label">{{ t('mobile.settingsGeneral.themeLabel') }}</span>
         <span class="mgen-section-status">{{ themeStatus }}</span>
       </div>
       <div class="mgen-tiles">
@@ -127,7 +129,7 @@ async function manualUpdateCheck() {
             <span class="mgen-tile-line mgen-tile-line--body" />
             <span class="mgen-tile-line mgen-tile-line--body mgen-tile-line--short" />
           </div>
-          <span class="mgen-tile-label" :class="{ 'mgen-tile-label--on': theme === 'light' }">{{ theme === 'light' ? 'LIGHT · ON' : 'LIGHT' }}</span>
+          <span class="mgen-tile-label" :class="{ 'mgen-tile-label--on': theme === 'light' }">{{ theme === 'light' ? t('mobile.settingsGeneral.tileLightOn') : t('mobile.settingsGeneral.tileLight') }}</span>
         </button>
 
         <button
@@ -141,7 +143,7 @@ async function manualUpdateCheck() {
             <span class="mgen-tile-line mgen-tile-line--body mgen-tile-line--body-dark" />
             <span class="mgen-tile-line mgen-tile-line--body mgen-tile-line--short mgen-tile-line--body-dark" />
           </div>
-          <span class="mgen-tile-label" :class="{ 'mgen-tile-label--on': theme === 'dark' }">{{ theme === 'dark' ? 'DARK · ON' : 'DARK' }}</span>
+          <span class="mgen-tile-label" :class="{ 'mgen-tile-label--on': theme === 'dark' }">{{ theme === 'dark' ? t('mobile.settingsGeneral.tileDarkOn') : t('mobile.settingsGeneral.tileDark') }}</span>
         </button>
 
         <button
@@ -154,14 +156,14 @@ async function manualUpdateCheck() {
             <span class="mgen-tile-half mgen-tile-half--light" />
             <span class="mgen-tile-half mgen-tile-half--dark" />
           </div>
-          <span class="mgen-tile-label" :class="{ 'mgen-tile-label--on': theme === 'system' }">{{ theme === 'system' ? 'AUTO · ON' : 'AUTO' }}</span>
+          <span class="mgen-tile-label" :class="{ 'mgen-tile-label--on': theme === 'system' }">{{ theme === 'system' ? t('mobile.settingsGeneral.tileAutoOn') : t('mobile.settingsGeneral.tileAuto') }}</span>
         </button>
       </div>
 
       <!-- TYPOGRAPHY -->
       <div class="mgen-section-head">
-        <span class="mgen-section-label">TYPOGRAPHY</span>
-        <span class="mgen-section-status">INTER · {{ fontSizePx }}PX</span>
+        <span class="mgen-section-label">{{ t('mobile.settingsGeneral.typographyLabel') }}</span>
+        <span class="mgen-section-status">{{ t('mobile.settingsGeneral.typographyStatus', { n: fontSizePx }) }}</span>
       </div>
       <div class="mgen-card">
         <div class="mgen-row">
@@ -169,8 +171,8 @@ async function manualUpdateCheck() {
             <span class="mgen-tile-mini-text">Aa</span>
           </div>
           <div class="mgen-row-text">
-            <span class="mgen-row-title">Editor font</span>
-            <span class="mgen-row-hint">INTER · INSTRUMENT SERIF · MONO</span>
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.editorFont') }}</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.editorFontHint') }}</span>
           </div>
           <svg class="mgen-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -181,8 +183,8 @@ async function manualUpdateCheck() {
 
         <div class="mgen-row mgen-row--col">
           <div class="mgen-row-head">
-            <span class="mgen-row-title">Text size</span>
-            <span class="mgen-row-value">{{ fontSizePx }} PX</span>
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.textSize') }}</span>
+            <span class="mgen-row-value">{{ t('mobile.settingsGeneral.textSizeValue', { n: fontSizePx }) }}</span>
           </div>
           <div class="mgen-slider">
             <button class="mgen-slider-cap mgen-slider-cap--sm" type="button" @click="setFontSize('xs')">A</button>
@@ -207,20 +209,20 @@ async function manualUpdateCheck() {
 
         <div class="mgen-row">
           <div class="mgen-row-text">
-            <span class="mgen-row-title">Density</span>
-            <span class="mgen-row-hint">COZY · COMPACT</span>
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.density') }}</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.densityHint') }}</span>
           </div>
           <div class="mgen-seg">
-            <button class="mgen-seg-btn mgen-seg-btn--on" type="button">COZY</button>
-            <button class="mgen-seg-btn" type="button">COMPACT</button>
+            <button class="mgen-seg-btn mgen-seg-btn--on" type="button">{{ t('mobile.settingsGeneral.densityCozy') }}</button>
+            <button class="mgen-seg-btn" type="button">{{ t('mobile.settingsGeneral.densityCompact') }}</button>
           </div>
         </div>
       </div>
 
       <!-- BEHAVIOR -->
       <div class="mgen-section-head">
-        <span class="mgen-section-label">BEHAVIOR</span>
-        <span class="mgen-section-status mgen-section-status--mint">SAVED 1.5S AGO</span>
+        <span class="mgen-section-label">{{ t('mobile.settingsGeneral.behaviorLabel') }}</span>
+        <span class="mgen-section-status mgen-section-status--mint">{{ t('mobile.settingsGeneral.behaviorSaved') }}</span>
       </div>
       <div class="mgen-card">
         <div class="mgen-row">
@@ -231,8 +233,8 @@ async function manualUpdateCheck() {
             </svg>
           </div>
           <div class="mgen-row-text">
-            <span class="mgen-row-title">Auto-save</span>
-            <span class="mgen-row-hint">EVERY 1.5S · CLOUD VAULT</span>
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.autoSave') }}</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.autoSaveHint') }}</span>
           </div>
           <button
             class="mgen-toggle"
@@ -254,8 +256,8 @@ async function manualUpdateCheck() {
             </svg>
           </div>
           <div class="mgen-row-text">
-            <span class="mgen-row-title">Reduce motion</span>
-            <span class="mgen-row-hint">RESPECTS SYSTEM SETTING</span>
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.reduceMotion') }}</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.reduceMotionHint') }}</span>
           </div>
           <button
             class="mgen-toggle"
@@ -277,8 +279,8 @@ async function manualUpdateCheck() {
             </svg>
           </div>
           <div class="mgen-row-text">
-            <span class="mgen-row-title">Canvas grid</span>
-            <span class="mgen-row-hint">DOTTED · 24PX SPACING</span>
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.canvasGrid') }}</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.canvasGridHint') }}</span>
           </div>
           <button
             class="mgen-toggle"
@@ -301,10 +303,10 @@ async function manualUpdateCheck() {
           </div>
           <div class="mgen-row-text">
             <span class="mgen-row-title">
-              Minimap
-              <span class="mgen-row-italic">— sometimes</span>
+              {{ t('mobile.settingsGeneral.minimap') }}
+              <span class="mgen-row-italic">{{ t('mobile.settingsGeneral.minimapAside') }}</span>
             </span>
-            <span class="mgen-row-hint">CORNER OVERVIEW · OFF BY DEFAULT</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.minimapHint') }}</span>
           </div>
           <button
             class="mgen-toggle"

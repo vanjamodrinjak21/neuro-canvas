@@ -5,6 +5,8 @@
  */
 import { safeImageUrl } from '~/utils/safeUrl'
 
+const { t } = useI18n()
+
 interface UserLike {
   name?: string | null
   email?: string | null
@@ -29,32 +31,32 @@ const emit = defineEmits<{
 }>()
 
 const avatarSrc = computed(() => safeImageUrl(props.user?.image))
-const displayName = computed(() => props.user?.name || 'Guest')
+const displayName = computed(() => props.user?.name || t('mobile.settings.guestName'))
 const displayEmail = computed(() => props.user?.email || 'local@device')
 </script>
 
 <template>
-  <section class="mset" aria-label="Settings">
+  <section class="mset" :aria-label="t('mobile.settings.ariaSettings')">
     <!-- Top bar -->
     <header class="mset-top">
       <div class="mset-brand" aria-label="NeuroCanvas">
-        <img class="mset-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <NcLogo :size="14" :container-size="26" :radius="6" />
         <span class="mset-wordmark">Neuro<span class="mset-wordmark-em">Canvas</span></span>
       </div>
       <div class="mset-live">
         <span class="mset-live-dot" />
-        <span class="mset-live-label">SYNCED</span>
+        <span class="mset-live-label">{{ t('mobile.settings.synced') }}</span>
       </div>
     </header>
 
     <!-- Editorial hero -->
     <div class="mset-hero">
-      <span class="mset-eyebrow">04 — SETTINGS</span>
+      <span class="mset-eyebrow">04 — {{ t('mobile.settings.eyebrow') }}</span>
       <h1 class="mset-hero-line">
-        <span class="mset-hero-sans">Make it</span>
-        <span class="mset-hero-serif">yours.</span>
+        <span class="mset-hero-sans">{{ t('mobile.settings.heroLineSans') }}</span>
+        <span class="mset-hero-serif">{{ t('mobile.settings.heroLineSerif') }}</span>
       </h1>
-      <span class="mset-hero-meta">Theme, AI providers, language, account.</span>
+      <span class="mset-hero-meta">{{ t('mobile.settings.heroMeta') }}</span>
     </div>
 
     <!-- Scrollable body -->
@@ -62,9 +64,9 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
       <!-- Sign-in panel (guest / local user) -->
       <div v-if="isLocalUser" class="mset-signin">
         <div class="mset-signin-head">
-          <span class="mset-signin-eyebrow">SIGN IN</span>
-          <span class="mset-signin-title">Sync across devices.</span>
-          <span class="mset-signin-sub">Save your maps, settings and AI keys to your account.</span>
+          <span class="mset-signin-eyebrow">{{ t('mobile.settings.signInEyebrow') }}</span>
+          <span class="mset-signin-title">{{ t('mobile.settings.signInTitle') }}</span>
+          <span class="mset-signin-sub">{{ t('mobile.settings.signInSub') }}</span>
         </div>
         <div class="mset-signin-grid">
           <button class="mset-signin-btn mset-signin-btn--primary" type="button" @click="emit('sign-in', 'google')">
@@ -74,20 +76,20 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
               <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83C6.71 7.31 9.14 5.38 12 5.38z"/>
             </svg>
-            <span>Continue with Google</span>
+            <span>{{ t('mobile.settings.continueGoogle') }}</span>
           </button>
           <button class="mset-signin-btn" type="button" @click="emit('sign-in', 'github')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.2.7-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.9-.39.98 0 1.97.13 2.9.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
             </svg>
-            <span>Continue with GitHub</span>
+            <span>{{ t('mobile.settings.continueGithub') }}</span>
           </button>
           <button class="mset-signin-btn" type="button" @click="emit('sign-in', 'email')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <path d="M3 7L12 13L21 7" />
             </svg>
-            <span>Sign in with email</span>
+            <span>{{ t('mobile.settings.signInEmail') }}</span>
           </button>
         </div>
       </div>
@@ -109,7 +111,7 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
 
       <!-- Section header -->
       <div class="mset-section">
-        <span class="mset-section-label">PREFERENCES</span>
+        <span class="mset-section-label">{{ t('mobile.settings.sectionPreferences') }}</span>
       </div>
 
       <!-- Settings group -->
@@ -122,8 +124,8 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
             </svg>
           </div>
           <div class="mset-row-text">
-            <span class="mset-row-title">General</span>
-            <span class="mset-row-hint">THEME · FONT · AUTO-SAVE</span>
+            <span class="mset-row-title">{{ t('mobile.settings.rowGeneralTitle') }}</span>
+            <span class="mset-row-hint">{{ t('mobile.settings.rowGeneralHint') }}</span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -141,12 +143,12 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
           </div>
           <div class="mset-row-text mset-row-text--ai">
             <div class="mset-row-titlebar">
-              <span class="mset-row-title">AI Providers</span>
+              <span class="mset-row-title">{{ t('mobile.settings.rowAiProvidersTitle') }}</span>
               <span v-if="connectedProvidersCount > 0" class="mset-badge">{{ connectedProvidersCount }}</span>
             </div>
             <span class="mset-row-hint">
-              <template v-if="connectedProvidersCount > 0">{{ connectedProvidersCount }} CONNECTED</template>
-              <template v-else>NO PROVIDERS</template>
+              <template v-if="connectedProvidersCount > 0">{{ t('mobile.settings.rowAiProvidersConnected', { n: connectedProvidersCount }) }}</template>
+              <template v-else>{{ t('mobile.settings.rowAiProvidersNone') }}</template>
             </span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -164,8 +166,8 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
             </svg>
           </div>
           <div class="mset-row-text">
-            <span class="mset-row-title">Personal</span>
-            <span class="mset-row-hint">PROFILE · LANGUAGE · PREFS</span>
+            <span class="mset-row-title">{{ t('mobile.settings.rowPersonalTitle') }}</span>
+            <span class="mset-row-hint">{{ t('mobile.settings.rowPersonalHint') }}</span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -182,8 +184,8 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
             </svg>
           </div>
           <div class="mset-row-text">
-            <span class="mset-row-title">Account</span>
-            <span class="mset-row-hint">SECURITY · DATA · SESSIONS</span>
+            <span class="mset-row-title">{{ t('mobile.settings.rowAccountTitle') }}</span>
+            <span class="mset-row-hint">{{ t('mobile.settings.rowAccountHint') }}</span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -204,13 +206,13 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
           <path d="M16 17L21 12L16 7" />
           <path d="M21 12H9" />
         </svg>
-        <span>{{ signOutLoading ? 'Signing out...' : 'Sign out' }}</span>
+        <span>{{ signOutLoading ? t('mobile.settings.signingOut') : t('mobile.settings.signOut') }}</span>
       </button>
 
       <!-- Footer mono -->
       <div class="mset-footer">
         <span class="mset-footer-line">v1.0.0 · pgvector RAG · MIT</span>
-        <span class="mset-footer-line mset-footer-mute">made by Vanja Modrinjak</span>
+        <span class="mset-footer-line mset-footer-mute">{{ t('mobile.settings.madeBy', { name: 'Vanja Modrinjak' }) }}</span>
       </div>
 
       <!-- Spacer to clear dock -->

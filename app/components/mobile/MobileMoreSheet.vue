@@ -4,6 +4,8 @@
  * Editorial nocturnal language: drag handle, mono breadcrumb, soft surface rows.
  */
 
+const { t } = useI18n()
+
 const props = defineProps<{
   visible: boolean
   isSaving?: boolean
@@ -54,11 +56,11 @@ watch(() => props.visible, (v) => {
       <div v-if="visible" class="mms-backdrop" @click="emit('close')" />
     </Transition>
     <Transition name="mms-slide">
-      <section v-if="visible" class="mms" role="dialog" aria-modal="true" aria-label="More actions">
-        <button class="mms-handle" type="button" :aria-label="'Close'" @click="emit('close')">
+      <section v-if="visible" class="mms" role="dialog" aria-modal="true" :aria-label="t('mobile.more.dialogLabel')">
+        <button class="mms-handle" type="button" :aria-label="t('mobile.more.close')" @click="emit('close')">
           <span class="mms-handle-bar" />
         </button>
-        <span class="mms-eyebrow">MORE — 9 OPTIONS</span>
+        <span class="mms-eyebrow">{{ t('mobile.more.eyebrow', { n: 9 }) }}</span>
 
         <div class="mms-group">
           <button class="mms-row" type="button" @click="dispatch('generate-map')">
@@ -69,8 +71,8 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">Generate map with AI</span>
-              <span class="mms-hint">TOPIC · BRANCHES · STREAMING</span>
+              <span class="mms-title">{{ t('mobile.more.generateMapTitle') }}</span>
+              <span class="mms-hint">{{ t('mobile.more.generateMapHint') }}</span>
             </div>
           </button>
 
@@ -84,8 +86,8 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">Save</span>
-              <span class="mms-hint">{{ isSaving ? 'SAVING…' : 'CMD · S' }}</span>
+              <span class="mms-title">{{ t('mobile.more.saveTitle') }}</span>
+              <span class="mms-hint">{{ isSaving ? t('mobile.more.savingHint') : t('mobile.more.saveHint') }}</span>
             </div>
             <span class="mms-shortcut">⌘S</span>
           </button>
@@ -103,8 +105,8 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">Share</span>
-              <span class="mms-hint">LINK · COLLAB · PUBLIC</span>
+              <span class="mms-title">{{ t('mobile.more.shareTitle') }}</span>
+              <span class="mms-hint">{{ t('mobile.more.shareHint') }}</span>
             </div>
           </button>
 
@@ -119,8 +121,8 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">Version history</span>
-              <span class="mms-hint">RESTORE · COMPARE · BRANCH</span>
+              <span class="mms-title">{{ t('mobile.more.versionHistoryTitle') }}</span>
+              <span class="mms-hint">{{ t('mobile.more.versionHistoryHint') }}</span>
             </div>
           </button>
 
@@ -133,13 +135,13 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">Comments</span>
-              <span class="mms-hint">DISCUSS · ANNOTATE · MENTION</span>
+              <span class="mms-title">{{ t('mobile.more.commentsTitle') }}</span>
+              <span class="mms-hint">{{ t('mobile.more.commentsHint') }}</span>
             </div>
           </button>
         </div>
 
-        <span class="mms-section">EXPORT</span>
+        <span class="mms-section">{{ t('mobile.more.exportSection') }}</span>
         <div class="mms-group">
           <button class="mms-row" type="button" @click="dispatch('export-png')">
             <div class="mms-icon mms-icon--mint">
@@ -150,8 +152,8 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">PNG image</span>
-              <span class="mms-hint">CANVAS · 2× RETINA</span>
+              <span class="mms-title">{{ t('mobile.more.pngTitle') }}</span>
+              <span class="mms-hint">{{ t('mobile.more.pngHint') }}</span>
             </div>
           </button>
 
@@ -167,7 +169,7 @@ watch(() => props.visible, (v) => {
             </div>
             <div class="mms-text">
               <span class="mms-title">Markdown</span>
-              <span class="mms-hint">.MD · OBSIDIAN COMPATIBLE</span>
+              <span class="mms-hint">{{ t('mobile.more.markdownHint') }}</span>
             </div>
           </button>
 
@@ -182,12 +184,12 @@ watch(() => props.visible, (v) => {
             </div>
             <div class="mms-text">
               <span class="mms-title">JSON</span>
-              <span class="mms-hint">.JSON · FULL FIDELITY</span>
+              <span class="mms-hint">{{ t('mobile.more.jsonHint') }}</span>
             </div>
           </button>
         </div>
 
-        <span class="mms-section">SUPPORT</span>
+        <span class="mms-section">{{ t('mobile.more.supportSection') }}</span>
         <div class="mms-group">
           <button class="mms-row" type="button" @click="dispatch('open-shortcuts')">
             <div class="mms-icon">
@@ -197,8 +199,8 @@ watch(() => props.visible, (v) => {
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">Keyboard shortcuts</span>
-              <span class="mms-hint">REFERENCE · SEARCHABLE</span>
+              <span class="mms-title">{{ t('mobile.more.shortcutsTitle') }}</span>
+              <span class="mms-hint">{{ t('mobile.more.shortcutsHint') }}</span>
             </div>
           </button>
 

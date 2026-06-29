@@ -21,6 +21,10 @@ const props = withDefaults(defineProps<Props>(), {
   isSynced: true,
 })
 
+const { t } = useI18n()
+// Alias for use inside helpers whose own params shadow `t` (e.g. splitTitle).
+const tr = t
+
 const emit = defineEmits<{
   back: []
   more: []
@@ -57,7 +61,7 @@ function cancelRename() {
 
 function splitTitle(t: string): { head: string; tail: string } {
   const trimmed = (t || '').trim()
-  if (!trimmed) return { head: 'Untitled', tail: '' }
+  if (!trimmed) return { head: tr('mobile.editor.untitledHead'), tail: '' }
   const parts = trimmed.split(/\s+/)
   if (parts.length <= 1) return { head: trimmed, tail: '' }
   return {
@@ -72,8 +76,8 @@ const isGraph = computed(() => props.viewMode === 'graph')
 
 const metaLine = computed(() => {
   const bits: string[] = []
-  if (props.lastEditLabel) bits.push(`LAST EDIT · ${props.lastEditLabel.toUpperCase()}`)
-  if (props.sectionsCount > 0) bits.push(`${props.sectionsCount} SECTIONS`)
+  if (props.lastEditLabel) bits.push(t('mobile.editor.lastEdit', { label: props.lastEditLabel.toUpperCase() }))
+  if (props.sectionsCount > 0) bits.push(t('mobile.editor.sectionsCount', { n: props.sectionsCount }))
   return bits.join(' · ')
 })
 
@@ -112,20 +116,20 @@ onBeforeUnmount(() => {
   <header class="medc" :class="{ 'medc--compact': compact }">
     <!-- Top bar -->
     <div class="medc-top">
-      <button class="medc-iconbtn" type="button" :aria-label="'Back'" @click="emit('back')">
+      <button class="medc-iconbtn" type="button" :aria-label="t('mobile.editor.back')" @click="emit('back')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
       <div v-if="isSynced" class="medc-live">
         <span class="medc-live-dot" />
-        <span class="medc-live-label">SYNCED</span>
+        <span class="medc-live-label">{{ t('mobile.editor.synced') }}</span>
       </div>
       <div v-else class="medc-live medc-live--offline">
         <span class="medc-live-dot" />
-        <span class="medc-live-label">OFFLINE</span>
+        <span class="medc-live-label">{{ t('mobile.editor.offline') }}</span>
       </div>
-      <button class="medc-iconbtn" type="button" :aria-label="'More'" @click="emit('more')">
+      <button class="medc-iconbtn" type="button" :aria-label="t('mobile.editor.more')" @click="emit('more')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="5" cy="12" r="1.8" />
           <circle cx="12" cy="12" r="1.8" />
@@ -136,7 +140,7 @@ onBeforeUnmount(() => {
 
     <!-- Editorial header card -->
     <div class="medc-card">
-      <span class="medc-eyebrow">MAP — {{ nodeCount }} NODES · LIVE</span>
+      <span class="medc-eyebrow">{{ t('mobile.editor.eyebrow', { n: nodeCount }) }}</span>
       <h1 v-if="!editingTitle" class="medc-title" @click="startRename">
         <span class="medc-title-sans">{{ titleParts.head }}</span>
         <span v-if="titleParts.tail" class="medc-title-serif">{{ titleParts.tail }}</span>
@@ -147,7 +151,7 @@ onBeforeUnmount(() => {
         v-model="titleDraft"
         class="medc-title-input"
         type="text"
-        :placeholder="'Untitled map'"
+        :placeholder="t('mobile.editor.titlePlaceholder')"
         autocomplete="off"
         autocapitalize="words"
         spellcheck="false"
@@ -164,7 +168,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="medc-genbar"
-      :aria-label="'Generate map with AI'"
+      :aria-label="t('mobile.editor.generateAriaLabel')"
       @click="emit('generate-map')"
     >
       <span class="medc-genbar-icon" aria-hidden="true">
@@ -173,8 +177,8 @@ onBeforeUnmount(() => {
           <path d="M19 17L19.7 19L21.5 19.5L19.7 20L19 22L18.3 20L16.5 19.5L18.3 19L19 17Z" />
         </svg>
       </span>
-      <span class="medc-genbar-label">Generate with AI</span>
-      <span class="medc-genbar-meta">TOPIC · STREAM</span>
+      <span class="medc-genbar-label">{{ t('mobile.editor.generateLabel') }}</span>
+      <span class="medc-genbar-meta">{{ t('mobile.editor.generateMeta') }}</span>
       <svg class="medc-genbar-chev" width="12" height="12" viewBox="0 0 14 14" fill="none">
         <path d="M5 3L9 7L5 11" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
@@ -192,7 +196,7 @@ onBeforeUnmount(() => {
           <path d="M2 2H12V11C12 11.5523 11.5523 12 11 12H3C2.44772 12 2 11.5523 2 11V2Z" :stroke="isEditor ? '#09090B' : '#A1A1AA'" stroke-width="1.4" stroke-linejoin="round" />
           <path d="M5 5H9M5 7.5H9M5 10H7" :stroke="isEditor ? '#09090B' : '#A1A1AA'" stroke-width="1.4" stroke-linecap="round" />
         </svg>
-        <span>Editor</span>
+        <span>{{ t('mobile.editor.modeEditor') }}</span>
       </button>
       <button
         type="button"
@@ -206,7 +210,7 @@ onBeforeUnmount(() => {
           <circle cx="11" cy="10" r="2" :stroke="isGraph ? '#09090B' : '#A1A1AA'" stroke-width="1.4" />
           <path d="M5.5 5.5L4.5 8.5M8.5 5.5L9.5 8.5M5 10H9" :stroke="isGraph ? '#09090B' : '#A1A1AA'" stroke-width="1.4" stroke-linecap="round" />
         </svg>
-        <span>Graph</span>
+        <span>{{ t('mobile.editor.modeGraph') }}</span>
       </button>
     </div>
 

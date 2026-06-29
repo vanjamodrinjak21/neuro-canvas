@@ -98,17 +98,17 @@ function onRow(id: string) {
 </script>
 
 <template>
-  <section class="mdash" aria-label="Dashboard">
+  <section class="mdash" :aria-label="t('mobile.dashboard.dashboardAria')">
     <!-- 01. Top bar — brand mark + LIVE chip + avatar -->
     <header class="mdash-top">
       <div class="mdash-brand" aria-label="NeuroCanvas">
-        <img class="mdash-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <NcLogo :size="14" :container-size="26" :radius="6" />
         <span class="mdash-wordmark">Neuro<span class="mdash-wordmark-em">Canvas</span></span>
       </div>
       <div class="mdash-top-right">
         <div class="mdash-live-chip">
           <span class="mdash-live-dot" />
-          <span class="mdash-live-label">SYNCED</span>
+          <span class="mdash-live-label">{{ t('mobile.dashboard.synced') }}</span>
         </div>
         <NuxtLink to="/settings" class="mdash-avatar" :aria-label="t('common.nav.settings')">
           <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mdash-avatar-img" referrerpolicy="no-referrer">
@@ -121,23 +121,23 @@ function onRow(id: string) {
     <div class="mdash-hero">
       <div class="mdash-eyebrow">01 — {{ t('common.nav.maps').toUpperCase() }}</div>
       <h1 class="mdash-hero-line">
-        <span class="mdash-hero-sans">Welcome back,</span>
-        <span class="mdash-hero-serif">{{ (user?.name || user?.email?.split('@')[0] || 'there').split(' ')[0] }}.</span>
+        <span class="mdash-hero-sans">{{ t('mobile.dashboard.welcomeBack') }}</span>
+        <span class="mdash-hero-serif">{{ (user?.name || user?.email?.split('@')[0] || t('mobile.dashboard.fallbackName')).split(' ')[0] }}.</span>
       </h1>
       <div class="mdash-stats">
         <div class="mdash-stat">
           <span class="mdash-stat-num">{{ totalMaps }}</span>
-          <span class="mdash-stat-label">MAPS</span>
+          <span class="mdash-stat-label">{{ t('mobile.dashboard.maps') }}</span>
         </div>
         <span class="mdash-stat-sep" />
         <div class="mdash-stat">
           <span class="mdash-stat-num">{{ totalNodes }}</span>
-          <span class="mdash-stat-label">NODES</span>
+          <span class="mdash-stat-label">{{ t('mobile.dashboard.nodes') }}</span>
         </div>
         <span class="mdash-stat-sep" />
         <div class="mdash-stat">
           <span class="mdash-stat-num">{{ sinceEdit }}</span>
-          <span class="mdash-stat-label">SINCE EDIT</span>
+          <span class="mdash-stat-label">{{ t('mobile.dashboard.sinceEdit') }}</span>
         </div>
       </div>
     </div>
@@ -154,8 +154,8 @@ function onRow(id: string) {
       </div>
       <div class="mdash-section">
         <div class="mdash-section-eyebrow">
-          <span class="mdash-eyebrow-strong">02 — RECENT</span>
-          <span class="mdash-eyebrow-faint">· loading</span>
+          <span class="mdash-eyebrow-strong">{{ t('mobile.dashboard.recentEyebrow') }}</span>
+          <span class="mdash-eyebrow-faint">{{ t('mobile.dashboard.loading') }}</span>
         </div>
       </div>
       <div class="mdash-list">
@@ -190,10 +190,10 @@ function onRow(id: string) {
         </svg>
       </div>
       <div class="mdash-continue-body">
-        <span class="mdash-continue-eyebrow">CURRENTLY EDITING</span>
-        <span class="mdash-continue-title">{{ continueMap.title || 'Untitled map' }}</span>
+        <span class="mdash-continue-eyebrow">{{ t('mobile.dashboard.currentlyEditing') }}</span>
+        <span class="mdash-continue-title">{{ continueMap.title || t('mobile.dashboard.untitledMap') }}</span>
         <span class="mdash-continue-meta">
-          {{ countOf(continueMap.nodes) }} nodes · resume →
+          {{ t('mobile.dashboard.nodesResume', { n: countOf(continueMap.nodes) }) }}
         </span>
       </div>
       <div class="mdash-continue-resume" aria-hidden="true">
@@ -206,10 +206,10 @@ function onRow(id: string) {
     <!-- 04. Section header — RECENT · X of Y · See all -->
     <div v-if="!isLoading" class="mdash-section">
       <div class="mdash-section-eyebrow">
-        <span class="mdash-eyebrow-strong">02 — RECENT</span>
-        <span class="mdash-eyebrow-faint">· {{ Math.min(recentRows.length, totalMaps) }} of {{ totalMaps }}</span>
+        <span class="mdash-eyebrow-strong">{{ t('mobile.dashboard.recentEyebrow') }}</span>
+        <span class="mdash-eyebrow-faint">{{ t('mobile.dashboard.countOf', { count: Math.min(recentRows.length, totalMaps), total: totalMaps }) }}</span>
       </div>
-      <button type="button" class="mdash-see-all" @click="emit('seeAll')">See all →</button>
+      <button type="button" class="mdash-see-all" @click="emit('seeAll')">{{ t('mobile.dashboard.seeAll') }}</button>
     </div>
 
     <!-- 05. Recent list — soft surface cards -->
@@ -235,8 +235,8 @@ function onRow(id: string) {
           </svg>
         </div>
         <div class="mdash-row-meta">
-          <span class="mdash-row-title">{{ m.title || 'Untitled map' }}</span>
-          <span class="mdash-row-sub">{{ countOf(m.nodes) }} NODES · {{ relTime(m.updatedAt) }}</span>
+          <span class="mdash-row-title">{{ m.title || t('mobile.dashboard.untitledMap') }}</span>
+          <span class="mdash-row-sub">{{ t('mobile.dashboard.nodesCount', { n: countOf(m.nodes) }) }} · {{ relTime(m.updatedAt) }}</span>
         </div>
         <svg class="mdash-row-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -245,7 +245,7 @@ function onRow(id: string) {
 
       <!-- Empty state -->
       <div v-if="recentRows.length === 0 && !continueMap" class="mdash-empty">
-        <span>No maps yet — tap + to start.</span>
+        <span>{{ t('mobile.dashboard.emptyState') }}</span>
       </div>
     </div>
 

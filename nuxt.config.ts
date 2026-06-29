@@ -31,8 +31,8 @@ export default defineNuxtConfig({
     // lazy code-split — each locale loads on first use, not on boot.
     // The inactive locale's ~70KB JSON stays off the wire until switch.
     locales: [
-      { code: 'en', name: 'English', files: ['en/common.json', 'en/auth.json', 'en/landing.json', 'en/dashboard.json', 'en/canvas.json', 'en/settings.json', 'en/templates.json', 'en/legal.json', 'en/roadmap.json', 'en/documents.json'] },
-      { code: 'hr', name: 'Hrvatski', files: ['hr/common.json', 'hr/auth.json', 'hr/landing.json', 'hr/dashboard.json', 'hr/canvas.json', 'hr/settings.json', 'hr/templates.json', 'hr/legal.json', 'hr/roadmap.json', 'hr/documents.json'] }
+      { code: 'en', name: 'English', files: ['en/common.json', 'en/auth.json', 'en/landing.json', 'en/dashboard.json', 'en/canvas.json', 'en/settings.json', 'en/templates.json', 'en/legal.json', 'en/roadmap.json', 'en/documents.json', 'en/mobile.json'] },
+      { code: 'hr', name: 'Hrvatski', files: ['hr/common.json', 'hr/auth.json', 'hr/landing.json', 'hr/dashboard.json', 'hr/canvas.json', 'hr/settings.json', 'hr/templates.json', 'hr/legal.json', 'hr/roadmap.json', 'hr/documents.json', 'hr/mobile.json'] }
     ],
     defaultLocale: 'en',
     strategy: 'no_prefix',

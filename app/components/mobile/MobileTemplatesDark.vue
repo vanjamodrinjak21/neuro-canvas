@@ -6,6 +6,8 @@
 import type { Template, TemplateCategory } from '~/types'
 import { safeImageUrl } from '~/utils/safeUrl'
 
+const { t } = useI18n()
+
 interface UserLike {
   name?: string | null
   email?: string | null
@@ -34,14 +36,14 @@ const emit = defineEmits<{
   'change-category': [c: Filter]
 }>()
 
-const FILTERS: Array<{ id: Filter; label: string }> = [
-  { id: 'all', label: 'All' },
-  { id: 'education', label: 'Education' },
-  { id: 'business', label: 'Business' },
-  { id: 'creative', label: 'Creative' },
-  { id: 'planning', label: 'Planning' },
-  { id: 'research', label: 'Research' },
-]
+const FILTERS = computed<Array<{ id: Filter; label: string }>>(() => [
+  { id: 'all', label: t('mobile.templates.filterAll') },
+  { id: 'education', label: t('mobile.templates.filterEducation') },
+  { id: 'business', label: t('mobile.templates.filterBusiness') },
+  { id: 'creative', label: t('mobile.templates.filterCreative') },
+  { id: 'planning', label: t('mobile.templates.filterPlanning') },
+  { id: 'research', label: t('mobile.templates.filterResearch') },
+])
 
 const active = computed<Filter>(() => props.activeCategory ?? 'all')
 
@@ -54,30 +56,30 @@ function formatCount(n: number): string {
 
 function categoryLabel(c: TemplateCategory): string {
   switch (c) {
-    case 'education': return 'EDUCATION'
-    case 'business': return 'BUSINESS'
-    case 'creative': return 'CREATIVE'
-    case 'planning': return 'PLANNING'
-    case 'research': return 'RESEARCH'
+    case 'education': return t('mobile.templates.categoryEducation')
+    case 'business': return t('mobile.templates.categoryBusiness')
+    case 'creative': return t('mobile.templates.categoryCreative')
+    case 'planning': return t('mobile.templates.categoryPlanning')
+    case 'research': return t('mobile.templates.categoryResearch')
     default: return ''
   }
 }
 </script>
 
 <template>
-  <section class="mtpl" aria-label="Templates">
+  <section class="mtpl" :aria-label="t('mobile.templates.sectionLabel')">
     <!-- Top bar -->
     <header class="mtpl-top">
       <div class="mtpl-brand" aria-label="NeuroCanvas">
-        <img class="mtpl-mark" src="/favicon.svg" alt="" width="26" height="26">
+        <NcLogo :size="14" :container-size="26" :radius="6" />
         <span class="mtpl-wordmark">Neuro<span class="mtpl-wordmark-em">Canvas</span></span>
       </div>
       <div class="mtpl-top-right">
         <div class="mtpl-live">
           <span class="mtpl-live-dot" />
-          <span class="mtpl-live-label">SYNCED</span>
+          <span class="mtpl-live-label">{{ t('mobile.templates.synced') }}</span>
         </div>
-        <NuxtLink to="/settings" class="mtpl-avatar" aria-label="Settings">
+        <NuxtLink to="/settings" class="mtpl-avatar" :aria-label="t('mobile.templates.settings')">
           <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mtpl-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>
         </NuxtLink>
@@ -86,13 +88,13 @@ function categoryLabel(c: TemplateCategory): string {
 
     <!-- Editorial hero -->
     <div class="mtpl-hero">
-      <span class="mtpl-eyebrow">03 — TEMPLATES</span>
+      <span class="mtpl-eyebrow">03 — {{ t('mobile.templates.eyebrow') }}</span>
       <h1 class="mtpl-hero-line">
-        <span class="mtpl-hero-sans">Start with a</span>
-        <span class="mtpl-hero-serif">shape.</span>
+        <span class="mtpl-hero-sans">{{ t('mobile.templates.heroSans') }}</span>
+        <span class="mtpl-hero-serif">{{ t('mobile.templates.heroSerif') }}</span>
       </h1>
       <span class="mtpl-hero-meta">
-        {{ totalCount }} templates · curated by the team · all editable.
+        {{ t('mobile.templates.heroMeta', { n: totalCount }) }}
       </span>
     </div>
 
@@ -111,7 +113,7 @@ function categoryLabel(c: TemplateCategory): string {
           @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
         >
       </label>
-      <button type="button" class="mtpl-sort-btn" :aria-label="'Sort: ' + (sortLabel || 'popular')" @click="emit('change-sort')">
+      <button type="button" class="mtpl-sort-btn" :aria-label="t('mobile.templates.sortAria', { label: sortLabel || t('mobile.templates.sortPopular') })" @click="emit('change-sort')">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M3 4H13M5 8H11M7 12H9" stroke="#A1A1AA" stroke-width="1.5" stroke-linecap="round" />
         </svg>
@@ -136,13 +138,13 @@ function categoryLabel(c: TemplateCategory): string {
     <!-- Section header -->
     <div class="mtpl-section">
       <div class="mtpl-section-left">
-        <span class="mtpl-section-eyebrow">SORTED BY</span>
-        <span class="mtpl-section-value">{{ sortLabel || 'popular' }}</span>
+        <span class="mtpl-section-eyebrow">{{ t('mobile.templates.sortedBy') }}</span>
+        <span class="mtpl-section-value">{{ sortLabel || t('mobile.templates.sortPopular') }}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
           <path d="M2.5 4L5 6.5L7.5 4" stroke="#A1A1AA" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </div>
-      <span class="mtpl-section-count">{{ templates.length }} OF {{ totalCount }}</span>
+      <span class="mtpl-section-count">{{ t('mobile.templates.countOf', { shown: templates.length, total: totalCount }) }}</span>
     </div>
 
     <!-- Template list -->
@@ -172,18 +174,18 @@ function categoryLabel(c: TemplateCategory): string {
           <div class="mtpl-card-meta">
             <span class="mtpl-card-cat">{{ categoryLabel(tmpl.category) }}</span>
             <span class="mtpl-card-meta-dot" />
-            <span class="mtpl-card-uses">{{ formatCount(tmpl.usageCount) }} USES</span>
+            <span class="mtpl-card-uses">{{ t('mobile.templates.uses', { n: formatCount(tmpl.usageCount) }) }}</span>
           </div>
         </div>
         <button type="button" class="mtpl-use-btn" @click.stop="emit('use-template', tmpl)">
-          <span>Use</span>
+          <span>{{ t('mobile.templates.use') }}</span>
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M3.5 2L7 5L3.5 8" stroke="#09090B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
       </article>
       <div v-if="templates.length === 0" class="mtpl-empty">
-        <span>No templates match your filter.</span>
+        <span>{{ t('mobile.templates.empty') }}</span>
       </div>
     </div>
   </section>

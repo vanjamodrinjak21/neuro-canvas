@@ -6,6 +6,8 @@
  */
 import { computed, ref, watch } from 'vue'
 
+const { t } = useI18n()
+
 interface ProviderLike {
   id: string
   type: string
@@ -77,7 +79,9 @@ const sheetTitle = computed(() => {
     ollama: 'Ollama'
   }
   const name = sheetType.value ? map[sheetType.value] : ''
-  return sheetMode.value === 'rotate' ? `Rotate ${name} key` : `Connect ${name}`
+  return sheetMode.value === 'rotate'
+    ? t('mobile.settingsAiProviders.sheetTitleRotate', { n: name })
+    : t('mobile.settingsAiProviders.sheetTitleConnect', { n: name })
 })
 
 const sheetPrefix = computed(() => {
@@ -98,7 +102,7 @@ interface ProviderRow {
 const ALL_PROVIDERS: ProviderRow[] = [
   { type: 'anthropic', name: 'Anthropic', caption: 'CLAUDE-OPUS-4-8 · 1M CTX', iconKey: 'anthropic' },
   { type: 'openai', name: 'OpenAI', caption: 'GPT-5.5 · GPT-5.4 · WHISPER', iconKey: 'openai' },
-  { type: 'openrouter', name: 'OpenRouter', caption: '300+ MODELS · BYO BUDGET', iconKey: 'openrouter', italic: '— gateway' },
+  { type: 'openrouter', name: 'OpenRouter', caption: '300+ MODELS · BYO BUDGET', iconKey: 'openrouter', italic: `— ${t('mobile.settingsAiProviders.gateway')}` },
   { type: 'ollama', name: 'Ollama (local)', caption: 'LOCALHOST:11434 · OFFLINE', iconKey: 'ollama' }
 ]
 
@@ -113,12 +117,15 @@ const availableProviders = computed(() => ALL_PROVIDERS.filter(p => !isConnected
 
 const liveCount = computed(() => activeProviders.value.length)
 
-const liveLabel = computed(() => {
-  const c = liveCount.value
-  return `${c} / ${ALL_PROVIDERS.length} LIVE`
-})
+const liveLabel = computed(() =>
+  t('mobile.settingsAiProviders.liveLabel', { n: liveCount.value, total: ALL_PROVIDERS.length })
+)
 
-const vaultLabel = computed(() => liveCount.value > 0 ? 'VAULT OK' : 'NO KEYS')
+const vaultLabel = computed(() =>
+  liveCount.value > 0
+    ? t('mobile.settingsAiProviders.vaultOk')
+    : t('mobile.settingsAiProviders.noKeys')
+)
 
 // Stub stats for active card (real numbers would come from backend telemetry)
 function getProviderModels(type: string) {
@@ -138,14 +145,14 @@ function maskKey(type: string): string {
 </script>
 
 <template>
-  <section class="map" aria-label="AI Providers settings">
+  <section class="map" :aria-label="t('mobile.settingsAiProviders.ariaSection')">
     <!-- Top bar -->
     <header class="map-top">
       <button class="map-back" type="button" @click="emit('back')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M15 5L8 12L15 19" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span>SETTINGS</span>
+        <span>{{ t('mobile.settingsAiProviders.back') }}</span>
       </button>
       <div class="map-live">
         <span class="map-live-dot" />
@@ -155,26 +162,26 @@ function maskKey(type: string): string {
 
     <!-- Hero -->
     <div class="map-hero">
-      <span class="map-eyebrow">02 — AI PROVIDERS</span>
+      <span class="map-eyebrow">02 — {{ t('mobile.settingsAiProviders.eyebrow') }}</span>
       <h1 class="map-hero-line">
-        <span class="map-hero-sans">Choose a</span>
-        <span class="map-hero-serif">brain.</span>
+        <span class="map-hero-sans">{{ t('mobile.settingsAiProviders.heroLead') }}</span>
+        <span class="map-hero-serif">{{ t('mobile.settingsAiProviders.heroAccent') }}</span>
       </h1>
-      <span class="map-hero-meta">Bring your own keys. Vaulted server-side, never in the bundle.</span>
+      <span class="map-hero-meta">{{ t('mobile.settingsAiProviders.heroMeta') }}</span>
     </div>
 
     <!-- Scroll body -->
     <div class="map-scroll">
       <!-- ACTIVE -->
       <div class="map-section-head">
-        <span class="map-section-label">ACTIVE</span>
+        <span class="map-section-label">{{ t('mobile.settingsAiProviders.sectionActive') }}</span>
         <span class="map-section-status" :class="{ 'map-section-status--mint': liveCount > 0 }">{{ liveLabel }}</span>
       </div>
 
       <template v-if="activeProviders.length === 0">
         <div class="map-empty">
-          <span class="map-empty-title">No active providers.</span>
-          <span class="map-empty-sub">Connect a provider below to start generating.</span>
+          <span class="map-empty-title">{{ t('mobile.settingsAiProviders.emptyTitle') }}</span>
+          <span class="map-empty-sub">{{ t('mobile.settingsAiProviders.emptySub') }}</span>
         </div>
       </template>
 
@@ -208,13 +215,13 @@ function maskKey(type: string): string {
             <div class="map-active-info">
               <div class="map-active-titlebar">
                 <span class="map-active-title">{{ provider.name }}</span>
-                <span v-if="defaultProviderType === provider.type" class="map-active-italic">primary</span>
+                <span v-if="defaultProviderType === provider.type" class="map-active-italic">{{ t('mobile.settingsAiProviders.primary') }}</span>
               </div>
               <span class="map-active-sub">{{ provider.caption }}</span>
             </div>
             <div v-if="defaultProviderType === provider.type" class="map-status-pill">
               <span class="map-status-dot" />
-              <span class="map-status-text">DEFAULT</span>
+              <span class="map-status-text">{{ t('mobile.settingsAiProviders.statusDefault') }}</span>
             </div>
             <button
               v-else
@@ -222,29 +229,29 @@ function maskKey(type: string): string {
               class="map-status-pill map-status-pill--cta"
               @click="emit('set-default', provider.type)"
             >
-              <span class="map-status-text">USE</span>
+              <span class="map-status-text">{{ t('mobile.settingsAiProviders.statusUse') }}</span>
             </button>
           </div>
 
           <div class="map-stats">
             <div class="map-stat">
-              <span class="map-stat-label">KEY</span>
+              <span class="map-stat-label">{{ t('mobile.settingsAiProviders.statKey') }}</span>
               <span class="map-stat-value">{{ maskKey(provider.type) }}</span>
             </div>
             <div class="map-stat-divider" />
             <div class="map-stat">
-              <span class="map-stat-label">STATUS</span>
-              <span class="map-stat-value">CONNECTED</span>
+              <span class="map-stat-label">{{ t('mobile.settingsAiProviders.statStatus') }}</span>
+              <span class="map-stat-value">{{ t('mobile.settingsAiProviders.connected') }}</span>
             </div>
             <div class="map-stat-divider" />
             <div class="map-stat">
-              <span class="map-stat-label">LATENCY</span>
+              <span class="map-stat-label">{{ t('mobile.settingsAiProviders.statLatency') }}</span>
               <span class="map-stat-value">— ms</span>
             </div>
           </div>
 
           <div v-if="getProviderModels(provider.type).length > 0" class="map-model-row">
-            <span class="map-model-label">MODEL</span>
+            <span class="map-model-label">{{ t('mobile.settingsAiProviders.modelLabel') }}</span>
             <div class="map-model-pills">
               <button
                 v-for="m in getProviderModels(provider.type)"
@@ -257,7 +264,7 @@ function maskKey(type: string): string {
                 }"
                 :disabled="m.available === false"
                 @click="m.available === false ? null : emit('set-model', { type: provider.type, modelId: m.id })"
-              >{{ m.name.replace(/^Claude\s+/, '') }}{{ m.available === false ? ' · Soon' : '' }}</button>
+              >{{ m.name.replace(/^Claude\s+/, '') }}{{ m.available === false ? ` · ${t('mobile.settingsAiProviders.soon')}` : '' }}</button>
             </div>
           </div>
 
@@ -265,7 +272,7 @@ function maskKey(type: string): string {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M5 13L9 17L19 7" stroke="#00D2BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <span>Key verified · provider responded</span>
+            <span>{{ t('mobile.settingsAiProviders.keyVerified') }}</span>
           </div>
           <div v-else-if="keyError && keySaving !== provider.type" class="map-test-result map-test-result--err">
             <span>{{ keyError }}</span>
@@ -278,21 +285,21 @@ function maskKey(type: string): string {
               :disabled="keySaving === provider.type"
               @click="emit('test-key', provider.type)"
             >
-              {{ keySaving === provider.type ? 'TESTING…' : 'TEST KEY' }}
+              {{ keySaving === provider.type ? t('mobile.settingsAiProviders.testing') : t('mobile.settingsAiProviders.testKey') }}
             </button>
             <button
               class="map-action"
               type="button"
               @click="openSheet(provider.type, 'rotate')"
             >
-              ROTATE
+              {{ t('mobile.settingsAiProviders.rotate') }}
             </button>
             <button
               class="map-action"
               type="button"
               @click="emit('remove-key', provider.type)"
             >
-              REMOVE
+              {{ t('mobile.settingsAiProviders.remove') }}
             </button>
           </div>
         </div>
@@ -300,8 +307,8 @@ function maskKey(type: string): string {
 
       <!-- AVAILABLE -->
       <div class="map-section-head">
-        <span class="map-section-label">AVAILABLE</span>
-        <span class="map-section-status">TAP TO CONNECT</span>
+        <span class="map-section-label">{{ t('mobile.settingsAiProviders.sectionAvailable') }}</span>
+        <span class="map-section-status">{{ t('mobile.settingsAiProviders.tapToConnect') }}</span>
       </div>
 
       <div class="map-card">
@@ -334,7 +341,7 @@ function maskKey(type: string): string {
               </span>
               <span class="map-row-hint">{{ provider.caption }}</span>
             </div>
-            <div class="map-pill">{{ provider.type === 'ollama' ? 'DETECT' : 'CONNECT' }}</div>
+            <div class="map-pill">{{ provider.type === 'ollama' ? t('mobile.settingsAiProviders.detect') : t('mobile.settingsAiProviders.connect') }}</div>
           </button>
           <div v-if="idx < availableProviders.length - 1" class="map-divider" />
         </template>
@@ -347,8 +354,8 @@ function maskKey(type: string): string {
           <path d="M8 11V8C8 5.79 9.79 4 12 4C14.21 4 16 5.79 16 8V11" stroke="#A1A1AA" stroke-width="1.6" />
         </svg>
         <span class="map-vault-text">
-          KEYS ARE SEALED IN THE SERVER VAULT.<br>
-          NEVER LEAVE YOUR ACCOUNT. NEVER LOGGED.
+          {{ t('mobile.settingsAiProviders.vaultLine1') }}<br>
+          {{ t('mobile.settingsAiProviders.vaultLine2') }}
         </span>
       </div>
 
@@ -360,14 +367,14 @@ function maskKey(type: string): string {
       <div v-if="sheetOpen" class="map-sheet-backdrop" @click.self="closeSheet">
         <div class="map-sheet" role="dialog" aria-modal="true">
           <div class="map-sheet-grab" />
-          <div class="map-sheet-eyebrow">{{ sheetMode === 'rotate' ? 'ROTATE KEY' : 'CONNECT PROVIDER' }}</div>
+          <div class="map-sheet-eyebrow">{{ sheetMode === 'rotate' ? t('mobile.settingsAiProviders.sheetEyebrowRotate') : t('mobile.settingsAiProviders.sheetEyebrowConnect') }}</div>
           <h2 class="map-sheet-title">{{ sheetTitle }}<span class="map-sheet-title-dot">.</span></h2>
           <p class="map-sheet-meta">
-            Paste your API key. Sealed in the server vault — never logged, never bundled.
+            {{ t('mobile.settingsAiProviders.sheetMeta') }}
           </p>
 
           <label class="map-sheet-field">
-            <span class="map-sheet-label">{{ sheetType === 'ollama' ? 'ENDPOINT URL' : 'API KEY' }}</span>
+            <span class="map-sheet-label">{{ sheetType === 'ollama' ? t('mobile.settingsAiProviders.fieldEndpointUrl') : t('mobile.settingsAiProviders.fieldApiKey') }}</span>
             <div class="map-sheet-input-wrap">
               <input
                 v-model="sheetKey"
@@ -382,7 +389,7 @@ function maskKey(type: string): string {
               <button
                 class="map-sheet-reveal"
                 type="button"
-                :aria-label="sheetReveal ? 'Hide key' : 'Show key'"
+                :aria-label="sheetReveal ? t('mobile.settingsAiProviders.hideKey') : t('mobile.settingsAiProviders.showKey')"
                 @click="sheetReveal = !sheetReveal"
               >
                 <svg v-if="sheetReveal" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -397,11 +404,11 @@ function maskKey(type: string): string {
               </button>
             </div>
             <span v-if="keyError && keySaving === sheetType" class="map-sheet-error">{{ keyError }}</span>
-            <span v-else class="map-sheet-hint">VAULTED · AES-256-GCM</span>
+            <span v-else class="map-sheet-hint">{{ t('mobile.settingsAiProviders.vaulted') }} · AES-256-GCM</span>
           </label>
 
           <div class="map-sheet-actions">
-            <button class="map-sheet-btn" type="button" @click="closeSheet">CANCEL</button>
+            <button class="map-sheet-btn" type="button" @click="closeSheet">{{ t('mobile.settingsAiProviders.cancel') }}</button>
             <button
               class="map-sheet-btn map-sheet-btn--primary"
               type="button"
@@ -411,7 +418,7 @@ function maskKey(type: string): string {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
-              <span>{{ keySaving === sheetType ? 'SAVING…' : 'SAVE KEY' }}</span>
+              <span>{{ keySaving === sheetType ? t('mobile.settingsAiProviders.saving') : t('mobile.settingsAiProviders.saveKey') }}</span>
             </button>
           </div>
         </div>

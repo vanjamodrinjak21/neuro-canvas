@@ -7,6 +7,8 @@
 import { computed, ref } from 'vue'
 import { safeImageUrl } from '~/utils/safeUrl'
 
+const { t } = useI18n()
+
 interface UserLike {
   name?: string | null
   email?: string | null
@@ -50,13 +52,13 @@ const layout = ref<'radial' | 'tree'>('radial')
 </script>
 
 <template>
-  <section class="mper" aria-label="Personal settings">
+  <section class="mper" :aria-label="t('mobile.settingsPersonal.ariaSection')">
     <header class="mper-top">
       <button class="mper-back" type="button" @click="emit('back')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M15 5L8 12L15 19" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span>SETTINGS</span>
+        <span>{{ t('mobile.settingsPersonal.back') }}</span>
       </button>
       <div class="mper-live">
         <span class="mper-live-dot" />
@@ -65,19 +67,19 @@ const layout = ref<'radial' | 'tree'>('radial')
     </header>
 
     <div class="mper-hero">
-      <span class="mper-eyebrow">03 — PERSONAL</span>
+      <span class="mper-eyebrow">03 — {{ t('mobile.settingsPersonal.eyebrow') }}</span>
       <h1 class="mper-hero-line">
-        <span class="mper-hero-sans">A bit</span>
-        <span class="mper-hero-serif">about you.</span>
+        <span class="mper-hero-sans">{{ t('mobile.settingsPersonal.heroLineSans') }}</span>
+        <span class="mper-hero-serif">{{ t('mobile.settingsPersonal.heroLineSerif') }}</span>
       </h1>
-      <span class="mper-hero-meta">Your name, your tongue, your defaults — small things that travel everywhere.</span>
+      <span class="mper-hero-meta">{{ t('mobile.settingsPersonal.heroMeta') }}</span>
     </div>
 
     <div class="mper-scroll">
       <!-- PROFILE -->
       <div class="mper-section-head">
-        <span class="mper-section-label">PROFILE</span>
-        <span class="mper-section-status">SHOWN ON YOUR MAPS</span>
+        <span class="mper-section-label">{{ t('mobile.settingsPersonal.profileLabel') }}</span>
+        <span class="mper-section-status">{{ t('mobile.settingsPersonal.profileStatus') }}</span>
       </div>
       <div class="mper-profile-card">
         <div class="mper-identity">
@@ -95,13 +97,13 @@ const layout = ref<'radial' | 'tree'>('radial')
         <div class="mper-divider mper-divider--full" />
 
         <div class="mper-bio">
-          <span class="mper-bio-label">BIO</span>
-          <span class="mper-bio-text">"Real-time collab specialist. Y.Doc, security, and the small details no one notices until they're missing."</span>
+          <span class="mper-bio-label">{{ t('mobile.settingsPersonal.bioLabel') }}</span>
+          <span class="mper-bio-text">{{ t('mobile.settingsPersonal.bioText') }}</span>
         </div>
 
         <div class="mper-actions">
-          <button class="mper-action mper-action--primary" type="button" @click="emit('edit-profile')">EDIT PROFILE</button>
-          <button class="mper-action mper-action--icon" type="button" aria-label="Avatar">
+          <button class="mper-action mper-action--primary" type="button" @click="emit('edit-profile')">{{ t('mobile.settingsPersonal.editProfile') }}</button>
+          <button class="mper-action mper-action--icon" type="button" :aria-label="t('mobile.settingsPersonal.avatarAria')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="12" cy="8" r="3" stroke="#A1A1AA" stroke-width="1.6" />
               <path d="M5 21V19C5 16.79 6.79 15 9 15H15C17.21 15 19 16.79 19 19V21" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
@@ -112,8 +114,8 @@ const layout = ref<'radial' | 'tree'>('radial')
 
       <!-- LANGUAGE -->
       <div class="mper-section-head">
-        <span class="mper-section-label">LANGUAGE</span>
-        <span class="mper-section-status">UI · MODELS · REGION</span>
+        <span class="mper-section-label">{{ t('mobile.settingsPersonal.languageLabel') }}</span>
+        <span class="mper-section-status">{{ t('mobile.settingsPersonal.languageStatus') }}</span>
       </div>
       <div class="mper-card">
         <div class="mper-row">
@@ -121,7 +123,7 @@ const layout = ref<'radial' | 'tree'>('radial')
             <span class="mper-icon-text">{{ locale.toUpperCase() }}</span>
           </div>
           <div class="mper-row-text">
-            <span class="mper-row-title">Interface</span>
+            <span class="mper-row-title">{{ t('mobile.settingsPersonal.interfaceTitle') }}</span>
             <span class="mper-row-hint">{{ localeName }}</span>
           </div>
           <select
@@ -143,10 +145,10 @@ const layout = ref<'radial' | 'tree'>('radial')
           </div>
           <div class="mper-row-text">
             <span class="mper-row-title">
-              AI prompts
-              <span class="mper-row-italic">— bilingual</span>
+              {{ t('mobile.settingsPersonal.aiPromptsTitle') }}
+              <span class="mper-row-italic">{{ t('mobile.settingsPersonal.aiPromptsAccent') }}</span>
             </span>
-            <span class="mper-row-hint">EN ↔ HR · MATCH MAP LANGUAGE</span>
+            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.aiPromptsHint') }}</span>
           </div>
           <svg class="mper-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -163,8 +165,8 @@ const layout = ref<'radial' | 'tree'>('radial')
             </svg>
           </div>
           <div class="mper-row-text">
-            <span class="mper-row-title">Region</span>
-            <span class="mper-row-hint">EUROPE/ZAGREB · CET</span>
+            <span class="mper-row-title">{{ t('mobile.settingsPersonal.regionTitle') }}</span>
+            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.regionHint') }}</span>
           </div>
           <svg class="mper-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -174,8 +176,8 @@ const layout = ref<'radial' | 'tree'>('radial')
 
       <!-- DEFAULTS -->
       <div class="mper-section-head">
-        <span class="mper-section-label">DEFAULTS</span>
-        <span class="mper-section-status">SHAPE EVERY NEW MAP</span>
+        <span class="mper-section-label">{{ t('mobile.settingsPersonal.defaultsLabel') }}</span>
+        <span class="mper-section-status">{{ t('mobile.settingsPersonal.defaultsStatus') }}</span>
       </div>
       <div class="mper-card">
         <div class="mper-row">
@@ -189,8 +191,8 @@ const layout = ref<'radial' | 'tree'>('radial')
             </svg>
           </div>
           <div class="mper-row-text">
-            <span class="mper-row-title">Default workspace</span>
-            <span class="mper-row-hint">PERSONAL · 8 MAPS</span>
+            <span class="mper-row-title">{{ t('mobile.settingsPersonal.defaultWorkspaceTitle') }}</span>
+            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.defaultWorkspaceHint', { n: 8 }) }}</span>
           </div>
           <svg class="mper-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -207,8 +209,8 @@ const layout = ref<'radial' | 'tree'>('radial')
             </svg>
           </div>
           <div class="mper-row-text">
-            <span class="mper-row-title">Layout</span>
-            <span class="mper-row-hint">RADIAL · TREE</span>
+            <span class="mper-row-title">{{ t('mobile.settingsPersonal.layoutTitle') }}</span>
+            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.layoutHint') }}</span>
           </div>
           <div class="mper-seg">
             <button
@@ -216,13 +218,13 @@ const layout = ref<'radial' | 'tree'>('radial')
               :class="{ 'mper-seg-btn--on': layout === 'radial' }"
               type="button"
               @click="layout = 'radial'"
-            >RADIAL</button>
+            >{{ t('mobile.settingsPersonal.layoutRadial') }}</button>
             <button
               class="mper-seg-btn"
               :class="{ 'mper-seg-btn--on': layout === 'tree' }"
               type="button"
               @click="layout = 'tree'"
-            >TREE</button>
+            >{{ t('mobile.settingsPersonal.layoutTree') }}</button>
           </div>
         </div>
 
@@ -236,8 +238,8 @@ const layout = ref<'radial' | 'tree'>('radial')
             </svg>
           </div>
           <div class="mper-row-text">
-            <span class="mper-row-title">Public profile</span>
-            <span class="mper-row-hint">{{ handle.slice(1) }}.neurocanvas.app · OFF</span>
+            <span class="mper-row-title">{{ t('mobile.settingsPersonal.publicProfileTitle') }}</span>
+            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.publicProfileHint', { handle: handle.slice(1) }) }}</span>
           </div>
           <button
             class="mper-toggle"
@@ -259,8 +261,8 @@ const layout = ref<'radial' | 'tree'>('radial')
             </svg>
           </div>
           <div class="mper-row-text">
-            <span class="mper-row-title">Product letters</span>
-            <span class="mper-row-hint">QUARTERLY · NO SALES PITCH</span>
+            <span class="mper-row-title">{{ t('mobile.settingsPersonal.productLettersTitle') }}</span>
+            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.productLettersHint') }}</span>
           </div>
           <button
             class="mper-toggle"
