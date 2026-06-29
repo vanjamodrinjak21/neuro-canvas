@@ -3,6 +3,7 @@ import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useMapStore } from '~/stores/mapStore'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { mapServerToDoc } from '~/utils/mapServer'
 
 definePageMeta({
   layout: false,
@@ -156,24 +157,6 @@ const userImage = computed(() => {
   return u?.image || null
 })
 
-function mapResponse(m: any): DBMapDocument {
-  return {
-    id: m.id,
-    title: m.title,
-    nodes: m.data?.nodes || [],
-    edges: m.data?.edges || [],
-    camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
-    settings: m.data?.settings || {},
-    rootNodeId: m.data?.rootNodeId,
-    preview: m.preview,
-    tags: m.tags || [],
-    createdAt: new Date(m.createdAt).getTime(),
-    updatedAt: new Date(m.updatedAt).getTime(),
-    syncVersion: m.syncVersion,
-    checksum: m.checksum
-  } as DBMapDocument
-}
-
 // Load all maps from server (PostgreSQL → Redis → client), fallback to IndexedDB
 onMounted(async () => {
   try {
@@ -186,11 +169,11 @@ onMounted(async () => {
         ? _desktopAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
         : _mobileAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
       const response = await fetcher
-      allMaps.value = response.maps.map(mapResponse)
+      allMaps.value = response.maps.map(mapServerToDoc)
     } else if (!_isNative && _session.data?.value?.user) {
       // Web: fetch from server
       const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
-      allMaps.value = response.maps.map(mapResponse)
+      allMaps.value = response.maps.map(mapServerToDoc)
     } else {
       allMaps.value = await db.getAllMaps()
     }

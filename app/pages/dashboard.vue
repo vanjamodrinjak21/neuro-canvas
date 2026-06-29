@@ -5,6 +5,7 @@ import { useAISettings } from '~/composables/useAISettings'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useGenerationQueue } from '~/composables/useGenerationQueue'
 import { useMapImport } from '~/composables/useMapImport'
+import { mapServerToDoc } from '~/utils/mapServer'
 import { safeImageUrl } from '~/utils/safeUrl'
 import type { GenerationTone } from '~/types'
 
@@ -307,24 +308,6 @@ if (route.query.templates === 'true') {
 
 // desktopAuth and mobileAuth are initialized at the top (used for user display + sync)
 
-function mapServerResponse(m: any): DBMapDocument {
-  return {
-    id: m.id,
-    title: m.title,
-    nodes: m.data?.nodes || [],
-    edges: m.data?.edges || [],
-    camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
-    settings: m.data?.settings || {},
-    rootNodeId: m.data?.rootNodeId,
-    preview: m.preview,
-    tags: m.tags || [],
-    createdAt: new Date(m.createdAt).getTime(),
-    updatedAt: new Date(m.updatedAt).getTime(),
-    syncVersion: m.syncVersion,
-    checksum: m.checksum,
-  } as DBMapDocument
-}
-
 // Load maps: merge local IndexedDB + remote server maps
 // Local maps that haven't synced yet are preserved and pushed to server
 async function loadMaps() {
@@ -343,7 +326,7 @@ async function loadMaps() {
           ? desktopAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
           : mobileAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
         const response = await remoteFetcher
-        const remoteMaps = response.maps.map(mapServerResponse)
+        const remoteMaps = response.maps.map(mapServerToDoc)
 
         // Merge: remote wins for maps that exist on both sides (by id),
         // local-only maps (no syncVersion) are preserved
@@ -373,7 +356,7 @@ async function loadMaps() {
     if (!_isNative && session.value?.user) {
       // Web: fetch from server — properly scoped by userId in PostgreSQL
       const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
-      recentMaps.value = response.maps.map(mapServerResponse)
+      recentMaps.value = response.maps.map(mapServerToDoc)
     } else {
       // Offline or native not signed in — read from local IndexedDB
       recentMaps.value = localMaps
