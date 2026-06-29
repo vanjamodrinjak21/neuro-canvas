@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DocumentSummary } from '~/composables/useDocuments'
+import { formatRelativeDay } from '~/utils/userDisplay'
 
 // ---------------------------------------------------------------------------
 // DocumentCard — knowledge-base document tile (Document RAG, plan §8)
@@ -89,15 +90,7 @@ const generatedMap = computed(() => props.document.generatedMap ?? null)
 const hasChips = computed(() => !!generatedMap.value || attachedMaps.value.length > 0)
 
 function formatDate(value: string | number): string {
-  const ts = typeof value === 'number' ? value : Date.parse(value)
-  if (Number.isNaN(ts)) return ''
-  const date = new Date(ts)
-  const now = new Date()
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-  if (diffDays === 0) return t('common.time.today')
-  if (diffDays === 1) return t('common.time.yesterday')
-  if (diffDays < 7) return t('common.time.days_ago', { n: diffDays })
-  return date.toLocaleDateString()
+  return formatRelativeDay(value, t)
 }
 
 function onCardClick() {

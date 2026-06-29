@@ -3,6 +3,7 @@ import { useUserStore } from '~/stores/userStore'
 import { useAISettings } from '~/composables/useAISettings'
 import { PROVIDER_TEMPLATES } from '~/types/ai-settings'
 import { useThemeReveal } from '~/composables/useThemeReveal'
+import { getUserInitials } from '~/utils/userDisplay'
 
 const { t, locale, setLocale, locales: i18nLocales } = useI18n()
 
@@ -41,10 +42,7 @@ const isLocalUser = computed(() => {
   return user.value?.email === 'local@device' || !user.value?.email
 })
 
-const userInitial = computed(() => {
-  const name = user.value?.name
-  return name ? name.charAt(0).toUpperCase() : 'U'
-})
+const userInitial = computed(() => getUserInitials(user.value?.name, 'U'))
 
 // ─── Save Indicator ───────────────────────────────────────────────
 const saveStatus = ref<'idle' | 'saved'>('idle')

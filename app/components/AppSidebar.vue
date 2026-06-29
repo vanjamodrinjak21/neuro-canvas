@@ -2,6 +2,7 @@
 import { useUserStore } from '~/stores/userStore'
 import { useGuestMode } from '~/composables/useGuestMode'
 import { useThemeReveal } from '~/composables/useThemeReveal'
+import { getUserInitials } from '~/utils/userDisplay'
 
 const { t } = useI18n()
 
@@ -65,10 +66,7 @@ const userEmail = computed(() => {
 })
 const userInitials = computed(() => {
   if (hasDesktopSession.value && !user.value && !desktopUser.value) return 'NC'
-  const name = userName.value
-  const parts = name.split(' ')
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return name.slice(0, 2).toUpperCase()
+  return getUserInitials(userName.value, 'NC')
 })
 const userImage = computed<string | null>(() => {
   const u = user.value as { image?: string | null; picture?: string | null } | undefined

@@ -4,6 +4,7 @@ import { useMapStore } from '~/stores/mapStore'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { mapServerToDoc } from '~/utils/mapServer'
+import { getUserInitials, formatRelativeDay } from '~/utils/userDisplay'
 
 definePageMeta({
   layout: false,
@@ -145,12 +146,7 @@ const _desktopAuth = _isTauri ? useDesktopAuth() : null
 
 const userInitials = computed(() => {
   const u = (_session as { data?: { value?: { user?: { name?: string | null; email?: string | null } } } })?.data?.value?.user
-  const name = u?.name || u?.email || ''
-  if (!name) return 'V'
-  const parts = name.split(/[\s@]+/).filter(Boolean)
-  if (parts.length === 0) return 'V'
-  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase()
-  return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase()
+  return getUserInitials(u?.name || u?.email, 'V')
 })
 const userImage = computed(() => {
   const u = (_session as { data?: { value?: { user?: { image?: string | null } } } })?.data?.value?.user
@@ -226,15 +222,7 @@ async function createNewMap() {
 }
 
 function formatDate(timestamp: number): string {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return t('common.time.today')
-  if (diffDays === 1) return t('common.time.yesterday')
-  if (diffDays < 7) return t('common.time.days_ago', { n: diffDays })
-  return date.toLocaleDateString()
+  return formatRelativeDay(timestamp, t)
 }
 </script>
 

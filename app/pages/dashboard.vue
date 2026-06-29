@@ -6,6 +6,7 @@ import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useGenerationQueue } from '~/composables/useGenerationQueue'
 import { useMapImport } from '~/composables/useMapImport'
 import { mapServerToDoc } from '~/utils/mapServer'
+import { getUserInitials } from '~/utils/userDisplay'
 import { safeImageUrl } from '~/utils/safeUrl'
 import type { GenerationTone } from '~/types'
 
@@ -200,12 +201,7 @@ const userName = computed(() => {
   return 'there'
 })
 
-const userInitials = computed(() => {
-  const name = userName.value
-  const parts = name.split(' ')
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return name.slice(0, 2).toUpperCase()
-})
+const userInitials = computed(() => getUserInitials(userName.value))
 
 // Stats
 function countItems(items: unknown): number {
