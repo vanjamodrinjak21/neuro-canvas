@@ -4,6 +4,7 @@ import { useAISettings } from '~/composables/useAISettings'
 import { PROVIDER_TEMPLATES } from '~/types/ai-settings'
 import { resolveAvatarInitials } from '~/utils/userDisplay'
 import { useMobileBack } from '~/composables/useMobileBack'
+import { useThemeReveal } from '~/composables/useThemeReveal'
 
 const { t, locale, setLocale, locales: i18nLocales } = useI18n()
 
@@ -18,56 +19,7 @@ useHead({
 
 const router = useRouter()
 const userStore = useUserStore()
-const settingsOverlayRef = ref<HTMLDivElement | null>(null)
-const settingsThemeAnimating = ref(false)
-
-function settingsThemeReveal(btn: HTMLElement, callback: () => void) {
-  if (settingsThemeAnimating.value) return
-  settingsThemeAnimating.value = true
-
-  if (!btn || typeof window === 'undefined') {
-    callback()
-    settingsThemeAnimating.value = false
-    return
-  }
-
-  const rect = btn.getBoundingClientRect()
-  const cx = rect.left + rect.width / 2
-  const cy = rect.top + rect.height / 2
-  const maxX = Math.max(cx, window.innerWidth - cx)
-  const maxY = Math.max(cy, window.innerHeight - cy)
-  const maxRadius = Math.ceil(Math.sqrt(maxX * maxX + maxY * maxY))
-
-  const overlay = settingsOverlayRef.value
-  if (!overlay) {
-    callback()
-    settingsThemeAnimating.value = false
-    return
-  }
-
-  overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
-  overlay.style.display = 'block'
-  overlay.style.opacity = '1'
-
-  overlay.offsetHeight
-
-  overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'
-  overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
-
-  setTimeout(() => {
-    callback()
-    setTimeout(() => {
-      overlay.style.transition = 'opacity 300ms ease'
-      overlay.style.opacity = '0'
-      setTimeout(() => {
-        overlay.style.display = 'none'
-        overlay.style.transition = ''
-        overlay.style.clipPath = ''
-        settingsThemeAnimating.value = false
-      }, 300)
-    }, 60)
-  }, 480)
-}
+const { overlayRef: settingsOverlayRef, reveal: settingsThemeReveal } = useThemeReveal()
 const aiSettings = useAISettings()
 
 // Auth
