@@ -286,9 +286,8 @@ export function useRenderLoop(deps: RenderLoopDeps) {
     const sel = deps.selection()
     const connectionAnim = deps.connectionAnim
 
-    for (const edgeId of visibleEdgeIds) {
-      const edge = edgesMap.get(edgeId)
-      if (!edge) continue
+    for (const edge of edgesMap.values()) {
+      if (!visibleEdgeIds.has(edge.id)) continue
 
       // Check edge entrance animation
       const entranceProgress = edgeAnims?.getEntranceProgress(edge.id) ?? -1
@@ -324,9 +323,9 @@ export function useRenderLoop(deps: RenderLoopDeps) {
     const editingId = deps.editingNodeId()
     const rootNodeId = deps.rootNodeId()
 
-    for (const nodeId of visibleNodeIds) {
-      const node = nodesMap.get(nodeId)
-      if (!node || editingId === nodeId) continue
+    for (const node of nodesMap.values()) {
+      if (editingId === node.id) continue
+      if (!visibleNodeIds.has(node.id)) continue
 
       if (lod === 'dot') {
         // Extreme zoom out: colored circle
@@ -396,10 +395,8 @@ export function useRenderLoop(deps: RenderLoopDeps) {
       drawPulseEffects(ctx, pulses, nodesMap, colorsVal.nodeSelected)
     }
 
-    // --- 9. Draw root indicators on root nodes (visible only) -----------
-    for (const nodeId of visibleNodeIds) {
-      const node = nodesMap.get(nodeId)
-      if (!node) continue
+    // --- 9. Draw root indicators on root nodes --------------------------
+    for (const node of nodesMap.values()) {
       const isRoot = node.isRoot || node.id === rootNodeId
       const nodeState = deps.getNodeState(node)
       if (isRoot && nodeState !== 'dragging' && editingId !== node.id) {
