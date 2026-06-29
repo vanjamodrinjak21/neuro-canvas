@@ -3,6 +3,7 @@ import { checkRateLimit } from '../../utils/redis'
 import { validateBody, aiCompletionSchema } from '../../utils/validation'
 import { validateOutboundUrl, safeFetch } from '../../utils/ssrf'
 import { resolveCredential } from '../../utils/resolveCredential'
+import { openaiTokenParams } from '../../utils/openaiChatBody'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
@@ -46,6 +47,7 @@ export default defineEventHandler(async (event) => {
           case 'openai':
           case 'openrouter':
           case 'custom': {
+            const openaiModel = body.model || (body.provider === 'openrouter' ? 'openai/gpt-5.4-mini' : 'gpt-5.4-mini')
             const response = await safeFetch(`${baseUrl}/chat/completions`, {
               method: 'POST',
               headers: {
@@ -57,12 +59,11 @@ export default defineEventHandler(async (event) => {
                 })
               },
               body: JSON.stringify({
-                model: body.model || (body.provider === 'openrouter' ? 'openai/gpt-5.4-mini' : 'gpt-5.4-mini'),
+                model: openaiModel,
                 messages: body.systemPrompt
                   ? [{ role: 'system', content: body.systemPrompt }, ...body.messages]
                   : body.messages,
-                temperature: body.temperature,
-                max_tokens: body.maxTokens,
+                ...openaiTokenParams(body.provider, openaiModel, body.maxTokens, body.temperature),
                 stream: true
               })
             })

@@ -39,6 +39,7 @@ import { prisma } from '../../../utils/prisma'
 import { checkRateLimit } from '../../../utils/redis'
 import { resolveCredential } from '../../../utils/resolveCredential'
 import { validateOutboundUrl, safeFetch } from '../../../utils/ssrf'
+import { openaiTokenParams } from '../../../utils/openaiChatBody'
 import { toPgVector, generateEmbeddingFromText } from '../../../utils/embeddings'
 import {
   buildRagPrompt,
@@ -583,8 +584,7 @@ export default defineEventHandler(async (event) => {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          temperature: 0.5,
-          max_tokens: MAX_OUTPUT_TOKENS,
+          ...openaiTokenParams(provider, resolvedModel, MAX_OUTPUT_TOKENS, 0.5),
           stream: false,
           // No `tools` / `functions` field — the model has nothing to call.
         }),

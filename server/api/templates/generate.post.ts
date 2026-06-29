@@ -3,6 +3,7 @@ import { checkRateLimit } from '../../utils/redis'
 import { resolveCredential } from '../../utils/resolveCredential'
 import { validateOutboundUrl, safeFetch } from '../../utils/ssrf'
 import { validateBody, templateGenerateSchema } from '../../utils/validation'
+import { openaiTokenParams } from '../../utils/openaiChatBody'
 
 /**
  * Server-side AI template generation.
@@ -121,8 +122,7 @@ RESPOND WITH ONLY VALID JSON, NO MARKDOWN.`
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          temperature: 0.7,
-          max_tokens: maxTokens,
+          ...openaiTokenParams(provider, model, maxTokens, 0.7),
         }),
       })
 

@@ -8,6 +8,8 @@
  * Exports the same request/response shapes so downstream code needs zero changes.
  */
 
+import { openaiTokenParams } from './openaiChatBody'
+
 interface AICompletionRequest {
   provider: string
   apiKey?: string       // Only used in Tauri mode
@@ -118,6 +120,7 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
       const baseUrl = req.baseUrl || (provider === 'openrouter'
         ? 'https://openrouter.ai/api/v1'
         : 'https://api.openai.com/v1')
+      const openaiModel = model || (provider === 'openrouter' ? 'openai/gpt-5.4-mini' : 'gpt-5.4-mini')
 
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
@@ -130,12 +133,11 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
           })
         },
         body: JSON.stringify({
-          model: model || (provider === 'openrouter' ? 'openai/gpt-5.4-mini' : 'gpt-5.4-mini'),
+          model: openaiModel,
           messages: systemPrompt
             ? [{ role: 'system', content: systemPrompt }, ...messages]
             : messages,
-          temperature,
-          max_tokens: maxTokens
+          ...openaiTokenParams(provider, openaiModel, maxTokens, temperature)
         })
       })
 
@@ -254,8 +256,7 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
           messages: systemPrompt
             ? [{ role: 'system', content: systemPrompt }, ...messages]
             : messages,
-          temperature,
-          max_tokens: maxTokens
+          ...openaiTokenParams('custom', model || 'default', maxTokens, temperature)
         })
       })
 
