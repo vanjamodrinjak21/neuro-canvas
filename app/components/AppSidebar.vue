@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
 import { useGuestMode } from '~/composables/useGuestMode'
+import { useThemeReveal } from '~/composables/useThemeReveal'
 
 const { t } = useI18n()
 
@@ -10,9 +11,8 @@ const props = defineProps<{
 
 
 const userStore = useUserStore()
-const sidebarOverlayRef = ref<HTMLDivElement | null>(null)
+const { overlayRef: sidebarOverlayRef, reveal: sidebarThemeReveal } = useThemeReveal()
 const sidebarThemeBtnRef = ref<HTMLButtonElement | null>(null)
-const sidebarThemeAnimating = ref(false)
 
 const isLightSidebar = computed(() => {
   if (userStore.preferences.value.theme === 'system') {
@@ -22,53 +22,6 @@ const isLightSidebar = computed(() => {
   return userStore.preferences.value.theme === 'light'
 })
 
-function sidebarThemeReveal(btn: HTMLElement, theme: 'light' | 'dark' | 'system') {
-  if (sidebarThemeAnimating.value) return
-  sidebarThemeAnimating.value = true
-
-  if (!btn || typeof window === 'undefined') {
-    userStore.setPreference('theme', theme)
-    sidebarThemeAnimating.value = false
-    return
-  }
-
-  const rect = btn.getBoundingClientRect()
-  const cx = rect.left + rect.width / 2
-  const cy = rect.top + rect.height / 2
-  const maxX = Math.max(cx, window.innerWidth - cx)
-  const maxY = Math.max(cy, window.innerHeight - cy)
-  const maxRadius = Math.ceil(Math.sqrt(maxX * maxX + maxY * maxY))
-
-  const overlay = sidebarOverlayRef.value
-  if (!overlay) {
-    userStore.setPreference('theme', theme)
-    sidebarThemeAnimating.value = false
-    return
-  }
-
-  overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
-  overlay.style.display = 'block'
-  overlay.style.opacity = '1'
-
-  overlay.offsetHeight
-
-  overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'
-  overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
-
-  setTimeout(() => {
-    userStore.setPreference('theme', theme)
-    setTimeout(() => {
-      overlay.style.transition = 'opacity 300ms ease'
-      overlay.style.opacity = '0'
-      setTimeout(() => {
-        overlay.style.display = 'none'
-        overlay.style.transition = ''
-        overlay.style.clipPath = ''
-        sidebarThemeAnimating.value = false
-      }, 300)
-    }, 60)
-  }, 480)
-}
 const _authStore = (() => {
   try { return useAuthStore() }
   catch { return { handleSignOut: async () => {} } }
@@ -364,7 +317,7 @@ const palette = useCommandPalette()
             ref="sidebarThemeBtnRef"
             class="sidebar-theme-btn"
             :aria-label="isLightSidebar ? $t('common.theme.to_dark') : $t('common.theme.to_light')"
-            @click.stop="sidebarThemeReveal($event.currentTarget as HTMLElement, isLightSidebar ? 'dark' : 'light')"
+            @click.stop="sidebarThemeReveal($event.currentTarget as HTMLElement, () => userStore.setPreference('theme', isLightSidebar ? 'dark' : 'light'))"
           >
             <!-- Sun -->
             <svg v-if="isLightSidebar" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
