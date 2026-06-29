@@ -9,6 +9,7 @@ const emit = defineEmits<{
 }>()
 
 const desktopAuth = useDesktopAuth()
+const { t } = useI18n()
 
 const email = ref('')
 const password = ref('')
@@ -18,6 +19,13 @@ const showPassword = ref(false)
 const localError = ref<string | null>(null)
 const failedOnce = ref(false)
 const emailInput = ref<HTMLInputElement | null>(null)
+
+// Sign in with Apple belongs on Apple platforms only (Mac here). The native
+// flow isn't wired yet — this is the visual button; the handler is a placeholder
+// until the Apple Developer membership + AuthenticationServices integration land.
+const isMac = computed(() =>
+  typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent),
+)
 
 async function handleSubmit() {
   if (!email.value.trim() || !password.value) return
@@ -74,6 +82,11 @@ async function handleGoogle() {
     const msg = e instanceof Error ? e.message : 'Google sign-in failed.'
     localError.value = msg
   }
+}
+
+// Placeholder until native Sign in with Apple (AuthenticationServices) is wired.
+function handleApple() {
+  localError.value = t('auth.desktop_auth.apple_coming_soon')
 }
 
 // Focus email input when modal opens
@@ -211,8 +224,20 @@ watch(() => props.visible, (visible) => {
             <span>{{ desktopAuth.isLoggingIn.value ? $t('auth.desktop_auth.google_loading') : $t('auth.desktop_auth.google_button') }}</span>
           </button>
 
-          <!-- Final fallback if Google ever blocks the embedded webview -->
-          <button class="auth-browser-btn" @click="openInBrowser">
+          <!-- Sign in with Apple — Mac only (visual for now; native flow lands
+               with the Apple Developer membership). Reuses the provider-button
+               style for visual parity with Google. -->
+          <button
+            v-if="isMac"
+            class="auth-google-btn"
+            @click="handleApple"
+          >
+            <svg width="15" height="15" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" /></svg>
+            <span>{{ $t('auth.desktop_auth.apple_button') }}</span>
+          </button>
+
+          <!-- Non-Mac fallback if Google ever blocks the embedded webview -->
+          <button v-else class="auth-browser-btn" @click="openInBrowser">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
             {{ $t('auth.desktop_auth.use_browser_instead') }}
           </button>
