@@ -83,7 +83,7 @@ jobs:
           path: |
             ios/App/CapApp-SPM/.build
             ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-spm-${{ hashFiles('ios/App/CapApp-SPM/Package.swift', 'ios/App/CapApp-SPM/Package.resolved') }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('ios/App/CapApp-SPM/Package.swift', 'ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'patches/**') }}
           restore-keys: ${{ runner.os }}-spm-
 
       - run: npm ci --legacy-peer-deps
