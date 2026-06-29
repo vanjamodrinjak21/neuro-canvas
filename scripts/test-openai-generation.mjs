@@ -25,7 +25,7 @@ const MODEL = process.env.TEST_MODEL || 'gpt-5.4-mini'
 // The four ids the app ships in PROVIDER_TEMPLATES.openai (app/types/ai-settings.ts)
 const EXPECTED_MODELS = ['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano']
 
-const c = { green: s => `\x1b[32m${s}\x1b[0m`, red: s => `\x1b[31m${s}\x1b[0m`, yellow: s => `\x1b[33m${s}\x1b[0m`, dim: s => `\x1b[2m${s}\x1b[0m` }
+const c = { green: s => `\x1B[32m${s}\x1B[0m`, red: s => `\x1B[31m${s}\x1B[0m`, yellow: s => `\x1B[33m${s}\x1B[0m`, dim: s => `\x1B[2m${s}\x1B[0m` }
 const ok = s => console.log(`${c.green('✓')} ${s}`)
 const bad = s => console.log(`${c.red('✗')} ${s}`)
 const warn = s => console.log(`${c.yellow('!')} ${s}`)
