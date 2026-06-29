@@ -136,7 +136,7 @@ const currentNav = computed(() => {
 const navItems = computed(() => [
   { id: 'home', label: t('common.nav.home'), icon: 'i-lucide-house', to: '/dashboard' },
   { id: 'maps', label: t('common.nav.maps'), icon: 'i-lucide-layout-grid', to: '/maps' },
-  { id: 'documents', label: t('common.nav.documents'), icon: 'i-lucide-file-text', to: '/documents' },
+  // { id: 'documents', label: t('common.nav.documents'), icon: 'i-lucide-file-text', to: '/documents' },
   { id: 'templates', label: t('common.nav.templates'), icon: 'i-lucide-layers', to: '/templates' },
   { id: 'settings', label: t('common.nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
 ])
