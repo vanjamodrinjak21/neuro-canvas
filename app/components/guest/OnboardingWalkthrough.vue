@@ -5,33 +5,34 @@ const emit = defineEmits<{
   complete: []
 }>()
 
+const { t } = useI18n()
 const guest = useGuestMode()
 const currentStep = ref(0)
 const isVisible = ref(false)
 
-const steps = [
+const steps = computed(() => [
   {
-    eyebrow: '01 / 03 — NODE',
-    title: 'Drop in an idea.',
-    description: 'Double-click anywhere on the canvas. Type a sentence. That\'s a node. The canvas grows from there.',
-    waiting: 'waiting for your first node…',
+    eyebrow: t('common.guest.walkthrough.step1_eyebrow'),
+    title: t('common.guest.walkthrough.step1_title'),
+    description: t('common.guest.walkthrough.step1_desc'),
+    waiting: t('common.guest.walkthrough.step1_waiting'),
   },
   {
-    eyebrow: '02 / 03 — EDGE',
-    title: 'Connect it.',
-    description: 'Drag from one node to another. Connections are typed (causes, contradicts, depends on) — they become the reasoning, not just the visual.',
-    waiting: 'draw your first connection…',
+    eyebrow: t('common.guest.walkthrough.step2_eyebrow'),
+    title: t('common.guest.walkthrough.step2_title'),
+    description: t('common.guest.walkthrough.step2_desc'),
+    waiting: t('common.guest.walkthrough.step2_waiting'),
   },
   {
-    eyebrow: '03 / 03 — AI',
-    title: 'Then save, and AI takes over.',
-    description: 'Once saved, press ⌘K on any node and the AI extends that branch. Counter-arguments, summaries, gap analysis — anchored to the node you selected.',
-    waiting: 'unlocks instantly when you save',
+    eyebrow: t('common.guest.walkthrough.step3_eyebrow'),
+    title: t('common.guest.walkthrough.step3_title'),
+    description: t('common.guest.walkthrough.step3_desc'),
+    waiting: t('common.guest.walkthrough.step3_waiting'),
   },
-]
+])
 
 function next() {
-  if (currentStep.value < steps.length - 1) {
+  if (currentStep.value < steps.value.length - 1) {
     currentStep.value++
   }
   else {
@@ -51,8 +52,8 @@ function finish() {
   }, 250)
 }
 
-const step = computed(() => steps[currentStep.value])
-const isLast = computed(() => currentStep.value === steps.length - 1)
+const step = computed(() => steps.value[currentStep.value])
+const isLast = computed(() => currentStep.value === steps.value.length - 1)
 
 onMounted(() => {
   requestAnimationFrame(() => {
@@ -78,7 +79,7 @@ onMounted(() => {
               </div>
               <div class="cm-eyebrow">{{ step?.eyebrow }}</div>
             </div>
-            <button class="cm-close" aria-label="Skip tour" @click="skip">
+            <button class="cm-close" :aria-label="$t('common.guest.walkthrough.skip_aria')" @click="skip">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M3 3 L9 9 M9 3 L3 9" stroke-linecap="round" />
               </svg>
@@ -101,9 +102,9 @@ onMounted(() => {
           </div>
 
           <div class="cm-actions">
-            <button class="cm-skip" @click="skip">skip tour</button>
+            <button class="cm-skip" @click="skip">{{ $t('common.guest.walkthrough.skip') }}</button>
             <button class="cm-next" @click="next">
-              <span>{{ isLast ? 'GOT IT' : 'NEXT' }}</span>
+              <span>{{ isLast ? $t('common.guest.walkthrough.done') : $t('common.guest.walkthrough.next') }}</span>
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4">
                 <path d="M2 5 H8 M5.5 2 L8 5 L5.5 8" stroke-linecap="round" stroke-linejoin="round" />
               </svg>

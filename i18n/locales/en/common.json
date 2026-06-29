@@ -90,7 +90,87 @@
             "upgrade_desc": "Sign up for free to sync across devices, use AI features, and more.",
             "upgrade_button": "Sign up free",
             "continue_guest": "Continue as guest",
-            "session_chip": "live session"
+            "session_chip": "live session",
+            "picker": {
+                "step": "step 02 — pick your shape",
+                "title_lead": "A blank canvas",
+                "title_em": "is sometimes the wrong start.",
+                "subtitle": "Every map starts as a shape. Pick the one that fits how you're thinking.",
+                "pick_eyebrow": "PICK A SHAPE",
+                "pick_sub": "6 starts that fit most thinking",
+                "browse": "browse all 24 →",
+                "blank": "Start with a blank canvas instead",
+                "tip_label": "tip:",
+                "tip": "you can change template later — nothing is locked.",
+                "tpl": {
+                    "decision_tree": {
+                        "title": "Decision tree",
+                        "desc": "Compare options. Trace consequences. End with a call.",
+                        "receipt": "7 nodes · 12s",
+                        "root": "Decision",
+                        "m1": "Option A", "m2": "Risks", "m3": "Option B",
+                        "l1": "Pro", "l2": "Mixed", "l3": "Con"
+                    },
+                    "project_plan": {
+                        "title": "Project plan",
+                        "desc": "Goals → milestones → checkpoints. Time-bound thinking.",
+                        "receipt": "9 nodes · 18s",
+                        "root": "Goal",
+                        "m1": "Spec", "m2": "Build", "m3": "Ship",
+                        "l1": "Today", "l2": "Wk 2", "l3": "Wk 4"
+                    },
+                    "research_synthesis": {
+                        "title": "Research synthesis",
+                        "desc": "Sources cluster. AI summarizes the cluster for you.",
+                        "receipt": "5 nodes · 10s",
+                        "root": "Question",
+                        "m1": "Source 1", "m2": "Source 2", "m3": "Source 3",
+                        "l1": "Theme", "l2": "AI synth", "l3": "Gap"
+                    },
+                    "brainstorm": {
+                        "title": "Brainstorm",
+                        "desc": "Spray ideas first. Cluster them later.",
+                        "receipt": "12 nodes · 8s",
+                        "root": "Topic",
+                        "m1": "Idea 1", "m2": "Idea 2", "m3": "Idea 3",
+                        "l1": "Sub a", "l2": "Sub b", "l3": "Sub c"
+                    },
+                    "pros_cons": {
+                        "title": "Pros & cons",
+                        "desc": "Two columns. Forces honesty about both sides.",
+                        "receipt": "8 nodes · 14s",
+                        "root": "Question",
+                        "m1": "Pro 1", "m2": "Mixed", "m3": "Con 1",
+                        "l1": "Pro 2", "l2": "Tradeoff", "l3": "Con 2"
+                    },
+                    "mind_map": {
+                        "title": "Mind map",
+                        "desc": "Free-form web. When you don't know the structure yet.",
+                        "receipt": "11 nodes · 16s",
+                        "root": "Center",
+                        "m1": "Branch", "m2": "Branch", "m3": "Branch",
+                        "l1": "Sub", "l2": "Sub", "l3": "Sub"
+                    }
+                }
+            },
+            "walkthrough": {
+                "step1_eyebrow": "01 / 03 — NODE",
+                "step1_title": "Drop in an idea.",
+                "step1_desc": "Double-click anywhere on the canvas. Type a sentence. That's a node. The canvas grows from there.",
+                "step1_waiting": "waiting for your first node…",
+                "step2_eyebrow": "02 / 03 — EDGE",
+                "step2_title": "Connect it.",
+                "step2_desc": "Drag from one node to another. Connections are typed (causes, contradicts, depends on) — they become the reasoning, not just the visual.",
+                "step2_waiting": "draw your first connection…",
+                "step3_eyebrow": "03 / 03 — AI",
+                "step3_title": "Then save, and AI takes over.",
+                "step3_desc": "Once saved, press ⌘K on any node and the AI extends that branch. Counter-arguments, summaries, gap analysis — anchored to the node you selected.",
+                "step3_waiting": "unlocks instantly when you save",
+                "skip": "skip tour",
+                "skip_aria": "Skip tour",
+                "next": "NEXT",
+                "done": "GOT IT"
+            }
         },
         "errors": {
             "generic": "Something went wrong. Please try again.",

@@ -594,15 +594,6 @@ function handleGuestTemplateSelect(templateId: string | null) {
   }
 }
 
-// Guest AI generate handler — guest can't use AI yet, so trigger upgrade modal
-function handleGuestGenerate(_prompt: string) {
-  showTemplatePicker.value = false
-  if (guest.isGuest.value && !guest.onboardingComplete.value) {
-    showOnboarding.value = true
-  }
-  guest.requireFeature('ai')
-}
-
 // Track guest edits and trigger save prompt at threshold (10 edits or 5 min after onboarding)
 function maybeShowSavePrompt() {
   if (!guest.isGuest.value) return
@@ -2513,7 +2504,6 @@ useHead({
     <GuestTemplatePicker
       v-if="showTemplatePicker"
       @select="handleGuestTemplateSelect"
-      @generate="handleGuestGenerate"
     />
 
     <!-- Guest Onboarding (after template pick) -->

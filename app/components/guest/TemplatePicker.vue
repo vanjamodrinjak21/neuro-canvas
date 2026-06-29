@@ -1,83 +1,17 @@
 <script setup lang="ts">
 const emit = defineEmits<{
   select: [template: string | null]
-  generate: [prompt: string]
 }>()
 
-const aiPrompt = ref('')
-
-const suggestions = [
-  'Plan a 3-day onboarding for new hires',
-  'Map arguments for and against remote work',
-  'Outline a research review on diffusion models',
-]
-
+// Each template maps to an i18n key group under common.guest.picker.tpl.*
 const templates = [
-  {
-    id: 'decision-tree',
-    title: 'Decision tree',
-    description: 'Compare options. Trace consequences. End with a call.',
-    receipt: '7 nodes · 12s',
-    rootLabel: 'Decision',
-    midLabels: ['Option A', 'Risks', 'Option B'],
-    leafLabels: ['Pro', 'Mixed', 'Con'],
-  },
-  {
-    id: 'project-plan',
-    title: 'Project plan',
-    description: 'Goals → milestones → checkpoints. Time-bound thinking.',
-    receipt: '9 nodes · 18s',
-    rootLabel: 'Goal',
-    midLabels: ['Spec', 'Build', 'Ship'],
-    leafLabels: ['Today', 'Wk 2', 'Wk 4'],
-  },
-  {
-    id: 'research-synthesis',
-    title: 'Research synthesis',
-    description: 'Sources cluster. AI summarizes the cluster for you.',
-    receipt: '5 nodes · 10s',
-    rootLabel: 'Question',
-    midLabels: ['Source 1', 'Source 2', 'Source 3'],
-    leafLabels: ['Theme', 'AI synth', 'Gap'],
-  },
-  {
-    id: 'brainstorm',
-    title: 'Brainstorm',
-    description: 'Spray ideas first. Cluster them later.',
-    receipt: '12 nodes · 8s',
-    rootLabel: 'Topic',
-    midLabels: ['Idea 1', 'Idea 2', 'Idea 3'],
-    leafLabels: ['Sub a', 'Sub b', 'Sub c'],
-  },
-  {
-    id: 'pros-cons',
-    title: 'Pros & cons',
-    description: 'Two columns. Forces honesty about both sides.',
-    receipt: '8 nodes · 14s',
-    rootLabel: 'Question',
-    midLabels: ['Pro 1', 'Mixed', 'Con 1'],
-    leafLabels: ['Pro 2', 'Tradeoff', 'Con 2'],
-  },
-  {
-    id: 'mind-map',
-    title: 'Mind map',
-    description: "Free-form web. When you don't know the structure yet.",
-    receipt: '11 nodes · 16s',
-    rootLabel: 'Center',
-    midLabels: ['Branch', 'Branch', 'Branch'],
-    leafLabels: ['Sub', 'Sub', 'Sub'],
-  },
+  { id: 'decision-tree', key: 'decision_tree' },
+  { id: 'project-plan', key: 'project_plan' },
+  { id: 'research-synthesis', key: 'research_synthesis' },
+  { id: 'brainstorm', key: 'brainstorm' },
+  { id: 'pros-cons', key: 'pros_cons' },
+  { id: 'mind-map', key: 'mind_map' },
 ]
-
-function pickSuggestion(s: string) {
-  aiPrompt.value = s
-}
-
-function handleGenerate() {
-  if (aiPrompt.value.trim()) {
-    emit('generate', aiPrompt.value.trim())
-  }
-}
 
 function handlePick(id: string) {
   emit('select', id)
@@ -94,114 +28,79 @@ function handleBlank() {
       <header class="picker-head">
         <div class="head-inner">
           <div class="head-brand">
-            <img src="/favicon.svg" alt="NeuroCanvas" class="head-logo" width="26" height="26">
+            <NcLogo :size="14" :container-size="26" :radius="6" />
             <div class="head-id">{{ $t('common.guest.session_chip') }}</div>
           </div>
-          <div class="head-step">step 02 — pick your shape</div>
+          <div class="head-step">{{ $t('common.guest.picker.step') }}</div>
         </div>
       </header>
 
       <div class="picker-body">
         <div class="body-inner">
-        <div class="title-block">
-          <h1 class="title">A blank canvas <span class="title-italic">is sometimes the wrong start.</span></h1>
-          <p class="subtitle">Describe what you're thinking, and the AI will lay it out. Or pick a shape that fits.</p>
-        </div>
+          <div class="title-block">
+            <h1 class="title">
+              {{ $t('common.guest.picker.title_lead') }}
+              <span class="title-italic">{{ $t('common.guest.picker.title_em') }}</span>
+            </h1>
+            <p class="subtitle">{{ $t('common.guest.picker.subtitle') }}</p>
+          </div>
 
-        <div class="ai-card">
-          <div class="ai-eyebrow-row">
-            <div class="ai-eyebrow">
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 1 L7.5 4.5 L11 6 L7.5 7.5 L6 11 L4.5 7.5 L1 6 L4.5 4.5 Z" /></svg>
-              <span>AI · GENERATE</span>
+          <div class="templates">
+            <div class="templates-head">
+              <div class="templates-head-left">
+                <span class="templates-eyebrow">{{ $t('common.guest.picker.pick_eyebrow') }}</span>
+                <span class="templates-sub">{{ $t('common.guest.picker.pick_sub') }}</span>
+              </div>
+              <button class="templates-browse">{{ $t('common.guest.picker.browse') }}</button>
             </div>
-            <span class="ai-hint">type a sentence — the canvas builds itself</span>
-          </div>
 
-          <div class="ai-prompt">
-            <input
-              v-model="aiPrompt"
-              type="text"
-              class="ai-input"
-              :placeholder="$t('common.guest.template_picker_ai_placeholder')"
-              @keydown.enter="handleGenerate"
-            >
-            <button class="ai-generate" :disabled="!aiPrompt.trim()" @click="handleGenerate">
-              <span>Generate</span>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7 H11 M7.5 3 L11 7 L7.5 11" stroke-linecap="round" stroke-linejoin="round" /></svg>
-            </button>
-          </div>
-
-          <div class="ai-suggestions">
-            <span class="ai-sug-label">SUGGESTIONS</span>
-            <div class="ai-sug-list">
+            <div class="templates-grid">
               <button
-                v-for="s in suggestions"
-                :key="s"
-                class="ai-sug"
-                @click="pickSuggestion(s)"
+                v-for="tmpl in templates"
+                :key="tmpl.id"
+                class="tpl"
+                @click="handlePick(tmpl.id)"
               >
-                {{ s }}
+                <div class="tpl-preview">
+                  <svg class="tpl-edges" viewBox="0 0 280 184" preserveAspectRatio="none">
+                    <path d="M140 32 L48 70" stroke="currentColor" stroke-width="1.4" fill="none" />
+                    <path d="M140 32 L140 70" stroke="currentColor" stroke-width="1.4" fill="none" />
+                    <path d="M140 32 L232 70" stroke="currentColor" stroke-width="1.4" fill="none" />
+                    <path d="M48 96 L48 138" stroke="currentColor" stroke-width="1.4" fill="none" />
+                    <path d="M140 96 L140 138" stroke="currentColor" stroke-width="1.4" fill="none" />
+                    <path d="M232 96 L232 138" stroke="currentColor" stroke-width="1.4" fill="none" />
+                  </svg>
+                  <div class="tpl-label tpl-root tpl-c2">{{ $t(`common.guest.picker.tpl.${tmpl.key}.root`) }}</div>
+                  <div class="tpl-label tpl-mid tpl-c1">{{ $t(`common.guest.picker.tpl.${tmpl.key}.m1`) }}</div>
+                  <div class="tpl-label tpl-mid tpl-c2">{{ $t(`common.guest.picker.tpl.${tmpl.key}.m2`) }}</div>
+                  <div class="tpl-label tpl-mid tpl-c3">{{ $t(`common.guest.picker.tpl.${tmpl.key}.m3`) }}</div>
+                  <div class="tpl-label tpl-leaf tpl-c1">{{ $t(`common.guest.picker.tpl.${tmpl.key}.l1`) }}</div>
+                  <div class="tpl-label tpl-leaf tpl-c2">{{ $t(`common.guest.picker.tpl.${tmpl.key}.l2`) }}</div>
+                  <div class="tpl-label tpl-leaf tpl-c3">{{ $t(`common.guest.picker.tpl.${tmpl.key}.l3`) }}</div>
+                </div>
+                <div class="tpl-meta">
+                  <div class="tpl-meta-row">
+                    <span class="tpl-title">{{ $t(`common.guest.picker.tpl.${tmpl.key}.title`) }}</span>
+                    <span class="tpl-receipt">{{ $t(`common.guest.picker.tpl.${tmpl.key}.receipt`) }}</span>
+                  </div>
+                  <div class="tpl-desc">{{ $t(`common.guest.picker.tpl.${tmpl.key}.desc`) }}</div>
+                </div>
               </button>
             </div>
           </div>
-        </div>
-
-        <div class="templates">
-          <div class="templates-head">
-            <div class="templates-head-left">
-              <span class="templates-eyebrow">OR — PICK A SHAPE</span>
-              <span class="templates-sub">6 starts that fit most thinking</span>
-            </div>
-            <button class="templates-browse">browse all 24 →</button>
-          </div>
-
-          <div class="templates-grid">
-            <button
-              v-for="tmpl in templates"
-              :key="tmpl.id"
-              class="tpl"
-              @click="handlePick(tmpl.id)"
-            >
-              <div class="tpl-preview">
-                <svg class="tpl-edges" viewBox="0 0 280 184" preserveAspectRatio="none">
-                  <path d="M140 32 L48 70" stroke="currentColor" stroke-width="1.4" fill="none" />
-                  <path d="M140 32 L140 70" stroke="currentColor" stroke-width="1.4" fill="none" />
-                  <path d="M140 32 L232 70" stroke="currentColor" stroke-width="1.4" fill="none" />
-                  <path d="M48 96 L48 138" stroke="currentColor" stroke-width="1.4" fill="none" />
-                  <path d="M140 96 L140 138" stroke="currentColor" stroke-width="1.4" fill="none" />
-                  <path d="M232 96 L232 138" stroke="currentColor" stroke-width="1.4" fill="none" />
-                </svg>
-                <div class="tpl-label tpl-root">{{ tmpl.rootLabel }}</div>
-                <div class="tpl-label tpl-mid" style="left: 22px; top: 64px;">{{ tmpl.midLabels[0] }}</div>
-                <div class="tpl-label tpl-mid" style="left: 120px; top: 64px;">{{ tmpl.midLabels[1] }}</div>
-                <div class="tpl-label tpl-mid" style="left: 218px; top: 64px;">{{ tmpl.midLabels[2] }}</div>
-                <div class="tpl-label tpl-leaf" style="left: 28px; top: 132px;">{{ tmpl.leafLabels[0] }}</div>
-                <div class="tpl-label tpl-leaf" style="left: 122px; top: 132px;">{{ tmpl.leafLabels[1] }}</div>
-                <div class="tpl-label tpl-leaf" style="left: 220px; top: 132px;">{{ tmpl.leafLabels[2] }}</div>
-              </div>
-              <div class="tpl-meta">
-                <div class="tpl-meta-row">
-                  <span class="tpl-title">{{ tmpl.title }}</span>
-                  <span class="tpl-receipt">{{ tmpl.receipt }}</span>
-                </div>
-                <div class="tpl-desc">{{ tmpl.description }}</div>
-              </div>
-            </button>
-          </div>
-        </div>
         </div>
       </div>
 
       <footer class="picker-foot">
         <div class="foot-inner">
-        <button class="foot-blank" @click="handleBlank">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3 H11 V11 H3 Z M3 7 H11 M7 3 V11" stroke-linecap="round" /></svg>
-          <span>Start with a blank canvas instead</span>
-        </button>
-        <div class="foot-tip">
-          <span class="foot-tip-label">tip:</span>
-          <span>you can change template later — nothing is locked.</span>
-        </div>
+          <button class="foot-blank" @click="handleBlank">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3 H11 V11 H3 Z M3 7 H11 M7 3 V11" stroke-linecap="round" /></svg>
+            <span>{{ $t('common.guest.picker.blank') }}</span>
+          </button>
+          <div class="foot-tip">
+            <span class="foot-tip-label">{{ $t('common.guest.picker.tip_label') }}</span>
+            <span>{{ $t('common.guest.picker.tip') }}</span>
+          </div>
         </div>
       </footer>
     </div>
@@ -243,13 +142,6 @@ function handleBlank() {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.head-logo {
-  display: block;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
 }
 
 .head-id,
@@ -326,181 +218,6 @@ function handleBlank() {
 
 :root.light .subtitle {
   color: #5A5A5A;
-}
-
-/* AI Card */
-.ai-card {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 24px;
-  background: var(--nc-surface, #0C0C10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 14px;
-}
-
-:root.light .ai-card {
-  background: #FFFFFF;
-  border-color: #DDD9CF;
-}
-
-.ai-eyebrow-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ai-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.22);
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.04em;
-  color: var(--nc-accent, #00D2BE);
-}
-
-.ai-hint {
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
-}
-
-:root.light .ai-hint {
-  color: #5A5A5A;
-}
-
-.ai-prompt {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 18px;
-  background: var(--nc-bg, #09090B);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
-}
-
-:root.light .ai-prompt {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
-}
-
-.ai-input {
-  flex: 1;
-  background: none;
-  border: none;
-  outline: none;
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic;
-  font-size: calc(22px * var(--nc-text-scale, 1));
-  color: var(--nc-ink, #FAFAFA);
-  min-width: 0;
-}
-
-.ai-input::placeholder {
-  color: var(--nc-ink-faint, #52525B);
-}
-
-:root.light .ai-input {
-  color: #1A1A1A;
-}
-
-:root.light .ai-input::placeholder {
-  color: #8A8780;
-}
-
-.ai-generate {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  background: var(--nc-accent, #00D2BE);
-  border: none;
-  border-radius: 8px;
-  color: #09090B;
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 150ms ease, transform 80ms ease;
-  flex-shrink: 0;
-}
-
-.ai-generate:hover:not(:disabled) {
-  background: var(--nc-accent-dark, #00A89A);
-}
-
-.ai-generate:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.ai-generate:active {
-  transform: scale(0.97);
-}
-
-:root.light .ai-generate {
-  background: #1A1A1A;
-  color: #FAF8F4;
-}
-
-:root.light .ai-generate:hover:not(:disabled) {
-  background: #2A2A2A;
-}
-
-.ai-suggestions {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding-top: 4px;
-}
-
-.ai-sug-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--nc-ink-faint, #52525B);
-  flex-shrink: 0;
-}
-
-:root.light .ai-sug-label {
-  color: #8A8780;
-}
-
-.ai-sug-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.ai-sug {
-  padding: 5px 10px;
-  background: var(--nc-surface-2, #121216);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
-  cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease;
-}
-
-.ai-sug:hover {
-  border-color: var(--nc-border-hover, #3F3F46);
-  color: var(--nc-ink, #FAFAFA);
-}
-
-:root.light .ai-sug {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
-  color: #5A5A5A;
-}
-
-:root.light .ai-sug:hover {
-  border-color: #C8C4B8;
-  color: #1A1A1A;
 }
 
 /* Templates */
@@ -627,12 +344,19 @@ function handleBlank() {
   border-radius: 5px;
   white-space: nowrap;
   pointer-events: none;
+  /* Center the label exactly on its node coordinate so it sits on the edge ends */
+  transform: translate(-50%, -50%);
 }
 
+/* Columns — percentages of the 280-wide viewBox the edges are drawn in,
+   so labels stay anchored to the edge endpoints at any preview width. */
+.tpl-c1 { left: 17.143%; }
+.tpl-c2 { left: 50%; }
+.tpl-c3 { left: 82.857%; }
+
+/* Rows — vertical node centers in the 184px-tall preview. */
 .tpl-root {
-  left: 50%;
-  top: 14px;
-  transform: translateX(-50%);
+  top: 32px;
   font-size: calc(10px * var(--nc-text-scale, 1));
   background: var(--nc-surface-3, #1E1E22);
   border: 1px solid var(--nc-border-hover, #3F3F46);
@@ -640,6 +364,9 @@ function handleBlank() {
   padding: 5px 12px;
   border-radius: 6px;
 }
+
+.tpl-mid { top: 83px; }
+.tpl-leaf { top: 138px; }
 
 :root.light .tpl-root {
   background: #EDE9E0;
@@ -652,7 +379,6 @@ function handleBlank() {
   background: var(--nc-surface-2, #121216);
   border: 1px solid var(--nc-border, #1E1E22);
   color: var(--nc-ink-muted, #A1A1AA);
-  transform: translateX(-50%);
 }
 
 :root.light .tpl-mid,
@@ -685,6 +411,7 @@ function handleBlank() {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-ink-faint, #52525B);
+  flex-shrink: 0;
 }
 
 .tpl-desc {
@@ -802,11 +529,6 @@ function handleBlank() {
   }
   .templates-grid {
     grid-template-columns: 1fr;
-  }
-  .ai-suggestions {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
   }
   .picker-foot {
     padding: 16px 20px 20px;

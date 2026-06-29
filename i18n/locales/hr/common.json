@@ -90,7 +90,87 @@
             "upgrade_desc": "Registrirajte se besplatno za sinkronizaciju izme\u0111u ure\u0111aja, kori\u0161tenje AI zna\u010dajki i jo\u0161 mnogo toga.",
             "upgrade_button": "Registriraj se besplatno",
             "continue_guest": "Nastavi kao gost",
-            "session_chip": "aktivna sesija"
+            "session_chip": "aktivna sesija",
+            "picker": {
+                "step": "korak 02 \u2014 odaberite oblik",
+                "title_lead": "Prazno platno",
+                "title_em": "ponekad je pogre\u0161an po\u010detak.",
+                "subtitle": "Svaka mapa po\u010dinje kao oblik. Odaberite onaj koji odgovara va\u0161em na\u010dinu razmi\u0161ljanja.",
+                "pick_eyebrow": "ODABERITE OBLIK",
+                "pick_sub": "6 po\u010detnih oblika za ve\u0107inu na\u010dina razmi\u0161ljanja",
+                "browse": "pregledaj svih 24 \u2192",
+                "blank": "Umjesto toga po\u010dni s praznim platnom",
+                "tip_label": "savjet:",
+                "tip": "predlo\u017eak mo\u017eete promijeniti kasnije \u2014 ni\u0161ta nije zaklju\u010dano.",
+                "tpl": {
+                    "decision_tree": {
+                        "title": "Stablo odluke",
+                        "desc": "Usporedite opcije. Pratite posljedice. Zavr\u0161ite odlukom.",
+                        "receipt": "7 \u010dvorova \u00b7 12s",
+                        "root": "Odluka",
+                        "m1": "Opcija A", "m2": "Rizici", "m3": "Opcija B",
+                        "l1": "Za", "l2": "Mje\u0161ovito", "l3": "Protiv"
+                    },
+                    "project_plan": {
+                        "title": "Plan projekta",
+                        "desc": "Ciljevi \u2192 prekretnice \u2192 kontrolne to\u010dke. Razmi\u0161ljanje u rokovima.",
+                        "receipt": "9 \u010dvorova \u00b7 18s",
+                        "root": "Cilj",
+                        "m1": "Spec", "m2": "Izrada", "m3": "Isporuka",
+                        "l1": "Danas", "l2": "Tj. 2", "l3": "Tj. 4"
+                    },
+                    "research_synthesis": {
+                        "title": "Sinteza istra\u017eivanja",
+                        "desc": "Izvori se grupiraju. AI sa\u017eima grupu umjesto vas.",
+                        "receipt": "5 \u010dvorova \u00b7 10s",
+                        "root": "Pitanje",
+                        "m1": "Izvor 1", "m2": "Izvor 2", "m3": "Izvor 3",
+                        "l1": "Tema", "l2": "AI sinteza", "l3": "Praznina"
+                    },
+                    "brainstorm": {
+                        "title": "Oluja ideja",
+                        "desc": "Prvo izbacite ideje. Grupirajte ih kasnije.",
+                        "receipt": "12 \u010dvorova \u00b7 8s",
+                        "root": "Tema",
+                        "m1": "Ideja 1", "m2": "Ideja 2", "m3": "Ideja 3",
+                        "l1": "Pod a", "l2": "Pod b", "l3": "Pod c"
+                    },
+                    "pros_cons": {
+                        "title": "Za i protiv",
+                        "desc": "Dva stupca. Prisiljava na iskrenost o objema stranama.",
+                        "receipt": "8 \u010dvorova \u00b7 14s",
+                        "root": "Pitanje",
+                        "m1": "Za 1", "m2": "Mje\u0161ovito", "m3": "Protiv 1",
+                        "l1": "Za 2", "l2": "Kompromis", "l3": "Protiv 2"
+                    },
+                    "mind_map": {
+                        "title": "Mentalna mapa",
+                        "desc": "Slobodna mre\u017ea. Kad jo\u0161 ne znate strukturu.",
+                        "receipt": "11 \u010dvorova \u00b7 16s",
+                        "root": "Sredi\u0161te",
+                        "m1": "Grana", "m2": "Grana", "m3": "Grana",
+                        "l1": "Pod", "l2": "Pod", "l3": "Pod"
+                    }
+                }
+            },
+            "walkthrough": {
+                "step1_eyebrow": "01 / 03 \u2014 \u010cVOR",
+                "step1_title": "Ubacite ideju.",
+                "step1_desc": "Dvaput kliknite bilo gdje na platnu. Upi\u0161ite re\u010denicu. To je \u010dvor. Platno raste odatle.",
+                "step1_waiting": "\u010dekam va\u0161 prvi \u010dvor\u2026",
+                "step2_eyebrow": "02 / 03 \u2014 VEZA",
+                "step2_title": "Pove\u017eite je.",
+                "step2_desc": "Povucite od jednog \u010dvora do drugog. Veze su tipizirane (uzrokuje, proturje\u010di, ovisi o) \u2014 one postaju zaklju\u010divanje, a ne samo vizual.",
+                "step2_waiting": "nacrtajte svoju prvu vezu\u2026",
+                "step3_eyebrow": "03 / 03 \u2014 AI",
+                "step3_title": "Zatim spremite i AI preuzima.",
+                "step3_desc": "Nakon spremanja pritisnite \u2318K na bilo kojem \u010dvoru i AI pro\u0161iruje tu granu. Protuargumenti, sa\u017eetci, analiza praznina \u2014 vezani uz \u010dvor koji ste odabrali.",
+                "step3_waiting": "otklju\u010dava se odmah nakon spremanja",
+                "skip": "presko\u010di obilazak",
+                "skip_aria": "Presko\u010di obilazak",
+                "next": "DALJE",
+                "done": "SHVA\u0106AM"
+            }
         },
         "errors": {
             "generic": "Ne\u0161to je po\u0161lo po krivu. Poku\u0161ajte ponovno.",
