@@ -89,7 +89,8 @@
             "upgrade_title": "Unlock all features",
             "upgrade_desc": "Sign up for free to sync across devices, use AI features, and more.",
             "upgrade_button": "Sign up free",
-            "continue_guest": "Continue as guest"
+            "continue_guest": "Continue as guest",
+            "session_chip": "live session"
         },
         "errors": {
             "generic": "Something went wrong. Please try again.",

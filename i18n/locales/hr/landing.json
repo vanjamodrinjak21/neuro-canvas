@@ -107,6 +107,7 @@
     },
     "mini_canvas": {
       "live_chip": "uživo · pomicanje · zumiranje · povlačenje u produkciji",
+      "session_chip": "aktivna sesija",
       "nodes_label": "čvorova",
       "node_root": "Okvir za hero CTA",
       "node_left_top": "Redizajn onboardinga",

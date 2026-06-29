@@ -112,7 +112,7 @@ onMounted(() => {
         <!-- top chips -->
         <div class="mc-chip mc-chip--tl mc-rise" style="--mc-delay: 320ms">
           <span class="mc-chip-dot" />
-          <span class="mc-chip-text">guest_session.live</span>
+          <span class="mc-chip-text">{{ $t('landing.mini_canvas.session_chip') }}</span>
         </div>
         <div class="mc-chip mc-chip--tc mc-rise" style="--mc-delay: 380ms">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

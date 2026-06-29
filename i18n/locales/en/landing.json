@@ -107,6 +107,7 @@
     },
     "mini_canvas": {
       "live_chip": "live · pan · zoom · drag in production",
+      "session_chip": "live session",
       "nodes_label": "nodes",
       "node_root": "Hero CTA framing",
       "node_left_top": "Onboarding rework",

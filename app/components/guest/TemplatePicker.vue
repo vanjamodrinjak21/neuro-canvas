@@ -95,7 +95,7 @@ function handleBlank() {
         <div class="head-inner">
           <div class="head-brand">
             <img src="/favicon.svg" alt="NeuroCanvas" class="head-logo" width="26" height="26">
-            <div class="head-id">guest_session.live</div>
+            <div class="head-id">{{ $t('common.guest.session_chip') }}</div>
           </div>
           <div class="head-step">step 02 — pick your shape</div>
         </div>

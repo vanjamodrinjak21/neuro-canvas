@@ -89,7 +89,8 @@
             "upgrade_title": "Otklju\u010dajte sve zna\u010dajke",
             "upgrade_desc": "Registrirajte se besplatno za sinkronizaciju izme\u0111u ure\u0111aja, kori\u0161tenje AI zna\u010dajki i jo\u0161 mnogo toga.",
             "upgrade_button": "Registriraj se besplatno",
-            "continue_guest": "Nastavi kao gost"
+            "continue_guest": "Nastavi kao gost",
+            "session_chip": "aktivna sesija"
         },
         "errors": {
             "generic": "Ne\u0161to je po\u0161lo po krivu. Poku\u0161ajte ponovno.",
