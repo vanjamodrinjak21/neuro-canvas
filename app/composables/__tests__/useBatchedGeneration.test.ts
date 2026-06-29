@@ -7,6 +7,19 @@ import type {
   GenerationContext,
   HierarchicalExpandOptions,
 } from '~/types/ai-generation'
+// vi.mock below is hoisted by Vitest above all imports, and its factory only
+// reads `fake` / `makeSuggestion` inside methods invoked at test time — so the
+// SUT can be imported here at the top (satisfies import/first) without breaking
+// the mock.
+import {
+  useBatchedGeneration,
+  countStructureNodes,
+  countBranchNodes,
+  collectFrontier,
+  suggestionsToBranches,
+  estimateNodesPerExpansion,
+  mapWithConcurrency,
+} from '../useBatchedGeneration'
 
 // ---------------------------------------------------------------------------
 // useBatchedGeneration tests
@@ -79,17 +92,6 @@ vi.mock('~/composables/useAI', () => ({
     },
   }),
 }))
-
-// Imported AFTER the mock is registered.
-import {
-  useBatchedGeneration,
-  countStructureNodes,
-  countBranchNodes,
-  collectFrontier,
-  suggestionsToBranches,
-  estimateNodesPerExpansion,
-  mapWithConcurrency,
-} from '../useBatchedGeneration'
 
 function resetFake() {
   fake.seedBranches = 5
