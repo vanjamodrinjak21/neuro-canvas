@@ -637,13 +637,13 @@ async function manualUpdateCheck() {
 /* Toggle */
 .mgen-toggle {
   position: relative;
-  width: 44px; height: 26px;
+  width: 44px; height: 24px;
   padding: 0;
-  border: 1px solid rgba(250, 250, 250, 0.06);
+  border: none;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.10);
+  background: rgba(250, 250, 250, 0.12);
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   display: inline-block;
 }
@@ -651,17 +651,15 @@ async function manualUpdateCheck() {
   position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
   background: var(--nc-ink-faint);
-  transition: transform 180ms ease, background 150ms ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
-  border-color: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  transform: translateX(18px);
+  transform: translateX(20px);
   background: #FAFAFA;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40);
 }
 
 /* Slider */
@@ -775,8 +773,7 @@ async function manualUpdateCheck() {
   border-color: rgba(17, 17, 17, 0.08);
 }
 :root.light .mgen-toggle {
-  background: rgba(17, 17, 17, 0.10);
-  border-color: rgba(17, 17, 17, 0.06);
+  background: rgba(17, 17, 17, 0.12);
 }
 :root.light .mgen-slider-track {
   background: rgba(17, 17, 17, 0.08);

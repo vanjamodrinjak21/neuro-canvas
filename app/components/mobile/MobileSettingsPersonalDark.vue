@@ -564,24 +564,24 @@ const layout = ref<'radial' | 'tree'>('radial')
 
 .mper-toggle {
   position: relative;
-  width: 44px; height: 26px;
+  width: 44px; height: 24px;
   padding: 0;
-  border: 1px solid rgba(250, 250, 250, 0.06);
+  border: none;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.10);
+  background: rgba(250, 250, 250, 0.12);
   cursor: pointer; flex-shrink: 0;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-block;
 }
 .mper-toggle-knob {
   position: absolute; left: 2px; top: 2px;
   width: 20px; height: 20px; border-radius: 999px;
   background: var(--nc-ink-faint);
-  transition: transform 180ms ease, background 150ms ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
-.mper-toggle--on { background: var(--mper-mint); border-color: var(--mper-mint); }
-.mper-toggle--on .mper-toggle-knob { transform: translateX(18px); background: var(--nc-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40); }
+.mper-toggle--on { background: var(--mper-mint); }
+.mper-toggle--on .mper-toggle-knob { transform: translateX(20px); background: #FAFAFA; }
 
 .mper-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
@@ -600,7 +600,6 @@ const layout = ref<'radial' | 'tree'>('radial')
   border-color: rgba(17, 17, 17, 0.08);
 }
 :root.light .mper-toggle {
-  background: rgba(17, 17, 17, 0.10);
-  border-color: rgba(17, 17, 17, 0.08);
+  background: rgba(17, 17, 17, 0.12);
 }
 </style>
