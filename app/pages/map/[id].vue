@@ -681,10 +681,18 @@ onMounted(async () => {
         await waitUntil(() => syncEngine.isSyncEnabled.value, 5000)
       }
       if (syncEngine.isSyncEnabled.value) {
-        await syncEngine.initialize()        // sets db currentUserId → getMap won't ownership-reject
-        await syncEngine.pullMap(mapId.value)
+        await syncEngine.initialize()        // sets db currentUserId so getMap won't ownership-reject
+        // Re-read locally FIRST. If the map is already cached, it returns
+        // instantly now that the user id is set — no slow network round-trip
+        // (that pull was the ~1s empty flash on reopen). Only pull if truly absent.
+        map = await db.getMap(mapId.value)
+        if (!map) {
+          await syncEngine.pullMap(mapId.value)
+          map = await db.getMap(mapId.value)
+        }
+      } else {
+        map = await db.getMap(mapId.value)   // last local retry even if sync never came online
       }
-      map = await db.getMap(mapId.value)
     }
 
     // Share-link recipient: the map isn't in their local DB, and device sync
@@ -1997,12 +2005,17 @@ async function handleSemanticSearch(query: string) {
   semanticSearchRef.value?.setSearching(true)
   type SearchResult = import('~/types/semantic').SemanticSearchResult
   try {
-    const nodesWithEmbeddings = semanticStore.nodesWithEmbeddings
-    const nodes = nodesWithEmbeddings.map(n => ({
-      id: n.nodeId,
-      content: mapStore.nodes.get(n.nodeId)?.content ?? '',
-      embedding: n.embedding
-    })).filter(n => n.content)
+    // Search ALL map nodes — not only the ones that already have embeddings —
+    // so a text query works on the very FIRST attempt, before the background
+    // embedding pass / on-device model finishes warming up. Each node carries
+    // its embedding when available, else [] (text-only for that node).
+    // rankHybridSearch tolerates empty embeddings (semantic score = 0).
+    const embById = new Map(
+      semanticStore.nodesWithEmbeddings.map(n => [n.nodeId, n.embedding])
+    )
+    const nodes = Array.from(mapStore.nodes.values())
+      .filter(n => n.content && n.content.trim())
+      .map(n => ({ id: n.id, content: n.content, embedding: embById.get(n.id) ?? [] }))
 
     // Node leg. Routes through ai.hybridSearch, which embeds + ranks natively
     // (on-device ONNX) inside Tauri/Capacitor — where there is no web worker —
