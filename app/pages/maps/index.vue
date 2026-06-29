@@ -3,6 +3,8 @@ import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useMapStore } from '~/stores/mapStore'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { mapServerToDoc } from '~/utils/mapServer'
+import { getUserInitials, formatRelativeDay } from '~/utils/userDisplay'
 
 definePageMeta({
   layout: false,
@@ -144,35 +146,12 @@ const _desktopAuth = _isTauri ? useDesktopAuth() : null
 
 const userInitials = computed(() => {
   const u = (_session as { data?: { value?: { user?: { name?: string | null; email?: string | null } } } })?.data?.value?.user
-  const name = u?.name || u?.email || ''
-  if (!name) return 'V'
-  const parts = name.split(/[\s@]+/).filter(Boolean)
-  if (parts.length === 0) return 'V'
-  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase()
-  return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase()
+  return getUserInitials(u?.name || u?.email, 'V')
 })
 const userImage = computed(() => {
   const u = (_session as { data?: { value?: { user?: { image?: string | null } } } })?.data?.value?.user
   return u?.image || null
 })
-
-function mapResponse(m: any): DBMapDocument {
-  return {
-    id: m.id,
-    title: m.title,
-    nodes: m.data?.nodes || [],
-    edges: m.data?.edges || [],
-    camera: m.data?.camera || { x: 0, y: 0, zoom: 1 },
-    settings: m.data?.settings || {},
-    rootNodeId: m.data?.rootNodeId,
-    preview: m.preview,
-    tags: m.tags || [],
-    createdAt: new Date(m.createdAt).getTime(),
-    updatedAt: new Date(m.updatedAt).getTime(),
-    syncVersion: m.syncVersion,
-    checksum: m.checksum
-  } as DBMapDocument
-}
 
 // Load all maps from server (PostgreSQL → Redis → client), fallback to IndexedDB
 onMounted(async () => {
@@ -186,11 +165,11 @@ onMounted(async () => {
         ? _desktopAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
         : _mobileAuth!.remoteFetch<{ maps: any[] }>('/api/sync/pull')
       const response = await fetcher
-      allMaps.value = response.maps.map(mapResponse)
+      allMaps.value = response.maps.map(mapServerToDoc)
     } else if (!_isNative && _session.data?.value?.user) {
       // Web: fetch from server
       const response: { maps: any[] } = await ($fetch as any)('/api/sync/pull')
-      allMaps.value = response.maps.map(mapResponse)
+      allMaps.value = response.maps.map(mapServerToDoc)
     } else {
       allMaps.value = await db.getAllMaps()
     }
@@ -243,15 +222,7 @@ async function createNewMap() {
 }
 
 function formatDate(timestamp: number): string {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return t('common.time.today')
-  if (diffDays === 1) return t('common.time.yesterday')
-  if (diffDays < 7) return t('common.time.days_ago', { n: diffDays })
-  return date.toLocaleDateString()
+  return formatRelativeDay(timestamp, t)
 }
 </script>
 

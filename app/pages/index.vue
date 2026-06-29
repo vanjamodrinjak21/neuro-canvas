@@ -20,10 +20,6 @@ function handleTryFree() {
   navigateTo('/map/new')
 }
 
-function scrollToId(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
 const lpRoot = ref<HTMLElement | null>(null)
 
 onMounted(() => {
@@ -57,26 +53,7 @@ onMounted(() => {
 <template>
   <div ref="lpRoot" class="lp">
     <!-- ══════ TOP NAV ══════ -->
-    <nav class="nav">
-      <div class="nav-left">
-        <NuxtLink to="/" class="brand">
-          <NcLogo :size="14" :container-size="24" :radius="6" />
-          <span class="brand-name">NeuroCanvas</span>
-        </NuxtLink>
-        <div class="nav-links">
-          <a href="#how-it-works" @click.prevent="scrollToId('how-it-works')">{{ $t('landing.nav.product') }}</a>
-          <a href="#templates" @click.prevent="scrollToId('templates')">{{ $t('landing.nav.templates') }}</a>
-          <NuxtLink to="/docs">{{ $t('landing.nav.docs') }}</NuxtLink>
-          <NuxtLink to="/download">{{ $t('landing.nav.download') }}</NuxtLink>
-        </div>
-      </div>
-      <div class="nav-right">
-        <NuxtLink v-if="!isAuthenticated" to="/auth/signin" class="nav-signin">{{ $t('landing.nav.signin') }}</NuxtLink>
-        <NuxtLink v-else to="/dashboard" class="nav-dash">
-          {{ $t('landing.nav.open_dashboard') }}
-        </NuxtLink>
-      </div>
-    </nav>
+    <LandingNav :is-authenticated="isAuthenticated" />
 
     <!-- ══════ HERO SPLIT ══════ -->
     <section class="hero">
@@ -462,35 +439,7 @@ onMounted(() => {
     </section>
 
     <!-- ══════ FOOTER ══════ -->
-    <footer class="footer">
-      <div class="footer-brand">
-        <div class="footer-brand-row">
-          <NcLogo :size="11" :container-size="18" :radius="5" />
-          <span class="footer-brand-name">NeuroCanvas</span>
-        </div>
-        <span class="footer-meta">{{ $t('landing.footer.version_meta') }}</span>
-        <span class="footer-meta footer-meta--credit">{{ $t('landing.footer.made_by') }}</span>
-      </div>
-      <div class="footer-cols">
-        <div class="footer-col">
-          <span class="footer-col-head">{{ $t('landing.footer.product_head') }}</span>
-          <NuxtLink to="/templates">{{ $t('landing.footer.templates_link') }}</NuxtLink>
-          <NuxtLink to="/download">{{ $t('landing.footer.download_link') }}</NuxtLink>
-          <NuxtLink to="/roadmap">{{ $t('landing.footer.roadmap_link') }}</NuxtLink>
-        </div>
-        <div class="footer-col">
-          <span class="footer-col-head">{{ $t('landing.footer.resources_head') }}</span>
-          <NuxtLink to="/docs">{{ $t('landing.footer.docs_link') }}</NuxtLink>
-          <a href="https://github.com/vanjamodrinjak21/neuro-canvas" target="_blank" rel="noopener">{{ $t('landing.footer.github_link') }}</a>
-        </div>
-        <div class="footer-col">
-          <span class="footer-col-head">{{ $t('landing.footer.company_head') }}</span>
-          <NuxtLink to="/privacy">{{ $t('landing.footer.privacy_link') }}</NuxtLink>
-          <NuxtLink to="/terms">{{ $t('landing.footer.terms_link') }}</NuxtLink>
-          <a href="mailto:hello@neurocanvas.app">{{ $t('landing.footer.contact_link') }}</a>
-        </div>
-      </div>
-    </footer>
+    <LandingFooter />
   </div>
 </template>
 
@@ -537,97 +486,6 @@ onMounted(() => {
   --text-2: #555555;
   --text-3: #777777;
 }
-
-/* ═══════════════════════ NAV ═══════════════════════ */
-.nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px 56px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  z-index: 100;
-}
-
-:root.light .nav { background: rgba(250, 250, 249, 0.85); }
-
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 40px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.brand-name {
-  font-family: var(--sans);
-  font-size: calc(15px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 18px;
-  color: var(--text);
-}
-
-.nav-links {
-  display: flex;
-  gap: 28px;
-}
-
-.nav-links a {
-  font-family: var(--sans);
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  line-height: 18px;
-  color: var(--text-2);
-  text-decoration: none;
-  transition: color 120ms ease;
-}
-
-.nav-links a:hover { color: var(--text); }
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.nav-signin {
-  padding: 8px 12px;
-  font-family: var(--sans);
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  line-height: 18px;
-  color: var(--text-2);
-  text-decoration: none;
-  transition: color 120ms ease;
-}
-
-.nav-signin:hover { color: var(--text); }
-
-.nav-dash {
-  padding: 8px 16px;
-  border: 1px solid var(--border-3);
-  border-radius: 10px;
-  font-family: var(--sans);
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  line-height: 18px;
-  color: var(--text);
-  text-decoration: none;
-  transition: border-color 120ms ease, background 120ms ease;
-}
-
-.nav-dash:hover { border-color: var(--border-4); background: var(--bg-2); }
 
 /* ═══════════════════════ MOTION ═══════════════════════ */
 .lp {
@@ -1592,83 +1450,8 @@ onMounted(() => {
   margin: 0;
 }
 
-/* ═══════════════════════ FOOTER ═══════════════════════ */
-.footer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 48px 56px 36px;
-  border-top: 1px solid var(--border);
-}
-
-.footer-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.footer-brand-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.footer-brand-name {
-  font-family: var(--sans);
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  line-height: 16px;
-  color: var(--text-2);
-}
-
-.footer-meta {
-  font-family: var(--mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  line-height: 14px;
-  color: var(--text-3);
-}
-
-.footer-meta--credit {
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  margin-top: 6px;
-}
-
-.footer-cols {
-  display: flex;
-  align-items: flex-start;
-  gap: 32px;
-}
-
-.footer-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-self: flex-start;
-}
-
-.footer-col-head {
-  font-family: var(--sans);
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  line-height: 16px;
-  color: var(--text-3);
-}
-
-.footer-col a {
-  font-family: var(--sans);
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  line-height: 16px;
-  color: var(--text-2);
-  text-decoration: none;
-  transition: color 120ms ease;
-}
-
-.footer-col a:hover { color: var(--text); }
-
 /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
 @media (max-width: 1280px) {
-  .nav { padding: 20px 32px; }
   .hero { padding: 40px 32px 80px; gap: 40px; }
   .sec, .sec-01, .sec-02, .sec-03, .sec-04, .sec-05 {
     padding-left: 32px; padding-right: 32px;
@@ -1676,7 +1459,7 @@ onMounted(() => {
   .sec-04 { padding-right: 0; }
   .sec-04 .sec-grid--head { padding-right: 32px; }
   .tpl-rail { padding-right: 32px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cta, .footer { padding-left: 32px; padding-right: 32px; }
+  .cta { padding-left: 32px; padding-right: 32px; }
 }
 
 @media (max-width: 1024px) {
@@ -1695,8 +1478,6 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .nav { padding: 16px 20px; }
-  .nav-links { display: none; }
   .hero { padding: 32px 20px 64px; }
   .hero-h1, .hero-h2 { font-size: clamp(40px, 12vw, 64px); }
   .hero-cta { flex-direction: column; align-items: stretch; width: 100%; }
@@ -1720,8 +1501,6 @@ onMounted(() => {
   .cta-h { font-size: calc(44px * var(--nc-text-scale, 1)); line-height: 1; }
   .cta-row { flex-direction: column; align-items: stretch; width: 100%; }
   .cta-row .btn-primary, .cta-row .btn-outline { justify-content: center; }
-  .footer { flex-direction: column; align-items: flex-start; gap: 32px; padding: 32px 20px; }
-  .footer-cols { flex-wrap: wrap; gap: 24px; }
 }
 
 /* ═══════════════════════ HOVER POLISH ═══════════════════════ */

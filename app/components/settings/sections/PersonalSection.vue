@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
 import { safeImageUrl } from '~/utils/safeUrl'
+import { getUserInitials } from '~/utils/userDisplay'
 
 const { data: _sessionData } = useAuth()
 const session = _sessionData ?? ref(null)
@@ -11,10 +12,7 @@ const flashSaved = inject<() => void>('flashSaved', () => {})
 
 const user = computed(() => session.value?.user)
 const avatarSrc = computed(() => safeImageUrl(user.value?.image))
-const userInitial = computed(() => {
-  const name = user.value?.name
-  return name ? name.charAt(0).toUpperCase() : 'U'
-})
+const userInitial = computed(() => getUserInitials(user.value?.name, 'U'))
 
 // Profile editing state
 const displayName = ref('')
