@@ -93,3 +93,25 @@ export function resolveInitials(name: string, fallback = 'NC'): string {
 export function resolveAvatarInitials(user: DisplayUserLike | null | undefined): string {
   return resolveInitials(resolveDisplayName(user, 'Guest'))
 }
+
+/** Minimal shape of vue-i18n's `t`, so utils can format without importing i18n. */
+type TranslateFn = (key: string, named?: Record<string, unknown>) => string
+
+/**
+ * Relative-day label for recent timestamps: today / yesterday / N days ago for
+ * the last week, then an absolute locale date. Extracted from the identical
+ * copies in `maps/index.vue` and `DocumentCard.vue`.
+ *
+ * Accepts an epoch-millis number or a parseable date string; unparseable input
+ * yields an empty string.
+ */
+export function formatRelativeDay(value: string | number, t: TranslateFn): string {
+  const ts = typeof value === 'number' ? value : Date.parse(value)
+  if (Number.isNaN(ts)) return ''
+  const date = new Date(ts)
+  const diffDays = Math.floor((Date.now() - date.getTime()) / 86_400_000)
+  if (diffDays === 0) return t('common.time.today')
+  if (diffDays === 1) return t('common.time.yesterday')
+  if (diffDays < 7) return t('common.time.days_ago', { n: diffDays })
+  return date.toLocaleDateString()
+}

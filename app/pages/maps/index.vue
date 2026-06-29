@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
-import { resolveAvatarInitials } from '~/utils/userDisplay'
+import { resolveAvatarInitials, formatRelativeDay } from '~/utils/userDisplay'
 import { useMapStore } from '~/stores/mapStore'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { useSyncEngine } from '~/composables/useSyncEngine'
@@ -234,15 +234,7 @@ async function createNewMap() {
 }
 
 function formatDate(timestamp: number): string {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return t('common.time.today')
-  if (diffDays === 1) return t('common.time.yesterday')
-  if (diffDays < 7) return t('common.time.days_ago', { n: diffDays })
-  return date.toLocaleDateString()
+  return formatRelativeDay(timestamp, t)
 }
 </script>
 

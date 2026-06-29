@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPrivateRelayEmail, resolveDisplayName, resolveDisplayEmail, resolveInitials, resolveAvatarInitials, isHiddenAppleUser } from '../userDisplay'
+import { isPrivateRelayEmail, resolveDisplayName, resolveDisplayEmail, resolveInitials, resolveAvatarInitials, isHiddenAppleUser, formatRelativeDay } from '../userDisplay'
 
 // Sign in with Apple + "Hide My Email" hands back a random relay address like
 // `hf2zj5rg97@privaterelay.appleid.com` and (because Apple only surfaces the
@@ -111,5 +111,27 @@ describe('resolveInitials', () => {
   it('returns the fallback for an empty name', () => {
     expect(resolveInitials('')).toBe('NC')
     expect(resolveInitials('   ', 'XX')).toBe('XX')
+  })
+})
+
+describe('formatRelativeDay', () => {
+  const t = (key: string, named?: Record<string, unknown>) =>
+    named ? `${key}:${JSON.stringify(named)}` : key
+  const DAY = 86_400_000
+
+  it('labels today / yesterday / N days ago within a week', () => {
+    expect(formatRelativeDay(Date.now(), t)).toBe('common.time.today')
+    expect(formatRelativeDay(Date.now() - DAY, t)).toBe('common.time.yesterday')
+    expect(formatRelativeDay(Date.now() - 3 * DAY, t)).toBe('common.time.days_ago:{"n":3}')
+  })
+
+  it('returns an absolute date beyond a week', () => {
+    const out = formatRelativeDay(Date.now() - 30 * DAY, t)
+    expect(out).not.toContain('common.time')
+    expect(out.length).toBeGreaterThan(0)
+  })
+
+  it('returns empty string for unparseable input', () => {
+    expect(formatRelativeDay('not-a-date', t)).toBe('')
   })
 })
