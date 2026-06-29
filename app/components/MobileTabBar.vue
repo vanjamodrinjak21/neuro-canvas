@@ -65,10 +65,6 @@ function onTabTap() {
         </svg>
       </NuxtLink>
     </div>
-    <!-- Home/gesture indicator pill (Paper) -->
-    <div class="mtb-pill-slot">
-      <div class="mtb-pill" />
-    </div>
   </nav>
 </template>
 
@@ -109,19 +105,5 @@ function onTabTap() {
   }
   .mtb-tab--active { color: #00D2BE; }
   .mtb-tab:active { transform: scale(0.92); }
-
-  .mtb-pill-slot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 0;
-    width: 100%;
-  }
-  .mtb-pill {
-    width: 134px;
-    height: 5px;
-    border-radius: 999px;
-    background: rgba(250, 250, 250, 0.85);
-  }
 }
 </style>
