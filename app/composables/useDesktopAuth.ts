@@ -45,6 +45,10 @@ export function useDesktopAuth() {
         if (data.version === 2) {
           _isSignedIn.value = true
           _user.value = data.user || null
+          // Backfill the JWT for sessions saved before we persisted it, so sync
+          // stops 401ing. Best-effort — only works if the Tauri cookie jar still
+          // holds the session this launch; otherwise the user re-signs in once.
+          if (!data.token) captureSessionToken()
         } else {
           localStorage.removeItem('nc-desktop-session')
         }
@@ -52,6 +56,28 @@ export function useDesktopAuth() {
         localStorage.removeItem('nc-desktop-session')
       }
     }
+  }
+
+  // Pull the raw session JWT (the next-auth cookie) and persist it in the
+  // desktop session so syncFetch can attach it explicitly on later launches.
+  // The Tauri HTTP cookie jar is in-memory and lost on app restart, so without
+  // this every /api/sync/* call 401s and server maps never pull (maps open
+  // empty). Mirrors the mobile-token flow. Best-effort; no-op when not signed in.
+  async function captureSessionToken() {
+    try {
+      const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
+      const res = await tauriFetch(`${AUTH_BASE_URL}/api/auth/mobile-token`, { method: 'GET' })
+      if (!res.ok) return
+      const data = await res.json() as { token?: string; cookieName?: string }
+      if (!data?.token || !data?.cookieName) return
+      const raw = localStorage.getItem('nc-desktop-session')
+      const session = raw ? JSON.parse(raw) : { version: 2 }
+      localStorage.setItem('nc-desktop-session', JSON.stringify({
+        ...session,
+        token: data.token,
+        cookieName: data.cookieName,
+      }))
+    } catch { /* fall back to cookie-jar mode */ }
   }
 
   function signIn() {
@@ -162,6 +188,7 @@ export function useDesktopAuth() {
       _user.value = sessionData.user
       _isSignedIn.value = true
       _showAuthModal.value = false
+      await captureSessionToken()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Sign-in failed. Please try again.'
       _loginError.value = msg
@@ -368,6 +395,7 @@ export function useDesktopAuth() {
       _user.value = sessionData.user
       _isSignedIn.value = true
       _showAuthModal.value = false
+      await captureSessionToken()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Google sign-in failed.'
       _loginError.value = msg

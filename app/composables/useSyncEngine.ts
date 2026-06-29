@@ -62,9 +62,22 @@ async function syncFetch<T>(path: string, options?: { method?: string; body?: un
       const qsStr = qs.toString()
       if (qsStr) url += `?${qsStr}`
     }
+    // The Tauri HTTP cookie jar is in-memory and cleared on app restart, so the
+    // next-auth session cookie set at login isn't sent on later launches — every
+    // sync call then 401s and server maps never pull (maps open empty). Attach
+    // the JWT explicitly from the persisted desktop session, same as Capacitor.
+    const headers: Record<string, string> = {}
+    if (options?.body) headers['Content-Type'] = 'application/json'
+    try {
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('nc-desktop-session') : null
+      if (stored) {
+        const data = JSON.parse(stored)
+        if (data?.token && data?.cookieName) headers.Cookie = `${data.cookieName}=${data.token}`
+      }
+    } catch { /* ignore malformed storage */ }
     const res = await tauriFetch(url, {
       method: options?.method || 'GET',
-      headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: options?.body ? JSON.stringify(options.body) : undefined,
     })
     if (!res.ok) {
