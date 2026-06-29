@@ -183,6 +183,7 @@ const interaction = useCanvasInteraction({
 
   isMobile: isMobile.value,
   markCullingDirty: () => renderLoop.markCullingDirty(),
+  getNodeIdsAt: (p: Point) => culling.getNodeIdsAt(p),
 })
 
 // Sync the standalone hoveredNodeId ref with interaction's internal one

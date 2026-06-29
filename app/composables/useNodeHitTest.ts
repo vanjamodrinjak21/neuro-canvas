@@ -27,6 +27,39 @@ export function findNodeAtPosition(worldPos: Point, nodes: Map<string, Node>): N
 }
 
 /**
+ * Quadtree-accelerated variant of {@link findNodeAtPosition}.
+ *
+ * `candidateIds` is the (usually tiny) set of node IDs whose bounding box
+ * contains the point, taken from the spatial index. We precise-check only those
+ * instead of scanning every node — O(k) per call instead of O(n), which is what
+ * makes hover responsive on 10k–20k-node maps (hover runs on every pointermove).
+ *
+ * Containment is re-checked with the same inclusive bounds as the linear scan so
+ * results match exactly. Among overlapping candidates the last encountered wins
+ * (best-effort topmost; exact for the common single-hit case).
+ */
+export function findNodeAtPositionSpatial(
+  worldPos: Point,
+  nodes: Map<string, Node>,
+  candidateIds: Set<string>
+): Node | null {
+  let hit: Node | null = null
+  for (const id of candidateIds) {
+    const node = nodes.get(id)
+    if (!node) continue
+    if (
+      worldPos.x >= node.position.x &&
+      worldPos.x <= node.position.x + node.size.width &&
+      worldPos.y >= node.position.y &&
+      worldPos.y <= node.position.y + node.size.height
+    ) {
+      hit = node
+    }
+  }
+  return hit
+}
+
+/**
  * Calculate the distance from a point to a line segment (clamped projection).
  */
 export function pointToLineDistance(point: Point, lineStart: Point, lineEnd: Point): number {

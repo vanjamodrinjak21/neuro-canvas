@@ -1,7 +1,7 @@
 import { ref, nextTick, type Ref, type ComputedRef } from 'vue'
 import type { Camera, CanvasTool, Point, Node, Edge, Anchor } from '~/types'
 import { screenToWorld } from '~/composables/useCanvasCoordinates'
-import { findNodeAtPosition, findEdgeAtPosition } from '~/composables/useNodeHitTest'
+import { findNodeAtPositionSpatial, findEdgeAtPosition } from '~/composables/useNodeHitTest'
 import { getAnchorPoint } from '~/composables/useAnchors'
 import { hitTestResizeHandle, getHandleCursor } from '~/utils/resizeHandles'
 import { FULL_LOD_ZOOM } from '~/composables/useViewportCulling'
@@ -70,6 +70,10 @@ export interface InteractionDeps {
 
   // Culling dirty flag callback — tells the render loop the spatial index is stale
   markCullingDirty: () => void
+
+  // Spatial-index point query — returns node IDs whose box contains the point,
+  // so hit-testing (incl. per-frame hover) is O(k) instead of O(n).
+  getNodeIdsAt: (point: Point) => Set<string>
 }
 
 // ---------------------------------------------------------------------------
@@ -129,7 +133,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
       container()!.style.cursor = 'grabbing'
     } else if (tool() === 'connect') {
       // Connection tool — start from node
-      const node = findNodeAtPosition(worldPos, deps.nodes())
+      const node = findNodeAtPositionSpatial(worldPos, deps.nodes(), deps.getNodeIdsAt(worldPos))
       if (node) {
         deps.connection.startConnection(node, worldPos)
 
@@ -154,7 +158,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
         }
       }
 
-      const node = findNodeAtPosition(worldPos, deps.nodes())
+      const node = findNodeAtPositionSpatial(worldPos, deps.nodes(), deps.getNodeIdsAt(worldPos))
       if (node) {
         if (event.shiftKey) {
           // Add to selection
@@ -235,7 +239,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
       !deps.connection.isConnecting.value &&
       !deps.boxSelection.isBoxSelecting.value
     ) {
-      const nodeUnderMouse = findNodeAtPosition(worldPos, deps.nodes())
+      const nodeUnderMouse = findNodeAtPositionSpatial(worldPos, deps.nodes(), deps.getNodeIdsAt(worldPos))
       const previousHovered = hoveredNodeId.value
       hoveredNodeId.value = nodeUnderMouse?.id ?? null
 
@@ -289,7 +293,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
 
       // If no snap target, check if hovering over a node body
       if (!deps.connection.connectionSnapTarget.value) {
-        const targetNode = findNodeAtPosition(worldPos, deps.nodes())
+        const targetNode = findNodeAtPositionSpatial(worldPos, deps.nodes(), deps.getNodeIdsAt(worldPos))
         if (targetNode && targetNode.id !== deps.connection.connectionSourceNode.value?.id) {
           hoveredNodeId.value = targetNode.id
         } else {
@@ -360,7 +364,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
         const worldPos = screenToWorld(screenPos.x, screenPos.y, cam())
 
         // Hit-test fallback node (for when cursor lands on a node body without snap)
-        const hitNode = findNodeAtPosition(worldPos, deps.nodes())
+        const hitNode = findNodeAtPositionSpatial(worldPos, deps.nodes(), deps.getNodeIdsAt(worldPos))
 
         const result = deps.connection.finishConnection(hitNode)
         if (result) {
@@ -543,7 +547,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
     }
 
     // Check if double-clicked on a node
-    const existingNode = findNodeAtPosition(worldPos, deps.nodes())
+    const existingNode = findNodeAtPositionSpatial(worldPos, deps.nodes(), deps.getNodeIdsAt(worldPos))
     if (existingNode) {
       // Start editing node content
       deps.editing.startEditing(existingNode)
@@ -577,7 +581,7 @@ export function useCanvasInteraction(deps: InteractionDeps) {
 
     const { worldPos } = eventPositions(event)
 
-    const node = findNodeAtPosition(worldPos, deps.nodes())
+    const node = findNodeAtPositionSpatial(worldPos, deps.nodes(), deps.getNodeIdsAt(worldPos))
     let edge: Edge | null = null
 
     // If right-clicked on a node, select it if not already selected
