@@ -63,6 +63,43 @@ export function useExport() {
     ])
   }
 
+  // ── PDF export ──────────────────────────────────────────────────────
+  // A clean, readable outline document of the map. Works on every platform
+  // (no canvas dependency — mobile has no canvas to rasterize). jsPDF is
+  // lazy-loaded so it only ships when the user actually exports.
+  async function exportAsPdf(mapStore: MapStore, title: string) {
+    if (!guest.requireFeature('export')) return
+    const { jsPDF } = await import('jspdf')
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+    const pageH = doc.internal.pageSize.getHeight()
+    const margin = 48
+    let y = margin
+
+    const heading = String(title || '').trim() || 'Mind map'
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(20)
+    doc.text(heading, margin, y)
+    y += 30
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(11)
+
+    for (const { depth, text } of buildOutline(mapStore)) {
+      const indent = margin + depth * 16
+      const wrapped = doc.splitTextToSize('• ' + text, pageW - indent - margin) as string[]
+      for (const line of wrapped) {
+        if (y > pageH - margin) { doc.addPage(); y = margin }
+        doc.text(line, indent, y)
+        y += 16
+      }
+    }
+
+    const bytes = new Uint8Array(doc.output('arraybuffer'))
+    await saveFile(bytes, sanitizeFilename(title) + '.pdf', [
+      { name: 'PDF', extensions: ['pdf'] }
+    ])
+  }
+
   // ── Share (clipboard / native share sheet) ──────────────────────────
   async function shareAsText(
     mapStore: MapStore,
@@ -135,7 +172,7 @@ export function useExport() {
     }
 
     // Web fallback: blob download via <a> element
-    const blob = new Blob([data])
+    const blob = new Blob([data as unknown as BlobPart])
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -149,6 +186,31 @@ export function useExport() {
   /** Strip characters unsafe for filenames. */
   function sanitizeFilename(name: string): string {
     return name.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'mind-map'
+  }
+
+  /** Flatten the map into an indented {depth,text} outline (for the PDF). */
+  function buildOutline(mapStore: MapStore): Array<{ depth: number; text: string }> {
+    const doc = mapStore.toSerializable()
+    const nodeById = new Map(doc.nodes.map((n) => [n.id, n]))
+    const childrenOf = new Map<string, string[]>()
+    for (const edge of doc.edges) {
+      const list = childrenOf.get(edge.sourceId) || []
+      list.push(edge.targetId)
+      childrenOf.set(edge.sourceId, list)
+    }
+    const out: Array<{ depth: number; text: string }> = []
+    const visited = new Set<string>()
+    function walk(id: string, depth: number) {
+      if (visited.has(id)) return
+      visited.add(id)
+      const node = nodeById.get(id)
+      if (!node) return
+      out.push({ depth, text: String(node.content || '').replace(/\s+/g, ' ').trim() || '(empty)' })
+      for (const childId of (childrenOf.get(id) || [])) walk(childId, depth + 1)
+    }
+    if (doc.rootNodeId && nodeById.has(doc.rootNodeId)) walk(doc.rootNodeId, 0)
+    for (const node of doc.nodes) if (!visited.has(node.id)) walk(node.id, 0)
+    return out
   }
 
   /**
@@ -258,6 +320,7 @@ export function useExport() {
     exportAsPng,
     exportAsJson,
     exportAsMarkdown,
+    exportAsPdf,
     shareAsText
   }
 }
