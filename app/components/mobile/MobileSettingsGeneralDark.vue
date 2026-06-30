@@ -690,8 +690,9 @@ async function manualUpdateCheck() {
 /* Toggle */
 .mgen-toggle {
   position: relative;
-  /* Reference look: light off-track, big white knob that floats on a strong
-     drop shadow, brand mint when on. 52×32 pill, 30px knob (nearly fills). */
+  /* Reference look: light off-track, brand mint on, and a WIDE white CAPSULE
+     knob (wider than tall, capsule ends) floating on a strong drop shadow.
+     52×32 pill, 34×28 knob. */
   width: 52px; height: 32px;
   padding: 0;
   border: none;
@@ -704,8 +705,9 @@ async function manualUpdateCheck() {
   -webkit-tap-highlight-color: transparent;
 }
 .mgen-toggle-knob {
-  position: absolute; left: 1px; top: 1px;
-  width: 30px; height: 30px; border-radius: 999px;
+  position: absolute; left: 2px; top: 2px;
+  /* Wide capsule, not a circle — width > height with fully rounded ends. */
+  width: 34px; height: 28px; border-radius: 999px;
   background: #FFFFFF;
   transition: transform 240ms cubic-bezier(0.33, 0, 0.2, 1);
   /* Pronounced float — the knob reads clearly even on the light track. */
@@ -718,14 +720,15 @@ async function manualUpdateCheck() {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  transform: translateX(20px);
+  /* 52 - 34 knob - 2 left - 2 right = 14px travel. */
+  transform: translateX(14px);
 }
 .mgen-toggle:active .mgen-toggle-knob {
-  /* Slight stretch on press, like the native control. */
-  width: 33px;
+  /* Slight stretch on press. */
+  width: 37px;
 }
 .mgen-toggle--on:active .mgen-toggle-knob {
-  transform: translateX(17px);
+  transform: translateX(11px);
 }
 
 /* Slider */
