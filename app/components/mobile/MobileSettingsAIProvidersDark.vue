@@ -815,7 +815,8 @@ function maskKey(type: string): string {
 .map-sheet {
   width: 100%;
   display: flex; flex-direction: column;
-  padding: 14px 20px calc(28px + env(safe-area-inset-bottom, 0px)) 20px;
+  /* Extra bottom space so the Save button clears the fixed tab dock (~76px). */
+  padding: 14px 20px calc(28px + 76px + env(safe-area-inset-bottom, 0px)) 20px;
   background: #0E0E11;
   border-top: 1px solid var(--map-stroke);
   border-radius: 22px 22px 0 0;

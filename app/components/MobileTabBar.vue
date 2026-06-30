@@ -105,5 +105,13 @@ function onTabTap() {
   }
   .mtb-tab--active { color: #00D2BE; }
   .mtb-tab:active { transform: scale(0.92); }
+
+  /* Light mode — dock must not stay black on a light page. */
+  :root.light .mobile-tab-bar {
+    background: #FFFFFF;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  :root.light .mtb-tab { color: #71717A; }
+  :root.light .mtb-tab--active { color: #00D2BE; }
 }
 </style>
