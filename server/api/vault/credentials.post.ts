@@ -20,7 +20,18 @@ export default defineEventHandler(async (event) => {
   let provider: string
   let label: string
 
-  if (body.rawValue) {
+  const hasRaw = typeof body?.rawValue === 'string' && body.rawValue.length > 0
+  const hasEncrypted = typeof body?.encryptedValue === 'string' && body.encryptedValue.length > 0
+
+  if (!hasRaw && !hasEncrypted) {
+    // Clear error instead of the confusing legacy-path "encryptedValue undefined".
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Missing API key value. Provide a non-empty rawValue.'
+    })
+  }
+
+  if (hasRaw) {
     // v4: Server-only encryption — validate all fields via Zod
     const validated = validateBody(vaultStoreV4Schema, body)
     encryptedForStorage = serverEncrypt(validated.rawValue)

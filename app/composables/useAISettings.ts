@@ -94,6 +94,37 @@ export function useAISettings() {
 
       state.isInitialized = true
 
+      // Self-heal (ALL platforms incl. web/PWA): refresh the curated provider
+      // model lists (Anthropic -> Opus 4.8 / Sonnet 4.6 / Haiku 4.5; OpenAI ->
+      // GPT-5.5 / 5.4-mini / 5.4-nano) so the latest IDs replace stale ones
+      // stored on accounts created before the lists were bumped. Dynamic
+      // providers (OpenRouter, Ollama) load models from the API — leave those.
+      let modelsChanged = false
+      for (const p of state.settings.providers) {
+        if (p.type === 'anthropic' || p.type === 'openai') {
+          const template = PROVIDER_TEMPLATES[p.type]
+          if (template?.models?.length) {
+            const nextModels = [...template.models]
+            if (JSON.stringify(p.models) !== JSON.stringify(nextModels)) {
+              p.models = nextModels
+              modelsChanged = true
+            }
+            // Move off any selection that's missing, gone, or not-yet-available;
+            // fall back to the first AVAILABLE model so AI calls don't break.
+            const usable = template.models.some(
+              m => m.id === p.selectedModelId && m.available !== false,
+            )
+            if (!usable) {
+              const fallback = template.models.find(m => m.available !== false)
+                ?? template.models[0]!
+              p.selectedModelId = fallback.id
+              modelsChanged = true
+            }
+          }
+        }
+      }
+      if (modelsChanged) await save()
+
       // Auto-register local provider on Capacitor (mobile) if not already present
       if (_isCapacitor()) {
         // Ollama is unusable on a phone (no reachable localhost server), so
@@ -129,32 +160,6 @@ export function useAISettings() {
             state.settings.defaultProviderId = id
           }
           await save()
-        }
-
-        // Self-heal: refresh the curated provider model lists (Anthropic ->
-        // Fable 5 / Opus 4.8 / Sonnet 4.6 / Haiku 4.5; OpenAI -> GPT-5.5 / 5.4 /
-        // mini / nano) so the latest IDs become available even on accounts
-        // created before the lists were bumped. Dynamic providers (OpenRouter,
-        // Ollama) load their models from the API, so leave those untouched.
-        for (const p of state.settings.providers) {
-          if (p.type === 'anthropic' || p.type === 'openai') {
-            const template = PROVIDER_TEMPLATES[p.type]
-            if (template?.models?.length) {
-              p.models = [...template.models]
-              // Move off any selection that's missing, no longer in the list,
-              // or not yet available (e.g. Fable 5 is listed but available:false
-              // — defaulting to it would send a model the key can't use and
-              // break every AI call). Fall back to the first AVAILABLE model.
-              const usable = template.models.some(
-                m => m.id === p.selectedModelId && m.available !== false,
-              )
-              if (!usable) {
-                const fallback = template.models.find(m => m.available !== false)
-                  ?? template.models[0]!
-                p.selectedModelId = fallback.id
-              }
-            }
-          }
         }
 
         // Self-heal: if the current default is an unreachable provider
@@ -377,22 +382,33 @@ export function useAISettings() {
       provider.localApiKey = apiKey ? await wrapKey(apiKey) : ''
       provider.credentialId = apiKey ? `local-${id}` : ''
     } else if (vault.isVaultAvailable.value) {
-      // Web: send raw key to server vault (server-only encryption v4)
-      try {
-        const result: { ok: boolean; credential?: { id: string } } = await ($fetch as any)('/api/vault/credentials', {
-          method: 'POST',
-          body: {
-            provider: provider.type,
-            rawValue: apiKey,
-            label: id,
+      if (apiKey) {
+        // Web: send raw key to server vault (server-only encryption v4)
+        try {
+          const result: { ok: boolean; credential?: { id: string } } = await ($fetch as any)('/api/vault/credentials', {
+            method: 'POST',
+            body: {
+              provider: provider.type,
+              rawValue: apiKey,
+              label: id,
+            }
+          })
+          if (result.ok && result.credential) {
+            provider.credentialId = result.credential.id
           }
-        })
-        if (result.ok && result.credential) {
-          provider.credentialId = result.credential.id
+        } catch (err) {
+          console.error('Failed to update key in vault:', err)
+          throw new Error('Failed to save API key. Please try again.')
         }
-      } catch (err) {
-        console.error('Failed to update key in vault:', err)
-        throw new Error('Failed to save API key. Please try again.')
+      } else if (provider.credentialId) {
+        // Remove: DELETE the stored credential. Posting an empty rawValue would
+        // fall through to the server's legacy branch and 400 on encryptedValue.
+        try {
+          await ($fetch as any)(`/api/vault/credentials/${provider.credentialId}`, { method: 'DELETE' })
+        } catch (err) {
+          console.error('Failed to remove key from vault:', err)
+        }
+        provider.credentialId = ''
       }
     }
 

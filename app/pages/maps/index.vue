@@ -78,6 +78,27 @@ function toggleSelectAll() {
   }
 }
 
+// Push a map delete to the server through the platform-appropriate AUTHENTICATED
+// transport. On Capacitor the JWT is attached as an explicit Cookie via
+// remoteFetch — a plain $fetch is unauthenticated, so the server delete silently
+// fails (caught) and the map resyncs back on the next pull, making delete look
+// broken on mobile. Tauri has the same requirement via desktopAuth.
+async function pushDelete(mapId: string) {
+  if (!syncEngine.isSyncEnabled.value) return
+  const payload = { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
+  if (_isTauri && _desktopAuth?.isSignedIn.value) {
+    await _desktopAuth.remoteFetch('/api/sync/push', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    }).catch(() => {})
+  } else if (_isCapacitor && _mobileAuth?.isSignedIn.value) {
+    await _mobileAuth.remoteFetch('/api/sync/push', { method: 'POST', data: payload }).catch(() => {})
+  } else if (!_isNative) {
+    await $fetch('/api/sync/push', { method: 'POST', body: payload }).catch(() => {})
+  }
+}
+
 async function deleteSelected() {
   if (selectedIds.value.size === 0) return
 
@@ -95,21 +116,7 @@ async function deleteSelected() {
 
   try {
     for (const id of selectedIds.value) {
-      // Delete from server (native desktop needs desktopAuth.remoteFetch).
-      if (syncEngine.isSyncEnabled.value) {
-        if (_isTauri && _desktopAuth?.isSignedIn.value) {
-          await _desktopAuth.remoteFetch('/api/sync/push', {
-            method: 'POST',
-            body: JSON.stringify({ mapId: id, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }),
-            headers: { 'Content-Type': 'application/json' },
-          }).catch(() => {})
-        } else if (!_isTauri) {
-          await $fetch('/api/sync/push', {
-            method: 'POST',
-            body: { mapId: id, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
-          }).catch(() => {})
-        }
-      }
+      await pushDelete(id)
       await db.deleteMap(id)
     }
     allMaps.value = allMaps.value.filter(m => !selectedIds.value.has(m.id))
@@ -227,23 +234,7 @@ async function deleteMap(mapId: string, event?: Event) {
   if (!confirmed) return
 
   try {
-    // Delete from server. Mirror the dashboard: native desktop (Tauri) must go
-    // through desktopAuth.remoteFetch — a plain $fetch isn't authenticated there,
-    // so the map would resync back and "delete" appears not to work.
-    if (syncEngine.isSyncEnabled.value) {
-      if (_isTauri && _desktopAuth?.isSignedIn.value) {
-        await _desktopAuth.remoteFetch('/api/sync/push', {
-          method: 'POST',
-          body: JSON.stringify({ mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }),
-          headers: { 'Content-Type': 'application/json' },
-        }).catch(() => {})
-      } else if (!_isTauri) {
-        await $fetch('/api/sync/push', {
-          method: 'POST',
-          body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
-        }).catch(() => {})
-      }
-    }
+    await pushDelete(mapId)
     await db.deleteMap(mapId)
     allMaps.value = allMaps.value.filter(m => m.id !== mapId)
   } catch (error) {
