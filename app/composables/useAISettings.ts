@@ -40,6 +40,10 @@ const state = reactive<{
   error: null,
 })
 
+// One review/owner key-seed network attempt per app session (set only once a
+// signed-in request is actually made — see seedReviewKey()).
+let _reviewSeedAttempted = false
+
 export function useAISettings() {
   const db = useDatabase()
   const vault = useCredentialVault()
@@ -64,7 +68,12 @@ export function useAISettings() {
    * Initialize settings from database
    */
   async function initialize(): Promise<void> {
-    if (state.isInitialized) return
+    if (state.isInitialized) {
+      // Already loaded — still attempt the (idempotent) native review-key seed,
+      // since sign-in often happens AFTER the first initialize() call.
+      void seedReviewKey()
+      return
+    }
     state.isLoading = true
     state.error = null
     try {
@@ -87,6 +96,19 @@ export function useAISettings() {
 
       // Auto-register local provider on Capacitor (mobile) if not already present
       if (_isCapacitor()) {
+        // Ollama is unusable on a phone (no reachable localhost server), so
+        // it's fully excluded on mobile. Strip any leftover ollama provider
+        // from accounts created before it was removed, and repoint the default.
+        const ollamaProviders = state.settings.providers.filter(p => p.type === 'ollama')
+        if (ollamaProviders.length) {
+          const removedDefault = ollamaProviders.some(p => p.id === state.settings.defaultProviderId)
+          state.settings.providers = state.settings.providers.filter(p => p.type !== 'ollama')
+          if (removedDefault) {
+            state.settings.defaultProviderId = state.settings.providers[0]?.id
+          }
+          await save()
+        }
+
         const hasLocalProvider = state.settings.providers.some(p => p.type === 'local')
         if (!hasLocalProvider) {
           const template = PROVIDER_TEMPLATES['local']
@@ -155,6 +177,8 @@ export function useAISettings() {
           }
         }
       }
+      // Native: seed the review/owner key (no-op on web / when not signed in).
+      void seedReviewKey()
     } catch (e) {
       state.error = e instanceof Error ? e.message : 'Failed to load AI settings'
       console.error('Failed to initialize AI settings:', e)
@@ -183,6 +207,69 @@ export function useAISettings() {
    */
   function generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+  }
+
+  /**
+   * Native-only: seed a provider API key from the server for allowlisted
+   * accounts (App Store reviewer / owner).
+   *
+   * Native shells (Capacitor / Tauri) call AI providers directly and need the
+   * key on-device. This pulls a server-configured key over an authenticated
+   * request — gated server-side to an email allowlist (see
+   * server/api/ai/keys/reveal.get.ts) — so generation works without typing a
+   * key and without the secret ever living in the app binary.
+   *
+   * Strictly additive: no-op on web, no-op when not signed in, no-op when the
+   * endpoint 404s (feature off / not allowlisted), and NEVER overrides a key
+   * the user already entered.
+   */
+  async function seedReviewKey(): Promise<void> {
+    if (typeof window === 'undefined') return
+    const tauri = _isTauri()
+    const cap = _isCapacitor()
+    if (!tauri && !cap) return
+
+    if (_reviewSeedAttempted) return
+    // Respect any key the user already has — don't clobber real BYOK keys.
+    if (state.settings.providers.some(p => p.isEnabled && p.localApiKey)) return
+
+    try {
+      const auth = tauri ? useDesktopAuth() : useMobileAuth()
+      // Not signed in yet — leave the attempt unspent so a later call retries.
+      if (!auth?.isSignedIn?.value) return
+      _reviewSeedAttempted = true
+
+      const res = await auth.remoteFetch<{
+        provider?: string
+        apiKey?: string
+        model?: string
+        baseUrl?: string
+      }>('/api/ai/keys/reveal')
+
+      const key = res?.apiKey?.trim()
+      if (!key) return
+      const providerType = (res?.provider || 'anthropic') as AIProviderType
+
+      let provider = state.settings.providers.find(p => p.type === providerType)
+      if (!provider) {
+        // addProvider wraps the key (AES-GCM) and persists.
+        provider = await addProvider(providerType, undefined, key, res?.baseUrl)
+      } else {
+        provider.localApiKey = await wrapKey(key)
+        provider.credentialId = `local-${provider.id}`
+        provider.isEnabled = true
+        if (res?.baseUrl) provider.baseUrl = res.baseUrl
+      }
+      if (res?.model) provider.selectedModelId = res.model
+
+      // Make it the active default so generation uses it immediately.
+      state.settings.defaultProviderId = provider.id
+      for (const p of state.settings.providers) p.isDefault = (p.id === provider.id)
+
+      await save()
+    } catch {
+      // 404 (not allowlisted / feature off) or offline — silently no-op.
+    }
   }
 
   /**
@@ -589,6 +676,7 @@ export function useAISettings() {
 
     // Actions
     initialize,
+    seedReviewKey,
     save,
 
     // Provider actions

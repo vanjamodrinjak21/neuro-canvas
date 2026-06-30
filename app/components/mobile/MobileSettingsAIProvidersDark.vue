@@ -75,8 +75,7 @@ const sheetTitle = computed(() => {
   const map: Record<string, string> = {
     anthropic: 'Anthropic',
     openai: 'OpenAI',
-    openrouter: 'OpenRouter',
-    ollama: 'Ollama'
+    openrouter: 'OpenRouter'
   }
   const name = sheetType.value ? map[sheetType.value] : ''
   return sheetMode.value === 'rotate'
@@ -87,23 +86,23 @@ const sheetTitle = computed(() => {
 const sheetPrefix = computed(() => {
   if (sheetType.value === 'anthropic') return 'sk-ant-...'
   if (sheetType.value === 'openrouter') return 'sk-or-...'
-  if (sheetType.value === 'openai') return 'sk-...'
-  return 'http://localhost:11434'
+  return 'sk-...'
 })
 
 interface ProviderRow {
-  type: 'anthropic' | 'openai' | 'openrouter' | 'ollama'
+  type: 'anthropic' | 'openai' | 'openrouter'
   name: string
   caption: string
-  iconKey: 'anthropic' | 'openai' | 'openrouter' | 'ollama'
+  iconKey: 'anthropic' | 'openai' | 'openrouter'
   italic?: string
 }
 
+// Ollama is intentionally excluded on mobile: a phone can't reach an Ollama
+// server on the dev machine's localhost, so it's never a usable provider here.
 const ALL_PROVIDERS: ProviderRow[] = [
   { type: 'anthropic', name: 'Anthropic', caption: 'CLAUDE-OPUS-4-8 · 1M CTX', iconKey: 'anthropic' },
   { type: 'openai', name: 'OpenAI', caption: 'GPT-5.5 · GPT-5.4 · WHISPER', iconKey: 'openai' },
-  { type: 'openrouter', name: 'OpenRouter', caption: '300+ MODELS · BYO BUDGET', iconKey: 'openrouter', italic: `— ${t('mobile.settingsAiProviders.gateway')}` },
-  { type: 'ollama', name: 'Ollama (local)', caption: 'LOCALHOST:11434 · OFFLINE', iconKey: 'ollama' }
+  { type: 'openrouter', name: 'OpenRouter', caption: '300+ MODELS · BYO BUDGET', iconKey: 'openrouter', italic: `— ${t('mobile.settingsAiProviders.gateway')}` }
 ]
 
 function isConnected(type: string): boolean {
@@ -341,7 +340,7 @@ function maskKey(type: string): string {
               </span>
               <span class="map-row-hint">{{ provider.caption }}</span>
             </div>
-            <div class="map-pill">{{ provider.type === 'ollama' ? t('mobile.settingsAiProviders.detect') : t('mobile.settingsAiProviders.connect') }}</div>
+            <div class="map-pill">{{ t('mobile.settingsAiProviders.connect') }}</div>
           </button>
           <div v-if="idx < availableProviders.length - 1" class="map-divider" />
         </template>
@@ -374,7 +373,7 @@ function maskKey(type: string): string {
           </p>
 
           <label class="map-sheet-field">
-            <span class="map-sheet-label">{{ sheetType === 'ollama' ? t('mobile.settingsAiProviders.fieldEndpointUrl') : t('mobile.settingsAiProviders.fieldApiKey') }}</span>
+            <span class="map-sheet-label">{{ t('mobile.settingsAiProviders.fieldApiKey') }}</span>
             <div class="map-sheet-input-wrap">
               <input
                 v-model="sheetKey"
