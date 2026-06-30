@@ -37,6 +37,7 @@ const avatarSrc = computed(() => safeImageUrl(props.user?.image))
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
   'open-map': [id: string]
+  'delete-map': [id: string]
   'change-sort': []
   'change-filter': [filter: 'all' | 'recent' | 'pinned' | 'shared' | 'archived']
 }>()
@@ -189,9 +190,12 @@ const totalEdges = computed(() =>
 
     <!-- Map rows -->
     <div class="mmaps-list">
-      <button
+      <div
         v-for="m in maps"
         :key="m.id"
+        class="mmaps-row-wrap"
+      >
+      <button
         type="button"
         class="mmaps-row"
         @click="emit('open-map', m.id)"
@@ -218,10 +222,18 @@ const totalEdges = computed(() =>
           </span>
           <span class="mmaps-row-sub">{{ t('mobile.maps.rowSub', { nodes: countOf(m.nodes), time: relTime(m.updatedAt) }) }}</span>
         </div>
-        <svg class="mmaps-row-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </button>
+      <button
+        type="button"
+        class="mmaps-row-del"
+        :aria-label="t('mobile.maps.deleteAria')"
+        @click="emit('delete-map', m.id)"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6M10 11v6M14 11v6" />
         </svg>
       </button>
+      </div>
       <div v-if="maps.length === 0" class="mmaps-empty">
         <span>{{ t('mobile.maps.emptyState') }}</span>
       </div>
@@ -506,7 +518,18 @@ const totalEdges = computed(() =>
   letter-spacing: 0.04em;
   color: var(--mmaps-mute);
 }
-.mmaps-row-chevron { flex-shrink: 0; }
+.mmaps-row-wrap { position: relative; width: 100%; }
+.mmaps-row-wrap .mmaps-row { width: 100%; padding-right: 50px; box-sizing: border-box; }
+.mmaps-row-del {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 10px;
+  color: #71717A; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 120ms ease, background 120ms ease;
+}
+.mmaps-row-del:active { background: rgba(244, 63, 94, 0.14); color: #fb7185; }
 
 .mmaps-empty {
   padding: 24px 0;

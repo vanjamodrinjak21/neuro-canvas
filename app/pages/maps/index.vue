@@ -95,12 +95,20 @@ async function deleteSelected() {
 
   try {
     for (const id of selectedIds.value) {
-      // Delete from server
-      if (!_isTauri && syncEngine.isSyncEnabled.value) {
-        await $fetch('/api/sync/push', {
-          method: 'POST',
-          body: { mapId: id, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
-        }).catch(() => {})
+      // Delete from server (native desktop needs desktopAuth.remoteFetch).
+      if (syncEngine.isSyncEnabled.value) {
+        if (_isTauri && _desktopAuth?.isSignedIn.value) {
+          await _desktopAuth.remoteFetch('/api/sync/push', {
+            method: 'POST',
+            body: JSON.stringify({ mapId: id, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }),
+            headers: { 'Content-Type': 'application/json' },
+          }).catch(() => {})
+        } else if (!_isTauri) {
+          await $fetch('/api/sync/push', {
+            method: 'POST',
+            body: { mapId: id, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
+          }).catch(() => {})
+        }
       }
       await db.deleteMap(id)
     }
@@ -204,8 +212,8 @@ function openMap(mapId: string) {
   router.push(`/map/${mapId}`)
 }
 
-async function deleteMap(mapId: string, event: Event) {
-  event.stopPropagation()
+async function deleteMap(mapId: string, event?: Event) {
+  event?.stopPropagation()
 
   const confirmed = await confirm({
     title: t('maps.delete_single_confirm.title'),
@@ -219,12 +227,22 @@ async function deleteMap(mapId: string, event: Event) {
   if (!confirmed) return
 
   try {
-    // Delete from server
-    if (!_isTauri && syncEngine.isSyncEnabled.value) {
-      await $fetch('/api/sync/push', {
-        method: 'POST',
-        body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
-      })
+    // Delete from server. Mirror the dashboard: native desktop (Tauri) must go
+    // through desktopAuth.remoteFetch — a plain $fetch isn't authenticated there,
+    // so the map would resync back and "delete" appears not to work.
+    if (syncEngine.isSyncEnabled.value) {
+      if (_isTauri && _desktopAuth?.isSignedIn.value) {
+        await _desktopAuth.remoteFetch('/api/sync/push', {
+          method: 'POST',
+          body: JSON.stringify({ mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }),
+          headers: { 'Content-Type': 'application/json' },
+        }).catch(() => {})
+      } else if (!_isTauri) {
+        await $fetch('/api/sync/push', {
+          method: 'POST',
+          body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
+        }).catch(() => {})
+      }
     }
     await db.deleteMap(mapId)
     allMaps.value = allMaps.value.filter(m => m.id !== mapId)
@@ -272,6 +290,7 @@ function formatDate(timestamp: number): string {
           :sort-label="sortBy"
           @update:search-query="searchQuery = $event"
           @open-map="openMap"
+          @delete-map="deleteMap"
           @change-sort="sortBy = sortBy === 'recent' ? 'alphabetical' : sortBy === 'alphabetical' ? 'nodes' : 'recent'"
         />
       </ClientOnly>
