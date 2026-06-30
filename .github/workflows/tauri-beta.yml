@@ -291,3 +291,302 @@ jobs:
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data "{\"files\":${FILES_JSON}}"
+
+  # ── iOS (Capacitor): build the SIGNED .ipa, publish to the beta release, and
+  # mirror to R2 so the /download iOS card resolves. Mirrors the Android job.
+  #
+  # Runs whenever APPLE_CERTIFICATE is configured (the cert must be an
+  # iOS-capable "Apple Distribution" cert — a macOS-only Developer ID cert can't
+  # sign an iOS app). Two provisioning paths, auto-detected:
+  #   • Manual — set IOS_PROVISIONING_PROFILE_BASE64 to an iOS distribution /
+  #     ad-hoc profile for com.neurocanvas.app.
+  #   • Automatic — set the App Store Connect API key trio IOS_ASC_KEY_ID /
+  #     IOS_ASC_ISSUER_ID / IOS_ASC_KEY_P8_BASE64; xcodebuild then creates the
+  #     profile via -allowProvisioningUpdates.
+  # With neither, the build attempts automatic provisioning and fails clearly if
+  # Xcode can't obtain a profile non-interactively.
+  #
+  # macos-15 + newest Xcode: Capacitor 8.3 SPM binaries need the Swift 6.2
+  # toolchain (see the desktop note / mobile-verify).
+  ios:
+    name: iOS (.ipa)
+    runs-on: macos-15
+    env:
+      # Hoisted to job scope so the `if:` guards below can see them.
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Select newest Xcode
+        if: env.APPLE_CERTIFICATE != ''
+        run: |
+          newest="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n1)"
+          if [ -n "$newest" ]; then sudo xcode-select -s "$newest"; fi
+          xcodebuild -version
+          swift --version
+
+      - name: Cache CocoaPods
+        if: env.APPLE_CERTIFICATE != ''
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/App/Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/App/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Skip notice (no iOS signing configured)
+        if: env.APPLE_CERTIFICATE == ''
+        run: echo "APPLE_CERTIFICATE is not set — skipping the iOS .ipa build. Configure the Apple signing secrets to enable it."
+
+      - run: npm ci --legacy-peer-deps
+        if: env.APPLE_CERTIFICATE != ''
+
+      - name: Resolve version
+        id: ver
+        if: env.APPLE_CERTIFICATE != ''
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build web bundle for Capacitor
+        if: env.APPLE_CERTIFICATE != ''
+        run: |
+          npx prisma generate
+          npm run generate
+        env:
+          NUXT_PUBLIC_COLLAB_ENABLED: 'false'
+          AUTH_ORIGIN: ${{ vars.AUTH_ORIGIN || 'https://neuro-canvas.com' }}
+
+      - name: Sync Capacitor + install Pods
+        if: env.APPLE_CERTIFICATE != ''
+        run: |
+          npx cap sync ios
+          (cd ios/App && pod install --repo-update)
+
+      - name: Set marketing version
+        if: env.APPLE_CERTIFICATE != ''
+        working-directory: ios/App
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER"   App/Info.plist
+
+      - name: Import iOS signing assets
+        id: sign
+        if: env.APPLE_CERTIFICATE != ''
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_ASC_KEY_ID: ${{ secrets.IOS_ASC_KEY_ID }}
+          IOS_ASC_ISSUER_ID: ${{ secrets.IOS_ASC_ISSUER_ID }}
+          IOS_ASC_KEY_P8_BASE64: ${{ secrets.IOS_ASC_KEY_P8_BASE64 }}
+        run: |
+          set -euo pipefail
+          # Prefer a dedicated iOS cert, fall back to the shared Apple cert.
+          CERT_B64="${IOS_CERTIFICATE_BASE64:-$APPLE_CERTIFICATE}"
+          CERT_PW="${IOS_CERTIFICATE_PASSWORD:-$APPLE_CERTIFICATE_PASSWORD}"
+
+          # 1. Import the signing certificate into a throwaway keychain.
+          KEYCHAIN="$RUNNER_TEMP/ios-signing.keychain-db"
+          KP="$(openssl rand -base64 24)"
+          security create-keychain -p "$KP" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KP" "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+
+          echo "$CERT_B64" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CERT_PW" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KP" "$KEYCHAIN" >/dev/null
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(.*\)"$/\1/p' | head -n1 || true)"
+          [ -z "$IDENTITY" ] && IDENTITY="Apple Distribution"
+          echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+          # 2a. Manual signing — an explicit provisioning profile was supplied.
+          if [ -n "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 -d > "$RUNNER_TEMP/pp.mobileprovision"
+            security cms -D -i "$RUNNER_TEMP/pp.mobileprovision" > "$RUNNER_TEMP/pp.plist"
+            UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/pp.plist")"
+            NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/pp.plist")"
+            BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/pp.plist" | sed 's/^[A-Z0-9]*\.//')"
+            mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+            cp "$RUNNER_TEMP/pp.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+            {
+              echo "mode=manual"
+              echo "profile-name=$NAME"
+              echo "bundle-id=$BUNDLE_ID"
+            } >> "$GITHUB_OUTPUT"
+            echo "iOS signing: MANUAL — identity='$IDENTITY' profile='$NAME' bundle='$BUNDLE_ID'"
+            exit 0
+          fi
+
+          # 2b. Automatic signing — write the App Store Connect API key (if given)
+          # so xcodebuild -allowProvisioningUpdates can create the profile.
+          echo "mode=automatic" >> "$GITHUB_OUTPUT"
+          if [ -n "${IOS_ASC_KEY_P8_BASE64:-}" ] && [ -n "${IOS_ASC_KEY_ID:-}" ] && [ -n "${IOS_ASC_ISSUER_ID:-}" ]; then
+            mkdir -p "$HOME/.appstoreconnect/private_keys"
+            P8="$HOME/.appstoreconnect/private_keys/AuthKey_${IOS_ASC_KEY_ID}.p8"
+            echo "$IOS_ASC_KEY_P8_BASE64" | base64 -d > "$P8"
+            {
+              echo "asc-key-id=$IOS_ASC_KEY_ID"
+              echo "asc-issuer-id=$IOS_ASC_ISSUER_ID"
+              echo "asc-key-path=$P8"
+            } >> "$GITHUB_OUTPUT"
+            echo "iOS signing: AUTOMATIC (App Store Connect API key) — identity='$IDENTITY'"
+          else
+            echo "iOS signing: AUTOMATIC (no ASC API key) — identity='$IDENTITY'."
+            echo "::warning::No provisioning profile or App Store Connect API key configured; -allowProvisioningUpdates may fail to create a profile non-interactively."
+          fi
+
+      - name: Archive (signed)
+        if: steps.sign.outputs.signed == 'true'
+        working-directory: ios/App
+        env:
+          MODE: ${{ steps.sign.outputs.mode }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          PROFILE_NAME: ${{ steps.sign.outputs.profile-name }}
+          IDENTITY: ${{ steps.sign.outputs.identity }}
+          ASC_KEY_ID: ${{ steps.sign.outputs.asc-key-id }}
+          ASC_ISSUER_ID: ${{ steps.sign.outputs.asc-issuer-id }}
+          ASC_KEY_PATH: ${{ steps.sign.outputs.asc-key-path }}
+        run: |
+          set -euo pipefail
+          ARGS=(-workspace App.xcworkspace -scheme App -configuration Release
+                -archivePath "$RUNNER_TEMP/App.xcarchive"
+                -destination 'generic/platform=iOS'
+                DEVELOPMENT_TEAM="$TEAM_ID")
+          if [ "$MODE" = "manual" ]; then
+            ARGS+=(CODE_SIGN_STYLE=Manual
+                   PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
+                   CODE_SIGN_IDENTITY="$IDENTITY")
+          else
+            ARGS+=(CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates)
+            if [ -n "${ASC_KEY_PATH:-}" ]; then
+              ARGS+=(-authenticationKeyID "$ASC_KEY_ID"
+                     -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+                     -authenticationKeyPath "$ASC_KEY_PATH")
+            fi
+          fi
+          xcodebuild "${ARGS[@]}" archive
+
+      - name: Export .ipa
+        if: steps.sign.outputs.signed == 'true'
+        env:
+          MODE: ${{ steps.sign.outputs.mode }}
+          # ad-hoc = installable on registered devices (matches the /download
+          # flow). Override with vars.IOS_EXPORT_METHOD to match your profile /
+          # intent (app-store / development / enterprise).
+          EXPORT_METHOD: ${{ vars.IOS_EXPORT_METHOD || 'ad-hoc' }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ steps.sign.outputs.bundle-id }}
+          PROFILE_NAME: ${{ steps.sign.outputs.profile-name }}
+          ASC_KEY_ID: ${{ steps.sign.outputs.asc-key-id }}
+          ASC_ISSUER_ID: ${{ steps.sign.outputs.asc-issuer-id }}
+          ASC_KEY_PATH: ${{ steps.sign.outputs.asc-key-path }}
+        run: |
+          set -euo pipefail
+          if [ "$MODE" = "manual" ]; then
+            cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>${EXPORT_METHOD}</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>stripSwiftSymbols</key><true/>
+            <key>compileBitcode</key><false/>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key><string>${PROFILE_NAME}</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+          else
+            cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>${EXPORT_METHOD}</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>stripSwiftSymbols</key><true/>
+            <key>compileBitcode</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          fi
+
+          ARGS=(-exportArchive
+                -archivePath "$RUNNER_TEMP/App.xcarchive"
+                -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+                -exportPath "$RUNNER_TEMP/export")
+          if [ "$MODE" != "manual" ]; then
+            ARGS+=(-allowProvisioningUpdates)
+            if [ -n "${ASC_KEY_PATH:-}" ]; then
+              ARGS+=(-authenticationKeyID "$ASC_KEY_ID"
+                     -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+                     -authenticationKeyPath "$ASC_KEY_PATH")
+            fi
+          fi
+          xcodebuild "${ARGS[@]}"
+
+      - name: Stage artifacts
+        if: steps.sign.outputs.signed == 'true'
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          mkdir -p artifacts r2-upload
+          shopt -s nullglob
+          for f in "$RUNNER_TEMP"/export/*.ipa; do
+            cp "$f" "artifacts/NeuroCanvas-${VERSION}-ios.ipa"
+          done
+          cp artifacts/* r2-upload/ 2>/dev/null || true
+          echo "Staged:"; ls -la artifacts/
+
+      - name: Publish to beta release
+        if: steps.sign.outputs.signed == 'true' && hashFiles('artifacts/*') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create beta --prerelease --title "NeuroCanvas Beta" \
+            --notes "Rolling beta release." 2>/dev/null || true
+          gh release upload beta artifacts/* --clobber
+
+      - name: Mirror .ipa to R2 (beta channel)
+        if: steps.sign.outputs.signed == 'true' && hashFiles('r2-upload/*') != ''
+        uses: ryand56/r2-upload-action@b801a390acbdeb034c5e684ff5e1361c06639e7c # v1.4
+        with:
+          r2-account-id:        ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket:            ${{ secrets.R2_BUCKET }}
+          source-dir:           ./r2-upload
+          destination-dir:      beta
+
+      - name: Purge Cloudflare cache (uploaded .ipa)
+        if: env.CLOUDFLARE_API_TOKEN != '' && steps.sign.outputs.signed == 'true' && hashFiles('r2-upload/*') != ''
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CDN_BASE: https://cdn.neuro-canvas.com/beta
+        run: |
+          FILES_JSON=$(cd r2-upload && node -e "const fs=require('fs');const b=process.env.CDN_BASE;console.log(JSON.stringify(fs.readdirSync('.').filter(f=>fs.statSync(f).isFile()).map(f=>b+'/'+f)))")
+          echo "Purging: $FILES_JSON"
+          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"files\":${FILES_JSON}}"
