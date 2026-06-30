@@ -204,6 +204,11 @@ if (appleClientId && appleTeamId && appleKeyId && applePrivateKey) {
       Apple({
         clientId: appleClientId,
         clientSecret: appleClientSecret,
+        // Request name + email. Apple returns the name ONLY on the first consent
+        // (in the form_post body) and NEVER a profile picture, so avatars always
+        // fall back to initials (resolveAvatarInitials). form_post is required
+        // whenever the `name` scope is present.
+        authorization: { params: { scope: 'name email', response_mode: 'form_post' } },
       }),
     )
   } catch (err) {

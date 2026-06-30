@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
 import { safeImageUrl } from '~/utils/safeUrl'
+import { resolveAvatarInitials, resolveDisplayName, resolveDisplayEmail, isHiddenAppleUser } from '~/utils/userDisplay'
 
 const { data: _sessionData, getSession } = useAuth()
 const session = _sessionData ?? ref(null)
@@ -11,10 +12,10 @@ const flashSaved = inject<() => void>('flashSaved', () => {})
 
 const user = computed(() => session.value?.user)
 const avatarSrc = computed(() => safeImageUrl(user.value?.image))
-const userInitial = computed(() => {
-  const name = user.value?.name
-  return name ? name.charAt(0).toUpperCase() : 'U'
-})
+const userInitial = computed(() => resolveAvatarInitials(user.value))
+const profileDisplayName = computed(() => resolveDisplayName(user.value, 'User'))
+const profileEmail = computed(() => resolveDisplayEmail(user.value))
+const isHidden = computed(() => isHiddenAppleUser(user.value))
 
 // Profile editing state
 const displayName = ref('')
@@ -130,15 +131,16 @@ function saveAvatar() {
             <img
               v-if="avatarSrc"
               :src="avatarSrc"
-              :alt="user?.name || 'Profile'"
+              :alt="profileDisplayName"
               class="avatar-img"
               referrerpolicy="no-referrer"
             >
             <span v-else class="avatar-letter">{{ userInitial }}</span>
           </div>
           <div class="profile-info">
-            <span class="profile-name">{{ user?.name || 'User' }}</span>
-            <span class="profile-email">{{ user?.email || '' }}</span>
+            <span class="profile-name">{{ profileDisplayName }}</span>
+            <span class="profile-email">{{ profileEmail }}</span>
+            <span v-if="isHidden" class="profile-hidden-note">{{ t('mobile.settings.hiddenNoSync') }}</span>
           </div>
         </div>
         <button class="change-avatar-btn" @click="showAvatarInput = !showAvatarInput">
@@ -377,6 +379,13 @@ function saveAvatar() {
   font-weight: 400;
   line-height: 16px;
   color: var(--s-muted, #555560);
+}
+.profile-hidden-note {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  line-height: 15px;
+  color: #E0A04D;
+  margin-top: 4px;
 }
 
 .change-avatar-btn {
