@@ -242,14 +242,20 @@ export function useAISettings() {
       const auth = tauri ? useDesktopAuth() : useMobileAuth()
       // Not signed in yet — leave the attempt unspent so a later call retries.
       if (!auth?.isSignedIn?.value) return
-      _reviewSeedAttempted = true
 
-      const res = await auth.remoteFetch<{
-        provider?: string
-        apiKey?: string
-        model?: string
-        baseUrl?: string
-      }>('/api/ai/keys/reveal')
+      let res: { provider?: string; apiKey?: string; model?: string; baseUrl?: string } | null
+      try {
+        res = await auth.remoteFetch('/api/ai/keys/reveal')
+      } catch (err) {
+        // Only burn the one-shot on a definitive 404 (not allowlisted / feature
+        // off). A 401 means auth isn't ready yet (cold-start race) — leave the
+        // attempt unspent so the next generation retries once the session lands.
+        if (err instanceof Error && err.message.includes('404')) {
+          _reviewSeedAttempted = true
+        }
+        return
+      }
+      _reviewSeedAttempted = true
 
       const key = res?.apiKey?.trim()
       if (!key) return
