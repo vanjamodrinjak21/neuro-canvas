@@ -33,8 +33,13 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: true
     },
     StatusBar: {
-      style: 'dark',
-      backgroundColor: '#09090B'
+      // Overlay the web view so the (theme-colored) page background shows behind
+      // the status bar instead of a solid dark bar. Do NOT set a static
+      // backgroundColor here — it forces an opaque bar and leaves a black strip
+      // in light mode. The runtime plugin (capacitor-native.client.ts) sets the
+      // style (text color) + Android bg per theme.
+      overlaysWebView: true,
+      style: 'dark'
     },
     SplashScreen: {
       launchShowDuration: 0,
