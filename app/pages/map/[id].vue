@@ -2164,7 +2164,7 @@ useHead({
       :node-count="mapStore.nodes.size"
       :view-mode="viewMode"
       :is-synced="!!collabSession"
-      @back="$router.push('/maps')"
+      @back="$router.push('/dashboard')"
       @more="showMobileMenu = !showMobileMenu"
       @ai="showMobileAISheet = true"
       @generate-map="showMobileGenerateSheet = true"

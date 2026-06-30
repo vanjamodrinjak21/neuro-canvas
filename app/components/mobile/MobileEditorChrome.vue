@@ -128,6 +128,16 @@ onMounted(async () => {
       () => document.removeEventListener('focusin', onFocusIn),
       () => document.removeEventListener('focusout', onFocusOut),
     )
+
+    // Opening a map often auto-focuses the editor and raises the keyboard
+    // BEFORE this listener attaches, so the initial focusin is missed. Sync
+    // from the already-focused element on mount + a couple of deferred ticks
+    // to catch async autofocus.
+    const syncActive = () => { if (isBodyEditable(document.activeElement)) compact.value = true }
+    syncActive()
+    const t1 = setTimeout(syncActive, 150)
+    const t2 = setTimeout(syncActive, 450)
+    cleanups.push(() => clearTimeout(t1), () => clearTimeout(t2))
   }
 })
 

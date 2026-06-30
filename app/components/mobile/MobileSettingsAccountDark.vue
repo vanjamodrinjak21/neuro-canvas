@@ -42,7 +42,9 @@ async function exportMaps() {
       const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
       const { Share } = await import('@capacitor/share')
       const res = await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 })
-      await Share.share({ title: 'NeuroCanvas maps', url: res.uri })
+      // Share a FILE — must use `files`, not `url` (which is for sharing a link;
+      // passing a file:// there silently shares nothing on iOS).
+      await Share.share({ title: 'NeuroCanvas maps', files: [res.uri] })
     } else if (typeof document !== 'undefined') {
       // Web Share Level 2 (files) first — on iOS Safari/PWA the <a download>
       // trick silently does nothing, but navigator.share with a File works.
