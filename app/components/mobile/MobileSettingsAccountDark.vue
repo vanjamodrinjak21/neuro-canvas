@@ -31,20 +31,37 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 const db = useDatabase()
 const platform = usePlatform()
 const exporting = ref(false)
+const exportError = ref<string | null>(null)
+
+function isNativeShell(): boolean {
+  if (platform.isCapacitor.value) return true
+  return typeof window !== 'undefined'
+    && 'Capacitor' in window
+    && !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
+}
+
 async function exportMaps() {
   if (exporting.value) return
   exporting.value = true
+  exportError.value = null
   try {
     const maps = await db.getAllMaps()
     const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), maps }, null, 2)
     const filename = `neurocanvas-maps-${new Date().toISOString().slice(0, 10)}.json`
-    if (platform.isCapacitor.value) {
+    if (isNativeShell()) {
       const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
       const { Share } = await import('@capacitor/share')
-      const res = await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 })
-      // Share a FILE — must use `files`, not `url` (which is for sharing a link;
-      // passing a file:// there silently shares nothing on iOS).
-      await Share.share({ title: 'NeuroCanvas maps', files: [res.uri] })
+      // Documents is reliably readable by the iOS share sheet (Cache can be
+      // purged / not always accessible to the share extension).
+      const res = await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: Encoding.UTF8 })
+      try {
+        // Pass both — iOS uses `files`, older paths use `url`; either is a file://.
+        await Share.share({ title: 'NeuroCanvas maps', url: res.uri, files: [res.uri] })
+      } catch (shareErr) {
+        const msg = shareErr instanceof Error ? shareErr.message : String(shareErr)
+        if (/cancel/i.test(msg)) return // user dismissed the share sheet
+        throw shareErr
+      }
     } else if (typeof document !== 'undefined') {
       // Web Share Level 2 (files) first — on iOS Safari/PWA the <a download>
       // trick silently does nothing, but navigator.share with a File works.
@@ -76,6 +93,7 @@ async function exportMaps() {
     }
   } catch (e) {
     console.error('[settings] export maps failed:', e)
+    exportError.value = (e instanceof Error ? e.message : String(e) || 'Export failed').slice(0, 200)
   } finally {
     exporting.value = false
   }
@@ -199,7 +217,7 @@ async function submitPassword() {
           </div>
           <div class="macc-row-text">
             <span class="macc-row-title">{{ exporting ? t('mobile.settingsAccount.exporting') : t('mobile.settingsAccount.exportTitle') }}</span>
-            <span class="macc-row-hint">{{ t('mobile.settingsAccount.exportHint') }}</span>
+            <span class="macc-row-hint">{{ exportError || t('mobile.settingsAccount.exportHint') }}</span>
           </div>
         </button>
       </div>
