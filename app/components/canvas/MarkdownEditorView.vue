@@ -328,7 +328,15 @@ watch(text, () => {
 
 onMounted(() => {
   loadFromStore()
-  nextTick(() => { editorRef.value?.focus() })
+  // Don't auto-focus on mobile — it instantly raises the keyboard the moment a
+  // map opens, which the user has to dismiss. Desktop keeps the autofocus.
+  const isMobileShell = typeof window !== 'undefined' && (
+    ('Capacitor' in window && !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.())
+    || window.matchMedia?.('(max-width: 768px)')?.matches
+  )
+  if (!isMobileShell) {
+    nextTick(() => { editorRef.value?.focus() })
+  }
 })
 onUnmounted(() => {
   if (debounceTimer !== null) clearTimeout(debounceTimer)

@@ -705,30 +705,32 @@ async function manualUpdateCheck() {
   -webkit-tap-highlight-color: transparent;
 }
 .mgen-toggle-knob {
-  position: absolute; left: 2px; top: 2px;
-  /* Wide capsule, not a circle — width > height with fully rounded ends. */
-  width: 34px; height: 28px; border-radius: 999px;
+  position: absolute; left: 2px; top: 50%;
+  /* Rounded RECTANGLE (not a capsule/circle): wider than tall, moderate corner
+     radius. Vertically centered via top:50% + translateY(-50%). 34×26. */
+  width: 34px; height: 26px; border-radius: 8px;
   background: #FFFFFF;
   transition: transform 240ms cubic-bezier(0.33, 0, 0.2, 1);
-  /* Pronounced float — the knob reads clearly even on the light track. */
+  transform: translateY(-50%);
+  /* Float shadow, balanced so the knob doesn't read as top-heavy. */
   box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.28),
-    0 2px 4px rgba(0, 0, 0, 0.22),
+    0 2px 6px rgba(0, 0, 0, 0.26),
+    0 1px 2px rgba(0, 0, 0, 0.22),
     0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  /* 52 - 34 knob - 2 left - 2 right = 14px travel. */
-  transform: translateX(14px);
+  /* 52 - 34 knob - 2 left - 2 right = 14px travel. Keep vertical centering. */
+  transform: translate(14px, -50%);
 }
 .mgen-toggle:active .mgen-toggle-knob {
   /* Slight stretch on press. */
   width: 37px;
 }
 .mgen-toggle--on:active .mgen-toggle-knob {
-  transform: translateX(11px);
+  transform: translate(11px, -50%);
 }
 
 /* Slider */
@@ -843,6 +845,11 @@ async function manualUpdateCheck() {
 }
 :root.light .mgen-toggle {
   background: rgba(120, 120, 128, 0.28);
+}
+/* On-state must stay mint in light mode — the rule above has higher specificity
+   than .mgen-toggle--on, so without this the on/off tracks look identical. */
+:root.light .mgen-toggle--on {
+  background: var(--mgen-mint);
 }
 :root.light .mgen-slider-track {
   background: rgba(17, 17, 17, 0.08);

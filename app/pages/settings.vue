@@ -489,6 +489,7 @@ async function updateOllamaEndpoint() {
 // ─── Mobile Drill-Down Navigation ─────────────────────────────────
 const mobileSettingsScreen = ref<'home' | 'general' | 'ai-providers' | 'personal' | 'account' | 'signin-email'>('home')
 const platformRef = usePlatform()
+useBodyScrollLock()
 
 // Android hardware back: pop the open settings sub-screen back to the settings
 // home first (General → Settings), and only leave /settings once we're already

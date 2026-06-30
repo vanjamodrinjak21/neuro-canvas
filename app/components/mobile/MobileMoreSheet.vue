@@ -89,7 +89,6 @@ watch(() => props.visible, (v) => {
               <span class="mms-title">{{ t('mobile.more.saveTitle') }}</span>
               <span class="mms-hint">{{ isSaving ? t('mobile.more.savingHint') : t('mobile.more.saveHint') }}</span>
             </div>
-            <span class="mms-shortcut">⌘S</span>
           </button>
 
           <div class="mms-divider" />
@@ -110,35 +109,6 @@ watch(() => props.visible, (v) => {
             </div>
           </button>
 
-          <div class="mms-divider" />
-
-          <button class="mms-row" type="button" @click="dispatch('version-history')">
-            <div class="mms-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12C3 16.9706 7.02944 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C8.5 3 5.5 5 4 7.5" />
-                <path d="M3 4V8H7" />
-                <path d="M12 7V12L15 14" />
-              </svg>
-            </div>
-            <div class="mms-text">
-              <span class="mms-title">{{ t('mobile.more.versionHistoryTitle') }}</span>
-              <span class="mms-hint">{{ t('mobile.more.versionHistoryHint') }}</span>
-            </div>
-          </button>
-
-          <div class="mms-divider" />
-
-          <button class="mms-row" type="button" @click="dispatch('comments')">
-            <div class="mms-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 11.5C21 16.7467 16.7467 21 11.5 21C9.97186 21 8.5314 20.6398 7.25 20H3L4.5 16.0625C3.5314 14.7186 3 13.1719 3 11.5C3 6.25329 7.25329 2 12.5 2C16.7467 2 21 6.25329 21 11.5Z" />
-              </svg>
-            </div>
-            <div class="mms-text">
-              <span class="mms-title">{{ t('mobile.more.commentsTitle') }}</span>
-              <span class="mms-hint">{{ t('mobile.more.commentsHint') }}</span>
-            </div>
-          </button>
         </div>
 
         <span class="mms-section">{{ t('mobile.more.exportSection') }}</span>
@@ -191,21 +161,6 @@ watch(() => props.visible, (v) => {
 
         <span class="mms-section">{{ t('mobile.more.supportSection') }}</span>
         <div class="mms-group">
-          <button class="mms-row" type="button" @click="dispatch('open-shortcuts')">
-            <div class="mms-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="2" />
-                <path d="M6 10H6.01M10 10H10.01M14 10H14.01M18 10H18.01M6 14H6.01M18 14H18.01M10 14H14" />
-              </svg>
-            </div>
-            <div class="mms-text">
-              <span class="mms-title">{{ t('mobile.more.shortcutsTitle') }}</span>
-              <span class="mms-hint">{{ t('mobile.more.shortcutsHint') }}</span>
-            </div>
-          </button>
-
-          <div class="mms-divider" />
-
           <button class="mms-row" type="button" @click="dispatch('settings')">
             <div class="mms-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="#FAFAFA">
