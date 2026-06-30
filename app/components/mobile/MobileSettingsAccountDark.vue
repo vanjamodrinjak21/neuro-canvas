@@ -2,9 +2,9 @@
 /**
  * Mobile Settings — Account (Dark)
  * Paper artboard KXU-0 ("Mobile iOS — Settings: Account").
- * Security · Sessions · Data · Danger zone. (No sign-out — that lives on the home screen.)
+ * Security · Danger zone. (No sign-out — that lives on the home screen.)
  */
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 const { t } = useI18n()
 
@@ -21,23 +21,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   back: []
-  'open-password': []
-  'open-passkeys': []
-  'open-apps': []
-  'export-data': []
-  'import-data': []
   'delete-account': []
-  'revoke-session': [id: string]
-  'revoke-others': []
 }>()
-
-const twoFactorOn = ref(true)
-
-const sessions = computed(() => [
-  { id: 'current', device: 'iPhone 17 Pro', italic: '— this device', meta: 'ZAGREB · NOW', current: true },
-  { id: 'macbook', device: 'MacBook Pro · Tauri', meta: 'ZAGREB · 14M AGO' },
-  { id: 'ipad', device: 'iPad Air · Safari', meta: 'SPLIT, HR · 4D AGO · IDLE' }
-])
 
 const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 </script>
@@ -53,7 +38,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
       </button>
       <div class="macc-live">
         <span class="macc-live-dot" />
-        <span class="macc-live-label">{{ twoFactorOn ? t('mobile.settingsAccount.twoFactorOn') : t('mobile.settingsAccount.twoFactorOff') }}</span>
+        <span class="macc-live-label">{{ provider }}</span>
       </div>
     </header>
 
@@ -73,24 +58,6 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
         <span class="macc-section-status macc-section-status--mint">{{ provider }}</span>
       </div>
       <div class="macc-card">
-        <button class="macc-row" type="button" @click="emit('open-password')">
-          <div class="macc-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="8" cy="14" r="4" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M11 13L20 4M16 6L20 10M14 8L18 12" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-          </div>
-          <div class="macc-row-text">
-            <span class="macc-row-title">{{ t('mobile.settingsAccount.passwordTitle') }}</span>
-            <span class="macc-row-hint">{{ t('mobile.settingsAccount.passwordHint') }}</span>
-          </div>
-          <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-
-        <div class="macc-divider" />
-
         <div class="macc-row">
           <div class="macc-icon macc-icon--mint">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -99,144 +66,10 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
             </svg>
           </div>
           <div class="macc-row-text">
-            <span class="macc-row-title">
-              {{ t('mobile.settingsAccount.twoFactorTitle') }}
-              <span class="macc-row-italic">— {{ t('mobile.settingsAccount.twoFactorItalic') }}</span>
-            </span>
-            <span class="macc-row-hint">{{ t('mobile.settingsAccount.twoFactorHint') }}</span>
+            <span class="macc-row-title">{{ provider }}</span>
+            <span class="macc-row-hint">{{ props.user?.email }}</span>
           </div>
-          <button
-            class="macc-toggle"
-            :class="{ 'macc-toggle--on': twoFactorOn }"
-            type="button"
-            @click="twoFactorOn = !twoFactorOn"
-          >
-            <span class="macc-toggle-knob" />
-          </button>
         </div>
-
-        <div class="macc-divider" />
-
-        <button class="macc-row" type="button" @click="emit('open-passkeys')">
-          <div class="macc-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="8" cy="12" r="4" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M12 12H22M18 9V15M22 9V15" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-          </div>
-          <div class="macc-row-text">
-            <span class="macc-row-title">{{ t('mobile.settingsAccount.passkeysTitle') }}</span>
-            <span class="macc-row-hint">{{ t('mobile.settingsAccount.passkeysHint', { n: 2 }) }} · IPHONE 17 PRO · MACBOOK</span>
-          </div>
-          <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-
-        <div class="macc-divider" />
-
-        <button class="macc-row" type="button" @click="emit('open-apps')">
-          <div class="macc-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#A1A1AA" stroke-width="1.6" />
-              <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#A1A1AA" stroke-width="1.6" />
-              <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#A1A1AA" stroke-width="1.6" />
-              <circle cx="17.5" cy="17.5" r="3.5" stroke="#A1A1AA" stroke-width="1.6" />
-            </svg>
-          </div>
-          <div class="macc-row-text">
-            <span class="macc-row-title">{{ t('mobile.settingsAccount.connectedAppsTitle') }}</span>
-            <span class="macc-row-hint">GITHUB · LINEAR · OBSIDIAN</span>
-          </div>
-          <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- SESSIONS -->
-      <div class="macc-section-head">
-        <span class="macc-section-label">{{ t('mobile.settingsAccount.sessionsLabel') }}</span>
-        <button class="macc-section-action" type="button" @click="emit('revoke-others')">{{ t('mobile.settingsAccount.revokeOthers') }}</button>
-      </div>
-      <div class="macc-card">
-        <template v-for="(session, idx) in sessions" :key="session.id">
-          <div
-            class="macc-row"
-            :class="{ 'macc-row--current': session.current }"
-          >
-            <div class="macc-icon" :class="{ 'macc-icon--mint': session.current }">
-              <svg v-if="idx === 0" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="6" y="3" width="12" height="18" rx="2" :stroke="session.current ? '#00D2BE' : '#A1A1AA'" stroke-width="1.6" />
-                <circle cx="12" cy="18" r="0.8" :fill="session.current ? '#00D2BE' : '#A1A1AA'" />
-              </svg>
-              <svg v-else-if="idx === 1" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="11" rx="1.5" stroke="#A1A1AA" stroke-width="1.6" />
-                <path d="M2 19H22" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-              </svg>
-              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="4" y="3" width="16" height="18" rx="2" stroke="#A1A1AA" stroke-width="1.6" />
-                <path d="M10 18H14" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-              </svg>
-            </div>
-            <div class="macc-row-text">
-              <span class="macc-row-title">
-                {{ session.device }}
-                <span v-if="session.italic" class="macc-row-italic">{{ session.italic }}</span>
-              </span>
-              <span class="macc-row-hint">{{ session.meta }}</span>
-            </div>
-            <div v-if="session.current" class="macc-pill macc-pill--mint">{{ t('mobile.settingsAccount.sessionActive') }}</div>
-            <button
-              v-else
-              class="macc-pill"
-              type="button"
-              @click="emit('revoke-session', session.id)"
-            >{{ t('mobile.settingsAccount.sessionRevoke') }}</button>
-          </div>
-          <div v-if="idx < sessions.length - 1" class="macc-divider" />
-        </template>
-      </div>
-
-      <!-- DATA -->
-      <div class="macc-section-head">
-        <span class="macc-section-label">{{ t('mobile.settingsAccount.dataLabel') }}</span>
-        <span class="macc-section-status">{{ t('mobile.settingsAccount.dataStatus') }}</span>
-      </div>
-      <div class="macc-card">
-        <button class="macc-row" type="button" @click="emit('export-data')">
-          <div class="macc-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 4V16M12 16L7 11M12 16L17 11" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M4 20H20" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-          </div>
-          <div class="macc-row-text">
-            <span class="macc-row-title">{{ t('mobile.settingsAccount.exportTitle') }}</span>
-            <span class="macc-row-hint">{{ t('mobile.settingsAccount.exportHint') }}</span>
-          </div>
-          <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-
-        <div class="macc-divider" />
-
-        <button class="macc-row" type="button" @click="emit('import-data')">
-          <div class="macc-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M4 20H20" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-          </div>
-          <div class="macc-row-text">
-            <span class="macc-row-title">{{ t('mobile.settingsAccount.importTitle') }}</span>
-            <span class="macc-row-hint">{{ t('mobile.settingsAccount.importHint') }}</span>
-          </div>
-          <svg class="macc-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
       </div>
 
       <!-- DANGER ZONE -->
@@ -283,7 +116,6 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   --macc-mint: #00D2BE;
   --macc-red: #EF4444;
   --macc-surface: rgba(250, 250, 250, 0.04);
-  --macc-stroke: rgba(250, 250, 250, 0.10);
   --macc-stroke-soft: rgba(250, 250, 250, 0.06);
 
   position: fixed; inset: 0;
@@ -384,12 +216,6 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   color: var(--macc-mute);
 }
 .macc-section-status--mint { color: var(--macc-mint); }
-.macc-section-action {
-  background: none; border: none; cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
-  color: var(--macc-mint);
-}
 
 .macc-card {
   background: var(--macc-surface);
@@ -407,7 +233,6 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   transition: background 150ms ease;
 }
 .macc-row:active { background: rgba(250, 250, 250, 0.04); }
-.macc-row--current { background: rgba(0, 210, 190, 0.04); }
 .macc-icon {
   width: 36px; height: 36px;
   border-radius: 10px;
@@ -429,56 +254,10 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--macc-ink);
 }
-.macc-row-italic {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; color: var(--macc-mint);
-  margin-left: 4px;
-}
 .macc-row-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--macc-mute);
-}
-.macc-chev { flex-shrink: 0; }
-.macc-divider { height: 1px; background: var(--macc-stroke-soft); margin: 0 16px; }
-
-.macc-toggle {
-  position: relative;
-  width: 40px; height: 23px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: #48484A;
-  cursor: pointer; flex-shrink: 0;
-  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-block;
-}
-.macc-toggle-knob {
-  position: absolute; left: 2px; top: 2px;
-  width: 19px; height: 19px; border-radius: 999px;
-  background: #FFFFFF;
-  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.12);
-}
-.macc-toggle--on { background: var(--macc-mint); }
-.macc-toggle--on .macc-toggle-knob { transform: translateX(17px); }
-
-.macc-pill {
-  padding: 5px 9px;
-  background: var(--macc-surface);
-  border: 1px solid var(--macc-stroke);
-  border-radius: 999px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
-  color: var(--macc-body);
-  flex-shrink: 0;
-  cursor: pointer;
-}
-.macc-pill--mint {
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.30);
-  color: var(--macc-mint);
-  cursor: default;
 }
 
 /* Danger zone */
@@ -530,15 +309,11 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
 :root.light .macc {
   /* White-on-dark overlays disappear on a light surface — flip to dark-ink overlays */
   --macc-surface: rgba(17, 17, 17, 0.04);
-  --macc-stroke: rgba(17, 17, 17, 0.12);
   --macc-stroke-soft: rgba(17, 17, 17, 0.08);
 }
 :root.light .macc-row:active { background: rgba(17, 17, 17, 0.04); }
 :root.light .macc-icon {
   background: rgba(17, 17, 17, 0.04);
   border: 1px solid rgba(17, 17, 17, 0.08);
-}
-:root.light .macc-toggle {
-  background: #E9E9EA;
 }
 </style>

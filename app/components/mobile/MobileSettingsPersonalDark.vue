@@ -2,9 +2,9 @@
 /**
  * Mobile Settings — Personal (Dark)
  * Paper artboard KTB-0 ("Mobile iOS — Settings: Personal").
- * Profile card with bio, Language card, Defaults card.
+ * Profile identity card and Language card.
  */
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { safeImageUrl } from '~/utils/safeUrl'
 
 const { t } = useI18n()
@@ -25,7 +25,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   back: []
   'set-locale': [code: string]
-  'edit-profile': []
 }>()
 
 const avatarSrc = computed(() => safeImageUrl(props.user?.image))
@@ -45,10 +44,6 @@ const localeLabel = computed(() => {
   if (props.locale === 'hr') return 'EN · HR'
   return 'EN'
 })
-
-const productLetters = ref(true)
-const publicProfile = ref(false)
-const layout = ref<'radial' | 'tree'>('radial')
 </script>
 
 <template>
@@ -93,23 +88,6 @@ const layout = ref<'radial' | 'tree'>('radial')
             <span class="mper-identity-email">{{ email }}</span>
           </div>
         </div>
-
-        <div class="mper-divider mper-divider--full" />
-
-        <div class="mper-bio">
-          <span class="mper-bio-label">{{ t('mobile.settingsPersonal.bioLabel') }}</span>
-          <span class="mper-bio-text">{{ t('mobile.settingsPersonal.bioText') }}</span>
-        </div>
-
-        <div class="mper-actions">
-          <button class="mper-action mper-action--primary" type="button" @click="emit('edit-profile')">{{ t('mobile.settingsPersonal.editProfile') }}</button>
-          <button class="mper-action mper-action--icon" type="button" :aria-label="t('mobile.settingsPersonal.avatarAria')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="8" r="3" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M5 21V19C5 16.79 6.79 15 9 15H15C17.21 15 19 16.79 19 19V21" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-          </button>
-        </div>
       </div>
 
       <!-- LANGUAGE -->
@@ -133,145 +111,6 @@ const layout = ref<'radial' | 'tree'>('radial')
           >
             <option v-for="loc in i18nLocales" :key="loc.code" :value="loc.code">{{ loc.name }}</option>
           </select>
-        </div>
-
-        <div class="mper-divider" />
-
-        <div class="mper-row">
-          <div class="mper-icon mper-icon--mint">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 3L13.8 8.2L19 10L13.8 11.8L12 17L10.2 11.8L5 10L10.2 8.2L12 3Z" stroke="#00D2BE" stroke-width="1.5" stroke-linejoin="round" />
-            </svg>
-          </div>
-          <div class="mper-row-text">
-            <span class="mper-row-title">
-              {{ t('mobile.settingsPersonal.aiPromptsTitle') }}
-              <span class="mper-row-italic">{{ t('mobile.settingsPersonal.aiPromptsAccent') }}</span>
-            </span>
-            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.aiPromptsHint') }}</span>
-          </div>
-          <svg class="mper-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-
-        <div class="mper-divider" />
-
-        <div class="mper-row">
-          <div class="mper-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M3 12H21M12 3C14.5 6 14.5 18 12 21C9.5 18 9.5 6 12 3Z" stroke="#A1A1AA" stroke-width="1.6" />
-            </svg>
-          </div>
-          <div class="mper-row-text">
-            <span class="mper-row-title">{{ t('mobile.settingsPersonal.regionTitle') }}</span>
-            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.regionHint') }}</span>
-          </div>
-          <svg class="mper-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-      </div>
-
-      <!-- DEFAULTS -->
-      <div class="mper-section-head">
-        <span class="mper-section-label">{{ t('mobile.settingsPersonal.defaultsLabel') }}</span>
-        <span class="mper-section-status">{{ t('mobile.settingsPersonal.defaultsStatus') }}</span>
-      </div>
-      <div class="mper-card">
-        <div class="mper-row">
-          <div class="mper-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="6" cy="6" r="2.5" stroke="#A1A1AA" stroke-width="1.6" />
-              <circle cx="18" cy="6" r="2.5" stroke="#A1A1AA" stroke-width="1.6" />
-              <circle cx="6" cy="18" r="2.5" stroke="#A1A1AA" stroke-width="1.6" />
-              <circle cx="18" cy="18" r="2.5" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M6 8.5V15.5M8.5 6H15.5M8.5 18H15.5M18 8.5V15.5" stroke="#A1A1AA" stroke-width="1.6" />
-            </svg>
-          </div>
-          <div class="mper-row-text">
-            <span class="mper-row-title">{{ t('mobile.settingsPersonal.defaultWorkspaceTitle') }}</span>
-            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.defaultWorkspaceHint', { n: 8 }) }}</span>
-          </div>
-          <svg class="mper-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-
-        <div class="mper-divider" />
-
-        <div class="mper-row">
-          <div class="mper-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="2" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M3 9H21M9 21V9" stroke="#A1A1AA" stroke-width="1.6" />
-            </svg>
-          </div>
-          <div class="mper-row-text">
-            <span class="mper-row-title">{{ t('mobile.settingsPersonal.layoutTitle') }}</span>
-            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.layoutHint') }}</span>
-          </div>
-          <div class="mper-seg">
-            <button
-              class="mper-seg-btn"
-              :class="{ 'mper-seg-btn--on': layout === 'radial' }"
-              type="button"
-              @click="layout = 'radial'"
-            >{{ t('mobile.settingsPersonal.layoutRadial') }}</button>
-            <button
-              class="mper-seg-btn"
-              :class="{ 'mper-seg-btn--on': layout === 'tree' }"
-              type="button"
-              @click="layout = 'tree'"
-            >{{ t('mobile.settingsPersonal.layoutTree') }}</button>
-          </div>
-        </div>
-
-        <div class="mper-divider" />
-
-        <div class="mper-row">
-          <div class="mper-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M3 12H21M12 3C14.5 6 14.5 18 12 21C9.5 18 9.5 6 12 3Z" stroke="#A1A1AA" stroke-width="1.6" />
-            </svg>
-          </div>
-          <div class="mper-row-text">
-            <span class="mper-row-title">{{ t('mobile.settingsPersonal.publicProfileTitle') }}</span>
-            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.publicProfileHint', { handle: handle.slice(1) }) }}</span>
-          </div>
-          <button
-            class="mper-toggle"
-            :class="{ 'mper-toggle--on': publicProfile }"
-            type="button"
-            @click="publicProfile = !publicProfile"
-          >
-            <span class="mper-toggle-knob" />
-          </button>
-        </div>
-
-        <div class="mper-divider" />
-
-        <div class="mper-row">
-          <div class="mper-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="6" width="18" height="13" rx="2" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M4 7L12 13L20 7" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </div>
-          <div class="mper-row-text">
-            <span class="mper-row-title">{{ t('mobile.settingsPersonal.productLettersTitle') }}</span>
-            <span class="mper-row-hint">{{ t('mobile.settingsPersonal.productLettersHint') }}</span>
-          </div>
-          <button
-            class="mper-toggle"
-            :class="{ 'mper-toggle--on': productLetters }"
-            type="button"
-            @click="productLetters = !productLetters"
-          >
-            <span class="mper-toggle-knob" />
-          </button>
         </div>
       </div>
 
@@ -447,42 +286,6 @@ const layout = ref<'radial' | 'tree'>('radial')
   color: var(--mper-mute);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.mper-divider { height: 1px; background: var(--mper-stroke-soft); margin: 0 16px; }
-.mper-divider--full { margin: 0; }
-.mper-bio { display: flex; flex-direction: column; gap: 6px; }
-.mper-bio-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
-  color: var(--mper-mute);
-}
-.mper-bio-text {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-size: calc(17px * var(--nc-text-scale, 1)); line-height: 22px;
-  color: var(--mper-ink);
-}
-.mper-actions { display: flex; gap: 8px; }
-.mper-action {
-  flex: 1 1 auto;
-  padding: 10px;
-  background: var(--mper-surface);
-  border: 1px solid var(--mper-stroke);
-  border-radius: 10px;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 600; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
-  color: var(--mper-body);
-  text-align: center;
-}
-.mper-action--primary {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.28);
-  color: var(--mper-mint);
-}
-.mper-action--icon {
-  flex: 0 0 auto; padding: 10px 14px;
-  display: flex; align-items: center; justify-content: center;
-}
-
 /* Card */
 .mper-card {
   background: var(--mper-surface);
@@ -502,10 +305,6 @@ const layout = ref<'radial' | 'tree'>('radial')
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.mper-icon--mint {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.28);
-}
 .mper-icon-text {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 700; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
@@ -520,17 +319,11 @@ const layout = ref<'radial' | 'tree'>('radial')
   font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--mper-ink);
 }
-.mper-row-italic {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; color: var(--mper-mint);
-  margin-left: 4px;
-}
 .mper-row-hint {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--mper-mute);
 }
-.mper-chev { flex-shrink: 0; }
 
 .mper-select {
   background: var(--mper-bg);
@@ -542,48 +335,6 @@ const layout = ref<'radial' | 'tree'>('radial')
   color: var(--mper-body);
   flex-shrink: 0;
 }
-
-.mper-seg {
-  display: flex; padding: 3px;
-  background: var(--mper-bg);
-  border: 1px solid var(--mper-stroke);
-  border-radius: 10px; flex-shrink: 0;
-}
-.mper-seg-btn {
-  padding: 5px 10px;
-  background: none; border: none; cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
-  color: var(--mper-mute);
-  border-radius: 7px;
-}
-.mper-seg-btn--on {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.28);
-  color: var(--mper-mint);
-  font-weight: 600;
-}
-
-.mper-toggle {
-  position: relative;
-  width: 40px; height: 23px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: #48484A;
-  cursor: pointer; flex-shrink: 0;
-  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-block;
-}
-.mper-toggle-knob {
-  position: absolute; left: 2px; top: 2px;
-  width: 19px; height: 19px; border-radius: 999px;
-  background: #FFFFFF;
-  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.12);
-}
-.mper-toggle--on { background: var(--mper-mint); }
-.mper-toggle--on .mper-toggle-knob { transform: translateX(17px); }
 
 .mper-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
@@ -600,8 +351,5 @@ const layout = ref<'radial' | 'tree'>('radial')
 :root.light .mper-icon {
   background: rgba(17, 17, 17, 0.04);
   border-color: rgba(17, 17, 17, 0.08);
-}
-:root.light .mper-toggle {
-  background: #E9E9EA;
 }
 </style>

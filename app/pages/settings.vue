@@ -587,6 +587,24 @@ function handleMobileSettingsSignIn(provider: 'google' | 'github' | 'email') {
   void handleMobileOAuth(provider)
 }
 
+async function handleMobileDeleteAccount() {
+  // Irreversible — confirm before hitting the destructive endpoint. The server
+  // also requires the exact confirmation string, so accidental calls are safe.
+  if (typeof window !== 'undefined' && !window.confirm(t('mobile.settingsAccount.deleteTitle'))) return
+  try {
+    await $fetch('/api/user/account', {
+      method: 'DELETE',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: { confirmation: 'DELETE MY ACCOUNT' }
+    })
+  } catch (err) {
+    console.error('[settings] mobile account deletion failed:', err)
+    return
+  }
+  // Account gone → reuse the sign-out path (clears secrets + resets to home).
+  await handleMobileSignOut()
+}
+
 async function handleMobileSignOut() {
   await aiSettings.clearAllSecrets()
   if (platformRef.isCapacitor.value) {
@@ -704,6 +722,7 @@ function handleAccountClose() {
             :user="user"
             :provider="(session as any)?.provider || 'Credentials'"
             @back="mobileSettingsScreen = 'home'"
+            @delete-account="handleMobileDeleteAccount"
           />
         </template>
 
