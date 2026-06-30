@@ -29,6 +29,10 @@ on:
         description: 'Optional note (for your own reference in the run log)'
         required: false
         type: string
+      device_udid:
+        description: 'Optional device UDID to register (unblocks the development-profile archive)'
+        required: false
+        type: string
 
 concurrency:
   group: ios-appstore-${{ github.ref }}
@@ -111,6 +115,40 @@ jobs:
           P8="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$P8"
           echo "P8_PATH=$P8" >> "$GITHUB_ENV"
+
+      # Automatic-signed archive needs a Development profile, which Apple won't
+      # mint until the team has >=1 registered device. Register the provided
+      # UDID via the App Store Connect API (idempotent — a 409 'already exists'
+      # is fine). Distribution is still applied at the app-store export step.
+      - name: Register test device (for development-profile archive)
+        if: ${{ inputs.device_udid != '' }}
+        env:
+          DEVICE_UDID: ${{ inputs.device_udid }}
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check pyjwt cryptography
+          python3 - <<'PY'
+          import os, time, json, urllib.request, urllib.error, jwt
+          kid, iss = os.environ["ASC_KEY_ID"], os.environ["ASC_ISSUER_ID"]
+          key = open(os.environ["P8_PATH"]).read()
+          udid = os.environ["DEVICE_UDID"].strip()
+          tok = jwt.encode(
+              {"iss": iss, "iat": int(time.time()), "exp": int(time.time()) + 600, "aud": "appstoreconnect-v1"},
+              key, algorithm="ES256", headers={"kid": kid, "typ": "JWT"},
+          )
+          body = json.dumps({"data": {"type": "devices", "attributes": {
+              "name": "CI Test Device", "platform": "IOS", "udid": udid}}}).encode()
+          req = urllib.request.Request(
+              "https://api.appstoreconnect.apple.com/v1/devices", data=body, method="POST",
+              headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json"})
+          try:
+              r = urllib.request.urlopen(req)
+              print("Device registered:", r.status)
+          except urllib.error.HTTPError as e:
+              detail = e.read().decode()
+              # 409 = already registered (fine). Anything else: surface but don't
+              # hard-fail — the archive step will report the real signing state.
+              print("Device registration response:", e.code, detail)
+          PY
 
       # iPhone-only (TARGETED_DEVICE_FAMILY=1) for v1 — avoids iPad layout/
       # screenshot review surface. Drop the override to ship universal.
