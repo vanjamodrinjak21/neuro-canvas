@@ -240,12 +240,7 @@ function maskKey(type: string): string {
             <div class="map-stat-divider" />
             <div class="map-stat">
               <span class="map-stat-label">{{ t('mobile.settingsAiProviders.statStatus') }}</span>
-              <span class="map-stat-value">{{ t('mobile.settingsAiProviders.connected') }}</span>
-            </div>
-            <div class="map-stat-divider" />
-            <div class="map-stat">
-              <span class="map-stat-label">{{ t('mobile.settingsAiProviders.statLatency') }}</span>
-              <span class="map-stat-value">— ms</span>
+              <span class="map-stat-value map-stat-value--ok">{{ t('mobile.settingsAiProviders.connected') }}</span>
             </div>
           </div>
 
@@ -575,8 +570,8 @@ function maskKey(type: string): string {
 
 /* Active provider card */
 .map-active-card {
-  display: flex; flex-direction: column; gap: 16px;
-  padding: 16px;
+  display: flex; flex-direction: column; gap: 13px;
+  padding: 15px;
   background: rgba(0, 210, 190, 0.04);
   border: 1px solid rgba(0, 210, 190, 0.22);
   border-radius: 16px;
@@ -649,6 +644,7 @@ function maskKey(type: string): string {
   font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--map-ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.map-stat-value--ok { color: var(--map-mint); }
 .map-stat-divider { width: 1px; background: var(--map-stroke-soft); }
 
 .map-model-row {
@@ -660,14 +656,8 @@ function maskKey(type: string): string {
   color: var(--map-mute);
 }
 .map-model-pills {
-  display: flex; gap: 6px;
-  overflow-x: auto;
-  margin: 0 -16px;
-  padding: 0 16px 2px 16px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  display: flex; flex-wrap: wrap; gap: 6px;
 }
-.map-model-pills::-webkit-scrollbar { display: none; }
 .map-model-pill {
   flex: 0 0 auto;
   padding: 6px 10px;

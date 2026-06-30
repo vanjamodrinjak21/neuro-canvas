@@ -136,20 +136,21 @@ function handleCancel() {
 }
 
 .confirm-icon {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 12px;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: calc(20px * var(--nc-text-scale, 1));
 }
 
+/* Matches the home (dashboard) delete modal exactly. */
 .confirm-icon--danger {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #EF4444;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  color: #DC2626;
 }
 
 .confirm-icon--default {
@@ -161,8 +162,8 @@ function handleCancel() {
 .confirm-title {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: calc(18px * var(--nc-text-scale, 1));
-  font-weight: 700;
-  margin: 0 0 4px;
+  font-weight: 600;
+  margin: 0 0 6px;
   color: #FAFAFA;
 }
 
@@ -209,12 +210,12 @@ function handleCancel() {
 }
 
 .confirm-btn--danger {
-  background: #EF4444;
+  background: #DC2626;
   color: #FFFFFF;
 }
 
 .confirm-btn--danger:hover {
-  background: #DC2626;
+  background: #B91C1C;
 }
 
 .confirm-btn--primary {
