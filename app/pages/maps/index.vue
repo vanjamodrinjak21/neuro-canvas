@@ -17,6 +17,7 @@ const syncEngine = useSyncEngine()
 const { confirm, ConfirmDialog } = useConfirmDialog()
 const { t } = useI18n()
 const { isMobile } = usePlatform()
+useBodyScrollLock()
 
 // State
 const allMaps = ref<DBMapDocument[]>([])

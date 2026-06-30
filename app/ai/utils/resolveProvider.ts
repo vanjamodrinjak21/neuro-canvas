@@ -1,5 +1,6 @@
 import { useAISettings } from '~/composables/useAISettings'
 import { useGuestMode } from '~/composables/useGuestMode'
+import { readKey } from '~/utils/secureKeyStore'
 
 export interface ResolvedProvider {
   type: string
@@ -71,9 +72,17 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     if (!defaultProvider.localApiKey && defaultProvider.type !== 'ollama' && defaultProvider.type !== 'local') {
       throw new Error('API key needs to be entered. Go to Settings > AI Providers and add your key.')
     }
+    // localApiKey is AES-GCM-WRAPPED (see secureKeyStore). Unwrap it before
+    // handing it to the AI client — otherwise the ciphertext is sent as
+    // x-api-key and the provider returns "invalid x-api-key". (The settings
+    // Test button already unwraps, which is why testing passes but generation
+    // failed.) readKey() passes legacy plaintext keys through unchanged.
+    const apiKey = defaultProvider.localApiKey
+      ? (await readKey(defaultProvider.localApiKey)) || undefined
+      : undefined
     return {
       type: defaultProvider.type,
-      apiKey: defaultProvider.localApiKey || undefined,
+      apiKey,
       baseUrl: defaultProvider.baseUrl,
       selectedModelId: (defaultProvider.type === 'ollama' || defaultProvider.type === 'local') ? undefined : defaultProvider.selectedModelId
     }
