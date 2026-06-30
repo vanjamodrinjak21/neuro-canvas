@@ -107,10 +107,6 @@ function onRow(id: string) {
         <span class="mdash-wordmark">Neuro<span class="mdash-wordmark-em">Canvas</span></span>
       </div>
       <div class="mdash-top-right">
-        <div class="mdash-live-chip">
-          <span class="mdash-live-dot" />
-          <span class="mdash-live-label">{{ t('mobile.dashboard.synced') }}</span>
-        </div>
         <NuxtLink to="/settings" class="mdash-avatar" :aria-label="t('common.nav.settings')">
           <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mdash-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>

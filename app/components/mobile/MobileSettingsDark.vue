@@ -28,13 +28,20 @@ const emit = defineEmits<{
   'open-ai-providers': []
   'open-personal': []
   'sign-out': []
-  'sign-in': [provider: 'google' | 'github' | 'email']
+  'sign-in': [provider: 'apple' | 'google' | 'github' | 'email']
 }>()
 
 const avatarSrc = computed(() => safeImageUrl(props.user?.image))
 const displayName = computed(() => resolveDisplayName(props.user, t('mobile.settings.guestName')))
 const displayEmail = computed(() => resolveDisplayEmail(props.user))
 const isHidden = computed(() => isHiddenAppleUser(props.user))
+
+// Sign in with Apple only on Apple devices (and it's required there by
+// Guideline 4.8); GitHub is hidden on iOS in exchange.
+const isApplePlatform = computed(() =>
+  typeof window !== 'undefined'
+  && (window as { Capacitor?: { getPlatform?: () => string } }).Capacitor?.getPlatform?.() === 'ios'
+)
 </script>
 
 <template>
@@ -44,10 +51,6 @@ const isHidden = computed(() => isHiddenAppleUser(props.user))
       <div class="mset-brand" aria-label="NeuroCanvas">
         <NcLogo :size="14" :container-size="26" :radius="6" />
         <span class="mset-wordmark">Neuro<span class="mset-wordmark-em">Canvas</span></span>
-      </div>
-      <div class="mset-live">
-        <span class="mset-live-dot" />
-        <span class="mset-live-label">{{ t('mobile.settings.synced') }}</span>
       </div>
     </header>
 
@@ -71,7 +74,13 @@ const isHidden = computed(() => isHiddenAppleUser(props.user))
           <span class="mset-signin-sub">{{ t('mobile.settings.signInSub') }}</span>
         </div>
         <div class="mset-signin-grid">
-          <button class="mset-signin-btn mset-signin-btn--primary" type="button" @click="emit('sign-in', 'google')">
+          <button v-if="isApplePlatform" class="mset-signin-btn mset-signin-btn--apple" type="button" @click="emit('sign-in', 'apple')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.51 4.09l-.02-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+            </svg>
+            <span>{{ t('mobile.settings.continueApple') }}</span>
+          </button>
+          <button class="mset-signin-btn" type="button" @click="emit('sign-in', 'google')">
             <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -80,7 +89,7 @@ const isHidden = computed(() => isHiddenAppleUser(props.user))
             </svg>
             <span>{{ t('mobile.settings.continueGoogle') }}</span>
           </button>
-          <button class="mset-signin-btn" type="button" @click="emit('sign-in', 'github')">
+          <button v-if="!isApplePlatform" class="mset-signin-btn" type="button" @click="emit('sign-in', 'github')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.2.7-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.9-.39.98 0 1.97.13 2.9.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
             </svg>
@@ -399,6 +408,14 @@ const isHidden = computed(() => isHiddenAppleUser(props.user))
   font-weight: 600;
 }
 .mset-signin-btn--primary:active { background: #00b8a6; }
+/* Sign in with Apple — required (Guideline 4.8) and at least as prominent. */
+.mset-signin-btn--apple {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  color: #000000;
+  font-weight: 600;
+}
+.mset-signin-btn--apple:active { background: #E8E8E8; }
 
 /* Profile card */
 .mset-profile {

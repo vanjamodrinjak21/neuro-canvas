@@ -75,10 +75,6 @@ function categoryLabel(c: TemplateCategory): string {
         <span class="mtpl-wordmark">Neuro<span class="mtpl-wordmark-em">Canvas</span></span>
       </div>
       <div class="mtpl-top-right">
-        <div class="mtpl-live">
-          <span class="mtpl-live-dot" />
-          <span class="mtpl-live-label">{{ t('mobile.templates.synced') }}</span>
-        </div>
         <NuxtLink to="/settings" class="mtpl-avatar" :aria-label="t('mobile.templates.settings')">
           <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mtpl-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>
