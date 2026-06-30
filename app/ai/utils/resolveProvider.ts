@@ -42,6 +42,17 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     await aiSettings.initialize()
   }
 
+  // Native (Capacitor / Tauri) calls providers directly and needs the key
+  // on-device. If no on-device key is present yet, make a one-shot, awaited
+  // attempt to seed it from the server (App Store reviewer / owner allowlist).
+  // No-op on web, when not allowlisted (404), or once a key already exists.
+  if (_isTauri() || _isCapacitor()) {
+    const hasOnDeviceKey = aiSettings.providers.value.some(p => p.isEnabled && p.localApiKey)
+    if (!hasOnDeviceKey) {
+      await aiSettings.seedReviewKey()
+    }
+  }
+
   const defaultProvider = aiSettings.defaultProvider.value
 
   if (!defaultProvider?.isEnabled) {
