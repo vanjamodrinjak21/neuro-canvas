@@ -13,6 +13,21 @@ export function useExport() {
   function _isTauri(): boolean {
     return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
   }
+  function _isCapacitor(): boolean {
+    return typeof window !== 'undefined'
+      && 'Capacitor' in window
+      && !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
+  }
+
+  /** Uint8Array → base64 (chunked, avoids call-stack limits on large maps). */
+  function uint8ToBase64(bytes: Uint8Array): string {
+    let binary = ''
+    const chunk = 0x8000
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+    }
+    return btoa(binary)
+  }
 
   // ── PNG export ──────────────────────────────────────────────────────
   function exportAsPng(canvasEl: HTMLCanvasElement, title: string) {
@@ -92,8 +107,35 @@ export function useExport() {
       }
     }
 
+    // Capacitor (iOS/Android): write the file then open the native share sheet.
+    // The web <a download> path below is a SILENT no-op inside WKWebView, which
+    // is why editor exports "did nothing" on the phone. Write base64 (no
+    // encoding) so binary (PNG) and text (JSON/MD) both round-trip correctly.
+    if (_isCapacitor()) {
+      try {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem')
+        const { Share } = await import('@capacitor/share')
+        const res = await Filesystem.writeFile({
+          path: defaultFilename,
+          data: uint8ToBase64(data),
+          directory: Directory.Documents,
+        })
+        await Share.share({ title: defaultFilename, files: [res.uri] })
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        if (!/cancel|abort|dismiss/i.test(msg)) {
+          console.error('[Export] Capacitor save/share failed:', e)
+          try {
+            const { Dialog } = await import('@capacitor/dialog')
+            await Dialog.alert({ title: 'Export failed', message: msg.slice(0, 300) })
+          } catch { /* dialog unavailable */ }
+        }
+      }
+      return
+    }
+
     // Web fallback: blob download via <a> element
-    const blob = new Blob([data.buffer])
+    const blob = new Blob([data])
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
