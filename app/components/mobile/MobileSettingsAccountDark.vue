@@ -55,11 +55,12 @@ async function exportMaps() {
       // purged / not always accessible to the share extension).
       const res = await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: Encoding.UTF8 })
       try {
-        // Pass both — iOS uses `files`, older paths use `url`; either is a file://.
-        await Share.share({ title: 'NeuroCanvas maps', url: res.uri, files: [res.uri] })
+        // `files` is the correct param for a file on iOS/Android (NOT `url`,
+        // which is for sharing a link; passing both can break the iOS sheet).
+        await Share.share({ title: 'NeuroCanvas maps', files: [res.uri] })
       } catch (shareErr) {
         const msg = shareErr instanceof Error ? shareErr.message : String(shareErr)
-        if (/cancel/i.test(msg)) return // user dismissed the share sheet
+        if (/cancel|abort|dismiss/i.test(msg)) return // user dismissed the sheet
         throw shareErr
       }
     } else if (typeof document !== 'undefined') {
@@ -92,8 +93,17 @@ async function exportMaps() {
       URL.revokeObjectURL(url)
     }
   } catch (e) {
+    const msg = (e instanceof Error ? e.message : String(e)) || 'Export failed'
     console.error('[settings] export maps failed:', e)
-    exportError.value = (e instanceof Error ? e.message : String(e) || 'Export failed').slice(0, 200)
+    exportError.value = msg.slice(0, 200)
+    // Native alert so the failure is impossible to miss (the inline hint is easy
+    // to overlook). @capacitor/dialog is installed.
+    if (isNativeShell()) {
+      try {
+        const { Dialog } = await import('@capacitor/dialog')
+        await Dialog.alert({ title: 'Export failed', message: msg.slice(0, 300) })
+      } catch { /* dialog unavailable — inline hint still shows */ }
+    }
   } finally {
     exporting.value = false
   }
