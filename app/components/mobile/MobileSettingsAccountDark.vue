@@ -59,6 +59,40 @@ async function exportMaps() {
     exporting.value = false
   }
 }
+
+// ── Change password (email/password accounts only — OAuth accounts have none) ──
+const canChangePassword = computed(() => {
+  const p = (props.provider || 'credentials').toLowerCase()
+  return p === 'credentials' || p === 'email'
+})
+const showPwForm = ref(false)
+const currentPassword = ref('')
+const newPassword = ref('')
+const pwError = ref('')
+const pwSaving = ref(false)
+const pwSaved = ref(false)
+async function submitPassword() {
+  if (pwSaving.value || !currentPassword.value || !newPassword.value) return
+  pwSaving.value = true
+  pwError.value = ''
+  pwSaved.value = false
+  try {
+    await $fetch('/api/user/change-password', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: { currentPassword: currentPassword.value, newPassword: newPassword.value }
+    })
+    pwSaved.value = true
+    currentPassword.value = ''
+    newPassword.value = ''
+    setTimeout(() => { showPwForm.value = false; pwSaved.value = false }, 1500)
+  } catch (e: unknown) {
+    const err = e as { data?: { statusMessage?: string } }
+    pwError.value = err?.data?.statusMessage || 'Failed to change password'
+  } finally {
+    pwSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -104,6 +138,30 @@ async function exportMaps() {
             <span class="macc-row-hint">{{ props.user?.email }}</span>
           </div>
         </div>
+
+        <template v-if="canChangePassword">
+          <div class="macc-sep" />
+          <button class="macc-row macc-row--action" type="button" @click="showPwForm = !showPwForm">
+            <div class="macc-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="9" rx="2" stroke="#A1A1AA" stroke-width="1.6" />
+                <path d="M8 11V8a4 4 0 018 0v3" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="macc-row-text">
+              <span class="macc-row-title">{{ t('mobile.settingsAccount.changePassword') }}</span>
+              <span class="macc-row-hint">{{ t('mobile.settingsAccount.changePasswordHint') }}</span>
+            </div>
+          </button>
+          <div v-if="showPwForm" class="macc-pwform">
+            <input v-model="currentPassword" type="password" class="macc-pw-input" :placeholder="t('mobile.settingsAccount.currentPwPlaceholder')" autocomplete="current-password">
+            <input v-model="newPassword" type="password" class="macc-pw-input" :placeholder="t('mobile.settingsAccount.newPwPlaceholder')" autocomplete="new-password">
+            <p v-if="pwError" class="macc-pw-error">{{ pwError }}</p>
+            <button class="macc-pw-submit" type="button" :disabled="pwSaving || !currentPassword || !newPassword" @click="submitPassword">
+              {{ pwSaved ? t('mobile.settingsAccount.passwordSaved') : pwSaving ? t('mobile.settingsAccount.saving') : t('mobile.settingsAccount.savePassword') }}
+            </button>
+          </div>
+        </template>
       </div>
 
       <!-- DATA -->
@@ -287,6 +345,29 @@ async function exportMaps() {
 }
 .macc-row:active { background: rgba(250, 250, 250, 0.04); }
 .macc-row--action:disabled { opacity: 0.5; cursor: default; }
+.macc-sep { height: 1px; background: rgba(250, 250, 250, 0.07); margin: 0 16px; }
+.macc-pwform { display: flex; flex-direction: column; gap: 10px; padding: 4px 16px 16px; }
+.macc-pw-input {
+  width: 100%; box-sizing: border-box; padding: 12px 14px;
+  background: rgba(250, 250, 250, 0.04);
+  border: 1px solid rgba(250, 250, 250, 0.10);
+  border-radius: 10px; color: var(--nc-ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: calc(14px * var(--nc-text-scale, 1)); outline: none;
+}
+.macc-pw-input:focus { border-color: rgba(0, 210, 190, 0.40); }
+.macc-pw-error {
+  margin: 0; color: #fb7185;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 15px;
+}
+.macc-pw-submit {
+  width: 100%; padding: 12px; border: none; border-radius: 10px;
+  background: #00D2BE; color: #06201D; cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1));
+}
+.macc-pw-submit:disabled { opacity: 0.5; cursor: default; }
 .macc-icon {
   width: 36px; height: 36px;
   border-radius: 10px;
