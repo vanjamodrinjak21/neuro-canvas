@@ -688,49 +688,47 @@ async function manualUpdateCheck() {
 .mgen-chev { flex-shrink: 0; }
 
 /* Toggle */
+/* ── Toggle — exact spec ───────────────────────────────────────────────
+   Track:  52 × 32, full pill.   Off: #E9E9EA (light) / mint when on.
+   Knob:   32 × 27 white rounded RECTANGLE (radius 7 — clearly rectangular,
+           not a circle/capsule), vertically centered, 2px inset each side,
+           16px travel. Soft float shadow visible on both tracks. */
 .mgen-toggle {
   position: relative;
-  /* Reference look: light off-track, brand mint on, and a WIDE white CAPSULE
-     knob (wider than tall, capsule ends) floating on a strong drop shadow.
-     52×32 pill, 34×28 knob. */
   width: 52px; height: 32px;
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: #E9E9EA; /* light off-track (matches the reference) */
+  background: #E9E9EA;
   cursor: pointer;
-  transition: background 240ms cubic-bezier(0.33, 0, 0.2, 1);
+  transition: background 220ms cubic-bezier(0.33, 0, 0.2, 1);
   flex-shrink: 0;
   display: inline-block;
   -webkit-tap-highlight-color: transparent;
 }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 50%;
-  /* Rounded RECTANGLE (not a capsule/circle): wider than tall, moderate corner
-     radius. Vertically centered via top:50% + translateY(-50%). 34×26. */
-  width: 34px; height: 26px; border-radius: 8px;
+  width: 32px; height: 27px; border-radius: 7px;
   background: #FFFFFF;
-  transition: transform 240ms cubic-bezier(0.33, 0, 0.2, 1);
   transform: translateY(-50%);
-  /* Float shadow, balanced so the knob doesn't read as top-heavy. */
+  transition: transform 220ms cubic-bezier(0.33, 0, 0.2, 1), width 160ms ease;
   box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.26),
-    0 1px 2px rgba(0, 0, 0, 0.22),
-    0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    0 2px 5px rgba(0, 0, 0, 0.24),
+    0 1px 2px rgba(0, 0, 0, 0.20),
+    0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  /* 52 - 34 knob - 2 left - 2 right = 14px travel. Keep vertical centering. */
-  transform: translate(14px, -50%);
+  /* 52 − 32 − 2 − 2 = 16px travel. Keep vertical centering. */
+  transform: translate(16px, -50%);
 }
 .mgen-toggle:active .mgen-toggle-knob {
-  /* Slight stretch on press. */
-  width: 37px;
+  width: 35px;
 }
 .mgen-toggle--on:active .mgen-toggle-knob {
-  transform: translate(11px, -50%);
+  transform: translate(13px, -50%);
 }
 
 /* Slider */
