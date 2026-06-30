@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
 import { useGuestMode } from '~/composables/useGuestMode'
+import { resolveDisplayName, resolveInitials } from '~/utils/userDisplay'
 
 const { t } = useI18n()
 
@@ -98,12 +99,11 @@ const isDesktopLocal = computed(() => _isTauri && !isSignedIn.value)
 const user = computed(() => session.value?.user)
 const desktopUser = computed(() => desktopAuth?.user?.value)
 const userName = computed(() => {
-  if (user.value?.name) return user.value.name
-  if (user.value?.email) return user.value.email.split('@')[0]
-  if (desktopUser.value?.name) return desktopUser.value.name
-  if (desktopUser.value?.email) return desktopUser.value.email.split('@')[0]
-  if (hasDesktopSession.value) return t('auth.user_menu.user_default')
-  return t('auth.user_menu.user_default')
+  const fallback = t('auth.user_menu.user_default')
+  // Prefer the web session, fall back to the desktop (Tauri) user. A private
+  // Apple relay / local-device email resolves to the clean fallback rather than
+  // a meaningless handle (see resolveDisplayName).
+  return resolveDisplayName(user.value ?? desktopUser.value, fallback)
 })
 const userEmail = computed(() => {
   if (user.value?.email) return user.value.email
@@ -112,10 +112,7 @@ const userEmail = computed(() => {
 })
 const userInitials = computed(() => {
   if (hasDesktopSession.value && !user.value && !desktopUser.value) return 'NC'
-  const name = userName.value
-  const parts = name.split(' ')
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return name.slice(0, 2).toUpperCase()
+  return resolveInitials(userName.value)
 })
 const userImage = computed<string | null>(() => {
   const u = user.value as { image?: string | null; picture?: string | null } | undefined

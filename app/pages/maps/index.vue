@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
+import { resolveDisplayName, resolveInitials } from '~/utils/userDisplay'
 import { useMapStore } from '~/stores/mapStore'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { useSyncEngine } from '~/composables/useSyncEngine'
@@ -144,12 +145,9 @@ const _desktopAuth = _isTauri ? useDesktopAuth() : null
 
 const userInitials = computed(() => {
   const u = (_session as { data?: { value?: { user?: { name?: string | null; email?: string | null } } } })?.data?.value?.user
-  const name = u?.name || u?.email || ''
-  if (!name) return 'V'
-  const parts = name.split(/[\s@]+/).filter(Boolean)
-  if (parts.length === 0) return 'V'
-  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase()
-  return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase()
+  // resolveDisplayName drops Apple relay handles, so initials never derive from
+  // a private-relay local part (which would read as random letters).
+  return resolveInitials(resolveDisplayName(u, 'User'))
 })
 const userImage = computed(() => {
   const u = (_session as { data?: { value?: { user?: { image?: string | null } } } })?.data?.value?.user

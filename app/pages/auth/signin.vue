@@ -5,9 +5,10 @@ definePageMeta({
 
 const { t } = useI18n()
 const route = useRoute()
-const { isCapacitor, isNative } = usePlatform()
-// GitHub is web-only (hidden in the Mac/iOS apps); Apple shows once configured.
-const appleAuthEnabled = computed(() => !!useRuntimeConfig().public.appleAuthEnabled)
+const { isCapacitor, isNative, isWindows } = usePlatform()
+// GitHub is web-only (hidden in the Mac/iOS apps); Apple shows once configured,
+// but never on Windows where Sign in with Apple isn't offered.
+const appleAuthEnabled = computed(() => !!useRuntimeConfig().public.appleAuthEnabled && !isWindows.value)
 
 // Mobile auth for Capacitor
 const mobileAuth = useMobileAuth()
@@ -217,7 +218,7 @@ onMounted(() => {
     nextTick(() => handleGoogleSignin())
   } else if (autoProvider === 'github') {
     nextTick(() => handleGithubSignin())
-  } else if (autoProvider === 'apple') {
+  } else if (autoProvider === 'apple' && appleAuthEnabled.value) {
     nextTick(() => handleAppleSignin())
   }
 })

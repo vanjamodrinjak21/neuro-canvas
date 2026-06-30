@@ -68,6 +68,16 @@ export function usePlatform() {
   const isIOS = computed(() => mobileOS.value === 'ios')
   const isAndroid = computed(() => mobileOS.value === 'android')
 
+  // Desktop OS detection — used to hide Sign in with Apple on Windows (web and
+  // the Tauri Windows app), where it isn't offered. Covers both the modern
+  // userAgentData.platform API and the legacy userAgent/platform string.
+  const isWindows = computed(() => {
+    if (typeof navigator === 'undefined') return false
+    const uaData = (navigator as { userAgentData?: { platform?: string } }).userAgentData
+    if (uaData?.platform) return uaData.platform === 'Windows'
+    return /Windows|Win32|Win64|WinCE/i.test(`${navigator.platform || ''} ${navigator.userAgent || ''}`)
+  })
+
   // File System API
   const fs = {
     async readFile(path: string): Promise<Uint8Array> {
@@ -399,6 +409,7 @@ export function usePlatform() {
     mobileOS,
     isIOS,
     isAndroid,
+    isWindows,
     fs,
     dialog,
     haptics,

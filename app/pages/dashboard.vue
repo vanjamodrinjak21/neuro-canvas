@@ -6,6 +6,7 @@ import { useAISettings } from '~/composables/useAISettings'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useGenerationQueue } from '~/composables/useGenerationQueue'
 import { safeImageUrl } from '~/utils/safeUrl'
+import { resolveDisplayName, resolveInitials } from '~/utils/userDisplay'
 import type { GenerationTone } from '~/types'
 
 const { t, locale: currentLocale } = useI18n()
@@ -186,18 +187,9 @@ const greeting = computed(() => {
   return t('dashboard.greeting.good_evening')
 })
 
-const userName = computed(() => {
-  if (user.value?.name) return user.value.name
-  if (user.value?.email && user.value.email !== 'local@device') return user.value.email.split('@')[0]
-  return 'there'
-})
+const userName = computed(() => resolveDisplayName(user.value, 'there'))
 
-const userInitials = computed(() => {
-  const name = userName.value
-  const parts = name.split(' ')
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return name.slice(0, 2).toUpperCase()
-})
+const userInitials = computed(() => resolveInitials(userName.value))
 
 // Stats
 function countItems(items: unknown): number {

@@ -14,8 +14,10 @@ try {
 }
 
 // OAuth — GitHub is web-only (hidden in the Mac/iOS apps); Apple shows once configured.
-const { isNative } = usePlatform()
-const appleAuthEnabled = computed(() => !!useRuntimeConfig().public.appleAuthEnabled)
+const { isNative, isWindows } = usePlatform()
+// Apple shows once configured, but never on Windows where Sign in with Apple
+// isn't offered.
+const appleAuthEnabled = computed(() => !!useRuntimeConfig().public.appleAuthEnabled && !isWindows.value)
 const isGoogleLoading = ref(false)
 const isGithubLoading = ref(false)
 const isAppleLoading = ref(false)
