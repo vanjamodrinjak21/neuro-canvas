@@ -14,16 +14,29 @@ const router = useRouter()
 const { t } = useI18n()
 const { isMobile } = usePlatform()
 const _session = useAuth()
-const _user = computed(() => _session.data?.value?.user as { name?: string | null; email?: string | null; image?: string | null } | undefined)
+// Resolve the user the SAME way as dashboard/settings so the avatar (image +
+// initials) is identical on every screen. On native the web session is empty;
+// the real user lives on mobileAuth/desktopAuth.
+const _user = computed(() => {
+  if (_isTauri && desktopAuth?.isSignedIn.value && desktopAuth.user.value) {
+    return desktopAuth.user.value as { name?: string | null; email?: string | null; image?: string | null }
+  }
+  if (_isCapacitor && mobileAuth?.isSignedIn.value && mobileAuth.user.value) {
+    return mobileAuth.user.value as { name?: string | null; email?: string | null; image?: string | null }
+  }
+  return _session.data?.value?.user as { name?: string | null; email?: string | null; image?: string | null } | undefined
+})
 const _userInitials = computed(() => resolveAvatarInitials(_user.value))
 
 function handleMobileUseTemplate(tmpl: { slug: string }) {
   router.push(`/templates/${tmpl.slug}`)
 }
 
-// Tauri detection
+// Tauri / Capacitor detection
 const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+const _isCapacitor = import.meta.client && typeof window !== 'undefined' && 'Capacitor' in window && !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
 const desktopAuth = _isTauri ? useDesktopAuth() : null
+const mobileAuth = _isCapacitor ? useMobileAuth() : null
 const isDesktopSignedIn = computed(() => !!desktopAuth?.isSignedIn.value)
 
 const {

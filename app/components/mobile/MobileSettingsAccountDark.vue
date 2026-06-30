@@ -44,10 +44,29 @@ async function exportMaps() {
       const res = await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 })
       await Share.share({ title: 'NeuroCanvas maps', url: res.uri })
     } else if (typeof document !== 'undefined') {
+      // Web Share Level 2 (files) first — on iOS Safari/PWA the <a download>
+      // trick silently does nothing, but navigator.share with a File works.
+      const file = new File([json], filename, { type: 'application/json' })
+      const nav = navigator as Navigator & {
+        canShare?: (data?: unknown) => boolean
+        share?: (data?: unknown) => Promise<void>
+      }
+      if (nav.canShare?.({ files: [file] }) && nav.share) {
+        try {
+          await nav.share({ files: [file], title: 'NeuroCanvas maps' })
+          return
+        } catch (err) {
+          // User cancelled the share sheet — done, don't also download.
+          if (err instanceof DOMException && err.name === 'AbortError') return
+          // Otherwise fall through to the download fallback.
+        }
+      }
       const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
       const a = document.createElement('a')
       a.href = url
       a.download = filename
+      a.target = '_blank'
+      a.rel = 'noopener'
       document.body.appendChild(a)
       a.click()
       a.remove()
