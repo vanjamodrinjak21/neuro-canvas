@@ -76,9 +76,9 @@ export const PROVIDER_TEMPLATES: Record<AIProviderType, Partial<AIProviderConfig
     type: 'openai',
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
+    // Latest generation across the three tiers (flagship / mini / nano).
     models: [
       { id: 'gpt-5.5', name: 'GPT-5.5', contextLength: 1050000, maxOutputTokens: 128000, isVision: true },
-      { id: 'gpt-5.4', name: 'GPT-5.4', contextLength: 1050000, maxOutputTokens: 128000, isVision: true },
       { id: 'gpt-5.4-mini', name: 'GPT-5.4 Mini', contextLength: 400000, maxOutputTokens: 128000, isVision: true },
       { id: 'gpt-5.4-nano', name: 'GPT-5.4 Nano', contextLength: 400000, maxOutputTokens: 128000, isVision: true }
     ]
@@ -87,8 +87,8 @@ export const PROVIDER_TEMPLATES: Record<AIProviderType, Partial<AIProviderConfig
     type: 'anthropic',
     name: 'Anthropic',
     baseUrl: 'https://api.anthropic.com/v1',
+    // Three latest models: Opus (flagship), Sonnet (balanced), Haiku (fast).
     models: [
-      { id: 'claude-fable-5', name: 'Claude Fable 5', contextLength: 1000000, maxOutputTokens: 128000, isVision: true, available: false },
       { id: 'claude-opus-4-8', name: 'Claude Opus 4.8', contextLength: 1000000, maxOutputTokens: 128000, isVision: true },
       { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', contextLength: 1000000, maxOutputTokens: 64000, isVision: true },
       { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextLength: 200000, maxOutputTokens: 64000, isVision: true }

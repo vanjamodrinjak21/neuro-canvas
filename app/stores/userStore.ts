@@ -8,6 +8,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'dark',
   reducedMotion: false,
   fontSize: 'medium',
+  density: 'cozy',
   autoSave: true,
   autoSaveInterval: 30000, // 30 seconds
   showMinimap: true,
@@ -78,6 +79,9 @@ const actions = {
       // Apply font size
       actions.applyFontSize(state.preferences.fontSize)
 
+      // Apply UI density
+      actions.applyDensity(state.preferences.density)
+
       state.isLoaded = true
     } catch (error) {
       console.error('Failed to load preferences:', error)
@@ -127,11 +131,19 @@ const actions = {
     if (key === 'fontSize') {
       actions.applyFontSize(value as UserPreferences['fontSize'])
     }
+    if (key === 'density') {
+      actions.applyDensity(value as UserPreferences['density'])
+    }
   },
 
   applyFontSize(size: UserPreferences['fontSize']): void {
     if (typeof window === 'undefined') return
     document.documentElement.dataset.fontSize = size
+  },
+
+  applyDensity(density: UserPreferences['density']): void {
+    if (typeof window === 'undefined') return
+    document.documentElement.dataset.density = density
   },
 
   /**

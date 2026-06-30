@@ -23,9 +23,13 @@ const prefs = userStore.preferences
 
 const theme = computed(() => prefs.value.theme)
 const fontSize = computed(() => prefs.value.fontSize)
+const density = computed(() => prefs.value.density)
 
 function setTheme(value: 'light' | 'dark' | 'system') {
   userStore.setPreference('theme', value)
+}
+function setDensity(value: 'cozy' | 'compact') {
+  userStore.setPreference('density', value)
 }
 type FontSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -213,8 +217,8 @@ async function manualUpdateCheck() {
             <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.densityHint') }}</span>
           </div>
           <div class="mgen-seg">
-            <button class="mgen-seg-btn mgen-seg-btn--on" type="button">{{ t('mobile.settingsGeneral.densityCozy') }}</button>
-            <button class="mgen-seg-btn" type="button">{{ t('mobile.settingsGeneral.densityCompact') }}</button>
+            <button class="mgen-seg-btn" :class="{ 'mgen-seg-btn--on': density === 'cozy' }" type="button" @click="setDensity('cozy')">{{ t('mobile.settingsGeneral.densityCozy') }}</button>
+            <button class="mgen-seg-btn" :class="{ 'mgen-seg-btn--on': density === 'compact' }" type="button" @click="setDensity('compact')">{{ t('mobile.settingsGeneral.densityCompact') }}</button>
           </div>
         </div>
       </div>
@@ -572,7 +576,7 @@ async function manualUpdateCheck() {
 .mgen-row {
   display: flex; align-items: center; gap: 14px;
   width: 100%;
-  padding: 14px 16px;
+  padding: var(--nc-density-row-y, 14px) 16px;
   background: transparent; border: none;
   text-align: left;
   font-family: inherit; color: inherit;
@@ -639,29 +643,30 @@ async function manualUpdateCheck() {
 /* Toggle */
 .mgen-toggle {
   position: relative;
-  width: 44px; height: 24px;
+  width: 40px; height: 23px;
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.12);
+  /* Solid iOS off track so the pill reads as a track, not a floating circle. */
+  background: #48484A;
   cursor: pointer;
-  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   display: inline-block;
 }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 2px;
-  width: 20px; height: 20px; border-radius: 999px;
-  background: var(--nc-ink-faint);
-  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  width: 19px; height: 19px; border-radius: 999px;
+  /* Always a crisp white knob (both states) — the dim grey knob read as broken. */
+  background: #FFFFFF;
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.12);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  transform: translateX(20px);
-  background: #FAFAFA;
+  transform: translateX(17px);
 }
 
 /* Slider */
@@ -775,7 +780,7 @@ async function manualUpdateCheck() {
   border-color: rgba(17, 17, 17, 0.08);
 }
 :root.light .mgen-toggle {
-  background: rgba(17, 17, 17, 0.12);
+  background: rgba(120, 120, 128, 0.28);
 }
 :root.light .mgen-slider-track {
   background: rgba(17, 17, 17, 0.08);

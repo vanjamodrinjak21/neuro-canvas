@@ -3,6 +3,7 @@ import type { Template, TemplateCategory } from '~/types'
 import { useMapStore } from '~/stores/mapStore'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useDatabase } from '~/composables/useDatabase'
+import { resolveAvatarInitials } from '~/utils/userDisplay'
 
 definePageMeta({
   layout: false,
@@ -14,14 +15,7 @@ const { t } = useI18n()
 const { isMobile } = usePlatform()
 const _session = useAuth()
 const _user = computed(() => _session.data?.value?.user as { name?: string | null; email?: string | null; image?: string | null } | undefined)
-const _userInitials = computed(() => {
-  const name = _user.value?.name || _user.value?.email || ''
-  if (!name) return 'V'
-  const parts = name.split(/[\s@]+/).filter(Boolean)
-  if (parts.length === 0) return 'V'
-  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase()
-  return (parts[0]!.charAt(0) + parts[1]!.charAt(0)).toUpperCase()
-})
+const _userInitials = computed(() => resolveAvatarInitials(_user.value))
 
 function handleMobileUseTemplate(tmpl: { slug: string }) {
   router.push(`/templates/${tmpl.slug}`)

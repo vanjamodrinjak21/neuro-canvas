@@ -4,6 +4,7 @@
  * GCX-0 (iOS) and GT1-0 (Android).
  */
 import { safeImageUrl } from '~/utils/safeUrl'
+import { resolveDisplayName, resolveDisplayEmail, isHiddenAppleUser } from '~/utils/userDisplay'
 
 const { t } = useI18n()
 
@@ -31,8 +32,9 @@ const emit = defineEmits<{
 }>()
 
 const avatarSrc = computed(() => safeImageUrl(props.user?.image))
-const displayName = computed(() => props.user?.name || t('mobile.settings.guestName'))
-const displayEmail = computed(() => props.user?.email || 'local@device')
+const displayName = computed(() => resolveDisplayName(props.user, t('mobile.settings.guestName')))
+const displayEmail = computed(() => resolveDisplayEmail(props.user))
+const isHidden = computed(() => isHiddenAppleUser(props.user))
 </script>
 
 <template>
@@ -108,6 +110,9 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
           <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
+
+      <!-- Apple Hide-My-Email accounts have no stable identity to sync against -->
+      <p v-if="isHidden" class="mset-hidden-note">{{ t('mobile.settings.hiddenNoSync') }}</p>
 
       <!-- Section header -->
       <div class="mset-section">
@@ -444,6 +449,17 @@ const displayEmail = computed(() => props.user?.email || 'local@device')
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.mset-hidden-note {
+  margin: 12px 4px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(224, 160, 77, 0.08);
+  border: 1px solid rgba(224, 160, 77, 0.22);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 16px;
+  letter-spacing: 0.02em;
+  color: #E0A04D;
 }
 
 /* Section header */

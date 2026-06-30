@@ -41,12 +41,34 @@ export function resolveDisplayName(user: DisplayUserLike | null | undefined, fal
   if (name) return name
 
   const email = user?.email?.trim()
-  if (email && email !== LOCAL_DEVICE_EMAIL && !isPrivateRelayEmail(email)) {
+  if (email && email !== LOCAL_DEVICE_EMAIL) {
+    // Apple "Hide My Email": the relay local-part is a random token, so a user
+    // who hid both name and email gets a stable "Hidden User" label everywhere.
+    if (isPrivateRelayEmail(email)) return 'Hidden User'
     const local = email.split('@')[0]?.trim()
     if (local) return local
   }
 
   return fallback
+}
+
+/** Sentinel shown for an Apple Hide-My-Email account (no usable email). */
+const HIDDEN_DEVICE_EMAIL = 'hiddenuser.device'
+
+/** True for an Apple "Hide My Email" relay account — no real name/email/picture. */
+export function isHiddenAppleUser(user: DisplayUserLike | null | undefined): boolean {
+  return isPrivateRelayEmail(user?.email)
+}
+
+/**
+ * Email to render in the UI. A relay address is masked to `hiddenuser.device`,
+ * the signed-out local user stays `local@device`, and real emails pass through.
+ */
+export function resolveDisplayEmail(user: DisplayUserLike | null | undefined): string {
+  const email = user?.email?.trim()
+  if (!email || email === LOCAL_DEVICE_EMAIL) return LOCAL_DEVICE_EMAIL
+  if (isPrivateRelayEmail(email)) return HIDDEN_DEVICE_EMAIL
+  return email
 }
 
 /** Two-letter initials from a resolved display name. */
@@ -59,4 +81,15 @@ export function resolveInitials(name: string, fallback = 'NC'): string {
     return (parts[0][0]! + parts[1][0]!).toUpperCase()
   }
   return trimmed.slice(0, 2).toUpperCase()
+}
+
+/**
+ * Avatar initials with a STABLE placeholder for the signed-out / local-device
+ * (guest) user. Use this on EVERY avatar surface so the same user state always
+ * yields the same initials. Guests previously showed different letters per
+ * screen (dashboard "TH", maps "US", settings "U", templates "V") because each
+ * page picked its own display-name fallback; this centralises the rule.
+ */
+export function resolveAvatarInitials(user: DisplayUserLike | null | undefined): string {
+  return resolveInitials(resolveDisplayName(user, 'Guest'))
 }

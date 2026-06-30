@@ -92,7 +92,8 @@
       "signingOut": "Signing out...",
       "signOut": "Sign out",
       "madeBy": "made by {name}",
-      "guestName": "Guest"
+      "guestName": "Guest",
+      "hiddenNoSync": "Hidden Apple account — sync across devices isn't available."
     },
     "settingsGeneral": {
       "themeStatusSystem": "FOLLOWS SYSTEM",
