@@ -62,9 +62,13 @@ jobs:
 
   ios:
     name: iOS (build, no sign) — advisory
-    runs-on: macos-14
+    # macos-15 is required: Capacitor 8.3+ ships its iOS core (capacitor-swift-pm)
+    # as a prebuilt binary xcframework compiled with Swift 6.2 (Xcode 26). A Swift
+    # module interface can only be consumed by a compiler >= the one that built it,
+    # so the older macos-14 Xcodes (16.x / Swift 6.0) fail to import Capacitor and
+    # report its members as missing (PluginConfig.getString, UIColor…color(fromHex:)).
+    runs-on: macos-15
     # Advisory: surfaces native build regressions but does not block merges.
-    # Underlying ecosystem issues tracked separately (Capacitor plugin alignment).
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -74,8 +78,16 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.1.app || sudo xcode-select -s /Applications/Xcode.app
+      # Select the newest Xcode on the runner; Capacitor's SPM binaries need a
+      # Swift >= 6.2 toolchain (see runs-on note). Pin nothing — newest wins as
+      # the runner image updates. Versions are printed for diagnosability.
+      - name: Select newest Xcode
+        run: |
+          newest="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n1)"
+          if [ -n "$newest" ]; then sudo xcode-select -s "$newest"; fi
+          xcodebuild -version
+          swift --version
+          echo "XCODE_TAG=$(xcodebuild -version | awk 'NR==1{print $2}')" >> "$GITHUB_ENV"
 
       - name: Cache SPM
         uses: actions/cache@v4
@@ -83,8 +95,11 @@ jobs:
           path: |
             ios/App/CapApp-SPM/.build
             ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-spm-${{ hashFiles('ios/App/CapApp-SPM/Package.swift', 'ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'patches/**') }}
-          restore-keys: ${{ runner.os }}-spm-
+          # Scope to the Xcode version: compiled Swift modules in DerivedData are
+          # toolchain-specific and must never be restored across Xcode upgrades,
+          # or stale modules reintroduce the interface mismatch this job fixes.
+          key: ${{ runner.os }}-spm-xc${{ env.XCODE_TAG }}-${{ hashFiles('ios/App/CapApp-SPM/Package.swift', 'ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'patches/**') }}
+          restore-keys: ${{ runner.os }}-spm-xc${{ env.XCODE_TAG }}-
 
       - run: npm ci --legacy-peer-deps
 
