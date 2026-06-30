@@ -1190,6 +1190,16 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   overflow-y: auto;
   max-height: 100vh;
 }
+/* Mobile home is a pinned, non-scrolling screen (MobileDashboardDark owns its
+   own internal scroll for the recent list). Lock the page so it can't scroll
+   or rubber-band behind the fixed dashboard. */
+.dmain--mobile {
+  padding: 0;
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
+  overscroll-behavior: none;
+}
 
 /* Header */
 .dheader {

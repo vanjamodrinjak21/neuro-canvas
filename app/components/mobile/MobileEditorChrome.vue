@@ -104,6 +104,31 @@ onMounted(async () => {
     vv.addEventListener('resize', onResize)
     cleanups.push(() => vv.removeEventListener('resize', onResize))
   }
+
+  // Most reliable trigger across platforms: collapse the header whenever an
+  // editable field in the BODY (the text/markdown editor) is focused. Keyboard
+  // events don't fire consistently in WKWebView, so don't depend on them.
+  // Focusing the title input (inside .medc) must NOT collapse — you're editing
+  // the title there.
+  if (typeof document !== 'undefined') {
+    const isBodyEditable = (el: Element | null): boolean => {
+      const e = el as HTMLElement | null
+      if (!e || e.closest('.medc')) return false
+      return e.isContentEditable
+        || e.matches('textarea, input:not([type=button]):not([type=checkbox]), [contenteditable], [contenteditable="true"]')
+    }
+    const onFocusIn = (ev: FocusEvent) => { if (isBodyEditable(ev.target as Element)) compact.value = true }
+    const onFocusOut = () => {
+      // Defer so focus moving between editables doesn't flicker the header.
+      setTimeout(() => { if (!isBodyEditable(document.activeElement)) compact.value = false }, 60)
+    }
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+    cleanups.push(
+      () => document.removeEventListener('focusin', onFocusIn),
+      () => document.removeEventListener('focusout', onFocusOut),
+    )
+  }
 })
 
 onBeforeUnmount(() => {
