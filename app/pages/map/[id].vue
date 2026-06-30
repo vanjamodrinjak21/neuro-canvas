@@ -896,6 +896,10 @@ function handleExportMarkdown() {
   exportUtils.exportAsMarkdown(mapStore, mapStore.title as string)
 }
 
+function handleExportPdf() {
+  exportUtils.exportAsPdf(mapStore, mapStore.title as string)
+}
+
 function startEditingTitle() {
   editedTitle.value = mapStore.title as unknown as string
   isEditingTitle.value = true
@@ -2378,7 +2382,7 @@ useHead({
       @share="handleShare"
       @version-history="showVersionHistory = true"
       @comments="showComments = true"
-      @export-png="handleExportPng"
+      @export-pdf="handleExportPdf"
       @export-json="handleExportJson"
       @export-markdown="handleExportMarkdown"
       @open-shortcuts="showShortcutsModal = true"

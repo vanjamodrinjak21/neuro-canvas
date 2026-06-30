@@ -688,17 +688,15 @@ async function manualUpdateCheck() {
 .mgen-chev { flex-shrink: 0; }
 
 /* Toggle */
-/* ── Toggle — exact spec ───────────────────────────────────────────────
-   Track:  52 × 32, full pill.   Off: #E9E9EA (light) / mint when on.
-   Knob:   32 × 27 white rounded RECTANGLE (radius 7 — clearly rectangular,
-           not a circle/capsule), vertically centered, 2px inset each side,
-           16px travel. Soft float shadow visible on both tracks. */
+/* ── Toggle — iOS UISwitch style ───────────────────────────────────────
+   Track:  52 × 32 rounded rectangle, radius 13.  Off #E9E9EA / mint on.
+   Knob:   28px white CIRCLE, vertically centered, 2px inset, 20px travel. */
 .mgen-toggle {
   position: relative;
   width: 52px; height: 32px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: 13px;
   background: #E9E9EA;
   cursor: pointer;
   transition: background 220ms cubic-bezier(0.33, 0, 0.2, 1);
@@ -708,12 +706,10 @@ async function manualUpdateCheck() {
 }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 50%;
-  /* Wide rounded RECTANGLE (34×26, radius 8) — matches the reference: clearly
-     wider than tall, rounded corners but NOT a circle/capsule. */
-  width: 34px; height: 26px; border-radius: 8px;
+  width: 28px; height: 28px; border-radius: 999px; /* CIRCLE */
   background: #FFFFFF;
   transform: translateY(-50%);
-  transition: transform 220ms cubic-bezier(0.33, 0, 0.2, 1), width 160ms ease;
+  transition: transform 220ms cubic-bezier(0.33, 0, 0.2, 1);
   box-shadow:
     0 2px 5px rgba(0, 0, 0, 0.26),
     0 1px 2px rgba(0, 0, 0, 0.20),
@@ -723,14 +719,13 @@ async function manualUpdateCheck() {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  /* 52 − 34 − 2 − 2 = 14px travel. Keep vertical centering. */
-  transform: translate(14px, -50%);
+  /* 52 − 28 − 2 − 2 = 20px travel. Keep vertical centering. */
+  transform: translate(20px, -50%);
 }
 .mgen-toggle:active .mgen-toggle-knob {
-  width: 37px;
-}
-.mgen-toggle--on:active .mgen-toggle-knob {
-  transform: translate(11px, -50%);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.30),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
 
 /* Slider */

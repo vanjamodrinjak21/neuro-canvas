@@ -288,6 +288,8 @@
       "exportSection": "IZVOZ",
       "pngTitle": "PNG slika",
       "pngHint": "PLATNO · 2× RETINA",
+      "pdfTitle": "PDF dokument",
+      "pdfHint": ".PDF · STRUKTURA",
       "markdownHint": ".MD · KOMPATIBILNO S OBSIDIANOM",
       "jsonHint": ".JSON · POTPUNA VJERNOST",
       "supportSection": "PODRŠKA",

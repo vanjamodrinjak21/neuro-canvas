@@ -288,6 +288,8 @@
       "exportSection": "EXPORT",
       "pngTitle": "PNG image",
       "pngHint": "CANVAS · 2× RETINA",
+      "pdfTitle": "PDF document",
+      "pdfHint": ".PDF · OUTLINE",
       "markdownHint": ".MD · OBSIDIAN COMPATIBLE",
       "jsonHint": ".JSON · FULL FIDELITY",
       "supportSection": "SUPPORT",

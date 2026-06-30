@@ -17,7 +17,7 @@ const emit = defineEmits<{
   share: []
   'version-history': []
   comments: []
-  'export-png': []
+  'export-pdf': []
   'export-json': []
   'export-markdown': []
   'open-shortcuts': []
@@ -25,7 +25,7 @@ const emit = defineEmits<{
   'generate-map': []
 }>()
 
-type DispatchEvent = 'save' | 'share' | 'version-history' | 'comments' | 'export-png' | 'export-json' | 'export-markdown' | 'open-shortcuts' | 'settings' | 'generate-map'
+type DispatchEvent = 'save' | 'share' | 'version-history' | 'comments' | 'export-pdf' | 'export-json' | 'export-markdown' | 'open-shortcuts' | 'settings' | 'generate-map'
 
 function dispatch(event: DispatchEvent) {
   switch (event) {
@@ -33,7 +33,7 @@ function dispatch(event: DispatchEvent) {
     case 'share': emit('share'); break
     case 'version-history': emit('version-history'); break
     case 'comments': emit('comments'); break
-    case 'export-png': emit('export-png'); break
+    case 'export-pdf': emit('export-pdf'); break
     case 'export-json': emit('export-json'); break
     case 'export-markdown': emit('export-markdown'); break
     case 'open-shortcuts': emit('open-shortcuts'); break
@@ -113,17 +113,17 @@ watch(() => props.visible, (v) => {
 
         <span class="mms-section">{{ t('mobile.more.exportSection') }}</span>
         <div class="mms-group">
-          <button class="mms-row" type="button" @click="dispatch('export-png')">
+          <button class="mms-row" type="button" @click="dispatch('export-pdf')">
             <div class="mms-icon mms-icon--mint">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <path d="M21 15L16 10L5 21" />
+                <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" />
+                <path d="M14 2V8H20" />
+                <path d="M8.5 13H10C10.8 13 11.5 13.7 11.5 14.5C11.5 15.3 10.8 16 10 16H8.5V13ZM8.5 16V18M14 13H15.5V18M14 15.5H15.2" />
               </svg>
             </div>
             <div class="mms-text">
-              <span class="mms-title">{{ t('mobile.more.pngTitle') }}</span>
-              <span class="mms-hint">{{ t('mobile.more.pngHint') }}</span>
+              <span class="mms-title">{{ t('mobile.more.pdfTitle') }}</span>
+              <span class="mms-hint">{{ t('mobile.more.pdfHint') }}</span>
             </div>
           </button>
 
