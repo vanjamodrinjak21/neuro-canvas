@@ -27,9 +27,11 @@ export default defineNuxtConfig({
 
   // i18n configuration
   i18n: {
-    // langDir + per-locale `files` already triggers @nuxtjs/i18n v10's
-    // lazy code-split — each locale loads on first use, not on boot.
-    // The inactive locale's ~70KB JSON stays off the wire until switch.
+    // Messages are eager-bundled via i18n.config.ts `messages` (see that file
+    // for why). `langDir`/`files` are kept too — the module requires `files`
+    // when `langDir` is set, and they keep the loaders + server message route
+    // valid — but because the config messages are already present at boot, the
+    // locale never renders raw keys while a lazy chunk is still in flight.
     locales: [
       { code: 'en', name: 'English', files: ['en/common.json', 'en/auth.json', 'en/landing.json', 'en/dashboard.json', 'en/canvas.json', 'en/settings.json', 'en/templates.json', 'en/legal.json', 'en/roadmap.json', 'en/documents.json', 'en/mobile.json'] },
       { code: 'hr', name: 'Hrvatski', files: ['hr/common.json', 'hr/auth.json', 'hr/landing.json', 'hr/dashboard.json', 'hr/canvas.json', 'hr/settings.json', 'hr/templates.json', 'hr/legal.json', 'hr/roadmap.json', 'hr/documents.json', 'hr/mobile.json'] }
@@ -43,7 +45,11 @@ export default defineNuxtConfig({
       fallbackLocale: 'en',
       alwaysRedirect: false
     },
-    vueI18n: './i18n/i18n.config.ts'
+    // Resolved relative to the i18n dir (`<rootDir>/i18n`), so this is just the
+    // filename — NOT './i18n/i18n.config.ts' (which resolved to the nonexistent
+    // i18n/i18n/… and silently left the Vue I18n config — incl. fallbackLocale —
+    // unapplied).
+    vueI18n: 'i18n.config.ts'
   },
 
   // Nuxt Content configuration
