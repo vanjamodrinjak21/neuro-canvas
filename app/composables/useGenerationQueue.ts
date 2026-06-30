@@ -38,6 +38,7 @@ import { useMapStore } from '~/stores/mapStore'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useDatabase } from '~/composables/useDatabase'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { userFriendlyError } from '~/utils/userFriendlyError'
 
 export type GenJobStatus = 'running' | 'ready' | 'error'
 
@@ -119,6 +120,7 @@ export function useGenerationQueue() {
   const mapRenderer = useMapRenderer()
   const db = useDatabase()
   const sync = useSyncEngine()
+  const { t } = useI18n()
 
   restoreOnce()
 
@@ -182,7 +184,10 @@ export function useGenerationQueue() {
       }
     } catch (e) {
       if (jobs.value.some(j => j.id === job.id)) {
-        job.error = e instanceof Error ? e.message : 'Generation failed'
+        // Map to a localised, user-facing string — never surface the raw error
+        // (e.g. the H3 JSON envelope) into the dock card.
+        console.error('[generation-queue] job failed', e)
+        job.error = userFriendlyError(e, t)
         job.status = 'error'
       }
     } finally {

@@ -184,7 +184,8 @@
             "no_permission": "Nema\u0161 dozvolu za tu radnju.",
             "rate_limited": "Previ\u0161e zahtjeva. Uspori malo.",
             "server_error": "Ne\u0161to je po\u0161lo po krivu na na\u0161oj strani. Poku\u0161aj ponovno.",
-            "offline": "Izgleda da nisi povezan. Provjeri vezu."
+            "offline": "Izgleda da nisi povezan. Provjeri vezu.",
+            "no_ai_credential": "Nije prona\u0111en klju\u010d AI pru\u017eatelja. Dodajte API klju\u010d u Postavke \u2192 AI pru\u017eatelji."
         },
         "time": {
             "just_now": "Upravo sada",

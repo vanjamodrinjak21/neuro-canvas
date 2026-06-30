@@ -184,7 +184,8 @@
             "no_permission": "You don't have permission to do that.",
             "rate_limited": "Too many requests. Please slow down.",
             "server_error": "Something went wrong on our side. Please try again.",
-            "offline": "You appear to be offline. Check your connection."
+            "offline": "You appear to be offline. Check your connection.",
+            "no_ai_credential": "No AI provider key found. Add an API key in Settings → AI Providers."
         },
         "time": {
             "just_now": "Just now",

@@ -69,11 +69,28 @@ export async function streamCompletion(
     })
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Session expired. Please sign in again to use AI features.')
+      // NEVER throw the raw H3 error envelope ({error,url,statusCode,…}) — that
+      // JSON blob leaks straight into the UI (see the dock card). Read the body
+      // once, pull out the server's human message, and tag the Error with
+      // `statusCode` so userFriendlyError() can localise it downstream.
+      const raw = await response.text().catch(() => '')
+      let detail = ''
+      try {
+        const body = JSON.parse(raw) as {
+          statusMessage?: string
+          message?: string
+          data?: { message?: string }
+        }
+        detail = body?.data?.message || body?.statusMessage || body?.message || ''
+      } catch {
+        // Non-JSON body (proxy / HTML error page) — don't echo it back verbatim.
+        detail = ''
       }
-      const errorText = await response.text()
-      throw new Error(errorText || `Stream request failed: ${response.status}`)
+      const err = new Error(
+        detail || `Stream request failed: ${response.status}`,
+      ) as Error & { statusCode?: number }
+      err.statusCode = response.status
+      throw err
     }
 
     const reader = response.body?.getReader()

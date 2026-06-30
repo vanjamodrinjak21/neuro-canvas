@@ -21,6 +21,7 @@ interface MaybeFetchError {
   data?: { statusCode?: number }
   name?: string
   message?: string
+  statusMessage?: string
 }
 
 function extractStatus(err: MaybeFetchError): number {
@@ -30,6 +31,15 @@ function extractStatus(err: MaybeFetchError): number {
     err?.response?.status ??
     err?.data?.statusCode ??
     0
+  )
+}
+
+function looksMissingCredential(err: MaybeFetchError): boolean {
+  const msg = `${err?.message || ''} ${err?.statusMessage || ''}`.toLowerCase()
+  return (
+    msg.includes('api credential') ||
+    msg.includes('api key') ||
+    msg.includes('ai provider')
   )
 }
 
@@ -45,6 +55,11 @@ function looksOffline(err: MaybeFetchError): boolean {
 export function userFriendlyError(err: unknown, t: TFn): string {
   const e = (err ?? {}) as MaybeFetchError
   const code = extractStatus(e)
+
+  // Missing/undecryptable AI provider key is the most common generation
+  // failure — give the actionable fix, not a generic "Not found." Detected by
+  // message so an unrelated 404 elsewhere never says "add an API key."
+  if (looksMissingCredential(e)) return t('common.errors.no_ai_credential')
 
   if (code === 401) return t('common.errors.session_expired')
   if (code === 403) return t('common.errors.no_permission')
