@@ -37,6 +37,7 @@
       "countOf": "{shown} OD {total}",
       "untitledMap": "Mapa bez naziva",
       "rowSub": "{nodes} ČVOROVA · {time}",
+      "deleteAria": "Obriši mapu",
       "emptyState": "Nijedna mapa ne odgovara ovom prikazu."
     },
     "templates": {

@@ -37,6 +37,7 @@
       "countOf": "{shown} OF {total}",
       "untitledMap": "Untitled map",
       "rowSub": "{nodes} NODES · {time}",
+      "deleteAria": "Delete map",
       "emptyState": "No maps match this view."
     },
     "templates": {

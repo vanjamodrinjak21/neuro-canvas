@@ -643,30 +643,29 @@ async function manualUpdateCheck() {
 /* Toggle */
 .mgen-toggle {
   position: relative;
-  width: 40px; height: 23px;
+  /* Native iOS UISwitch / SwiftUI Toggle geometry: 51×31 pill, 27px knob. */
+  width: 51px; height: 31px;
   padding: 0;
   border: none;
   border-radius: 999px;
-  /* Solid iOS off track so the pill reads as a track, not a floating circle. */
-  background: #48484A;
+  background: #39393D; /* iOS dark off-track */
   cursor: pointer;
-  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   display: inline-block;
 }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 2px;
-  width: 19px; height: 19px; border-radius: 999px;
-  /* Always a crisp white knob (both states) — the dim grey knob read as broken. */
+  width: 27px; height: 27px; border-radius: 999px;
   background: #FFFFFF;
-  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.12);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  transform: translateX(17px);
+  transform: translateX(20px);
 }
 
 /* Slider */

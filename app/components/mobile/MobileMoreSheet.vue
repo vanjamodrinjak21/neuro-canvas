@@ -241,7 +241,8 @@ watch(() => props.visible, (v) => {
   width: 100%;
   max-height: 90dvh;
   padding: 0 18px;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  /* Clear the mobile tab dock (~70px) so the bottom actions sit above it. */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 82px);
   transition: bottom 220ms cubic-bezier(0.16, 1, 0.3, 1);
   background: #09090B;
   border-top: 1px solid rgba(250, 250, 250, 0.10);
