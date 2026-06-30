@@ -694,29 +694,41 @@ async function manualUpdateCheck() {
 /* Toggle */
 .mgen-toggle {
   position: relative;
-  /* Native iOS UISwitch / SwiftUI Toggle geometry: 51×31 pill, 27px knob. */
+  /* Native iOS UISwitch geometry: 51×31 pill, 27px knob, 2px inset. */
   width: 51px; height: 31px;
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: #39393D; /* iOS dark off-track */
+  background: #E9E9EA; /* iOS off-track (light gray) */
   cursor: pointer;
-  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 240ms cubic-bezier(0.33, 0, 0.2, 1);
   flex-shrink: 0;
   display: inline-block;
+  -webkit-tap-highlight-color: transparent;
 }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 2px;
   width: 27px; height: 27px; border-radius: 999px;
   background: #FFFFFF;
-  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+  transition: transform 240ms cubic-bezier(0.33, 0, 0.2, 1);
+  /* Apple knob lift: tight contact shadow + soft drop + hairline edge. */
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.15),
+    0 3px 1px rgba(0, 0, 0, 0.06),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
   transform: translateX(20px);
+}
+.mgen-toggle:active .mgen-toggle-knob {
+  /* Subtle press squash, like the native control. */
+  width: 30px;
+}
+.mgen-toggle--on:active .mgen-toggle-knob {
+  transform: translateX(17px);
 }
 
 /* Slider */
