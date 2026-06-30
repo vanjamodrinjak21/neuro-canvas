@@ -136,7 +136,12 @@
       "canvasGridHint": "DOTTED · 24PX SPACING",
       "minimap": "Minimap",
       "minimapAside": "— sometimes",
-      "minimapHint": "CORNER OVERVIEW · OFF BY DEFAULT"
+      "minimapHint": "CORNER OVERVIEW · OFF BY DEFAULT",
+      "notificationsLabel": "NOTIFICATIONS",
+      "emailNotif": "Email notifications",
+      "emailNotifHint": "PRODUCT UPDATES · SECURITY ALERTS",
+      "usageAnalytics": "Usage analytics",
+      "usageAnalyticsHint": "ANONYMOUS · HELPS IMPROVE THE APP"
     },
     "settingsPersonal": {
       "ariaSection": "Personal settings",

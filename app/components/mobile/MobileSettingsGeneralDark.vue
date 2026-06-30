@@ -45,7 +45,7 @@ const FONT_SIZE_PX: Record<FontSize, number> = {
 function setFontSize(value: FontSize) {
   userStore.setPreference('fontSize', value)
 }
-function toggle(key: 'autoSave' | 'reducedMotion' | 'showGrid' | 'showMinimap') {
+function toggle(key: 'autoSave' | 'reducedMotion' | 'showGrid' | 'showMinimap' | 'emailNotifications' | 'usageAnalytics') {
   userStore.setPreference(key, !prefs.value[key])
 }
 
@@ -371,6 +371,57 @@ async function manualUpdateCheck() {
             @click="manualUpdateCheck"
           >
             {{ $t('settings.general.check_now') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="mgen-section-head">
+        <span class="mgen-section-label">{{ t('mobile.settingsGeneral.notificationsLabel') }}</span>
+      </div>
+      <div class="mgen-card">
+        <div class="mgen-row">
+          <div class="mgen-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M13.7 21a2 2 0 01-3.4 0" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div class="mgen-row-text">
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.emailNotif') }}</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.emailNotifHint') }}</span>
+          </div>
+          <button
+            class="mgen-toggle"
+            :class="{ 'mgen-toggle--on': prefs.emailNotifications }"
+            :aria-pressed="prefs.emailNotifications"
+            type="button"
+            @click="toggle('emailNotifications')"
+          >
+            <span class="mgen-toggle-knob" />
+          </button>
+        </div>
+
+        <div class="mgen-divider" />
+
+        <div class="mgen-row">
+          <div class="mgen-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-6" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="mgen-row-text">
+            <span class="mgen-row-title">{{ t('mobile.settingsGeneral.usageAnalytics') }}</span>
+            <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.usageAnalyticsHint') }}</span>
+          </div>
+          <button
+            class="mgen-toggle"
+            :class="{ 'mgen-toggle--on': prefs.usageAnalytics }"
+            :aria-pressed="prefs.usageAnalytics"
+            type="button"
+            @click="toggle('usageAnalytics')"
+          >
+            <span class="mgen-toggle-knob" />
           </button>
         </div>
       </div>

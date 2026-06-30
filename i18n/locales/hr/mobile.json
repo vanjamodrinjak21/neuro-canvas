@@ -136,7 +136,12 @@
       "canvasGridHint": "TOČKASTA · RAZMAK 24PX",
       "minimap": "Minikarta",
       "minimapAside": "— ponekad",
-      "minimapHint": "PREGLED U KUTU · ZADANO ISKLJUČENO"
+      "minimapHint": "PREGLED U KUTU · ZADANO ISKLJUČENO",
+      "notificationsLabel": "OBAVIJESTI",
+      "emailNotif": "Email obavijesti",
+      "emailNotifHint": "NOVOSTI · SIGURNOSNA UPOZORENJA",
+      "usageAnalytics": "Analitika korištenja",
+      "usageAnalyticsHint": "ANONIMNO · POMAŽE POBOLJŠATI APLIKACIJU"
     },
     "settingsPersonal": {
       "ariaSection": "Osobne postavke",
