@@ -32,6 +32,7 @@ useHead({ title: 'Privacy Policy - NeuroCanvas' })
       <li><strong>Display name</strong> — optional, used within the application interface</li>
       <li><strong>Password hash</strong> — if you sign up with email/password credentials (we never store plaintext passwords)</li>
       <li><strong>OAuth profile data</strong> — if you sign in via Google or GitHub, we receive your name, email address, and profile picture URL from the OAuth provider</li>
+      <li><strong>Sign in with Apple</strong> — we receive your email address (or an Apple private-relay address if you choose <em>Hide My Email</em>) and your name on first sign-in only. Apple never provides a profile picture. If you hide your email, your account uses the relay address and cross-device sync is unavailable, since there is no stable shared identity to sync against.</li>
     </ul>
 
     <h3>2.2 Map and Content Data</h3>
