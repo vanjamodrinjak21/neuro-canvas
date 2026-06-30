@@ -690,12 +690,13 @@ async function manualUpdateCheck() {
 /* Toggle */
 .mgen-toggle {
   position: relative;
-  /* Native iOS UISwitch geometry: 51×31 pill, 27px knob, 2px inset. */
-  width: 51px; height: 31px;
+  /* Reference look: light off-track, big white knob that floats on a strong
+     drop shadow, brand mint when on. 52×32 pill, 30px knob (nearly fills). */
+  width: 52px; height: 32px;
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: #39393D; /* iOS dark-mode off-track — white knob reads clearly */
+  background: #E9E9EA; /* light off-track (matches the reference) */
   cursor: pointer;
   transition: background 240ms cubic-bezier(0.33, 0, 0.2, 1);
   flex-shrink: 0;
@@ -703,14 +704,14 @@ async function manualUpdateCheck() {
   -webkit-tap-highlight-color: transparent;
 }
 .mgen-toggle-knob {
-  position: absolute; left: 2px; top: 2px;
-  width: 27px; height: 27px; border-radius: 999px;
+  position: absolute; left: 1px; top: 1px;
+  width: 30px; height: 30px; border-radius: 999px;
   background: #FFFFFF;
   transition: transform 240ms cubic-bezier(0.33, 0, 0.2, 1);
-  /* Apple knob lift: tight contact shadow + soft drop + hairline edge. */
+  /* Pronounced float — the knob reads clearly even on the light track. */
   box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.15),
-    0 3px 1px rgba(0, 0, 0, 0.06),
+    0 4px 8px rgba(0, 0, 0, 0.28),
+    0 2px 4px rgba(0, 0, 0, 0.22),
     0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 .mgen-toggle--on {
@@ -720,8 +721,8 @@ async function manualUpdateCheck() {
   transform: translateX(20px);
 }
 .mgen-toggle:active .mgen-toggle-knob {
-  /* Subtle press squash, like the native control. */
-  width: 30px;
+  /* Slight stretch on press, like the native control. */
+  width: 33px;
 }
 .mgen-toggle--on:active .mgen-toggle-knob {
   transform: translateX(17px);
