@@ -361,6 +361,9 @@ jobs:
           npx prisma generate
           npm run generate
         env:
+          # macos runners have ~7GB RAM; the Nuxt prerender OOMs (Abort trap: 6 /
+          # exit 134) on the default heap. Match the desktop job's bump.
+          NODE_OPTIONS: '--max-old-space-size=6144'
           NUXT_PUBLIC_COLLAB_ENABLED: 'false'
           AUTH_ORIGIN: ${{ vars.AUTH_ORIGIN || 'https://neuro-canvas.com' }}
 
