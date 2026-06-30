@@ -708,12 +708,14 @@ async function manualUpdateCheck() {
 }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 50%;
-  width: 32px; height: 27px; border-radius: 7px;
+  /* Wide rounded RECTANGLE (34×26, radius 8) — matches the reference: clearly
+     wider than tall, rounded corners but NOT a circle/capsule. */
+  width: 34px; height: 26px; border-radius: 8px;
   background: #FFFFFF;
   transform: translateY(-50%);
   transition: transform 220ms cubic-bezier(0.33, 0, 0.2, 1), width 160ms ease;
   box-shadow:
-    0 2px 5px rgba(0, 0, 0, 0.24),
+    0 2px 5px rgba(0, 0, 0, 0.26),
     0 1px 2px rgba(0, 0, 0, 0.20),
     0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
@@ -721,14 +723,14 @@ async function manualUpdateCheck() {
   background: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  /* 52 − 32 − 2 − 2 = 16px travel. Keep vertical centering. */
-  transform: translate(16px, -50%);
+  /* 52 − 34 − 2 − 2 = 14px travel. Keep vertical centering. */
+  transform: translate(14px, -50%);
 }
 .mgen-toggle:active .mgen-toggle-knob {
-  width: 35px;
+  width: 37px;
 }
 .mgen-toggle--on:active .mgen-toggle-knob {
-  transform: translate(13px, -50%);
+  transform: translate(11px, -50%);
 }
 
 /* Slider */
