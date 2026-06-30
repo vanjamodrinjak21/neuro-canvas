@@ -85,10 +85,6 @@ const totalEdges = computed(() =>
         <span class="mmaps-wordmark">Neuro<span class="mmaps-wordmark-em">Canvas</span></span>
       </div>
       <div class="mmaps-top-right">
-        <div class="mmaps-live">
-          <span class="mmaps-live-dot" />
-          <span class="mmaps-live-label">{{ t('mobile.maps.synced') }}</span>
-        </div>
         <NuxtLink to="/settings" class="mmaps-avatar" :aria-label="t('mobile.maps.settings')">
           <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mmaps-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>

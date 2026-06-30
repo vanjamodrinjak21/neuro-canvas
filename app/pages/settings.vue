@@ -553,7 +553,7 @@ async function pullAndGoToDashboard() {
   await router.push('/dashboard')
 }
 
-async function handleMobileOAuth(provider: 'google' | 'github') {
+async function handleMobileOAuth(provider: 'apple' | 'google' | 'github') {
   try {
     await mobileAuth.loginWithOAuth(provider)
     try { const { getSession } = useAuth(); await getSession({ force: true }) } catch {}
@@ -579,7 +579,7 @@ async function handleMobileEmailSignIn() {
   }
 }
 
-function handleMobileSettingsSignIn(provider: 'google' | 'github' | 'email') {
+function handleMobileSettingsSignIn(provider: 'apple' | 'google' | 'github' | 'email') {
   if (provider === 'email') {
     mobileSettingsScreen.value = 'signin-email'
     return

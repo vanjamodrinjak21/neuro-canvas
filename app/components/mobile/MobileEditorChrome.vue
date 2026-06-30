@@ -121,14 +121,6 @@ onBeforeUnmount(() => {
           <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
-      <div v-if="isSynced" class="medc-live">
-        <span class="medc-live-dot" />
-        <span class="medc-live-label">{{ t('mobile.editor.synced') }}</span>
-      </div>
-      <div v-else class="medc-live medc-live--offline">
-        <span class="medc-live-dot" />
-        <span class="medc-live-label">{{ t('mobile.editor.offline') }}</span>
-      </div>
       <button class="medc-iconbtn" type="button" :aria-label="t('mobile.editor.more')" @click="emit('more')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="5" cy="12" r="1.8" />

@@ -98,10 +98,6 @@ async function manualUpdateCheck() {
         </svg>
         <span>{{ t('mobile.settingsGeneral.backToSettings') }}</span>
       </button>
-      <div class="mgen-live">
-        <span class="mgen-live-dot" />
-        <span class="mgen-live-label">{{ t('mobile.settingsGeneral.synced') }}</span>
-      </div>
     </header>
 
     <!-- Editorial hero -->
@@ -699,7 +695,7 @@ async function manualUpdateCheck() {
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: #E9E9EA; /* iOS off-track (light gray) */
+  background: #39393D; /* iOS dark-mode off-track — white knob reads clearly */
   cursor: pointer;
   transition: background 240ms cubic-bezier(0.33, 0, 0.2, 1);
   flex-shrink: 0;
