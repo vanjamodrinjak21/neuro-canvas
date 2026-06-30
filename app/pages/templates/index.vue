@@ -13,6 +13,7 @@ definePageMeta({
 const router = useRouter()
 const { t } = useI18n()
 const { isMobile } = usePlatform()
+useBodyScrollLock()
 const _session = useAuth()
 // Resolve the user the SAME way as dashboard/settings so the avatar (image +
 // initials) is identical on every screen. On native the web session is empty;

@@ -1367,8 +1367,10 @@ function handleAccountClose() {
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: stretch;
+  width: auto;
   height: 50px;
-  margin: 0 24px;
+  margin: 8px 24px 0;
   border-radius: 12px;
   border: none;
   background: var(--ms-accent);

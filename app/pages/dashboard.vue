@@ -11,6 +11,7 @@ import type { GenerationTone } from '~/types'
 
 const { t, locale: currentLocale } = useI18n()
 const { isMobile } = usePlatform()
+useBodyScrollLock()
 
 definePageMeta({
   layout: false,
