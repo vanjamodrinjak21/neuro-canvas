@@ -401,18 +401,30 @@ export default NuxtAuthHandler({
         delete (token as Record<string, unknown>).lastPwCheck
       }
 
-      // Password-change invalidation (check every 5 min to avoid DB spam)
+      // Password-change invalidation (check every 5 min to avoid DB spam).
+      // We ALSO force a check while the token has no name, so a display name set
+      // in Settings — or an avatar change — propagates to session-driven UI
+      // (sidebar, greeting) without a re-login. This matters most for Apple
+      // "Hide My Email" users, who start with no name and must self-set one.
       const now = Date.now()
       const lastCheck = (token.lastPwCheck as number) || 0
-      const shouldCheck = !!(token as Record<string, unknown>).expired || (now - lastCheck > 5 * 60 * 1000)
+      const shouldCheck = !token.name
+        || !!(token as Record<string, unknown>).expired
+        || (now - lastCheck > 5 * 60 * 1000)
 
       if (token.email && token.iat && shouldCheck) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: token.email as string },
-            select: { passwordChangedAt: true },
+            select: { passwordChangedAt: true, name: true, image: true },
           })
           ;(token as Record<string, unknown>).lastPwCheck = now
+
+          // Refresh display name / avatar from the source of truth. Only
+          // overwrite when the DB has a value so we never blank an existing
+          // token field.
+          if (dbUser?.name) token.name = dbUser.name
+          if (dbUser?.image) token.picture = dbUser.image
 
           if (dbUser?.passwordChangedAt) {
             const changedAt = Math.floor(dbUser.passwordChangedAt.getTime() / 1000)

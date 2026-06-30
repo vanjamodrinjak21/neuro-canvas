@@ -9,7 +9,6 @@ const emit = defineEmits<{
 }>()
 
 const desktopAuth = useDesktopAuth()
-const { t } = useI18n()
 
 const email = ref('')
 const password = ref('')
@@ -20,9 +19,10 @@ const localError = ref<string | null>(null)
 const failedOnce = ref(false)
 const emailInput = ref<HTMLInputElement | null>(null)
 
-// Sign in with Apple belongs on Apple platforms only (Mac here). The native
-// flow isn't wired yet — this is the visual button; the handler is a placeholder
-// until the Apple Developer membership + AuthenticationServices integration land.
+// Sign in with Apple is offered on macOS (the desktop app is Mac-only). It runs
+// the real web OAuth flow via the system browser + a neurocanvas:// deep-link
+// bounce (see useDesktopAuth.loginWithApple). Non-Mac desktops fall back to a
+// "use browser instead" escape hatch.
 const isMac = computed(() =>
   typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent),
 )
@@ -84,9 +84,15 @@ async function handleGoogle() {
   }
 }
 
-// Placeholder until native Sign in with Apple (AuthenticationServices) is wired.
-function handleApple() {
-  localError.value = t('auth.desktop_auth.apple_coming_soon')
+async function handleApple() {
+  localError.value = null
+  try {
+    await desktopAuth.loginWithApple()
+    emit('authenticated')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Apple sign-in failed.'
+    localError.value = msg
+  }
 }
 
 // Focus email input when modal opens
@@ -224,12 +230,12 @@ watch(() => props.visible, (visible) => {
             <span>{{ desktopAuth.isLoggingIn.value ? $t('auth.desktop_auth.google_loading') : $t('auth.desktop_auth.google_button') }}</span>
           </button>
 
-          <!-- Sign in with Apple — Mac only (visual for now; native flow lands
-               with the Apple Developer membership). Reuses the provider-button
-               style for visual parity with Google. -->
+          <!-- Sign in with Apple — Mac only. Runs the real web OAuth flow via the
+               system browser + neurocanvas:// deep-link bounce. -->
           <button
             v-if="isMac"
             class="auth-google-btn"
+            :disabled="desktopAuth.isLoggingIn.value"
             @click="handleApple"
           >
             <svg width="15" height="15" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" /></svg>

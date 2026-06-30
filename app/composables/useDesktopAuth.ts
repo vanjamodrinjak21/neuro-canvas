@@ -406,13 +406,146 @@ export function useDesktopAuth() {
   }
 
   /**
+   * Sign in with Apple for the Tauri desktop shell (macOS only).
+   *
+   * Apple web OAuth requires an HTTPS return URL (custom schemes are rejected)
+   * and there's no AuthenticationServices binding in the webview, so we can't use
+   * Google's reverse-client-ID deep-link directly. Instead we reuse the exact
+   * flow the mobile app uses:
+   *   1. Open the hosted sign-in page in the *system browser* with ?auto=apple
+   *      and a callbackUrl pointing at /auth/mobile-callback.
+   *   2. Apple authenticates in the browser; next-auth sets the session cookie and
+   *      redirects to /auth/mobile-callback, which mints the raw JWT and bounces
+   *      to neurocanvas://auth/callback?session=<base64({user,token,cookieName})>.
+   *   3. The OS routes that custom-scheme URL back to the app (tauri deep-link —
+   *      the `neurocanvas` scheme is registered in tauri.conf.json).
+   *   4. We decode it and persist the session. The JWT is attached as an explicit
+   *      Cookie header by remoteFetch / the sync engine (the desktop HTTP cookie
+   *      jar never sees this browser session).
+   */
+  async function loginWithApple(): Promise<void> {
+    if (typeof window === 'undefined' || !('__TAURI_INTERNALS__' in window)) {
+      throw new Error('Apple desktop sign-in requires the Tauri shell.')
+    }
+
+    _isLoggingIn.value = true
+    _loginError.value = null
+
+    type DesktopSession = {
+      user: { id?: string; name?: string; email?: string; image?: string }
+      token?: string
+      cookieName?: string
+    }
+
+    try {
+      const callbackUrl = `${AUTH_BASE_URL}/auth/mobile-callback`
+      const authUrl = `${AUTH_BASE_URL}/auth/signin?auto=apple&callbackUrl=${encodeURIComponent(callbackUrl)}`
+
+      const { open: openUrl } = await import('@tauri-apps/plugin-shell')
+      const { onOpenUrl, getCurrent } = await import('@tauri-apps/plugin-deep-link')
+
+      const session: DesktopSession = await new Promise<DesktopSession>((resolve, reject) => {
+        let settled = false
+        let unlisten: (() => void) | null = null
+        const cleanup = () => {
+          settled = true
+          clearTimeout(timer)
+          if (unlisten) { try { unlisten() } catch {} }
+        }
+
+        const timer = setTimeout(() => {
+          if (!settled) { cleanup(); reject(new Error('Sign-in timed out.')) }
+        }, 5 * 60 * 1000)
+
+        // The mobile-callback bounce is the only neurocanvas:// URL carrying a
+        // `session` param, so that param is our discriminator (Google's desktop
+        // callback carries `code`). Matching is tolerant of host/path casing.
+        const handleUrls = (urls: string[]) => {
+          if (settled) return
+          for (const raw of urls) {
+            console.debug('[desktop-auth] deep-link received →', raw)
+            let u: URL
+            try { u = new URL(raw) } catch { continue }
+            if (u.protocol.toLowerCase() !== 'neurocanvas:') continue
+            const err = u.searchParams.get('error')
+            if (err) { cleanup(); reject(new Error(`Apple returned error: ${err}`)); return }
+            const sessionParam = u.searchParams.get('session')
+            if (!sessionParam) continue
+            try {
+              const decoded = JSON.parse(atob(sessionParam)) as DesktopSession
+              if (!decoded?.user?.email) {
+                cleanup(); reject(new Error('Sign-in completed but no session was returned.')); return
+              }
+              cleanup()
+              resolve(decoded)
+            } catch {
+              cleanup(); reject(new Error('Invalid sign-in callback data.'))
+            }
+            return
+          }
+        }
+
+        ;(async () => {
+          // Attach the listener BEFORE opening the browser so no redirect slips
+          // past (matches the Google flow's Windows-safe ordering).
+          unlisten = await onOpenUrl(handleUrls)
+          await openUrl(authUrl)
+          try {
+            const initial = await getCurrent()
+            if (initial && initial.length) handleUrls(initial)
+          } catch {}
+        })().catch((e) => {
+          if (!settled) { cleanup(); reject(new Error(`Deep-link listener failed: ${e?.message || e}`)) }
+        })
+      })
+
+      localStorage.setItem('nc-desktop-session', JSON.stringify({
+        version: 2,
+        origin: AUTH_BASE_URL,
+        authenticatedAt: Date.now(),
+        user: session.user,
+        token: session.token || '',
+        cookieName: session.cookieName || '',
+        provider: 'apple',
+      }))
+
+      _user.value = session.user
+      _isSignedIn.value = true
+      _showAuthModal.value = false
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Apple sign-in failed.'
+      _loginError.value = msg
+      throw e
+    } finally {
+      _isLoggingIn.value = false
+    }
+  }
+
+  /**
    * Make an authenticated fetch to the remote server using the Tauri HTTP plugin.
-   * Uses the native HTTP client's cookie jar (set during loginWithCredentials).
+   *
+   * Attaches the persisted JWT as an explicit Cookie header (mirrors the sync
+   * engine and the mobile client). The native cookie jar is in-memory and, for
+   * the system-browser OAuth flows (Apple), never holds this session — so the
+   * stored token is the reliable auth carrier. Falls back to the cookie jar when
+   * no token is stored (e.g. mid-session after a credentials/Google sign-in).
    */
   async function remoteFetch<T = unknown>(path: string, options?: RequestInit): Promise<T> {
     const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
     const url = path.startsWith('http') ? path : `${AUTH_BASE_URL}${path}`
-    const res = await tauriFetch(url, options)
+
+    const headers = new Headers(options?.headers)
+    if (!headers.has('cookie')) {
+      try {
+        const stored = localStorage.getItem('nc-desktop-session')
+        if (stored) {
+          const data = JSON.parse(stored)
+          if (data?.token && data?.cookieName) headers.set('Cookie', `${data.cookieName}=${data.token}`)
+        }
+      } catch { /* malformed localStorage — fall back to cookie jar */ }
+    }
+
+    const res = await tauriFetch(url, { ...options, headers })
     if (!res.ok) {
       throw new Error(`Remote fetch failed: ${res.status}`)
     }
@@ -438,6 +571,7 @@ export function useDesktopAuth() {
     closeAuthModal,
     loginWithCredentials,
     loginWithGoogle,
+    loginWithApple,
     remoteFetch,
     signOut,
   }

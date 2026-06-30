@@ -2,7 +2,7 @@
 import { useUserStore } from '~/stores/userStore'
 import { safeImageUrl } from '~/utils/safeUrl'
 
-const { data: _sessionData } = useAuth()
+const { data: _sessionData, getSession } = useAuth()
 const session = _sessionData ?? ref(null)
 const userStore = useUserStore()
 const { locale, setLocale, locales } = useI18n()
@@ -77,6 +77,11 @@ async function saveProfile(field: 'name' | 'bio' | 'image', value: string) {
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       body: { [field]: trimmed || null }
     })
+    // Re-pull the session so the new name/avatar lands in the JWT-backed
+    // session and shows everywhere (sidebar, greeting) without a re-login.
+    if ((field === 'name' || field === 'image') && typeof getSession === 'function') {
+      try { await getSession() } catch { /* non-fatal — eventual refresh still applies */ }
+    }
     saveSuccess.value = true
     flashSaved()
     setTimeout(() => { saveSuccess.value = false }, 2000)

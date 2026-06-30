@@ -7,6 +7,7 @@
  */
 
 import { safeImageUrl } from '~/utils/safeUrl'
+import { resolveDisplayName } from '~/utils/userDisplay'
 
 interface MapItem {
   id: string
@@ -122,7 +123,7 @@ function onRow(id: string) {
       <div class="mdash-eyebrow">01 — {{ t('common.nav.maps').toUpperCase() }}</div>
       <h1 class="mdash-hero-line">
         <span class="mdash-hero-sans">{{ t('mobile.dashboard.welcomeBack') }}</span>
-        <span class="mdash-hero-serif">{{ (user?.name || user?.email?.split('@')[0] || t('mobile.dashboard.fallbackName')).split(' ')[0] }}.</span>
+        <span class="mdash-hero-serif">{{ resolveDisplayName(user, t('mobile.dashboard.fallbackName')).split(' ')[0] }}.</span>
       </h1>
       <div class="mdash-stats">
         <div class="mdash-stat">
