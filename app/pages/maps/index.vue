@@ -158,16 +158,16 @@ const _session = _isNative ? { data: ref({ user: { id: 'native-user' } }) } : us
 const _mobileAuth = _isCapacitor ? useMobileAuth() : null
 const _desktopAuth = _isTauri ? useDesktopAuth() : null
 
-const userInitials = computed(() => {
-  const u = (_session as { data?: { value?: { user?: { name?: string | null; email?: string | null } } } })?.data?.value?.user
-  // Centralised: same initials on every screen, stable "GU" placeholder for the
-  // signed-out guest, and Apple relay handles never leak into the letters.
-  return resolveAvatarInitials(u)
+// Resolve the user the SAME way as dashboard/settings so the avatar (image +
+// initials) is identical on every screen. On native the web session is empty;
+// the real user lives on mobileAuth/desktopAuth.
+const _authUser = computed(() => {
+  if (_isTauri && _desktopAuth?.isSignedIn.value && _desktopAuth.user.value) return _desktopAuth.user.value
+  if (_isCapacitor && _mobileAuth?.isSignedIn.value && _mobileAuth.user.value) return _mobileAuth.user.value
+  return (_session as { data?: { value?: { user?: unknown } } })?.data?.value?.user
 })
-const userImage = computed(() => {
-  const u = (_session as { data?: { value?: { user?: { image?: string | null } } } })?.data?.value?.user
-  return u?.image || null
-})
+const userInitials = computed(() => resolveAvatarInitials(_authUser.value as Parameters<typeof resolveAvatarInitials>[0]))
+const userImage = computed(() => (_authUser.value as { image?: string | null } | undefined)?.image || null)
 
 function mapResponse(m: any): DBMapDocument {
   return {
