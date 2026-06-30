@@ -96,6 +96,19 @@ export function useAISettings() {
 
       // Auto-register local provider on Capacitor (mobile) if not already present
       if (_isCapacitor()) {
+        // Ollama is unusable on a phone (no reachable localhost server), so
+        // it's fully excluded on mobile. Strip any leftover ollama provider
+        // from accounts created before it was removed, and repoint the default.
+        const ollamaProviders = state.settings.providers.filter(p => p.type === 'ollama')
+        if (ollamaProviders.length) {
+          const removedDefault = ollamaProviders.some(p => p.id === state.settings.defaultProviderId)
+          state.settings.providers = state.settings.providers.filter(p => p.type !== 'ollama')
+          if (removedDefault) {
+            state.settings.defaultProviderId = state.settings.providers[0]?.id
+          }
+          await save()
+        }
+
         const hasLocalProvider = state.settings.providers.some(p => p.type === 'local')
         if (!hasLocalProvider) {
           const template = PROVIDER_TEMPLATES['local']
