@@ -261,6 +261,7 @@ const totalEdges = computed(() =>
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
+  overscroll-behavior: none;
   z-index: 10;
 }
 
