@@ -360,7 +360,7 @@ onMounted(() => {
           </div>
 
           <!-- Tags -->
-          <div v-if="template.tags.length > 0" class="info-tags">
+          <div v-if="(template.tags?.length ?? 0) > 0" class="info-tags">
             <span v-for="tag in template.tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
         </div>

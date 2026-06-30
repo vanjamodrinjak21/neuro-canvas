@@ -99,6 +99,22 @@ export function useTemplates() {
     loading.value = true
     error.value = null
     try {
+      // In Tauri there is no local backend — a plain $fetch resolves against the
+      // app origin and returns index.html, which then gets assigned as the
+      // template and crashes the detail render (black screen). Go through the
+      // desktop HTTP plugin to the remote server instead.
+      if (_isTauri) {
+        const desktopAuth = useDesktopAuth()
+        if (desktopAuth.isSignedIn.value) {
+          const data = await desktopAuth.remoteFetch<TemplateWithData>(`/api/templates/${slug}`)
+          currentTemplate.value = data
+        } else {
+          currentTemplate.value = null
+          error.value = 'Template not found'
+        }
+        return
+      }
+
       const data = await $fetch(`/api/templates/${slug}`)
       currentTemplate.value = data as TemplateWithData
     } catch (e: any) {
@@ -130,6 +146,19 @@ export function useTemplates() {
     loading.value = true
     error.value = null
     try {
+      // Tauri: route through the desktop HTTP plugin (no local backend).
+      if (_isTauri) {
+        const desktopAuth = useDesktopAuth()
+        if (!desktopAuth.isSignedIn.value) {
+          throw new Error('Sign in required to use templates')
+        }
+        return await desktopAuth.remoteFetch<{ mapId: string; title: string }>(`/api/templates/${slug}/use`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title }),
+        })
+      }
+
       const data = await $fetch<{ mapId: string; title: string }>(`/api/templates/${slug}/use`, {
         method: 'POST',
         body: { title },
