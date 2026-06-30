@@ -27,30 +27,58 @@ export function useMapRegions() {
     if (nodes.size === 0) return []
 
     const nodeArray = Array.from(nodes.values())
+    const cx = (n: Node) => n.position.x + n.size.width / 2
+    const cy = (n: Node) => n.position.y + n.size.height / 2
+    const R2 = CLUSTER_DISTANCE * CLUSTER_DISTANCE
+
+    // Spatial-hash grid keyed by CLUSTER_DISTANCE-sized cells. Neighbour search
+    // only scans the 3×3 cells around a node instead of every other node, so
+    // clustering is ~O(n) instead of O(n²) — the latter froze the main thread
+    // (and tripped "page unresponsive") on maps with thousands of nodes.
+    const grid = new Map<string, Node[]>()
+    const cellKey = (gx: number, gy: number) => gx + ',' + gy
+    for (const n of nodeArray) {
+      const k = cellKey(Math.floor(cx(n) / CLUSTER_DISTANCE), Math.floor(cy(n) / CLUSTER_DISTANCE))
+      const bucket = grid.get(k)
+      if (bucket) bucket.push(n)
+      else grid.set(k, [n])
+    }
+
     const visited = new Set<string>()
     const clusters: Node[][] = []
 
-    for (const node of nodeArray) {
-      if (visited.has(node.id)) continue
+    for (const start of nodeArray) {
+      if (visited.has(start.id)) continue
 
-      // BFS to find cluster
+      // BFS to find cluster. Index-based dequeue (not Array.shift) keeps this
+      // O(1) per step so large clusters don't degrade to O(k²).
       const cluster: Node[] = []
-      const queue: Node[] = [node]
+      const queue: Node[] = [start]
+      let qi = 0
 
-      while (queue.length > 0) {
-        const current = queue.shift()!
+      while (qi < queue.length) {
+        const current = queue[qi++]!
         if (visited.has(current.id)) continue
         visited.add(current.id)
         cluster.push(current)
 
-        // Find neighbors
-        for (const other of nodeArray) {
-          if (visited.has(other.id)) continue
-          const dx = (current.position.x + current.size.width / 2) - (other.position.x + other.size.width / 2)
-          const dy = (current.position.y + current.size.height / 2) - (other.position.y + other.size.height / 2)
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < CLUSTER_DISTANCE) {
-            queue.push(other)
+        // Find neighbours via the surrounding grid cells only.
+        const gx = Math.floor(cx(current) / CLUSTER_DISTANCE)
+        const gy = Math.floor(cy(current) / CLUSTER_DISTANCE)
+        const ccx = cx(current)
+        const ccy = cy(current)
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const bucket = grid.get(cellKey(gx + dx, gy + dy))
+            if (!bucket) continue
+            for (const other of bucket) {
+              if (visited.has(other.id)) continue
+              const ddx = ccx - cx(other)
+              const ddy = ccy - cy(other)
+              if (ddx * ddx + ddy * ddy < R2) {
+                queue.push(other)
+              }
+            }
           }
         }
       }

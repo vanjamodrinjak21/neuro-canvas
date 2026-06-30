@@ -28,6 +28,12 @@ export function useEdgeAnimations() {
   function triggerEntranceAll(edges: Map<string, Edge>, staggerMs: number = 40) {
     if (reducedMotion) return
 
+    // On large maps the staggered entrance is invisible churn: the last edge
+    // would start animating minutes in (index × staggerMs), and off-screen
+    // entrance states are never cleaned (cleanup is pull-based per drawn edge),
+    // so hasActiveAnimations() stays true and pins the render loop. Skip it.
+    if (edges.size > 1500) return
+
     const now = performance.now()
     let index = 0
     for (const edge of edges.values()) {
