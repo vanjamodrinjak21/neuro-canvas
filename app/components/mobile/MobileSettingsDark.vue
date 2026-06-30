@@ -601,7 +601,32 @@ const isApplePlatform = computed(() =>
   flex-shrink: 0;
 }
 
-/* Light theme */
+/* Light theme — the white-tint surfaces/strokes vanish on warm paper, so remap
+   the local vars to dark-on-light overlays and patch the hardcoded values and
+   white icon glyphs that don't read against the light background. */
+:root.light .mset {
+  --mset-surface: rgba(17, 17, 17, 0.03);
+  --mset-stroke: rgba(17, 17, 17, 0.08);
+  --mset-stroke-soft: rgba(17, 17, 17, 0.06);
+}
+/* Generic OAuth/email sign-in buttons only — the Apple (white) and any mint
+   primary buttons keep their intentional brand fills. */
+:root.light .mset-signin-btn:not(.mset-signin-btn--apple):not(.mset-signin-btn--primary) {
+  background: rgba(17, 17, 17, 0.03);
+}
+:root.light .mset-signin-btn:not(.mset-signin-btn--apple):not(.mset-signin-btn--primary):active {
+  background: rgba(17, 17, 17, 0.06);
+}
+:root.light .mset-profile:active { background: rgba(17, 17, 17, 0.05); }
+:root.light .mset-row:active { background: rgba(17, 17, 17, 0.04); }
+:root.light .mset-row-icon {
+  background: rgba(17, 17, 17, 0.03);
+  border-color: rgba(17, 17, 17, 0.08);
+}
+/* Row glyphs are drawn white (#FAFAFA); repaint to ink. Mint icons keep accent. */
+:root.light .mset-row-icon:not(.mset-row-icon--mint) svg { stroke: #18181B; }
+/* Chevrons render in faint slate (#52525B) — soften to muted ink for light. */
+:root.light .mset-chev path { stroke: #71717A; }
 :root.light .mset-footer-mute {
   color: rgba(161, 161, 170, 0.7); /* --nc-ink-faint (#A1A1AA) @ 70% */
 }

@@ -472,4 +472,15 @@ async function submitPassword() {
   background: rgba(17, 17, 17, 0.04);
   border: 1px solid rgba(17, 17, 17, 0.08);
 }
+/* Hairline separator + password field overlays are white-tinted — invisible on
+   light; flip to dark-tinted equivalents. */
+:root.light .macc-sep { background: rgba(0, 0, 0, 0.08); }
+:root.light .macc-pw-input {
+  background: rgba(17, 17, 17, 0.03);
+  border-color: rgba(17, 17, 17, 0.10);
+  color: #18181B;
+}
+/* Non-mint row glyphs are muted grey (#A1A1AA) — nudge to body ink for clarity. */
+:root.light .macc-back svg path,
+:root.light .macc-icon svg [stroke="#A1A1AA"] { stroke: #71717A; }
 </style>

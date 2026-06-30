@@ -932,8 +932,29 @@ function maskKey(type: string): string {
   transform: translateY(100%);
 }
 
-/* Light theme */
+/* Light theme — white-on-dark overlays (surfaces, strokes, row active) read as
+   invisible on warm paper, so flip the local vars to dark-on-light overlays and
+   patch the few hardcoded rgba(250,250,250,…) values that don't use them. */
+:root.light .map {
+  --map-surface: rgba(17, 17, 17, 0.03);
+  --map-stroke: rgba(17, 17, 17, 0.10);
+  --map-stroke-soft: rgba(17, 17, 17, 0.08);
+}
+:root.light .map-row:active {
+  background: rgba(17, 17, 17, 0.04);
+}
+:root.light .map-icon {
+  background: rgba(17, 17, 17, 0.03);
+  border-color: rgba(17, 17, 17, 0.08);
+}
+/* Available-list provider glyphs are drawn in muted grey (#A1A1AA); nudge to
+   body ink so they stay legible on the lighter icon tile. */
+:root.light .map-icon svg [stroke="#A1A1AA"] { stroke: #3F3F46; }
+:root.light .map-icon svg [fill="#A1A1AA"] { fill: #3F3F46; }
+:root.light .map-back svg path { stroke: #71717A; }
+:root.light .map-vault-note svg path,
+:root.light .map-vault-note svg rect { stroke: #71717A; }
 :root.light .map-sheet {
-  background: #F5F5F3;
+  background: #FFFFFF;
 }
 </style>
