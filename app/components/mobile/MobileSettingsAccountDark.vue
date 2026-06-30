@@ -4,7 +4,7 @@
  * Paper artboard KXU-0 ("Mobile iOS — Settings: Account").
  * Security · Danger zone. (No sign-out — that lives on the home screen.)
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const { t } = useI18n()
 
@@ -25,6 +25,40 @@ const emit = defineEmits<{
 }>()
 
 const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
+
+// ── Export all maps — web downloads a JSON file; native writes it and opens
+// the share sheet (Capacitor Filesystem + Share). Works on Android + iOS.
+const db = useDatabase()
+const platform = usePlatform()
+const exporting = ref(false)
+async function exportMaps() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const maps = await db.getAllMaps()
+    const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), maps }, null, 2)
+    const filename = `neurocanvas-maps-${new Date().toISOString().slice(0, 10)}.json`
+    if (platform.isCapacitor.value) {
+      const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
+      const { Share } = await import('@capacitor/share')
+      const res = await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 })
+      await Share.share({ title: 'NeuroCanvas maps', url: res.uri })
+    } else if (typeof document !== 'undefined') {
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    }
+  } catch (e) {
+    console.error('[settings] export maps failed:', e)
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -70,6 +104,25 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
             <span class="macc-row-hint">{{ props.user?.email }}</span>
           </div>
         </div>
+      </div>
+
+      <!-- DATA -->
+      <div class="macc-section-head">
+        <span class="macc-section-label">{{ t('mobile.settingsAccount.dataLabel') }}</span>
+      </div>
+      <div class="macc-card">
+        <button class="macc-row macc-row--action" type="button" :disabled="exporting" @click="exportMaps">
+          <div class="macc-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3v12m0 0l4-4m-4 4l-4-4" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div class="macc-row-text">
+            <span class="macc-row-title">{{ exporting ? t('mobile.settingsAccount.exporting') : t('mobile.settingsAccount.exportTitle') }}</span>
+            <span class="macc-row-hint">{{ t('mobile.settingsAccount.exportHint') }}</span>
+          </div>
+        </button>
       </div>
 
       <!-- DANGER ZONE -->
@@ -233,6 +286,7 @@ const provider = computed(() => (props.provider || 'CREDENTIALS').toUpperCase())
   transition: background 150ms ease;
 }
 .macc-row:active { background: rgba(250, 250, 250, 0.04); }
+.macc-row--action:disabled { opacity: 0.5; cursor: default; }
 .macc-icon {
   width: 36px; height: 36px;
   border-radius: 10px;
