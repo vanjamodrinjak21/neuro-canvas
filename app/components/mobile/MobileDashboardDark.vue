@@ -662,6 +662,9 @@ function onRow(id: string) {
 :root.light .mdash-row-thumb {
   border-color: rgba(17, 17, 17, 0.08);
 }
+/* The thumbnail's centre node is filled near-white (#FAFAFA) and disappears on
+   the light surface — repaint to ink so the glyph stays readable. */
+:root.light .mdash-row-thumb svg circle[fill="#FAFAFA"] { fill: #18181B; }
 :root.light .mdash-skel-shimmer {
   background:
     linear-gradient(

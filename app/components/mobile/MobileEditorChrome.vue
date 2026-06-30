@@ -512,6 +512,9 @@ onBeforeUnmount(() => {
 }
 :root.light .medc-pill-btn--active { color: #09090B; }
 :root.light .medc-iconbtn { color: var(--medc-ink); }
+/* White-tint active/placeholder overlays are invisible on paper — flip to dark. */
+:root.light .medc-iconbtn:active { background: rgba(0, 0, 0, 0.06); }
+:root.light .medc-title-input::placeholder { color: rgba(17, 17, 17, 0.30); }
 
 /* Android refinements (slightly tighter top bar, Material radii) */
 :root.platform-android .medc-top { padding: 8px 12px 0 12px; }

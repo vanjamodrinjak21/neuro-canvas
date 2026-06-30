@@ -385,6 +385,11 @@ watch(() => props.streamingText, () => {
 }
 :root.light .mgs-stream-text { color: #52525B; }
 :root.light .mgs-progress { background: rgba(0, 0, 0, 0.06); }
+/* The sans half of the title is hardcoded white (#FAFAFA) — invisible on paper.
+   Repaint to ink; the serif accent stays mint. */
+:root.light .mgs-title-sans { color: #18181B; }
+/* Cancel button's white-tint border vanishes on light — flip to dark hairline. */
+:root.light .mgs-cancel { border-color: rgba(0, 0, 0, 0.12); color: #52525B; }
 
 /* Transitions */
 .mgs-fade-enter-active, .mgs-fade-leave-active { transition: opacity 220ms ease; }

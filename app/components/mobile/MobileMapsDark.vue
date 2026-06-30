@@ -261,6 +261,7 @@ const totalEdges = computed(() =>
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
+  overscroll-behavior: none;
   z-index: 10;
 }
 
@@ -553,4 +554,7 @@ const totalEdges = computed(() =>
 :root.light .mmaps-row:active {
   background: var(--nc-surface-3);
 }
+/* The thumbnail's centre node is filled near-white (#FAFAFA) and disappears on
+   the light surface — repaint to ink so the glyph stays readable. */
+:root.light .mmaps-row-thumb svg circle[fill="#FAFAFA"] { fill: #18181B; }
 </style>

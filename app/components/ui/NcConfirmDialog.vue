@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import {
-  AlertDialogRoot,
-  AlertDialogTrigger,
-  AlertDialogPortal,
-  AlertDialogOverlay,
-  AlertDialogContent,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogCancel,
-  AlertDialogAction
-} from 'radix-vue'
-
+// Plain Teleport + v-if modal — intentionally NOT radix-vue. The radix
+// AlertDialog (Portal + focus-trap + as-child trigger) fails to render/interact
+// inside native WKWebViews (Tauri/Capacitor), so the delete confirm looked
+// broken on the maps/documents pages. This mirrors the home (dashboard) delete
+// modal, which is dependency-free and works on web, desktop, and mobile alike.
+// Props/emits API is unchanged so useConfirmDialog and every consumer keep working.
 export interface NcConfirmDialogProps {
   open?: boolean
   title?: string
@@ -21,7 +15,7 @@ export interface NcConfirmDialogProps {
   icon?: string
 }
 
-const props = withDefaults(defineProps<NcConfirmDialogProps>(), {
+withDefaults(defineProps<NcConfirmDialogProps>(), {
   open: false,
   title: 'Are you sure?',
   description: '',
@@ -37,32 +31,21 @@ const emit = defineEmits<{
   'cancel': []
 }>()
 
-const isOpen = computed({
-  get: () => props.open,
-  set: (value) => emit('update:open', value)
-})
-
 function handleConfirm() {
   emit('confirm')
-  isOpen.value = false
+  emit('update:open', false)
 }
 
 function handleCancel() {
   emit('cancel')
-  isOpen.value = false
+  emit('update:open', false)
 }
 </script>
 
 <template>
-  <AlertDialogRoot v-model:open="isOpen">
-    <AlertDialogTrigger as-child>
-      <slot name="trigger" />
-    </AlertDialogTrigger>
-
-    <AlertDialogPortal>
-      <AlertDialogOverlay class="confirm-overlay" />
-
-      <AlertDialogContent class="confirm-modal">
+  <Teleport to="body">
+    <div v-if="open" class="confirm-overlay" @click.self="handleCancel">
+      <div class="confirm-modal" role="alertdialog" aria-modal="true">
         <!-- Header -->
         <div class="confirm-header">
           <div
@@ -71,34 +54,30 @@ function handleCancel() {
           >
             <span :class="[icon, 'text-xl']" />
           </div>
-          <AlertDialogTitle class="confirm-title">
+          <h2 class="confirm-title">
             {{ title }}
-          </AlertDialogTitle>
-          <AlertDialogDescription v-if="description" class="confirm-subtitle">
+          </h2>
+          <p v-if="description" class="confirm-subtitle">
             {{ description }}
-          </AlertDialogDescription>
+          </p>
         </div>
 
         <!-- Footer -->
         <div class="confirm-footer">
-          <AlertDialogCancel as-child>
-            <button class="confirm-btn confirm-btn--ghost" @click="handleCancel">
-              {{ cancelText }}
-            </button>
-          </AlertDialogCancel>
-          <AlertDialogAction as-child>
-            <button
-              :class="['confirm-btn', variant === 'danger' ? 'confirm-btn--danger' : 'confirm-btn--primary']"
-              @click="handleConfirm"
-            >
-              <span v-if="icon && variant === 'danger'" :class="[icon, 'text-sm']" />
-              {{ confirmText }}
-            </button>
-          </AlertDialogAction>
+          <button class="confirm-btn confirm-btn--ghost" @click="handleCancel">
+            {{ cancelText }}
+          </button>
+          <button
+            :class="['confirm-btn', variant === 'danger' ? 'confirm-btn--danger' : 'confirm-btn--primary']"
+            @click="handleConfirm"
+          >
+            <span v-if="icon && variant === 'danger'" :class="[icon, 'text-sm']" />
+            {{ confirmText }}
+          </button>
         </div>
-      </AlertDialogContent>
-    </AlertDialogPortal>
-  </AlertDialogRoot>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>

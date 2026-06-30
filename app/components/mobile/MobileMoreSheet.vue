@@ -379,6 +379,10 @@ watch(() => props.visible, (v) => {
 :root.light .mms-divider { background: rgba(0, 0, 0, 0.06); }
 :root.light .mms-title { color: #18181B; }
 :root.light .mms-shortcut { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.08); color: #52525B; }
+/* Non-mint row glyphs are drawn in white (#FAFAFA) — invisible on the light icon
+   tile. Repaint them to primary ink; the mint icons (--mint) keep their accent. */
+:root.light .mms-icon:not(.mms-icon--mint) svg { stroke: #18181B; }
+:root.light .mms-icon:not(.mms-icon--mint) svg[fill="#FAFAFA"] { fill: #18181B; }
 
 /* Android: snappier radii */
 :root.platform-android .mms { border-radius: 20px 20px 0 0; }

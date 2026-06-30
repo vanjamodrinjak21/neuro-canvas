@@ -19,16 +19,22 @@ export default defineNuxtPlugin(async () => {
   // Set status bar style to match current theme
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
-    const isLight = document.documentElement.classList.contains('light')
-    await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark })
-    await StatusBar.setBackgroundColor({ color: isLight ? '#FAFAF9' : '#0A0A0C' })
 
-    // Watch for theme changes and sync status bar
-    const observer = new MutationObserver(() => {
+    // Overlay the webview so the page background shows BEHIND the status bar.
+    // iOS ignores setBackgroundColor, so without overlay the bar stays a black
+    // band in light mode. The mobile page roots already pad for safe-area-top.
+    try { await StatusBar.setOverlaysWebView({ overlay: true }) } catch { /* Android-only API on some versions */ }
+
+    // Style.Light = dark text (for light backgrounds); Style.Dark = light text.
+    const apply = () => {
       const light = document.documentElement.classList.contains('light')
-      StatusBar.setStyle({ style: light ? Style.Light : Style.Dark })
-      StatusBar.setBackgroundColor({ color: light ? '#FAFAF9' : '#0A0A0C' })
-    })
+      StatusBar.setStyle({ style: light ? Style.Light : Style.Dark }).catch(() => {})
+      StatusBar.setBackgroundColor({ color: light ? '#FAFAF9' : '#0A0A0C' }).catch(() => {})
+    }
+    apply()
+
+    // Watch for in-app theme changes and re-sync the status bar.
+    const observer = new MutationObserver(apply)
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class'],
