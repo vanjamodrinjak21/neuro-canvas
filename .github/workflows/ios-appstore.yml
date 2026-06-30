@@ -1,0 +1,175 @@
+name: iOS App Store
+
+# Build, sign, and upload a Release build to App Store Connect (TestFlight + the
+# exact binary you submit for App Store review). Manual trigger — App Store
+# uploads are deliberate: each needs a unique build number and goes through
+# Apple's processing/review.
+#
+# Distinct from `tauri-beta.yml`'s iOS job, which exports an `ad-hoc` .ipa to the
+# beta GitHub release / CDN (sideload). This workflow exports `app-store-connect`
+# and uploads to App Store Connect.
+#
+# REQUIRED secrets (App Store Connect API key — the recommended path; it drives
+# BOTH automatic distribution signing AND the upload, so no distribution cert or
+# provisioning profile has to be managed):
+#   IOS_ASC_KEY_ID         — the key's ID (e.g. ABC123XYZ)
+#   IOS_ASC_ISSUER_ID      — your team's API issuer UUID
+#   IOS_ASC_KEY_P8_BASE64  — base64 of the .p8 private key
+#   APPLE_TEAM_ID          — already configured
+#
+# One-time Apple-side prerequisites (cannot be automated):
+#   1. App record exists in App Store Connect for bundle id com.neurocanvas.app.
+#   2. App Store Connect API key created under Users and Access -> Integrations
+#      (role "App Manager"); download the .p8 once and base64 it into the secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit_note:
+        description: 'Optional note (for your own reference in the run log)'
+        required: false
+        type: string
+
+concurrency:
+  group: ios-appstore-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  appstore:
+    name: iOS (App Store upload)
+    runs-on: macos-15
+    env:
+      ASC_KEY_ID: ${{ secrets.IOS_ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.IOS_ASC_ISSUER_ID }}
+      ASC_KEY_P8_BASE64: ${{ secrets.IOS_ASC_KEY_P8_BASE64 }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # Fail fast with actionable guidance rather than dying deep in xcodebuild.
+      - name: Require App Store Connect API key
+        run: |
+          missing=0
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8_BASE64 TEAM_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; missing=1; fi
+          done
+          if [ "$missing" = "1" ]; then
+            echo "Add the App Store Connect API key secrets (IOS_ASC_KEY_ID, IOS_ASC_ISSUER_ID, IOS_ASC_KEY_P8_BASE64). See the workflow header."
+            exit 1
+          fi
+
+      # Capacitor 8.3+ SPM binaries are built with Swift 6.2 (Xcode 26); the
+      # newest Xcode is required to consume them. (Same reason as mobile-verify.)
+      - name: Select newest Xcode
+        run: |
+          newest="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n1)"
+          if [ -n "$newest" ]; then sudo xcode-select -s "$newest"; fi
+          xcodebuild -version
+          swift --version
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Resolve version
+        id: ver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build web bundle for Capacitor
+        run: |
+          npx prisma generate
+          npm run generate
+        env:
+          NODE_OPTIONS: '--max-old-space-size=6144'
+          NUXT_PUBLIC_COLLAB_ENABLED: ${{ vars.NUXT_PUBLIC_COLLAB_ENABLED || 'true' }}
+          NUXT_PUBLIC_PARTYKIT_HOST: ${{ vars.NUXT_PUBLIC_PARTYKIT_HOST }}
+          AUTH_ORIGIN: ${{ vars.AUTH_ORIGIN || 'https://neuro-canvas.com' }}
+
+      - name: Sync Capacitor (SPM)
+        run: npx cap sync ios
+
+      # Marketing version from package.json; build number from the run number so
+      # every upload is strictly higher than the last (App Store Connect rejects
+      # a duplicate CFBundleVersion for the same CFBundleShortVersionString).
+      - name: Set version + build number
+        working-directory: ios/App
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER"   App/Info.plist
+
+      - name: Write App Store Connect API key
+        run: |
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          P8="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$P8"
+          echo "P8_PATH=$P8" >> "$GITHUB_ENV"
+
+      # iPhone-only (TARGETED_DEVICE_FAMILY=1) for v1 — avoids iPad layout/
+      # screenshot review surface. Drop the override to ship universal.
+      - name: Archive (Release, App Store, automatic signing via API key)
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$P8_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            TARGETED_DEVICE_FAMILY=1 \
+            archive
+
+      - name: Export signed .ipa (app-store-connect)
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>destination</key><string>export</string>
+            <key>stripSwiftSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$P8_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      # altool's UPLOAD path is still supported for App Store/TestFlight (only
+      # notarization moved to notarytool). Validate first for a clearer error.
+      - name: Upload to App Store Connect (TestFlight)
+        run: |
+          IPA="$(ls "$RUNNER_TEMP"/export/*.ipa | head -n1)"
+          echo "Uploading $IPA (build $GITHUB_RUN_NUMBER) to App Store Connect…"
+          xcrun altool --validate-app -f "$IPA" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          xcrun altool --upload-app -f "$IPA" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          echo "Uploaded. It will appear in App Store Connect → TestFlight after processing (5–15 min)."
+
+      - name: Upload .ipa artifact (record)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeuroCanvas-${{ steps.ver.outputs.version }}-ios-appstore
+          path: ${{ runner.temp }}/export/*.ipa
+          if-no-files-found: ignore
