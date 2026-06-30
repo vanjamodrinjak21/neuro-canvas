@@ -92,7 +92,8 @@
       "signingOut": "Odjava...",
       "signOut": "Odjava",
       "madeBy": "izradio {name}",
-      "guestName": "Gost"
+      "guestName": "Gost",
+      "hiddenNoSync": "Skriveni Apple račun — sinkronizacija među uređajima nije dostupna."
     },
     "settingsGeneral": {
       "themeStatusSystem": "PRATI SUSTAV",

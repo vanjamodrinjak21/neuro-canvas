@@ -6,7 +6,7 @@ import { useAISettings } from '~/composables/useAISettings'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useGenerationQueue } from '~/composables/useGenerationQueue'
 import { safeImageUrl } from '~/utils/safeUrl'
-import { resolveDisplayName, resolveInitials } from '~/utils/userDisplay'
+import { resolveDisplayName, resolveAvatarInitials } from '~/utils/userDisplay'
 import type { GenerationTone } from '~/types'
 
 const { t, locale: currentLocale } = useI18n()
@@ -189,7 +189,7 @@ const greeting = computed(() => {
 
 const userName = computed(() => resolveDisplayName(user.value, 'there'))
 
-const userInitials = computed(() => resolveInitials(userName.value))
+const userInitials = computed(() => resolveAvatarInitials(user.value))
 
 // Stats
 function countItems(items: unknown): number {

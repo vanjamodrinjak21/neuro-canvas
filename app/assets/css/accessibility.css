@@ -17,6 +17,15 @@ html[data-font-size="medium"] { font-size: 16px; --nc-text-scale: 1; }
 html[data-font-size="large"]  { font-size: 18px; --nc-text-scale: 1.125; }
 html[data-font-size="xl"]     { font-size: 20px; --nc-text-scale: 1.25; }
 
+/* ══════════════════════════════════════════
+   GLOBAL UI DENSITY PREFERENCE
+   `compact` tightens list-row vertical rhythm; `cozy` is the default (no-op).
+   Surfaces opt in by authoring row padding as var(--nc-density-row-y, <cozy>).
+   ══════════════════════════════════════════ */
+:root,
+html[data-density="cozy"]     { --nc-density-row-y: 14px; --nc-density-scale: 1; }
+html[data-density="compact"]  { --nc-density-row-y: 9px;  --nc-density-scale: 0.72; }
+
 /* Reduced motion — kill animations / transitions everywhere when enabled */
 html.reduce-motion *,
 html.reduce-motion *::before,

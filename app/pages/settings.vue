@@ -2,6 +2,8 @@
 import { useUserStore } from '~/stores/userStore'
 import { useAISettings } from '~/composables/useAISettings'
 import { PROVIDER_TEMPLATES } from '~/types/ai-settings'
+import { resolveAvatarInitials } from '~/utils/userDisplay'
+import { useMobileBack } from '~/composables/useMobileBack'
 
 const { t, locale, setLocale, locales: i18nLocales } = useI18n()
 
@@ -89,10 +91,7 @@ const isLocalUser = computed(() => {
   return user.value?.email === 'local@device' || !user.value?.email
 })
 
-const userInitial = computed(() => {
-  const name = user.value?.name
-  return name ? name.charAt(0).toUpperCase() : 'U'
-})
+const userInitial = computed(() => resolveAvatarInitials(user.value))
 
 // ─── Save Indicator ───────────────────────────────────────────────
 const saveStatus = ref<'idle' | 'saved'>('idle')
@@ -490,6 +489,17 @@ async function updateOllamaEndpoint() {
 // ─── Mobile Drill-Down Navigation ─────────────────────────────────
 const mobileSettingsScreen = ref<'home' | 'general' | 'ai-providers' | 'personal' | 'account' | 'signin-email'>('home')
 const platformRef = usePlatform()
+
+// Android hardware back: pop the open settings sub-screen back to the settings
+// home first (General → Settings), and only leave /settings once we're already
+// at the home screen. Without this, hardware back skips straight to the last tab.
+useMobileBack().registerBackInterceptor(() => {
+  if (mobileSettingsScreen.value !== 'home') {
+    mobileSettingsScreen.value = 'home'
+    return true
+  }
+  return false
+})
 
 const connectedProvidersCount = computed(() =>
   [...providerKeyStatus.value.values()].filter(v => v).length

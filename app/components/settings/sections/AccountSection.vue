@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAISettings } from '~/composables/useAISettings'
+import { resolveDisplayEmail } from '~/utils/userDisplay'
 
 const emit = defineEmits<{
   close: []
@@ -248,7 +249,7 @@ async function onSignOut() {
           <span class="setting-title">{{ t('settings.account.email_label') }}</span>
           <span class="setting-desc">{{ t('settings.account.email_desc') }}</span>
         </div>
-        <span class="setting-value">{{ user?.email || t('settings.account.not_set') }}</span>
+        <span class="setting-value">{{ user ? resolveDisplayEmail(user) : t('settings.account.not_set') }}</span>
       </div>
 
       <div class="setting-row">

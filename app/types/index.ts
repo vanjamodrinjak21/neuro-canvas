@@ -45,6 +45,7 @@ export interface UserPreferences {
   theme: 'dark' | 'light' | 'system'
   reducedMotion: boolean
   fontSize: 'xs' | 'small' | 'medium' | 'large' | 'xl'
+  density: 'cozy' | 'compact'
   autoSave: boolean
   autoSaveInterval: number
   showMinimap: boolean

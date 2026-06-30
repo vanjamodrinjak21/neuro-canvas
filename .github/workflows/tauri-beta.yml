@@ -331,16 +331,16 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Cache CocoaPods
+      - name: Cache SPM
         if: env.APPLE_CERTIFICATE != ''
         uses: actions/cache@v4
         with:
+          # iOS uses Swift Package Manager (CapApp-SPM), not CocoaPods.
           path: |
-            ios/App/Pods
-            ~/Library/Caches/CocoaPods
-          key: ${{ runner.os }}-pods-${{ hashFiles('ios/App/Podfile.lock') }}
+            ios/App/CapApp-SPM/.build
+          key: ${{ runner.os }}-spm-${{ hashFiles('ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'patches/**') }}
           restore-keys: |
-            ${{ runner.os }}-pods-
+            ${{ runner.os }}-spm-
 
       - name: Skip notice (no iOS signing configured)
         if: env.APPLE_CERTIFICATE == ''
@@ -367,11 +367,9 @@ jobs:
           NUXT_PUBLIC_COLLAB_ENABLED: 'false'
           AUTH_ORIGIN: ${{ vars.AUTH_ORIGIN || 'https://neuro-canvas.com' }}
 
-      - name: Sync Capacitor + install Pods
+      - name: Sync Capacitor (SPM)
         if: env.APPLE_CERTIFICATE != ''
-        run: |
-          npx cap sync ios
-          (cd ios/App && pod install --repo-update)
+        run: npx cap sync ios
 
       - name: Set marketing version
         if: env.APPLE_CERTIFICATE != ''
@@ -412,6 +410,17 @@ jobs:
 
           IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(.*\)"$/\1/p' | head -n1 || true)"
           [ -z "$IDENTITY" ] && IDENTITY="Apple Distribution"
+
+          # A macOS-only "Developer ID" cert cannot sign an iOS app. Unless a
+          # dedicated iOS cert (IOS_CERTIFICATE_BASE64) was supplied, skip the
+          # .ipa cleanly so the beta run stays green instead of failing in the
+          # archive step with an opaque signing error.
+          if [ -z "${IOS_CERTIFICATE_BASE64:-}" ] && printf '%s' "$IDENTITY" | grep -qi 'Developer ID'; then
+            echo "iOS .ipa skipped: '$IDENTITY' is a macOS Developer ID cert, not an iOS distribution cert. Set IOS_CERTIFICATE_BASE64 (+ profile or ASC API key) to enable signed iOS builds."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
           echo "signed=true" >> "$GITHUB_OUTPUT"
 
@@ -464,7 +473,7 @@ jobs:
           ASC_KEY_PATH: ${{ steps.sign.outputs.asc-key-path }}
         run: |
           set -euo pipefail
-          ARGS=(-workspace App.xcworkspace -scheme App -configuration Release
+          ARGS=(-project App.xcodeproj -scheme App -configuration Release
                 -archivePath "$RUNNER_TEMP/App.xcarchive"
                 -destination 'generic/platform=iOS'
                 DEVELOPMENT_TEAM="$TEAM_ID")
