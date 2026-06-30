@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPrivateRelayEmail, resolveDisplayName, resolveInitials } from '../userDisplay'
+import { isPrivateRelayEmail, resolveDisplayName, resolveDisplayEmail, resolveInitials, resolveAvatarInitials, isHiddenAppleUser } from '../userDisplay'
 
 // Sign in with Apple + "Hide My Email" hands back a random relay address like
 // `hf2zj5rg97@privaterelay.appleid.com` and (because Apple only surfaces the
@@ -38,8 +38,12 @@ describe('resolveDisplayName', () => {
     expect(resolveDisplayName({ name: null, email: 'vanja@gmail.com' }, 'User')).toBe('vanja')
   })
 
-  it('falls back to the default for Apple relay emails — never the relay handle', () => {
-    expect(resolveDisplayName({ name: null, email: 'hf2zj5rg97@privaterelay.appleid.com' }, 'User')).toBe('User')
+  it('returns "Hidden User" for Apple relay emails — never the relay handle', () => {
+    expect(resolveDisplayName({ name: null, email: 'hf2zj5rg97@privaterelay.appleid.com' }, 'User')).toBe('Hidden User')
+  })
+
+  it('still prefers an explicit name even on a relay email', () => {
+    expect(resolveDisplayName({ name: 'Ada', email: 'hf2zj5rg97@privaterelay.appleid.com' }, 'User')).toBe('Ada')
   })
 
   it('falls back to the default for the Tauri local-only sentinel', () => {
@@ -54,6 +58,40 @@ describe('resolveDisplayName', () => {
 
   it('trims a whitespace-padded name', () => {
     expect(resolveDisplayName({ name: '  Ada  ', email: null }, 'User')).toBe('Ada')
+  })
+})
+
+describe('resolveDisplayEmail', () => {
+  it('masks an Apple relay address to hiddenuser.device', () => {
+    expect(resolveDisplayEmail({ name: null, email: 'hf2zj5rg97@privaterelay.appleid.com' })).toBe('hiddenuser.device')
+  })
+  it('passes through a real email', () => {
+    expect(resolveDisplayEmail({ name: null, email: 'vanja@gmail.com' })).toBe('vanja@gmail.com')
+  })
+  it('returns local@device for the signed-out / empty user', () => {
+    expect(resolveDisplayEmail({ name: null, email: 'local@device' })).toBe('local@device')
+    expect(resolveDisplayEmail(null)).toBe('local@device')
+  })
+})
+
+describe('isHiddenAppleUser', () => {
+  it('is true only for Apple relay addresses', () => {
+    expect(isHiddenAppleUser({ email: 'hf2zj5rg97@privaterelay.appleid.com' })).toBe(true)
+    expect(isHiddenAppleUser({ email: 'vanja@gmail.com' })).toBe(false)
+    expect(isHiddenAppleUser(null)).toBe(false)
+  })
+})
+
+describe('resolveAvatarInitials', () => {
+  it('is a stable "GU" for the signed-out guest', () => {
+    expect(resolveAvatarInitials({ name: null, email: 'local@device' })).toBe('GU')
+    expect(resolveAvatarInitials(null)).toBe('GU')
+  })
+  it('is "HU" for a hidden Apple account', () => {
+    expect(resolveAvatarInitials({ name: null, email: 'hf2zj5rg97@privaterelay.appleid.com' })).toBe('HU')
+  })
+  it('uses real initials when a name is present', () => {
+    expect(resolveAvatarInitials({ name: 'Vanja Modrinjak', email: 'v@x.com' })).toBe('VM')
   })
 })
 
