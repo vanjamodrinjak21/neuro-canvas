@@ -36,6 +36,10 @@ const mapRenderer = useMapRenderer()
 const db = useDatabase()
 const syncEngine = useSyncEngine()
 
+// Tauri desktop is a SPA with no local /api server, so server-side $fetch calls
+// must be skipped or routed through the desktop HTTP plugin.
+const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+
 // useToast is auto-imported by Nuxt under normal conditions. Wrap in a guard
 // so a brief window where the file does not yet exist (parallel agent) cannot
 // crash the page — fall back to console.error and inline error state.
@@ -124,17 +128,23 @@ async function handleAdaptGenerate(payload: { topic: string; depth: GenerationDe
   try {
     // Phase 1: validate template + credential server-side. Throws 400 if no
     // AI credential, 404 if template missing, 429 if rate-limited.
+    // Skipped on Tauri: there is no local /api server, and native uses on-device
+    // BYOK keys (not the server vault), so the pre-check is inapplicable — a
+    // plain $fetch would hit the app origin and fail. generateMapStructure below
+    // surfaces any missing-provider error from the local provider instead.
     adaptProgress.value = { done: 1, total: 4 }
-    await $fetch(`/api/templates/${tplSlug}/adapt`, {
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      body: {
-        topic: payload.topic,
-        depth: payload.depth,
-        style: payload.style,
-        domain: payload.domain,
-      },
-    })
+    if (!_isTauri) {
+      await $fetch(`/api/templates/${tplSlug}/adapt`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: {
+          topic: payload.topic,
+          depth: payload.depth,
+          style: payload.style,
+          domain: payload.domain,
+        },
+      })
+    }
 
     // Phase 2: generate adapted structure via configured LLM.
     // NOTE: The current AI composable does not expose a "fill content into a
