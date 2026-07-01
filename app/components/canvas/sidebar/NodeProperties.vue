@@ -20,6 +20,10 @@ const emit = defineEmits<{
 const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 const mapStore = useMapStore()
 const { t } = useI18n()
+const toast = useToast()
+
+// Cross-map link (AER-69): a node can point to another of the user's maps.
+const crossMapLink = useCrossMapLink()
 
 // Local editing state
 const localContent = ref('')
@@ -27,6 +31,7 @@ const localNotes = ref('')
 const localBorderColor = ref('#2A2A30')
 const localCategory = ref<string | null>(null)
 const localShape = ref<NodeShape>('rounded')
+const localLinkedMapId = ref('')
 
 const labelMaxLength = 50
 
@@ -50,8 +55,17 @@ watch(() => props.selectedNode, (node) => {
     localBorderColor.value = node.style.borderColor
     localCategory.value = (node.metadata?.category as string) || null
     localShape.value = node.style.shape || 'rounded'
+    localLinkedMapId.value = (node.metadata?.linkedMapId as string) || ''
   }
 }, { immediate: true })
+
+// Lazily load the user's other maps the first time a node is selected, so the
+// picker has targets. Cheap (IndexedDB) and works in the native SPA build.
+watch(() => props.selectedNode?.id, (id) => {
+  if (id && crossMapLink.options.value.length === 0 && !crossMapLink.isLoading.value) {
+    void crossMapLink.loadOptions()
+  }
+})
 
 function updateContent() {
   if (props.selectedNode && localContent.value !== props.selectedNode.content) {
@@ -93,6 +107,23 @@ function updateCategory(categoryId: string) {
       metadata: { ...props.selectedNode.metadata, category: categoryId },
       style: { ...props.selectedNode.style, borderColor: cat.color },
     })
+  }
+}
+
+// ─── Cross-map link (AER-69) ─────────────────────────────────────
+function updateLinkedMap(mapId: string) {
+  localLinkedMapId.value = mapId
+  if (props.selectedNode) {
+    crossMapLink.setLink(props.selectedNode.id, mapId || null)
+  }
+}
+
+async function openLinkedMap() {
+  const ok = await crossMapLink.navigateToLink(localLinkedMapId.value || null)
+  if (!ok && localLinkedMapId.value) {
+    // Target map was deleted or is no longer owned — clear the dangling link.
+    toast.warning(t('canvas.cross_map_link.target_missing'))
+    updateLinkedMap('')
   }
 }
 
@@ -222,6 +253,47 @@ const categoryChips = computed(() => [
             rows="3"
             @blur="updateNotes"
           />
+        </div>
+
+        <!-- Cross-map link (AER-69) -->
+        <div class="properties__field">
+          <div class="properties__label-row">
+            <label class="properties__label">{{ $t('canvas.cross_map_link.label') }}</label>
+            <span
+              v-if="localLinkedMapId"
+              class="properties__link-badge"
+              :title="$t('canvas.cross_map_link.indicator_tooltip')"
+            >
+              <span class="i-lucide-link" />
+              {{ $t('canvas.cross_map_link.linked') }}
+            </span>
+          </div>
+          <div class="properties__link-row">
+            <select
+              :value="localLinkedMapId"
+              class="properties__input properties__link-select"
+              :aria-label="$t('canvas.cross_map_link.label')"
+              @change="updateLinkedMap(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">{{ $t('canvas.cross_map_link.none') }}</option>
+              <option
+                v-for="opt in crossMapLink.options.value"
+                :key="opt.id"
+                :value="opt.id"
+              >
+                {{ opt.title }}
+              </option>
+            </select>
+            <button
+              class="properties__link-open"
+              :disabled="!localLinkedMapId"
+              :title="$t('canvas.cross_map_link.open')"
+              :aria-label="$t('canvas.cross_map_link.open')"
+              @click="openLinkedMap"
+            >
+              <span class="i-lucide-arrow-up-right" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -554,6 +626,61 @@ const categoryChips = computed(() => [
   outline: none;
   border-color: var(--nc-accent);
   box-shadow: 0 0 0 3px var(--nc-accent-glow);
+}
+
+/* Cross-map link (AER-69) */
+.properties__link-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.properties__link-select {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  appearance: none;
+}
+
+.properties__link-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  flex-shrink: 0;
+  background: #111113;
+  border: 1px solid #1A1A1E;
+  border-radius: 8px;
+  color: var(--nc-accent);
+  font-size: calc(14px * var(--nc-text-scale, 1));
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.properties__link-open:hover:not(:disabled) {
+  border-color: var(--nc-accent);
+  background: var(--nc-accent-glow);
+}
+
+.properties__link-open:disabled {
+  color: #3F3F46;
+  cursor: not-allowed;
+}
+
+.properties__link-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--nc-accent);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:root.light .properties__link-open {
+  background: #F4F4F5;
+  border-color: #E4E4E7;
 }
 
 /* Footer actions */

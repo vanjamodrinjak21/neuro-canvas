@@ -70,6 +70,13 @@ export interface Node {
     relationshipToParent?: string
     /** User dragged a resize handle — suppress content-driven auto-sizing. */
     manualSize?: boolean
+    /**
+     * Cross-map link: id of another of the user's maps this node points to.
+     * Clicking the node (or the panel action) navigates to `/map/{linkedMapId}`.
+     * Forward-only in v1 — there is no backlinks index. Stored in metadata so it
+     * round-trips through toSerializable/fromSerializable with the rest of the node.
+     */
+    linkedMapId?: string
     /** AI v2 metadata for enhanced intelligence */
     ai?: {
       inferredDomain?: string

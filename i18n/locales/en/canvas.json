@@ -423,6 +423,14 @@
       "notes_placeholder": "Notes...",
       "notes_full_placeholder": "Add notes about this node..."
     },
+    "cross_map_link": {
+      "label": "Link to map",
+      "none": "No linked map",
+      "linked": "Linked",
+      "open": "Open linked map",
+      "indicator_tooltip": "This node links to another map",
+      "target_missing": "That map is no longer available — the link was cleared."
+    },
     "node_props_form": {
       "category": "Category",
       "color": "Color",
