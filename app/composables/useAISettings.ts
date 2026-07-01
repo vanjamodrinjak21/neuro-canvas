@@ -321,6 +321,11 @@ export function useAISettings() {
     // provider-scoped label upsert (userId_provider_label).
     for (const provider of state.settings.providers) {
       if (provider.type === 'ollama' || provider.type === 'local') continue
+      // AER-61 leak-guard: never migrate the App-Store-reviewer's SHARED key.
+      // The durable `review-<id>` sentinel (set at seed time, persisted with the
+      // provider so it survives relaunch) keeps this borrowed key out of the
+      // account vault. Real user BYOK keys use `local-`/real ids and still migrate.
+      if (provider.credentialId?.startsWith('review-')) continue
       const resolvesToVaultRow = !!provider.credentialId && vaultIds.has(provider.credentialId)
       if (resolvesToVaultRow) continue
       if (!provider.localApiKey) continue
@@ -481,11 +486,16 @@ export function useAISettings() {
 
       let provider = state.settings.providers.find(p => p.type === providerType)
       if (!provider) {
-        // addProvider wraps the key (AES-GCM) and persists.
-        provider = await addProvider(providerType, undefined, key, res?.baseUrl)
+        // addProvider wraps the key (AES-GCM) and persists. `reviewSeeded` keeps
+        // this SHARED reviewer key out of the vault and stamps the durable
+        // `review-<id>` sentinel (see addProvider / syncVaultOnInit leak-guards).
+        provider = await addProvider(providerType, undefined, key, res?.baseUrl, { reviewSeeded: true })
       } else {
         provider.localApiKey = await wrapKey(key)
-        provider.credentialId = `local-${provider.id}`
+        // Durable `review-<id>` sentinel: marks this as the borrowed reviewer key
+        // so the migration pass never pushes it to the vault (survives restarts —
+        // persisted with the provider) and the read-through never reveal-404s it.
+        provider.credentialId = `review-${provider.id}`
         provider.isEnabled = true
         if (res?.baseUrl) provider.baseUrl = res.baseUrl
       }
@@ -564,13 +574,23 @@ export function useAISettings() {
   }
 
   /**
-   * Add a new provider
+   * Add a new provider.
+   *
+   * `opts.reviewSeeded` (AER-61 leak-guard) marks this provider as seeded from
+   * the App-Store-reviewer SHARED key (seedReviewKey()), NOT a real user BYOK
+   * key. When set, the raw key is cached locally (so generation works on this
+   * device) but is NEVER mirrored into the server vault — the borrowed key must
+   * not become account-linked / cross-device — and the credentialId is stamped
+   * with the durable `review-<id>` sentinel so both the migration pass and the
+   * inference read-through skip it. Default (unset) = current behaviour for
+   * every normal caller.
    */
   async function addProvider(
     type: AIProviderType,
     name?: string,
     apiKey?: string,
-    baseUrl?: string
+    baseUrl?: string,
+    opts?: { reviewSeeded?: boolean }
   ): Promise<AIProviderConfig> {
     const template = PROVIDER_TEMPLATES[type]
     const id = generateId()
@@ -598,12 +618,19 @@ export function useAISettings() {
         // This local wrap is the OFFLINE CACHE — always written first so the
         // key can never be lost even if the network step below fails.
         provider.localApiKey = await wrapKey(apiKey)
-        provider.credentialId = `local-${id}`
-        // AER-61 write-through: when signed-in + online, mirror the RAW key into
-        // the server vault so it's account-linked & cross-device, and swap the
-        // `local-<id>` placeholder for the real vault id. On failure this is a
-        // no-op (local key stays; retried on next initialize migration pass).
-        await vaultWriteThrough(provider, apiKey)
+        if (opts?.reviewSeeded) {
+          // AER-61 leak-guard: the reviewer's SHARED key. Stamp the durable
+          // `review-<id>` sentinel (persisted with the provider) and DO NOT
+          // write-through — the borrowed key must never enter the account vault.
+          provider.credentialId = `review-${id}`
+        } else {
+          provider.credentialId = `local-${id}`
+          // AER-61 write-through: when signed-in + online, mirror the RAW key into
+          // the server vault so it's account-linked & cross-device, and swap the
+          // `local-<id>` placeholder for the real vault id. On failure this is a
+          // no-op (local key stays; retried on next initialize migration pass).
+          await vaultWriteThrough(provider, apiKey)
+        }
       } else if (vault.isVaultAvailable.value) {
         // Web: send raw key to server vault (server-only encryption v4)
         try {

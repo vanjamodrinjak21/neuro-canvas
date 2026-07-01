@@ -24,12 +24,16 @@ function _isCapacitor(): boolean {
  * the server so a key rotated on ANOTHER device is picked up at inference time.
  * Returns null (so the caller falls back to the local cache) when: not native,
  * signed-out, offline, the credentialId isn't a real vault row (a `local-`
- * placeholder), the reveal fails/404s, or Web Crypto isn't around. Reuses each
- * shell's own remoteFetch (JWT Cookie header already attached — same pattern as
- * useSyncEngine.syncFetch). NEVER throws, NEVER logs the key.
+ * placeholder or the AER-61 `review-` sentinel), the reveal fails/404s, or Web
+ * Crypto isn't around. Reuses each shell's own remoteFetch (JWT Cookie header
+ * already attached — same pattern as useSyncEngine.syncFetch). NEVER throws,
+ * NEVER logs the key.
  */
 async function revealFreshNativeKey(credentialId: string | undefined): Promise<string | null> {
-  if (!credentialId || credentialId.startsWith('local-')) return null
+  // `review-` is the App-Store-reviewer SHARED key: it lives ONLY in the local
+  // cache and was never written to the vault, so a reveal would always 404.
+  // Treat it exactly like the `local-` placeholder — use the local cache.
+  if (!credentialId || credentialId.startsWith('local-') || credentialId.startsWith('review-')) return null
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return null
   const tauri = _isTauri()
   if (!tauri && !_isCapacitor()) return null

@@ -132,6 +132,18 @@ describe('resolveProvider — native read-through (AER-61)', () => {
     expect(resolved.apiKey).toBe('sk-local')
   })
 
+  it('AER-61: does NOT reveal for a `review-` sentinel — reviewer key resolves from local cache (no pointless 404)', async () => {
+    setPlatform('capacitor')
+    // The App-Store-reviewer SHARED key: never in the vault, so a reveal would
+    // always 404. It must resolve straight from the wrapped local cache.
+    setProvider({ localApiKey: 'wrapped:sk-REVIEWER', credentialId: 'review-prov-1' })
+
+    const resolved = await resolveProvider()
+
+    expect(remoteFetch).not.toHaveBeenCalled()
+    expect(resolved.apiKey).toBe('sk-REVIEWER')
+  })
+
   it('lets a fresh device with a vault row but NO local cache still resolve via reveal', async () => {
     setPlatform('tauri')
     setProvider({ localApiKey: undefined, credentialId: 'vault-row-1' })

@@ -283,6 +283,117 @@ describe('initialize — one-time migration of a local-only key (AER-61)', () =>
   })
 })
 
+// ─── AER-61 leak-guard: reviewer SHARED key must NEVER enter the vault ───────
+describe('seedReviewKey — reviewer SHARED key stays out of the vault', () => {
+  // Wire the /api/ai/keys/reveal endpoint (source of the reviewer key) plus a
+  // POST that WOULD succeed if anything wrongly tried to write it to the vault.
+  function respondReviewerSeed(vaultCredentials: any[] = []) {
+    return (path: string, opts?: any) => {
+      if (path === '/api/ai/keys/reveal') {
+        return { provider: 'anthropic', apiKey: 'sk-ant-REVIEWER', model: 'claude-x' }
+      }
+      if (path === '/api/vault/credentials' && opts?.method === 'POST') {
+        // If this ever fires for the reviewer key, the test's POST assertion fails.
+        return { ok: true, credential: { id: 'LEAKED-vault-row' } }
+      }
+      if (path === '/api/vault/credentials') return { credentials: vaultCredentials }
+      return { credentials: [] }
+    }
+  }
+
+  it('caches the reviewer key locally with a durable review-<id> sentinel and makes NO vault POST (addProvider branch)', async () => {
+    setPlatform('capacitor')
+    // No provider of this type yet → seedReviewKey takes the addProvider branch.
+    dbSettings = defaultSettings([])
+    respond = respondReviewerSeed()
+
+    const ai = await freshComposable()
+    await ai.seedReviewKey()
+
+    const p = ai.providers.value.find(x => x.type === 'anthropic')!
+    // The reviewer key WORKS on-device (cached, wrapped) …
+    expect(p.localApiKey).toBe('wrapped:sk-ant-REVIEWER')
+    // … but is stamped with the durable sentinel, NOT a real vault id / local-.
+    expect(p.credentialId).toBe(`review-${p.id}`)
+    // Crucially: it was NEVER written to the account vault.
+    const vaultPosts = fetchCalls.filter(c => c.path === '/api/vault/credentials' && c.options?.method === 'POST')
+    expect(vaultPosts).toHaveLength(0)
+    // The sentinel is persisted (durable across restarts) — it hit the DB.
+    expect(dbSettings.providers.find((x: any) => x.type === 'anthropic')?.credentialId).toBe(`review-${p.id}`)
+  })
+
+  it('stamps the sentinel and makes NO vault POST when a provider already exists (existing-provider branch)', async () => {
+    setPlatform('tauri')
+    // A keyless anthropic provider already exists → existing-provider branch.
+    dbSettings = defaultSettings([makeProvider({ localApiKey: undefined, credentialId: undefined })])
+    respond = respondReviewerSeed()
+
+    const ai = await freshComposable()
+    await ai.seedReviewKey()
+
+    const p = ai.providers.value.find(x => x.type === 'anthropic')!
+    expect(p.localApiKey).toBe('wrapped:sk-ant-REVIEWER')
+    expect(p.credentialId).toBe(`review-${p.id}`)
+    const vaultPosts = fetchCalls.filter(c => c.path === '/api/vault/credentials' && c.options?.method === 'POST')
+    expect(vaultPosts).toHaveLength(0)
+  })
+
+  it('does NOT migrate the reviewer key to the vault on init — even across a simulated restart where seedReviewKey no-ops', async () => {
+    setPlatform('capacitor')
+    // Simulate a RELAUNCH: the reviewer key was seeded in a PREVIOUS session and
+    // is already persisted with its durable review-<id> sentinel. On this launch
+    // seedReviewKey() no-ops (a localApiKey already exists), so the ONLY thing
+    // that could leak it is the migration pass — which must skip the sentinel.
+    dbSettings = defaultSettings([
+      makeProvider({ localApiKey: 'wrapped:sk-ant-REVIEWER', credentialId: 'review-prov-anthropic-1' }),
+    ])
+    // The account vault is EMPTY → a `review-` credentialId does NOT resolve to a
+    // row, so WITHOUT the guard the migration pass would push it up.
+    respond = (path, opts) => {
+      if (path === '/api/ai/keys/reveal') return { provider: 'anthropic', apiKey: 'sk-ant-REVIEWER' }
+      if (path === '/api/vault/credentials' && opts?.method === 'POST') return { ok: true, credential: { id: 'LEAKED' } }
+      if (path === '/api/vault/credentials') return { credentials: [] }
+      return { credentials: [] }
+    }
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    // seedReviewKey no-op'd (key already present) — proven by no reveal-endpoint hit.
+    expect(fetchCalls.some(c => c.path === '/api/ai/keys/reveal')).toBe(false)
+    // The migration pass skipped the sentinel — NO vault POST, ever.
+    const vaultPosts = fetchCalls.filter(c => c.path === '/api/vault/credentials' && c.options?.method === 'POST')
+    expect(vaultPosts).toHaveLength(0)
+    // The sentinel + the working local key are preserved intact.
+    const p = ai.providers.value.find(x => x.type === 'anthropic')!
+    expect(p.credentialId).toBe('review-prov-anthropic-1')
+    expect(p.localApiKey).toBe('wrapped:sk-ant-REVIEWER')
+  })
+
+  it('REGRESSION: a NORMAL local-only key (local- id) IS still migrated to the vault', async () => {
+    setPlatform('capacitor')
+    // Same empty-vault setup as the reviewer restart case, but a REAL BYOK key
+    // carrying the ordinary `local-` placeholder — this MUST still migrate up.
+    dbSettings = defaultSettings([
+      makeProvider({ localApiKey: 'wrapped:sk-ant-REAL', credentialId: 'local-prov-anthropic-1' }),
+    ])
+    respond = (path, opts) => {
+      if (path === '/api/vault/credentials' && opts?.method === 'POST') return { ok: true, credential: { id: 'vault-row-real' } }
+      return { credentials: [] }
+    }
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    const posts = fetchCalls.filter(c => c.path === '/api/vault/credentials' && c.options?.method === 'POST').map(bodyOf)
+    expect(posts).toHaveLength(1)
+    expect(posts[0].rawValue).toBe('sk-ant-REAL')
+    // And the provider is re-pinned to the real vault row.
+    const p = ai.providers.value.find(x => x.type === 'anthropic')!
+    expect(p.credentialId).toBe('vault-row-real')
+  })
+})
+
 // ─── Guest / web isolation ──────────────────────────────────────────────────
 describe('web flow is untouched by the native vault paths', () => {
   it('makes NO native vault calls and uses the web vault branch on web', async () => {
