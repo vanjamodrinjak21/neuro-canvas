@@ -258,7 +258,7 @@ function maskKey(type: string): string {
                 }"
                 :disabled="m.available === false"
                 @click="m.available === false ? null : emit('set-model', { type: provider.type, modelId: m.id })"
-              >{{ m.name.replace(/^Claude\s+/, '') }}{{ m.available === false ? ` · ${t('mobile.settingsAiProviders.soon')}` : '' }}</button>
+              >{{ (m.name ?? m.id).replace(/^Claude\s+/, '') }}{{ m.available === false ? ` · ${t('mobile.settingsAiProviders.soon')}` : '' }}</button>
             </div>
           </div>
 

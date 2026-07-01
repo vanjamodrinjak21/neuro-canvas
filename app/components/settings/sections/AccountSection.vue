@@ -29,7 +29,10 @@ const userProfile = ref<{ createdAt?: string; totpEnabled?: boolean } | null>(nu
 
 onMounted(async () => {
   try {
-    userProfile.value = await $fetch('/api/user/profile')
+    // Widened to `string` to skip nitro's typed-route matching, which blows
+    // TypeScript's instantiation depth on this path (TS2321).
+    const profileUrl: string = '/api/user/profile'
+    userProfile.value = await $fetch<{ createdAt?: string; totpEnabled?: boolean }>(profileUrl)
   } catch {
     // Non-critical, just won't show member since
   }

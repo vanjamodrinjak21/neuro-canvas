@@ -11,8 +11,9 @@ const props = defineProps<{
 const mapStore = useMapStore()
 
 // Category color map
+const DEFAULT_CATEGORY_COLOR = '#00D2BE'
 const categoryColors: Record<string, string> = {
-  default: '#00D2BE',
+  default: DEFAULT_CATEGORY_COLOR,
   idea: '#A78BFA',
   task: '#60A5FA',
   note: '#4ADE80',
@@ -24,7 +25,7 @@ const category = computed(() => {
 })
 
 const categoryColor = computed(() => {
-  return props.node.style.borderColor || categoryColors[category.value] || categoryColors.default
+  return props.node.style.borderColor || categoryColors[category.value] || DEFAULT_CATEGORY_COLOR
 })
 
 const categoryLabel = computed(() => {

@@ -2,6 +2,7 @@
 // Rubber-band effect at soft limits, hard clamp at absolute limits
 
 import type { Camera } from '~/types/canvas'
+import type { SpringPresets } from '~/composables/useSpringCamera'
 import { clamp } from '~/utils/easings'
 
 interface SmoothZoomOptions {
@@ -23,7 +24,7 @@ const defaultOptions: SmoothZoomOptions = {
 export function useSmoothZoom(
   springCamera: {
     camera: Ref<Camera>
-    setTarget: (target: Partial<Camera>, preset?: string) => void
+    setTarget: (target: Partial<Camera>, preset?: keyof SpringPresets) => void
     setCurrent: (value: Camera) => void
   },
   opts: Partial<SmoothZoomOptions> = {}

@@ -4,6 +4,7 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { Camera, Edge, Node } from '~/types/canvas'
+import type { SpringPresets } from '~/composables/useSpringCamera'
 
 /** Viewport the camera frames into. Excludes any UI that overlays the canvas
  *  (left sidebar, right detail panel) so content centers in the VISIBLE area. */
@@ -30,7 +31,7 @@ export interface NavigationBreadcrumb {
 
 interface SpringCameraAPI {
   camera: Ref<Camera>
-  setTarget: (target: Partial<Camera>, preset?: string) => void
+  setTarget: (target: Partial<Camera>, preset?: keyof SpringPresets) => void
   setCurrent: (value: Camera) => void
   stop: () => void
 }

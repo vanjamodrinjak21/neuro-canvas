@@ -4,7 +4,7 @@ import type { OutlineItem } from '~/composables/useOutlineSync'
 const props = defineProps<{
   items: OutlineItem[]
   focusedIndex: number
-  ghostSuggestions: string[]
+  ghostSuggestions: readonly string[]
   ghostDepth: number
   aiEnabled: boolean
 }>()

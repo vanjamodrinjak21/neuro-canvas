@@ -15,6 +15,9 @@ const emit = defineEmits<{
 
 const linkCopied = ref(false)
 
+// Resolved in script scope — the template can't see the global `navigator`
+const canNativeShare = typeof navigator !== 'undefined' && 'share' in navigator
+
 function handleCopyLink() {
   if (props.shareLink) {
     navigator.clipboard.writeText(props.shareLink)
@@ -81,7 +84,7 @@ async function handleShare() {
               {{ linkCopied ? 'Copied!' : 'Copy Link' }}
             </button>
             <button
-              v-if="typeof navigator !== 'undefined' && 'share' in navigator"
+              v-if="canNativeShare"
               class="nc-export-action"
               @click="handleShare"
             >

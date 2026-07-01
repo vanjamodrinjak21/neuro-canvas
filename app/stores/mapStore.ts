@@ -19,6 +19,12 @@ import { resolveCategoryId, LEGACY_CATEGORY_MAP } from '~/constants/categories'
 import { measureNodeSize } from '~/utils/nodeSizing'
 import { capToRootSubset } from '~/utils/capMapNodes'
 
+/**
+ * Input shape for addNode — like Partial<Node>, but `style` may itself be
+ * partial: addNode merges it over DEFAULT_NODE_STYLE at runtime.
+ */
+export type NodeInput = Partial<Omit<Node, 'style'>> & { style?: Partial<NodeStyle> }
+
 // Enable Immer patches for undo/redo
 enablePatches()
 
@@ -127,7 +133,7 @@ export interface MapActions {
   fromSerializable(doc: DBMapDocument): void
 
   // Nodes
-  addNode(node: Partial<Node>): Node
+  addNode(node: NodeInput): Node
   updateNode(id: string, updates: Partial<Node>): void
   deleteNode(id: string): void
   moveNode(id: string, x: number, y: number, snap?: boolean): void
@@ -497,7 +503,7 @@ const actions: MapActions = {
     linkIndex.rebuildIndex(state.edges)
   },
 
-  addNode(partial: Partial<Node>): Node {
+  addNode(partial: NodeInput): Node {
     const now = Date.now()
     const isFirstNode = state.nodes.size === 0
 

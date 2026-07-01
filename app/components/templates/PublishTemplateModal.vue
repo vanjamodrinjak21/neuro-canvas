@@ -169,7 +169,7 @@ if (typeof document !== 'undefined') {
                   :class="{ active: mapPickerOpen }"
                   @click="mapPickerOpen = !mapPickerOpen"
                 >
-                  <span class="source-avatar">{{ (selectedMap?.title || 'M')[0].toUpperCase() }}</span>
+                  <span class="source-avatar">{{ (selectedMap?.title || 'M').charAt(0).toUpperCase() }}</span>
                   <span class="source-title" :class="{ placeholder: !selectedMap }">
                     {{ selectedMap?.title || $t('templates.publish_modal.select_map') }}
                   </span>
@@ -188,7 +188,7 @@ if (typeof document !== 'undefined') {
                     :class="['source-map-item', { active: m.id === selectedMapId }]"
                     @click="pickMap(m.id)"
                   >
-                    <span class="source-avatar">{{ (m.title || 'M')[0].toUpperCase() }}</span>
+                    <span class="source-avatar">{{ (m.title || 'M').charAt(0).toUpperCase() }}</span>
                     <span class="source-map-item-title">{{ m.title || $t('common.errors.not_found') }}</span>
                     <span class="source-map-item-meta">{{ m.nodes.length }}</span>
                   </button>

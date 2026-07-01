@@ -46,7 +46,7 @@ async function keepRemote() {
             <div class="version-badge local-badge">{{ $t('canvas.sync.conflict_dialog.this_device') }}</div>
             <h4 class="version-title">{{ currentConflict.localTitle }}</h4>
             <div class="version-meta">
-              <span>{{ $t('canvas.sync.conflict_dialog.nodes', currentConflict.localNodeCount, { n: currentConflict.localNodeCount }) }}</span>
+              <span>{{ $t('canvas.sync.conflict_dialog.nodes', { n: currentConflict.localNodeCount }, currentConflict.localNodeCount) }}</span>
               <span>{{ formatTime(currentConflict.localUpdatedAt) }}</span>
             </div>
           </div>
@@ -57,7 +57,7 @@ async function keepRemote() {
             <div class="version-badge remote-badge">{{ $t('canvas.sync.conflict_dialog.server') }}</div>
             <h4 class="version-title">{{ currentConflict.remoteTitle }}</h4>
             <div class="version-meta">
-              <span>{{ $t('canvas.sync.conflict_dialog.nodes', currentConflict.remoteNodeCount, { n: currentConflict.remoteNodeCount }) }}</span>
+              <span>{{ $t('canvas.sync.conflict_dialog.nodes', { n: currentConflict.remoteNodeCount }, currentConflict.remoteNodeCount) }}</span>
               <span>{{ formatTime(currentConflict.remoteUpdatedAt) }}</span>
             </div>
           </div>

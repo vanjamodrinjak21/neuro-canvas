@@ -28,7 +28,10 @@ onMounted(async () => {
     let token = ''
     let cookieName = ''
     try {
-      const tokenData: { token: string; cookieName: string } = await $fetch('/api/auth/mobile-token')
+      // Widened to `string` to skip nitro's typed-route matching, which blows
+      // TypeScript's instantiation depth on this path (TS2321).
+      const tokenUrl: string = '/api/auth/mobile-token'
+      const tokenData = await $fetch<{ token: string; cookieName: string }>(tokenUrl)
       token = tokenData.token
       cookieName = tokenData.cookieName
     } catch {

@@ -180,10 +180,10 @@ function buildLineElement(line: StyledLine): HTMLDivElement {
     if (match) {
       const hashSpan = document.createElement('span')
       hashSpan.className = 'mde-hash'
-      hashSpan.textContent = match[1]
+      hashSpan.textContent = match[1] ?? ''
       div.appendChild(hashSpan)
 
-      const textNode = document.createTextNode(match[2])
+      const textNode = document.createTextNode(match[2] ?? '')
       div.appendChild(textNode)
       return div
     }

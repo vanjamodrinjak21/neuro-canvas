@@ -23,7 +23,7 @@ const preview = computed(() => props.template.previewData as TemplatePreviewData
 
 const authorInitial = computed(() => {
   const name = props.template.author?.name || 'N'
-  return name[0].toUpperCase()
+  return name.charAt(0).toUpperCase()
 })
 
 const authorName = computed(() => {

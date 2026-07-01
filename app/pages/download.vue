@@ -39,7 +39,7 @@ interface Release {
   assets: Asset[]
 }
 
-const { data: release, error, pending } = await useFetch<Release>('/api/releases/latest', {
+const { data: release, error, pending } = await useFetch<Release | null>('/api/releases/latest', {
   key: 'releases:latest',
   default: () => null,
 })

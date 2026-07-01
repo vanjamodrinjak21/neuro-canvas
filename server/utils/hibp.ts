@@ -34,7 +34,7 @@ export async function checkBreachedPassword(password: string): Promise<number> {
     for (const line of lines) {
       const [hashSuffix, count] = line.trim().split(':')
       if (hashSuffix === suffix) {
-        return Number.parseInt(count, 10) || 1
+        return Number.parseInt(count ?? '', 10) || 1
       }
     }
 

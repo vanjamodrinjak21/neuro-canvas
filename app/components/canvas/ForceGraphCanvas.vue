@@ -296,11 +296,12 @@ function onTouchStart(e: TouchEvent) {
   }
   if (activeTouches.size === 2) {
     e.preventDefault()
-    const pts = [...activeTouches.values()]
-    pinchStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+    const [p0, p1] = [...activeTouches.values()]
+    if (!p0 || !p1) return
+    pinchStartDist = Math.hypot(p1.x - p0.x, p1.y - p0.y)
     pinchStartZoom = camera.zoom
     pinchStartCam = { x: camera.x, y: camera.y }
-    pinchStartMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+    pinchStartMid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }
   }
 }
 
@@ -310,9 +311,10 @@ function onTouchMove(e: TouchEvent) {
   }
   if (activeTouches.size === 2) {
     e.preventDefault()
-    const pts = [...activeTouches.values()]
-    const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
-    const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+    const [p0, p1] = [...activeTouches.values()]
+    if (!p0 || !p1) return
+    const dist = Math.hypot(p1.x - p0.x, p1.y - p0.y)
+    const mid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }
 
     const scale = dist / pinchStartDist
     const newZoom = Math.min(5, Math.max(0.1, pinchStartZoom * scale))

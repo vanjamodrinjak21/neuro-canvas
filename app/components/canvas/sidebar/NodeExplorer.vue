@@ -64,7 +64,7 @@ const rootNode = computed(() => {
   let maxEdges = 0
   for (const node of nodes) {
     const edgeCount = Array.from(mapStore.edges.values()).filter(
-      e => e.source === node.id || e.target === node.id
+      e => e.sourceId === node.id || e.targetId === node.id
     ).length
     if (edgeCount > maxEdges) {
       maxEdges = edgeCount
@@ -82,7 +82,7 @@ const childNodes = computed(() => {
 const rootChildCount = computed(() => {
   if (!rootNode.value) return 0
   return Array.from(mapStore.edges.values()).filter(
-    e => e.source === rootNode.value!.id || e.target === rootNode.value!.id
+    e => e.sourceId === rootNode.value!.id || e.targetId === rootNode.value!.id
   ).length
 })
 
@@ -93,7 +93,7 @@ function selectNode(nodeId: string) {
 
 function getNodeChildCount(nodeId: string): number {
   return Array.from(mapStore.edges.values()).filter(
-    e => e.source === nodeId || e.target === nodeId
+    e => e.sourceId === nodeId || e.targetId === nodeId
   ).length
 }
 

@@ -271,7 +271,7 @@ function onCardLeave(el: Element, done: () => void) {
 const nodeColors = ['#00D2BE', '#A78BFA', '#60A5FA', '#F472B6', '#4ADE80', '#FB923C', '#FACC15']
 
 function getNodeColor(index: number): string {
-  return nodeColors[index % nodeColors.length]
+  return nodeColors[index % nodeColors.length] ?? '#00D2BE'
 }
 
 // Close modals on escape
@@ -583,7 +583,7 @@ function parseMarkdown(text: string): { content: string; level: number }[] {
   const nodes: { content: string; level: number }[] = []
   for (const line of lines) {
     const headerMatch = line.match(/^(#{1,6})\s+(.+)$/)
-    if (headerMatch) {
+    if (headerMatch?.[1] && headerMatch[2]) {
       nodes.push({ content: headerMatch[2], level: headerMatch[1].length })
     }
   }
@@ -625,11 +625,11 @@ async function createMapFromNodes(nodes: { content: string; level: number }[], t
       content: node.content,
       position: { x: xPos, y: yPos }
     })
-    while (nodeStack.length > 0 && nodeStack[nodeStack.length - 1].level >= level) {
+    while (nodeStack.length > 0 && (nodeStack[nodeStack.length - 1]?.level ?? Number.NEGATIVE_INFINITY) >= level) {
       nodeStack.pop()
     }
-    if (nodeStack.length > 0) {
-      const parent = nodeStack[nodeStack.length - 1]
+    const parent = nodeStack[nodeStack.length - 1]
+    if (parent) {
       mapStore.addEdge(parent.id, newNode.id)
     }
     nodeStack.push({ id: newNode.id, level })
@@ -655,30 +655,37 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     })
     nodeIds.push(node.id)
   }
+  // Guarded index-pair linker — template node counts are fixed, but the
+  // guard keeps this safe (and typed) if a template ever shrinks.
+  const link = (a: number, b: number) => {
+    const src = nodeIds[a]
+    const tgt = nodeIds[b]
+    if (src && tgt) mapStore.addEdge(src, tgt)
+  }
   if (template.id === 'brainstorm') {
-    for (let i = 1; i < nodeIds.length; i++) mapStore.addEdge(nodeIds[0], nodeIds[i])
+    for (let i = 1; i < nodeIds.length; i++) link(0, i)
   } else if (template.id === 'pros-cons') {
-    mapStore.addEdge(nodeIds[0], nodeIds[1])
-    mapStore.addEdge(nodeIds[0], nodeIds[2])
-    mapStore.addEdge(nodeIds[1], nodeIds[3])
-    mapStore.addEdge(nodeIds[1], nodeIds[4])
-    mapStore.addEdge(nodeIds[2], nodeIds[5])
-    mapStore.addEdge(nodeIds[2], nodeIds[6])
+    link(0, 1)
+    link(0, 2)
+    link(1, 3)
+    link(1, 4)
+    link(2, 5)
+    link(2, 6)
   } else if (template.id === 'study-notes') {
-    mapStore.addEdge(nodeIds[0], nodeIds[1])
-    mapStore.addEdge(nodeIds[0], nodeIds[2])
-    mapStore.addEdge(nodeIds[0], nodeIds[3])
-    mapStore.addEdge(nodeIds[1], nodeIds[4])
-    mapStore.addEdge(nodeIds[2], nodeIds[5])
-    mapStore.addEdge(nodeIds[3], nodeIds[6])
+    link(0, 1)
+    link(0, 2)
+    link(0, 3)
+    link(1, 4)
+    link(2, 5)
+    link(3, 6)
   } else if (template.id === 'project-plan') {
-    mapStore.addEdge(nodeIds[0], nodeIds[1])
-    mapStore.addEdge(nodeIds[0], nodeIds[2])
-    mapStore.addEdge(nodeIds[0], nodeIds[3])
-    mapStore.addEdge(nodeIds[1], nodeIds[4])
-    mapStore.addEdge(nodeIds[1], nodeIds[5])
-    mapStore.addEdge(nodeIds[2], nodeIds[6])
-    mapStore.addEdge(nodeIds[2], nodeIds[7])
+    link(0, 1)
+    link(0, 2)
+    link(0, 3)
+    link(1, 4)
+    link(1, 5)
+    link(2, 6)
+    link(2, 7)
   }
   mapStore.resolveOverlaps()
   const doc = mapStore.toSerializable()

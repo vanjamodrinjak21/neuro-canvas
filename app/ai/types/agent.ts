@@ -24,7 +24,7 @@ export interface AgentAddNodePayload {
   description?: string
   parentNodeId?: string
   category?: string
-  keywords?: string[]
+  keywords?: readonly string[]
 }
 
 export interface AgentAddConnectionPayload {
@@ -36,8 +36,8 @@ export interface AgentAddConnectionPayload {
 
 export interface AgentRestructurePayload {
   description: string
-  affectedNodeIds: string[]
-  suggestedChanges: Array<{
+  affectedNodeIds: readonly string[]
+  suggestedChanges: ReadonlyArray<{
     nodeId: string
     action: 'move' | 'merge' | 'split' | 'reparent'
     details: string
@@ -45,13 +45,13 @@ export interface AgentRestructurePayload {
 }
 
 export interface AgentHighlightPayload {
-  nodeIds: string[]
+  nodeIds: readonly string[]
   reason: string
 }
 
 export interface AgentQuestionPayload {
   question: string
-  options?: string[]
+  options?: readonly string[]
   context: string
 }
 

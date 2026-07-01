@@ -97,7 +97,7 @@ function selectTool(tool: CanvasTool) {
         v-if="semanticFieldEnabled"
         class="nc-semantic-status"
         :title="isProcessing
-          ? $t('canvas.toolbar.semantic_embedding', processingQueueSize ?? 0, { n: processingQueueSize ?? 0 })
+          ? $t('canvas.toolbar.semantic_embedding', { n: processingQueueSize ?? 0 }, processingQueueSize ?? 0)
           : $t('canvas.toolbar.semantic_ready')"
       >
         <span v-if="isProcessing" class="nc-semantic-spinner" />

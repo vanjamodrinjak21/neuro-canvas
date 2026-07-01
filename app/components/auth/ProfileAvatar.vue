@@ -19,7 +19,7 @@ const initials = computed(() => {
       .toUpperCase()
   }
   if (user.value.email) {
-    return user.value.email[0].toUpperCase()
+    return user.value.email.charAt(0).toUpperCase()
   }
   return '?'
 })

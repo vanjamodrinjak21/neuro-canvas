@@ -620,9 +620,10 @@ function maybeShowSavePrompt() {
 
 if (import.meta.client) {
   watch(
-    () => [mapStore.nodes?.size ?? 0, mapStore.edges?.size ?? 0],
-    ([n, e], [pn, pe] = [0, 0]) => {
-      const delta = (n - (pn ?? 0)) + (e - (pe ?? 0))
+    () => [mapStore.nodes?.size ?? 0, mapStore.edges?.size ?? 0] as [number, number],
+    ([n, e], prev) => {
+      const [pn, pe] = prev ?? [0, 0]
+      const delta = (n - pn) + (e - pe)
       if (delta > 0 && guest.isGuest.value) {
         guestEditCount.value += delta
         maybeShowSavePrompt()
@@ -2191,7 +2192,7 @@ useHead({
       <CanvasMarkdownEditorView v-if="viewMode === 'editor'" />
       <CanvasForceGraphCanvas
         v-else-if="viewMode === 'graph' && mapStore.nodes.size > 0"
-        @select-node="(id: string) => mapStore.selectNode(id)"
+        @select-node="(id: string) => mapStore.select([id])"
         @deselect="mapStore.clearSelection()"
       />
     </MobileMapEditor>
@@ -2242,7 +2243,7 @@ useHead({
       <!-- Graph View (desktop only — mobile uses MobileMapEditor) -->
       <CanvasForceGraphCanvas
         v-if="!isLoading && !loadError && viewMode === 'graph' && mapStore.nodes.size > 0 && !isMobile"
-        @select-node="(id: string) => mapStore.selectNode(id)"
+        @select-node="(id: string) => mapStore.select([id])"
         @deselect="mapStore.clearSelection()"
       />
 

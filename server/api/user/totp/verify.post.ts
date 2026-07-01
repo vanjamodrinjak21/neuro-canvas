@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const parsed = verifySchema.safeParse(body)
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.errors[0]?.message || 'Invalid code' })
+    throw createError({ statusCode: 400, statusMessage: parsed.error.issues[0]?.message || 'Invalid code' })
   }
 
   const user = await prisma.user.findUnique({

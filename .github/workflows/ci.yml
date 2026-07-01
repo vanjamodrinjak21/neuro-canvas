@@ -46,8 +46,7 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
-    # Non-blocking: Nuxt 4 + Prisma 7 migration has pre-existing type issues
-    continue-on-error: true
+    # Blocking since AER-64: the repo typechecks clean — keep it that way.
     steps:
       - uses: actions/checkout@v4
 
@@ -64,8 +63,8 @@ jobs:
       - name: Prepare Nuxt
         run: npx nuxi prepare
 
-      - name: Typecheck (advisory, non-blocking)
-        run: npm run typecheck || true
+      - name: Typecheck
+        run: npm run typecheck
 
   test:
     name: Test

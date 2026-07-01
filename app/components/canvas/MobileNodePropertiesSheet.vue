@@ -124,7 +124,7 @@ const sheetStyle = computed(() => {
           <CanvasSidebarNodeProperties
             :selected-node="selectedNode"
             class="!border-none"
-            @delete-node="emit('action', { type: 'deleteNode' })"
+            @delete-node="emit('action', { type: 'node:delete' })"
           />
         </div>
       </div>

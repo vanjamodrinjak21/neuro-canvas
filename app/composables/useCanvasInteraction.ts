@@ -1,5 +1,5 @@
 import { ref, nextTick, type Ref, type ComputedRef } from 'vue'
-import type { Camera, CanvasTool, Point, Node, Edge, Anchor } from '~/types'
+import type { Camera, CanvasTool, Point, Node, Edge, EdgeStyle, Anchor } from '~/types'
 import { screenToWorld } from '~/composables/useCanvasCoordinates'
 import { findNodeAtPositionSpatial, findEdgeAtPosition } from '~/composables/useNodeHitTest'
 import { getAnchorPoint } from '~/composables/useAnchors'
@@ -35,7 +35,7 @@ export interface InteractionDeps {
   addToSelection: (nodeIds: string[], edgeIds?: string[]) => void
   clearSelection: () => void
   addNode: (partial: Partial<Node>) => Node
-  addEdge: (sourceId: string, targetId: string, style?: unknown, sourceAnchor?: Anchor, targetAnchor?: Anchor) => Edge
+  addEdge: (sourceId: string, targetId: string, style?: Partial<EdgeStyle>, sourceAnchor?: Anchor, targetAnchor?: Anchor) => Edge
   deleteEdge: (id: string) => void
   deleteSelected: () => void
   autoSizeNode: (id: string) => void

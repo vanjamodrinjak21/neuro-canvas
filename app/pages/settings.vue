@@ -430,6 +430,16 @@ async function handleMobileSetDefault(type: string) {
   flashSaved()
 }
 
+function handleMobileSetLocale(code: string) {
+  if (code !== 'en' && code !== 'hr') return
+  setLocale(code)
+  // Persist for Tauri/Capacitor shells (guarded — templates can't see the
+  // global `localStorage`, and SSR has none)
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('i18n_locale', code)
+  }
+}
+
 async function handleMobileTestKey(type: string) {
   const provider = aiSettings.providers.value.find(p => p.type === type)
   if (!provider) return
@@ -716,7 +726,7 @@ function handleAccountClose() {
             :locale="locale"
             :i18n-locales="i18nLocales as Array<{ code: string; name: string }>"
             @back="mobileSettingsScreen = 'home'"
-            @set-locale="(c) => { setLocale(c); if (typeof localStorage !== 'undefined') localStorage.setItem('i18n_locale', c) }"
+            @set-locale="handleMobileSetLocale"
           />
         </template>
 

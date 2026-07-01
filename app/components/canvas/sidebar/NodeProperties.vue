@@ -99,7 +99,7 @@ function updateCategory(categoryId: string) {
 const connectionCount = computed(() => {
   if (!props.selectedNode) return 0
   return Array.from(mapStore.edges.values()).filter(
-    e => e.source === props.selectedNode!.id || e.target === props.selectedNode!.id
+    e => e.sourceId === props.selectedNode!.id || e.targetId === props.selectedNode!.id
   ).length
 })
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppLoadingScreen from '~/components/AppLoadingScreen.vue'
 import { useUserStore } from '~/stores/userStore'
 import { useAIPreload } from '~/composables/useAIPreload'
 

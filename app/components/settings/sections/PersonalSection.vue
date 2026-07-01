@@ -56,6 +56,7 @@ const availableLocales = computed(() =>
 )
 
 async function changeLocale(code: string) {
+  if (code !== 'en' && code !== 'hr') return
   await setLocale(code)
   userStore.setPreference('language', code)
   // Also persist in localStorage for Tauri/Capacitor

@@ -55,17 +55,21 @@ function syncToStore() {
 // ── Item operations ────────────────────────────────────────────────
 
 function handleUpdateItem(index: number, content: string) {
-  items.value[index] = { ...items.value[index], content }
+  const current = items.value[index]
+  if (!current) return
+  const updated = { ...current, content }
+  items.value[index] = updated
   syncToStore()
 
   // Trigger ghost suggestions if AI is enabled
   if (aiEnabled.value) {
-    ghost.onTyping(items.value[index], items.value)
+    ghost.onTyping(updated, items.value)
   }
 }
 
 function handleEnter(index: number) {
   const currentItem = items.value[index]
+  if (!currentItem) return
   const newItem: OutlineItem = {
     id: nanoid(),
     content: '',
@@ -90,17 +94,20 @@ function handleDelete(index: number) {
 
 function handleIndent(index: number) {
   if (index === 0) return // Can't indent root
+  const current = items.value[index]
+  if (!current) return
   const prevDepth = items.value[index - 1]?.depth ?? 0
-  const currentDepth = items.value[index].depth
+  const currentDepth = current.depth
 
   // Can only indent one level deeper than the previous sibling
   if (currentDepth <= prevDepth) {
-    items.value[index] = { ...items.value[index], depth: currentDepth + 1 }
+    items.value[index] = { ...current, depth: currentDepth + 1 }
 
     // Also indent children that were at same or deeper level
     for (let i = index + 1; i < items.value.length; i++) {
-      if (items.value[i].depth > currentDepth) {
-        items.value[i] = { ...items.value[i], depth: items.value[i].depth + 1 }
+      const child = items.value[i]
+      if (child && child.depth > currentDepth) {
+        items.value[i] = { ...child, depth: child.depth + 1 }
       } else {
         break
       }
@@ -111,15 +118,18 @@ function handleIndent(index: number) {
 }
 
 function handleOutdent(index: number) {
-  const currentDepth = items.value[index].depth
+  const current = items.value[index]
+  if (!current) return
+  const currentDepth = current.depth
   if (currentDepth <= 0) return // Can't outdent root level
 
-  items.value[index] = { ...items.value[index], depth: currentDepth - 1 }
+  items.value[index] = { ...current, depth: currentDepth - 1 }
 
   // Also outdent children
   for (let i = index + 1; i < items.value.length; i++) {
-    if (items.value[i].depth > currentDepth) {
-      items.value[i] = { ...items.value[i], depth: items.value[i].depth - 1 }
+    const child = items.value[i]
+    if (child && child.depth > currentDepth) {
+      items.value[i] = { ...child, depth: child.depth - 1 }
     } else {
       break
     }
@@ -183,7 +193,7 @@ function handleBold() {
   // For now, wrap current item content if focused
   if (focusedIndex.value >= 0) {
     const item = items.value[focusedIndex.value]
-    if (item.content && !item.content.includes('**')) {
+    if (item?.content && !item.content.includes('**')) {
       handleUpdateItem(focusedIndex.value, `**${item.content}**`)
     }
   }

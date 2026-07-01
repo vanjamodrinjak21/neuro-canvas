@@ -15,8 +15,12 @@ const PHASES = [
   { key: 'later', status: 'exploring' },
 ] as const
 
+// `tm` widened to a plain signature: the generated i18n message schema makes
+// TypeScript's instantiation depth explode (TS2589) on dynamic keys.
+const tmMessages = tm as (key: string) => unknown
+
 function phaseItems(key: string): string[] {
-  const items = tm(`roadmap.phases.${key}.items`)
+  const items = tmMessages(`roadmap.phases.${key}.items`)
   return Array.isArray(items) ? items.filter((x): x is string => typeof x === 'string') : []
 }
 

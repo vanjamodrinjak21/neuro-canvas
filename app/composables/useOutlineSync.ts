@@ -141,7 +141,9 @@ export function useOutlineSync() {
       for (const key of neededEdges) {
         if (!existingEdgeKeys.has(key)) {
           const [sourceId, targetId] = key.split('→')
-          mapStore.addEdge(sourceId, targetId)
+          if (sourceId && targetId) {
+            mapStore.addEdge(sourceId, targetId)
+          }
         }
       }
 
@@ -180,11 +182,11 @@ export function useOutlineSync() {
 
     for (let i = 0; i < lines.length; i++) {
       const raw = lines[i]
-      if (raw.trim() === '') continue
+      if (!raw || raw.trim() === '') continue
 
       // Count leading 2-space indentation
       const match = raw.match(/^( *)/)
-      const spaces = match ? match[1].length : 0
+      const spaces = match?.[1]?.length ?? 0
       const depth = Math.floor(spaces / 2)
       const content = raw.trimStart()
 

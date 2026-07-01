@@ -107,13 +107,13 @@ describe('parseLosslessMarkdown', () => {
   it('preserves multi-line content via \\n encoding', () => {
     const md = exportMarkdown(sampleDoc)
     const restored = parseLosslessMarkdown(md)!
-    expect(restored.nodes[0].content).toBe('Root\nwith newline')
+    expect(restored.nodes[0]!.content).toBe('Root\nwith newline')
   })
 
   it('preserves special characters in content', () => {
     const md = exportMarkdown(sampleDoc)
     const restored = parseLosslessMarkdown(md)!
-    expect(restored.nodes[1].content).toBe('Child <with> "quotes" & \\backslash')
+    expect(restored.nodes[1]!.content).toBe('Child <with> "quotes" & \\backslash')
   })
 
   it('returns null when nc-document marker is missing', () => {

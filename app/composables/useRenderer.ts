@@ -78,12 +78,14 @@ export function useRenderer(canvas: Ref<HTMLCanvasElement | null>) {
       })
       if (!adapter) return false
 
-      gpuDevice = await adapter.requestDevice()
+      const device: GPUDevice | null = await adapter.requestDevice()
+      if (!device) return false
+      gpuDevice = device
       gpuContext = canvas.value.getContext('webgpu') as GPUCanvasContext
 
       const format = (navigator as any).gpu.getPreferredCanvasFormat()
       gpuContext.configure({
-        device: gpuDevice,
+        device,
         format,
         alphaMode: 'premultiplied'
       })

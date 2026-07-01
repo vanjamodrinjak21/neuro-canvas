@@ -3,7 +3,7 @@ import { useDeviceId } from '~/composables/useDeviceId'
 import { generateChecksum } from '~/utils/syncChecksum'
 import { useMapStore } from '~/stores/mapStore'
 
-export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'error' | 'disabled'
+export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'conflict' | 'error' | 'disabled'
 
 export interface SyncConflict {
   mapId: string

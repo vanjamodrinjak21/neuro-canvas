@@ -42,7 +42,9 @@ const exportFormats = computed(() => [
 ])
 
 function handleExport(format: 'png' | 'json' | 'markdown') {
-  emit(`export-${format}`)
+  if (format === 'png') emit('export-png')
+  else if (format === 'json') emit('export-json')
+  else emit('export-markdown')
 }
 </script>
 

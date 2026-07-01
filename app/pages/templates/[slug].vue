@@ -46,7 +46,6 @@ const _isTauri = import.meta.client && typeof window !== 'undefined' && ('__TAUR
 type ToastFn = (msg: string) => void
 function safeToast(): { error: ToastFn; success: ToastFn; warning: ToastFn } {
   try {
-    // @ts-expect-error — auto-imported at runtime; may be undefined if not yet generated
     const t = typeof useToast === 'function' ? useToast() : null
     if (t) return { error: t.error, success: t.success, warning: t.warning }
   } catch {
@@ -73,7 +72,7 @@ const preview = computed(() => template.value?.previewData as TemplatePreviewDat
 
 const authorInitial = computed(() => {
   const name = template.value?.author?.name || 'N'
-  return name[0].toUpperCase()
+  return name.charAt(0).toUpperCase()
 })
 
 const authorName = computed(() => template.value?.author?.name || 'NeuroCanvas')

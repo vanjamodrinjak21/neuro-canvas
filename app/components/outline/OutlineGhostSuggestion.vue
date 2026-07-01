@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  suggestions: string[]
+  suggestions: readonly string[]
   depth: number
 }>()
 
