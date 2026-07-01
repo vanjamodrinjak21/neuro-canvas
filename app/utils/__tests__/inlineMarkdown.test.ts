@@ -72,5 +72,33 @@ describe('inlineMarkdown', () => {
       const out = renderInlineMarkdown('[a](https://example.com)')
       expect(out).not.toContain('&amp;amp;')
     })
+
+    it('escapes a raw <a> tag the user typed (no anchor-forgery bypass)', () => {
+      // Regression: the old split-on-"<a ...>...</a>" pipeline treated any
+      // user-typed anchor as trusted HTML, so this landed live in the DOM.
+      const out = renderInlineMarkdown('<a href="https://evil" onmouseover="alert(document.cookie)">hi</a>')
+      // No LIVE event handler (escaped `on…=&quot;` is inert; a real `on…="` is not).
+      expect(out).not.toMatch(/on\w+="/)
+      // The raw anchor must not survive unescaped; it is present only escaped.
+      expect(out).not.toContain('<a href="https://evil"')
+      expect(out).toContain('&lt;a href=')
+    })
+
+    it('escapes a raw <a> tag even alongside a legitimate link', () => {
+      const out = renderInlineMarkdown('[ok](https://good.com) then <a onclick="alert(1)">x</a>')
+      // The real markdown link is still rendered…
+      expect(out).toContain('href="https://good.com/"')
+      // …but the injected raw anchor is inert: no live handler, only escaped text.
+      expect(out).not.toMatch(/on\w+="/)
+      expect(out).toContain('&lt;a onclick=')
+    })
+
+    it('does not let a forged sentinel inject HTML', () => {
+      // A user typing our internal NUL-sentinel shape must not resolve to
+      // markup — the NUL is stripped and the index has no matching anchor.
+      const nul = String.fromCharCode(0)
+      const out = renderInlineMarkdown(`${nul}A0${nul}`)
+      expect(out).not.toMatch(/<a /i)
+    })
   })
 })
