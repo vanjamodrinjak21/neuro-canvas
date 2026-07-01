@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const parsed = disableSchema.safeParse(body)
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.errors[0]?.message || 'Invalid input' })
+    throw createError({ statusCode: 400, statusMessage: parsed.error.issues[0]?.message || 'Invalid input' })
   }
 
   const user = await prisma.user.findUnique({
@@ -50,7 +50,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Password is incorrect' })
   }
 
-  // Disable 2FA and clear secrets
+  // Disable 2FA and clear secrets.
+  //
+  // We deliberately do NOT bump `sessionsValidFrom` here. A single epoch
+  // watermark can't exclude the caller's own token: `iat` is stamped once at
+  // sign-in and never refreshed, so stamping the epoch to "now" would reject
+  // the very session that just disabled 2FA (self-lockout). The epoch is bumped
+  // only by /api/auth/logout, which is the sole flow where forcing every token
+  // (including the caller's) to re-authenticate is the intended outcome.
   await prisma.user.update({
     where: { id: user.id },
     data: {

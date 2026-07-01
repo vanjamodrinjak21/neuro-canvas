@@ -65,11 +65,11 @@ export async function requireAuthSession(event: H3Event): Promise<{ userId: stri
   const user = id
     ? await prisma.user.findUnique({
         where: { id },
-        select: { id: true, email: true, passwordChangedAt: true },
+        select: { id: true, email: true, passwordChangedAt: true, sessionsValidFrom: true, disabledAt: true },
       })
     : await prisma.user.findUnique({
         where: { email: email! },
-        select: { id: true, email: true, passwordChangedAt: true },
+        select: { id: true, email: true, passwordChangedAt: true, sessionsValidFrom: true, disabledAt: true },
       })
 
   if (!user || !user.email) {
@@ -81,6 +81,23 @@ export async function requireAuthSession(event: H3Event): Promise<{ userId: stri
     const changedAtSec = Math.floor(user.passwordChangedAt.getTime() / 1000)
     if (changedAtSec > iat) {
       throw createError({ statusCode: 401, statusMessage: 'Password changed — please sign in again' })
+    }
+  }
+
+  // Account disabled: hard-block regardless of token validity (AER-59).
+  // Null disabledAt = active, so existing users are unaffected.
+  if (user.disabledAt) {
+    throw createError({ statusCode: 403, statusMessage: 'Account disabled' })
+  }
+
+  // Per-user session invalidation epoch (AER-59): reject any token minted
+  // before the user's sessionsValidFrom watermark (bumped only by logout;
+  // password change is enforced separately above via passwordChangedAt). Null
+  // watermark = no constraint, so nobody is logged out on deploy.
+  if (user.sessionsValidFrom && iat) {
+    const validFromSec = Math.floor(user.sessionsValidFrom.getTime() / 1000)
+    if (validFromSec > iat) {
+      throw createError({ statusCode: 401, statusMessage: 'Session expired — please sign in again' })
     }
   }
 

@@ -106,6 +106,11 @@ export default defineEventHandler(async (event) => {
     where: { id: user.id },
     data: {
       password: hashedPassword,
+      // `passwordChangedAt` alone invalidates every token issued before now:
+      // requireAuthSession (syncHelpers) rejects any JWT whose `iat` predates
+      // it. We do NOT also bump `sessionsValidFrom` — that would be redundant
+      // with the passwordChangedAt check and, per AER-59, the session epoch is
+      // reserved for /api/auth/logout so its meaning stays unambiguous.
       passwordChangedAt: new Date()
     }
   })

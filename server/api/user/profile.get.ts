@@ -1,18 +1,13 @@
-import { getToken } from '#auth'
 import { prisma } from '../../utils/prisma'
+import { requireAuthSession } from '../../utils/syncHelpers'
 
 export default defineEventHandler(async (event) => {
-  const token = await getToken({ event })
-
-  if (!token?.email) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized'
-    })
-  }
+  // Full session validation (existence + password-change + disabled +
+  // session-invalidation epoch), not just a raw getToken() decode.
+  const { email } = await requireAuthSession(event)
 
   const user = await prisma.user.findUnique({
-    where: { email: token.email as string },
+    where: { email },
     select: {
       id: true,
       email: true,

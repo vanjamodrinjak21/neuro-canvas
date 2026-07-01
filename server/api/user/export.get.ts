@@ -1,20 +1,15 @@
-import { getToken } from '#auth'
 import { prisma } from '../../utils/prisma'
 import { checkRateLimit } from '../../utils/redis'
+import { requireAuthSession } from '../../utils/syncHelpers'
 
 export default defineEventHandler(async (event) => {
-  const token = await getToken({ event })
-
-  if (!token?.email) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized'
-    })
-  }
+  // Full session validation (existence + password-change + disabled +
+  // session-invalidation epoch), not just a raw getToken() decode.
+  const { email } = await requireAuthSession(event)
 
   // Rate limit: 3 exports per hour
   const { allowed } = await checkRateLimit(
-    `export:${token.email as string}`,
+    `export:${email}`,
     3,
     3600
   )
@@ -26,7 +21,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: token.email as string },
+    where: { email },
     select: {
       id: true,
       name: true,

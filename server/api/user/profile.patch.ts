@@ -1,7 +1,7 @@
-import { getToken } from '#auth'
 import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
 import { checkRateLimit } from '../../utils/redis'
+import { requireAuthSession } from '../../utils/syncHelpers'
 
 const updateProfileSchema = z.object({
   name: z
@@ -27,16 +27,11 @@ const updateProfileSchema = z.object({
 }).strict() // Reject unknown fields (mass assignment protection)
 
 export default defineEventHandler(async (event) => {
-  const token = await getToken({ event })
+  // Full session validation (existence + password-change + disabled +
+  // session-invalidation epoch), not just a raw getToken() decode.
+  const { email } = await requireAuthSession(event)
 
-  if (!token?.email) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized'
-    })
-  }
-
-  const { allowed } = await checkRateLimit(`user:profile:${token.email as string}`, 20, 60)
+  const { allowed } = await checkRateLimit(`user:profile:${email}`, 20, 60)
   if (!allowed) {
     throw createError({ statusCode: 429, statusMessage: 'Too many profile updates' })
   }
@@ -54,7 +49,7 @@ export default defineEventHandler(async (event) => {
   const { name, bio, image } = parsed.data
 
   const user = await prisma.user.update({
-    where: { email: token.email as string },
+    where: { email },
     data: {
       ...(name !== undefined && { name }),
       ...(bio !== undefined && { bio: bio || null }),

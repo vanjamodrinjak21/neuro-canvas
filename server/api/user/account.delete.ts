@@ -1,28 +1,23 @@
-import { getToken } from '#auth'
 import { z } from 'zod'
 import { prisma } from '../../utils/prisma'
 import { checkRateLimit } from '../../utils/redis'
 import { deleteDocPrefix } from '../../utils/r2'
+import { requireAuthSession } from '../../utils/syncHelpers'
 
 const deleteAccountSchema = z.object({
   confirmation: z.literal('DELETE MY ACCOUNT', {
-    errorMap: () => ({ message: 'Please type "DELETE MY ACCOUNT" to confirm' })
+    message: 'Please type "DELETE MY ACCOUNT" to confirm'
   })
 }).strict()
 
 export default defineEventHandler(async (event) => {
-  const token = await getToken({ event })
-
-  if (!token?.email) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized'
-    })
-  }
+  // Full session validation (existence + password-change + disabled +
+  // session-invalidation epoch), not just a raw getToken() decode.
+  const { email } = await requireAuthSession(event)
 
   // Rate limit: 3 attempts per hour
   const { allowed } = await checkRateLimit(
-    `delete-account:${token.email as string}`,
+    `delete-account:${email}`,
     3,
     3600
   )
@@ -39,12 +34,12 @@ export default defineEventHandler(async (event) => {
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: parsed.error.errors[0]?.message || 'Invalid confirmation'
+      statusMessage: parsed.error.issues[0]?.message || 'Invalid confirmation'
     })
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: token.email as string }
+    where: { email }
   })
 
   if (!user) {

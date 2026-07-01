@@ -30,6 +30,13 @@ model User {
   lastTotpDelta       Int? // Replay protection: last accepted TOTP delta
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
+  // Per-user session invalidation (AER-59). Both nullable = "no constraint":
+  // a null sessionsValidFrom means every otherwise-valid token is accepted, so
+  // existing sessions survive deploy. Logout stamps this to now() to invalidate
+  // all tokens issued earlier (password change is enforced separately via
+  // passwordChangedAt). disabledAt hard-blocks a user.
+  sessionsValidFrom   DateTime?
+  disabledAt          DateTime?
 
   accounts    Account[]
   sessions    Session[]
