@@ -2,6 +2,7 @@
  * Auth Store - Composable for auth state management
  */
 import { useDatabase } from '~/composables/useDatabase'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 
 interface AuthState {
   isRegistering: boolean
@@ -143,10 +144,39 @@ export function useAuthStore() {
       state.isLoading = true
 
       try {
-        // Clear all user-scoped local data before signing out
-        // This prevents the next user from seeing stale maps/sync state
+        // 1. Best-effort flush: push never-synced / queued maps + pending
+        //    debounced edits to the server before local state is wiped, so
+        //    guest/offline-created maps survive the logout (AER-59/AER-60 #3).
+        //    Returns `allClean` = everything is safely on the server. Never
+        //    throws; defaults to NOT clean if the flush itself blows up.
+        let allClean = false
+        try {
+          allClean = await useSyncEngine().flushBeforeLogout()
+        } catch { /* best-effort — proceed with logout, treat as NOT clean */ }
+
+        // 2. Best-effort server-side revoke: bumps the per-user session epoch +
+        //    revokes collab jtis so an already-issued JWT stops working. The
+        //    endpoint is idempotent ({ ok: true } always) and does NOT clear
+        //    cookies — next-auth signOut() handles the cookie below. Capped at
+        //    3s so a black-hole network can't stall logout (AER-59 #4).
+        try {
+          await Promise.race([
+            $fetch('/api/auth/logout', { method: 'POST' }),
+            new Promise(resolve => setTimeout(resolve, 3000)),
+          ])
+        } catch { /* best-effort — local sign-out still proceeds */ }
+
+        // 3. Clear user-scoped local data ONLY when everything is safely on the
+        //    server. If NOT clean (offline logout, or a push failed) we keep the
+        //    on-device maps — they're the last surviving copy of some edits and
+        //    are userId-scoped, so they stay inert for other accounts and are
+        //    intact when this user logs back in.
         const { clearUserData, setCurrentUserId } = useDatabase()
-        await clearUserData()
+        if (allClean) {
+          await clearUserData()
+        } else {
+          console.warn('[auth] logout: unsynced local data present — keeping on-device maps (not wiping)')
+        }
         await setCurrentUserId(null)
 
         await signOut({ callbackUrl: '/' })

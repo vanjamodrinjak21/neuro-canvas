@@ -4,6 +4,10 @@ import type { GenerationTone } from '~/types/ai-generation'
 const props = defineProps<{
   visible: boolean
   isLoading?: boolean
+  // Set by the parent when server-side generation is unavailable (offline on a
+  // non-native shell). On native, AI runs on-device so this stays false.
+  offlineDisabled?: boolean
+  offlineHint?: string
 }>()
 
 const emit = defineEmits<{
@@ -62,7 +66,7 @@ const styleOptions = computed(() => [
 ])
 
 function handleGenerate() {
-  if (!topic.value.trim()) return
+  if (!topic.value.trim() || props.offlineDisabled) return
 
   emit('generate', topic.value.trim(), {
     depth: depth.value,
@@ -259,7 +263,8 @@ watch(() => props.visible, (isVisible) => {
               </button>
               <button
                 class="nc-btn nc-btn-primary"
-                :disabled="!topic.trim() || isLoading"
+                :disabled="!topic.trim() || isLoading || offlineDisabled"
+                :title="offlineDisabled ? offlineHint : undefined"
                 @click="handleGenerate"
               >
                 <span v-if="isLoading" class="i-lucide-loader-2 animate-pulse" />

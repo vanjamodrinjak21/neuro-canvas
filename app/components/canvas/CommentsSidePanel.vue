@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 
 interface CommentRow {
   id: string
@@ -20,6 +21,11 @@ interface CommentRow {
 const props = defineProps<{ mapId: string; viaToken?: string | null; canWrite?: boolean }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 const { t, locale } = useI18n()
+
+// Every comment mutation (add/reply/resolve/reopen/delete) is a server call —
+// gate them when offline. Reading cached threads still works offline.
+const { isOnline } = useSyncEngine()
+const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
 
 const comments = ref<CommentRow[]>([])
 const loading = ref(true)
@@ -44,7 +50,7 @@ async function load() {
 
 async function submitNew() {
   const body = composing.value.trim()
-  if (!body) return
+  if (!body || !isOnline.value) return
   submitting.value = true
   error.value = null
   try {
@@ -64,7 +70,7 @@ async function submitNew() {
 
 async function replyTo(threadId: string, body: string) {
   const trimmed = body.trim()
-  if (!trimmed) return
+  if (!trimmed || !isOnline.value) return
   try {
     const created = await $fetch<CommentRow>(`/api/maps/${props.mapId}/comments${queryParam.value}`, {
       method: 'POST',
@@ -202,8 +208,8 @@ onKeyStroke('Escape', () => emit('close'))
           @keydown="onComposeKey"
         />
         <div class="cm-compose-row">
-          <span class="cm-hint">{{ t('canvas.comments.submit_hint') }}</span>
-          <button class="cm-submit" :disabled="!composing.trim() || submitting" @click="submitNew">
+          <span class="cm-hint">{{ offlineHint ?? t('canvas.comments.submit_hint') }}</span>
+          <button class="cm-submit" :disabled="!composing.trim() || submitting || !isOnline" :title="offlineHint" @click="submitNew">
             {{ t('canvas.comments.submit') }}
           </button>
         </div>
@@ -229,7 +235,7 @@ onKeyStroke('Escape', () => emit('close'))
             </div>
             <div class="cm-msg-body">{{ m.body }}</div>
             <div class="cm-msg-actions">
-              <button class="cm-link" @click="deleteComment(m.id)">{{ t('canvas.comments.delete') }}</button>
+              <button class="cm-link" :disabled="!isOnline" :title="offlineHint" @click="deleteComment(m.id)">{{ t('canvas.comments.delete') }}</button>
             </div>
           </div>
           <div v-if="canWrite !== false" class="cm-reply">
@@ -241,7 +247,7 @@ onKeyStroke('Escape', () => emit('close'))
               @input="(e) => (replyDrafts[th.id] = (e.target as HTMLTextAreaElement).value)"
               @keydown="(e) => onReplyKey(e, th.id)"
             />
-            <button class="cm-link cm-resolve" @click="resolveThread(th.id)">
+            <button class="cm-link cm-resolve" :disabled="!isOnline" :title="offlineHint" @click="resolveThread(th.id)">
               {{ t('canvas.comments.resolve') }}
             </button>
           </div>
@@ -261,7 +267,7 @@ onKeyStroke('Escape', () => emit('close'))
             </div>
             <div class="cm-msg-body">{{ m.body }}</div>
           </div>
-          <button v-if="canWrite !== false" class="cm-link" @click="reopenThread(th.id)">
+          <button v-if="canWrite !== false" class="cm-link" :disabled="!isOnline" :title="offlineHint" @click="reopenThread(th.id)">
             {{ t('canvas.comments.reopen') }}
           </button>
         </article>
@@ -357,7 +363,8 @@ onKeyStroke('Escape', () => emit('close'))
   background: none; border: none; color: #71717A;
   font-size: calc(11px * var(--nc-text-scale, 1)); cursor: pointer; padding: 2px 4px;
 }
-.cm-link:hover { color: #A1A1AA; }
+.cm-link:hover:not(:disabled) { color: #A1A1AA; }
+.cm-link:disabled { opacity: 0.4; cursor: not-allowed; }
 .cm-resolve { color: #3DD9D6; }
 
 .cm-reply { margin-top: 8px; }

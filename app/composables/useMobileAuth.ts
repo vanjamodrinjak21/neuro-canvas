@@ -42,6 +42,48 @@ async function revalidateSession() {
   }
 }
 
+/**
+ * Retry a deferred server-side logout revoke (AER-59 #5). If a previous
+ * sign-out couldn't reach the server (offline/timeout), we stored the session
+ * token in `nc-pending-logout-revoke`. On the next online launch we POST
+ * /api/auth/logout with that Cookie header so the residual 30-day native JWT is
+ * invalidated server-side, then clear the marker. Best-effort; never throws.
+ */
+async function retryPendingLogoutRevoke(): Promise<void> {
+  if (typeof window === 'undefined') return
+  let marker: { token?: string; cookieName?: string } | null = null
+  try {
+    const raw = localStorage.getItem('nc-pending-logout-revoke')
+    if (!raw) return
+    marker = JSON.parse(raw)
+  } catch {
+    // Malformed marker — drop it so we don't retry forever.
+    try { localStorage.removeItem('nc-pending-logout-revoke') } catch { /* ignore */ }
+    return
+  }
+  if (!marker?.token || !marker?.cookieName) {
+    try { localStorage.removeItem('nc-pending-logout-revoke') } catch { /* ignore */ }
+    return
+  }
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+
+  try {
+    const { CapacitorHttp } = await import('@capacitor/core')
+    await Promise.race([
+      CapacitorHttp.post({
+        url: `${AUTH_BASE_URL}/api/auth/logout`,
+        headers: { Cookie: `${marker.cookieName}=${marker.token}` },
+      }),
+      new Promise(resolve => setTimeout(resolve, 3000)),
+    ])
+  } catch {
+    // Best-effort — leave the marker to retry next launch.
+    return
+  }
+
+  try { localStorage.removeItem('nc-pending-logout-revoke') } catch { /* ignore */ }
+}
+
 export function useMobileAuth() {
   // Initialize from localStorage once
   if (!_initialized.value && typeof window !== 'undefined') {
@@ -64,6 +106,9 @@ export function useMobileAuth() {
     // flips isSignedIn back to false and the sync engine watcher reacts.
     if ('Capacitor' in (window as any) && (window as any).Capacitor?.isNativePlatform?.()) {
       void revalidateSession()
+      // Retry any deferred server-side logout revoke from a prior offline
+      // sign-out (AER-59 #5). Best-effort; never blocks init.
+      void retryPendingLogoutRevoke()
     }
   }
 
@@ -316,7 +361,101 @@ export function useMobileAuth() {
     }
   }
 
-  function signOut() {
+  /**
+   * Hardened mobile sign-out (AER-59). Sequence:
+   *   1. Best-effort flush of never-synced / queued maps (guest/offline maps).
+   *   2. Best-effort server-side revoke via POST /api/auth/logout, sent through
+   *      CapacitorHttp with the JWT attached as an explicit Cookie header (the
+   *      native cookie jar is unreliable across the WebView boundary on iOS).
+   *   3. Clear ALL local user data (maps/syncQueue/syncMeta) — previously
+   *      MISSING on mobile, which leaked the prior user's maps to the next
+   *      sign-in on the same device.
+   *   4. Delete the native session cookie that login pushed into
+   *      CapacitorCookies for the app origin.
+   *   5. Drop the stored session (removes nc-mobile-session, incl. the JWT).
+   *
+   * Every network/native step is guarded so sign-out can never throw or hang.
+   */
+  async function signOut() {
+    // 1. Flush unsynced/queued maps (+ pending debounced edits) before wiping
+    //    local state. Returns `allClean` = everything is safely on the server.
+    let allClean = false
+    try {
+      const { useSyncEngine } = await import('~/composables/useSyncEngine')
+      allClean = await useSyncEngine().flushBeforeLogout()
+    } catch { /* best-effort — proceed, treat as NOT clean */ }
+
+    // Capture the session token BEFORE it's dropped in step 5 so we can attach
+    // it to the revoke POST and, if that POST doesn't land, persist a pending
+    // marker to retry the revoke on next launch (AER-59 #5).
+    let token = ''
+    let cookieName = ''
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        const data = JSON.parse(stored)
+        token = data?.token || ''
+        cookieName = data?.cookieName || ''
+      }
+    } catch { /* malformed storage — no token to attach */ }
+
+    // 2. Server-side revoke (idempotent { ok: true }). Attach the JWT the same
+    //    way remoteFetch/syncFetch do so the epoch bump lands even when the
+    //    native cookie jar doesn't carry the session. Capped at 3s so a
+    //    black-hole network can't stall logout (AER-59 #4). Track landing.
+    let revokeOk = false
+    try {
+      const { CapacitorHttp } = await import('@capacitor/core')
+      const headers: Record<string, string> = {}
+      if (token && cookieName) headers.Cookie = `${cookieName}=${token}`
+      await Promise.race([
+        CapacitorHttp.post({ url: `${AUTH_BASE_URL}/api/auth/logout`, headers }).then(() => { revokeOk = true }),
+        new Promise(resolve => setTimeout(resolve, 3000)),
+      ])
+    } catch { /* best-effort — local sign-out still proceeds */ }
+
+    // If the revoke didn't succeed (offline/timeout/error), persist a marker so
+    // the server session gets revoked on the next online launch — otherwise the
+    // 30-day native JWT stays valid server-side. On success, clear any marker.
+    try {
+      if (!revokeOk && token && cookieName) {
+        localStorage.setItem('nc-pending-logout-revoke', JSON.stringify({ token, cookieName }))
+      } else if (revokeOk) {
+        localStorage.removeItem('nc-pending-logout-revoke')
+      }
+    } catch { /* best-effort — marker is an optimization, not required */ }
+
+    // 3. Clear local user-scoped data ONLY when everything is safely on the
+    //    server. If NOT clean (offline logout / failed push) keep the on-device
+    //    maps — they're the last surviving copy of some edits, userId-scoped so
+    //    inert for other accounts, and intact when this user signs back in.
+    try {
+      const { useDatabase } = await import('~/composables/useDatabase')
+      const { clearUserData, setCurrentUserId } = useDatabase()
+      if (allClean) {
+        await clearUserData()
+      } else {
+        console.warn('[mobile-auth] logout: unsynced local data present — keeping on-device maps (not wiping)')
+      }
+      await setCurrentUserId(null)
+    } catch { /* best-effort — still drop the session below */ }
+
+    // 4. Delete the native session cookie login pushed for the app origin.
+    try {
+      const { CapacitorCookies } = await import('@capacitor/core')
+      let cookieName = ''
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (stored) cookieName = JSON.parse(stored)?.cookieName || ''
+      } catch { /* ignore malformed storage */ }
+      if (cookieName) {
+        await CapacitorCookies.deleteCookie({ url: AUTH_BASE_URL, key: cookieName })
+      }
+      // Belt-and-suspenders: drop any remaining cookie for the auth origin.
+      await CapacitorCookies.clearCookies({ url: AUTH_BASE_URL })
+    } catch { /* best-effort — the stored JWT is dropped below regardless */ }
+
+    // 5. Drop the stored session (removes the JWT — the real auth carrier).
     localStorage.removeItem(STORAGE_KEY)
     _isSignedIn.value = false
     _user.value = null
@@ -333,6 +472,7 @@ export function useMobileAuth() {
     loginWithOAuth,
     remoteFetch,
     signOut,
+    retryPendingLogoutRevoke,
   }
 }
 

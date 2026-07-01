@@ -170,6 +170,11 @@ export function useSyncEngine() {
   // Online state
   const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
 
+  // Observable LWW conflicts — populated by recordConflict() on a 409 push and
+  // consumed by ConflictDialog. Declared here (before pushMap) so the conflict
+  // recorder can reference it directly.
+  const conflicts = ref<SyncConflict[]>([])
+
   if (typeof window !== 'undefined') {
     window.addEventListener('online', () => { isOnline.value = true })
     window.addEventListener('offline', () => { isOnline.value = false })
@@ -223,6 +228,14 @@ export function useSyncEngine() {
         // Session expired — don't queue, don't retry, just stop syncing
         state.syncStatus = 'error'
         disconnectSSE()
+      } else if (statusCode === 409) {
+        // Version conflict: the server holds a newer version than the one we
+        // pushed against (concurrent edit from another device). Silently keeping
+        // last-writer-wins here would drop the losing side's edits without any
+        // trace. Instead, surface an observable SyncConflict so the UI
+        // (ConflictDialog) can let the user pick which version to keep.
+        await recordConflict(mapId, doc).catch(() => {})
+        state.syncStatus = 'idle'
       } else if (statusCode === 423) {
         setTimeout(() => pushMap(mapId), 2000)
       } else if (statusCode === 429) {
@@ -344,6 +357,40 @@ export function useSyncEngine() {
     } catch {
       // Silent — SSE will retry
     }
+  }
+
+  // ─── Conflicts ───────────────────────────────────────────────────
+
+  /**
+   * Build an observable SyncConflict from the local doc + a fresh server
+   * snapshot and push it onto `conflicts` so ConflictDialog can prompt the
+   * user. Best-effort: if the server snapshot can't be fetched we still record
+   * the local side (with zeroed remote fields) rather than losing the signal.
+   * Deliberately does NOT overwrite the local map — the user's edits stay put
+   * until they explicitly resolve.
+   */
+  async function recordConflict(mapId: string, localDoc: DBMapDocument): Promise<void> {
+    let serverMap: any = null
+    try {
+      const response = await syncFetch<{ maps: any[]; deleted: string[] }>('/api/sync/pull', {
+        params: { mapId }
+      })
+      serverMap = response.maps?.[0] ?? null
+    } catch { /* server unreachable — record with local side only */ }
+
+    const conflict: SyncConflict = {
+      mapId,
+      localTitle: localDoc.title,
+      remoteTitle: serverMap?.title ?? localDoc.title,
+      localNodeCount: localDoc.nodes?.length ?? 0,
+      remoteNodeCount: serverMap?.data?.nodes?.length ?? 0,
+      localUpdatedAt: localDoc.updatedAt,
+      remoteUpdatedAt: serverMap?.updatedAt ? new Date(serverMap.updatedAt).getTime() : localDoc.updatedAt,
+    }
+
+    // De-dupe: one live conflict per map (replace an existing one so the counts
+    // stay fresh if the same map conflicts again before the user resolves).
+    conflicts.value = [...conflicts.value.filter(c => c.mapId !== mapId), conflict]
   }
 
   // ─── SSE ─────────────────────────────────────────────────────────
@@ -523,6 +570,71 @@ export function useSyncEngine() {
     }
   }
 
+  // ─── Logout flush ────────────────────────────────────────────────
+
+  /**
+   * Best-effort pre-logout flush (AER-59/AER-60 #3). Before local state is
+   * wiped on sign-out, push everything that isn't safely on the server yet so a
+   * user who created maps as a guest, edited offline, or has an edit still
+   * sitting in a debounce timer doesn't lose it the moment they log out.
+   *
+   * Steps, in order:
+   *   1. Flush every PENDING DEBOUNCED PUSH. `debouncedPush()` holds edits to
+   *      already-synced maps in in-memory 5s timers (`pushTimers`); fullSync
+   *      only pushes maps with no syncVersion, so without this step those last
+   *      edits would be wiped by clearUserData(). We clear each timer and push
+   *      the map synchronously (best-effort per map), then empty the map.
+   *   2. fullSync() — pushes never-synced maps + pulls remote changes.
+   *   3. replayQueue() — drains the persisted offline queue.
+   *
+   * Returns `allClean`: true only when EVERYTHING is safely on the server —
+   * online, no pending sync ops queued, and no unresolved conflicts. Callers
+   * use this to decide whether it's safe to wipe local data: when false, the
+   * on-device maps are the only surviving copy of some edits, so they must be
+   * kept.
+   *
+   * NEVER throws — every step is guarded so the logout sequence proceeds even
+   * if the network is down or the server is unreachable. When offline or not
+   * signed in there's nothing we can push, so it short-circuits and reports
+   * NOT clean (offline ⇒ data may only exist locally).
+   */
+  async function flushBeforeLogout(): Promise<boolean> {
+    if (!isSyncEnabled.value || !isOnline.value) return false
+
+    // 1. Flush pending debounced pushes (edits to already-synced maps still
+    //    waiting out their 5s timer). Snapshot the keys first because pushMap
+    //    mutates state and we're about to clear the map.
+    const pendingMapIds = Array.from(pushTimers.keys())
+    for (const mapId of pendingMapIds) {
+      const timer = pushTimers.get(mapId)
+      if (timer) clearTimeout(timer)
+      try {
+        await pushMap(mapId)
+      } catch { /* best-effort — never block logout */ }
+    }
+    pushTimers.clear()
+
+    // 2. Push never-synced maps + pull remote changes.
+    try {
+      await fullSync()
+    } catch { /* best-effort — never block logout */ }
+    // 3. Drain the persisted offline queue.
+    try {
+      await replayQueue()
+    } catch { /* best-effort — never block logout */ }
+
+    // Determine whether it's safe to wipe local data: everything must be on
+    // the server (online), nothing left queued, and no unresolved conflict.
+    let pending = 0
+    try {
+      pending = await db.countPendingSyncOps()
+    } catch {
+      // If we can't even read the queue count, assume NOT clean and keep data.
+      return false
+    }
+    return isOnline.value === true && pending === 0 && conflicts.value.length === 0
+  }
+
   // ─── Initialize ──────────────────────────────────────────────────
 
   async function initialize(): Promise<void> {
@@ -581,13 +693,29 @@ export function useSyncEngine() {
     }
   })
 
-  // Conflict resolution (stub — conflicts are resolved server-side via LWW)
-  const conflicts = ref<SyncConflict[]>([])
-
+  // Conflict resolution — surfaced via `conflicts` (populated by recordConflict
+  // on a 409 push) and resolved by the user through ConflictDialog.
   async function resolveConflict(mapId: string, resolution: 'local' | 'remote'): Promise<void> {
     if (resolution === 'local') {
+      // Keep local edits: re-stamp the local map's syncVersion ABOVE the
+      // server's current version so the re-push isn't rejected as stale again.
+      // Without this bump the push would 409 forever (local still carries the
+      // old version the conflict was detected against).
+      try {
+        const local = await db.getMap(mapId)
+        if (local) {
+          let serverVersion = local.syncVersion || 0
+          try {
+            const response = await syncFetch<{ maps: any[] }>('/api/sync/pull', { params: { mapId } })
+            const serverMap = response.maps?.[0]
+            if (serverMap?.syncVersion != null) serverVersion = Math.max(serverVersion, serverMap.syncVersion)
+          } catch { /* server unreachable — fall back to the local version */ }
+          await db.updateMapSyncVersion(mapId, serverVersion, local.checksum || '')
+        }
+      } catch { /* best-effort — pushMap still attempts below */ }
       await pushMap(mapId)
     } else {
+      // Keep server: pull overwrites the local map with the server snapshot.
       await pullMap(mapId)
     }
     conflicts.value = conflicts.value.filter(c => c.mapId !== mapId)
@@ -598,6 +726,7 @@ export function useSyncEngine() {
     syncStatus: computed(() => state.syncStatus),
     lastSyncAt: computed(() => state.lastSyncAt),
     pendingChanges: computed(() => state.pendingChanges),
+    isOnline,
     isSyncEnabled,
     conflicts,
 
@@ -607,6 +736,7 @@ export function useSyncEngine() {
     pullChanges,
     pullMap,
     fullSync,
+    flushBeforeLogout,
     queueForLater,
     replayQueue,
     resolveConflict,

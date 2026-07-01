@@ -47,7 +47,8 @@
         "offline": {
             "back_online": "Back online",
             "message": "Offline \u2014 changes saved locally",
-            "dismiss": "Dismiss"
+            "dismiss": "Dismiss",
+            "action_unavailable": "Unavailable offline \u2014 reconnect to use this"
         },
         "update": {
             "available": "Update available",

@@ -47,7 +47,8 @@
         "offline": {
             "back_online": "Ponovno na mre\u017ei",
             "message": "Izvan mre\u017ee \u2014 promjene spremljene lokalno",
-            "dismiss": "Odbaci"
+            "dismiss": "Odbaci",
+            "action_unavailable": "Nedostupno izvan mre\u017ee \u2014 ponovno se pove\u017ei za kori\u0161tenje"
         },
         "update": {
             "available": "Dostupna nadogradnja",

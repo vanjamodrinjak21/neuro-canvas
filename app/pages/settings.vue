@@ -609,7 +609,10 @@ async function handleMobileDeleteAccount() {
 async function handleMobileSignOut() {
   await aiSettings.clearAllSecrets()
   if (platformRef.isCapacitor.value) {
-    mobileAuth.signOut()
+    // Awaited: signOut is now async (flush + server revoke + clearUserData +
+    // native cookie clear) — let it finish before refreshing the session so the
+    // local-user fallback isn't read mid-teardown.
+    await mobileAuth.signOut()
     // Refresh nuxt-auth so it picks up the local-user fallback from localStorage
     try { const { getSession } = useAuth(); await getSession({ force: true }) } catch {}
     // Reset settings screen to home and re-read user

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 
 interface VersionRow {
   id: string
@@ -17,6 +18,11 @@ interface VersionRow {
 const props = defineProps<{ mapId: string }>()
 const emit = defineEmits<{ (e: 'close' | 'restored'): void }>()
 const { t, locale } = useI18n()
+
+// Restoring a version is a server call — gate it when offline. Viewing the
+// (already-loaded) history list stays available.
+const { isOnline } = useSyncEngine()
+const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
 
 const versions = ref<VersionRow[]>([])
 const loading = ref(true)
@@ -42,7 +48,7 @@ async function load() {
 }
 
 function askRestore(versionId: string) {
-  if (restoringId.value) return
+  if (restoringId.value || !isOnline.value) return
   pendingId.value = versionId
 }
 function cancelRestore() {
@@ -170,7 +176,8 @@ onKeyStroke('Escape', () => {
             <button
               v-else
               class="vh-btn vh-restore"
-              :disabled="!!restoringId"
+              :disabled="!!restoringId || !isOnline"
+              :title="offlineHint"
               @click="askRestore(v.id)"
             >
               {{ restoringId === v.id ? t('canvas.version_history.restoring') : t('canvas.version_history.restore') }}

@@ -56,6 +56,9 @@ export function useDesktopAuth() {
         localStorage.removeItem('nc-desktop-session')
       }
     }
+    // Retry any deferred server-side logout revoke from a prior offline
+    // sign-out (AER-59 #5). Best-effort; never blocks init.
+    void retryPendingLogoutRevoke()
   }
 
   // Pull the raw session JWT (the next-auth cookie) and persist it in the
@@ -552,11 +555,137 @@ export function useDesktopAuth() {
     return res.json() as Promise<T>
   }
 
-  function signOut() {
+  /**
+   * Hardened desktop sign-out (AER-59). Sequence:
+   *   1. Best-effort flush of never-synced / queued maps (guest/offline maps).
+   *   2. Best-effort server-side revoke via POST /api/auth/logout, sent through
+   *      the Tauri HTTP plugin with the JWT attached as an explicit Cookie
+   *      header (same pattern as syncFetch) so the server can bump the session
+   *      epoch even though the native cookie jar is unreliable across restarts.
+   *   3. Clear ALL local user data (maps/syncQueue/syncMeta) — previously
+   *      MISSING on desktop, which leaked the prior user's maps to the next
+   *      sign-in on the same machine.
+   *   4. Drop the stored session (removes nc-desktop-session, incl. the JWT).
+   *
+   * Cookie-jar note: @tauri-apps/plugin-http exposes only `fetch` in JS — there
+   * is no binding to clear its (Rust-side, disk-persisted) cookie jar. Auth for
+   * remoteFetch/syncFetch rides on the explicit token from nc-desktop-session,
+   * which we remove here; combined with the server-side epoch bump in step 2,
+   * any residual cookie in the jar no longer authenticates. Every network step
+   * is guarded so sign-out can never throw or hang.
+   */
+  async function signOut() {
+    // 1. Flush unsynced/queued maps (+ pending debounced edits) before wiping
+    //    local state. Returns `allClean` = everything is safely on the server.
+    let allClean = false
+    try {
+      const { useSyncEngine } = await import('~/composables/useSyncEngine')
+      allClean = await useSyncEngine().flushBeforeLogout()
+    } catch { /* best-effort — proceed, treat as NOT clean */ }
+
+    // Capture the session token BEFORE it's dropped in step 4 so we can attach
+    // it to the revoke POST and, if that POST doesn't land, persist a pending
+    // marker to retry the revoke on next launch (AER-59 #5).
+    let token = ''
+    let cookieName = ''
+    try {
+      const stored = localStorage.getItem('nc-desktop-session')
+      if (stored) {
+        const data = JSON.parse(stored)
+        token = data?.token || ''
+        cookieName = data?.cookieName || ''
+      }
+    } catch { /* malformed storage — no token to attach */ }
+
+    // 2. Server-side revoke (idempotent { ok: true }). Attach the JWT the same
+    //    way syncFetch does so the session cookie jar's unreliability doesn't
+    //    stop the epoch bump. Capped at 3s so a black-hole network can't stall
+    //    logout (AER-59 #4). Track whether it actually landed.
+    let revokeOk = false
+    try {
+      const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
+      const headers: Record<string, string> = {}
+      if (token && cookieName) headers.Cookie = `${cookieName}=${token}`
+      await Promise.race([
+        tauriFetch(`${AUTH_BASE_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: Object.keys(headers).length ? headers : undefined,
+        }).then(() => { revokeOk = true }),
+        new Promise(resolve => setTimeout(resolve, 3000)),
+      ])
+    } catch { /* best-effort — local sign-out still proceeds */ }
+
+    // If the revoke didn't succeed (offline/timeout/error), persist a marker so
+    // the server session gets revoked on the next online launch — otherwise the
+    // 30-day native JWT stays valid server-side. On success, clear any marker.
+    try {
+      if (!revokeOk && token && cookieName) {
+        localStorage.setItem('nc-pending-logout-revoke', JSON.stringify({ token, cookieName }))
+      } else if (revokeOk) {
+        localStorage.removeItem('nc-pending-logout-revoke')
+      }
+    } catch { /* best-effort — marker is an optimization, not required */ }
+
+    // 3. Clear local user-scoped data ONLY when everything is safely on the
+    //    server. If NOT clean (offline logout / failed push) keep the on-device
+    //    maps — they're the last surviving copy of some edits, userId-scoped so
+    //    inert for other accounts, and intact when this user signs back in.
+    try {
+      const { useDatabase } = await import('~/composables/useDatabase')
+      const { clearUserData, setCurrentUserId } = useDatabase()
+      if (allClean) {
+        await clearUserData()
+      } else {
+        console.warn('[desktop-auth] logout: unsynced local data present — keeping on-device maps (not wiping)')
+      }
+      await setCurrentUserId(null)
+    } catch { /* best-effort — still drop the session below */ }
+
+    // 4. Drop the stored session (removes the JWT — the real auth carrier).
     localStorage.removeItem('nc-desktop-session')
     _isSignedIn.value = false
     _user.value = null
     _loginError.value = null
+  }
+
+  /**
+   * Retry a deferred server-side logout revoke (AER-59 #5). If a previous
+   * sign-out couldn't reach the server (offline/timeout), we stored the session
+   * token in `nc-pending-logout-revoke`. On the next online launch we POST
+   * /api/auth/logout with that Cookie header so the residual 30-day native JWT
+   * is invalidated server-side, then clear the marker. Best-effort; never
+   * blocks and never throws.
+   */
+  async function retryPendingLogoutRevoke(): Promise<void> {
+    if (typeof window === 'undefined') return
+    let marker: { token?: string; cookieName?: string } | null = null
+    try {
+      const raw = localStorage.getItem('nc-pending-logout-revoke')
+      if (!raw) return
+      marker = JSON.parse(raw)
+    } catch {
+      // Malformed marker — drop it so we don't retry forever.
+      try { localStorage.removeItem('nc-pending-logout-revoke') } catch { /* ignore */ }
+      return
+    }
+    if (!marker?.token || !marker?.cookieName) {
+      try { localStorage.removeItem('nc-pending-logout-revoke') } catch { /* ignore */ }
+      return
+    }
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+
+    try {
+      const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
+      await Promise.race([
+        tauriFetch(`${AUTH_BASE_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { Cookie: `${marker.cookieName}=${marker.token}` },
+        }),
+        new Promise(resolve => setTimeout(resolve, 3000)),
+      ])
+    } catch { /* best-effort — leave the marker to retry next launch */ return }
+
+    try { localStorage.removeItem('nc-pending-logout-revoke') } catch { /* ignore */ }
   }
 
   return {
@@ -574,6 +703,7 @@ export function useDesktopAuth() {
     loginWithApple,
     remoteFetch,
     signOut,
+    retryPendingLogoutRevoke,
   }
 }
 

@@ -4,6 +4,10 @@ import type { GenerationStyle, GenerationTone } from '~/types/ai-generation'
 const props = defineProps<{
   visible: boolean
   isLoading?: boolean
+  // Set by the parent when server-side generation is unavailable (offline on a
+  // non-native shell). On native, AI runs on-device so this stays false.
+  offlineDisabled?: boolean
+  offlineHint?: string
   initial?: number
   initialStyle?: GenerationStyle
   initialTone?: GenerationTone
@@ -54,7 +58,7 @@ function setCount(value: number) {
 }
 
 function handleConfirm() {
-  if (props.isLoading) return
+  if (props.isLoading || props.offlineDisabled) return
   emit('confirm', clamp(count.value), style.value, tone.value)
 }
 
@@ -188,7 +192,8 @@ watch(() => props.visible, (isVisible) => {
               </button>
               <button
                 class="nc-btn nc-btn-primary"
-                :disabled="isLoading"
+                :disabled="isLoading || offlineDisabled"
+                :title="offlineDisabled ? offlineHint : undefined"
                 @click="handleConfirm"
               >
                 <span v-if="isLoading" class="i-lucide-loader-2 animate-pulse" />

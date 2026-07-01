@@ -4,6 +4,7 @@ import NcDialog from '~/components/ui/NcDialog.vue'
 import NcButton from '~/components/ui/NcButton.vue'
 import NcSelect, { type NcSelectOption } from '~/components/ui/NcSelect.vue'
 import { useDocumentUpload, type UploadIntent } from '~/composables/useDocumentUpload'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 
 // ---------------------------------------------------------------------------
 // DocumentUploadModal — Document RAG upload dialog (plan §8 UI)
@@ -32,6 +33,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const toast = useToast()
+
+// Upload → server ingest (presign / confirm / generate / attach) is fully
+// online-only. Gate the primary CTA when offline; the cached documents list
+// elsewhere stays readable offline.
+const { isOnline } = useSyncEngine()
+const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
 
 const {
   state,
@@ -140,6 +147,9 @@ const intentOptions = computed(() => [
 // Whether the primary action button is disabled.
 const primaryDisabled = computed(() => {
   if (isBusy.value) return true
+  // Offline: the whole flow (upload → ingest) needs the server. The "Done"
+  // state after a successful attach only closes the dialog, so allow it.
+  if (!isOnline.value && !attached.value) return true
   if (!hasFile.value) return true
   // When attaching without a prop-supplied map, a target must be picked.
   if (intent.value === 'attach_source' && !props.mapId && !targetMapId.value) return true
@@ -474,6 +484,7 @@ onMounted(() => {
         variant="primary"
         :loading="isBusy"
         :disabled="primaryDisabled"
+        :title="offlineHint"
         @click="onPrimary"
       >
         {{ primaryLabel }}

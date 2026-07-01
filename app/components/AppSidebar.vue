@@ -185,12 +185,16 @@ function onUserLeave() {
   }, 300)
 }
 
-function onSignOut() {
+async function onSignOut() {
   if (desktopAuth) {
-    desktopAuth.signOut()
+    // desktopAuth.signOut() now owns the full teardown (flush + server revoke +
+    // clearUserData + drop session), so the early return no longer skips local
+    // data clearing — and there's no double-clear because handleSignOut (which
+    // also clears) is NOT called on the desktop path.
+    await desktopAuth.signOut()
     return
   }
-  handleSignOut()
+  await handleSignOut()
 }
 
 // Search → launches the global command palette (Cmd/Ctrl+K). The old sidebar

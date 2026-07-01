@@ -107,6 +107,10 @@ function makeBridgeSurface(): MapStoreSurface {
 async function tryStartCollab() {
   const config = useRuntimeConfig()
   if (!config.public.collabEnabled || !config.public.partykitHost) return
+  // Real-time collab is server-backed (PartyKit WebSocket + /api/collab/token).
+  // Skip starting it while offline — the map is already usable from its local
+  // snapshot, and the online watcher re-attempts sync when connectivity returns.
+  if (!syncEngine.isOnline.value) return
   const shareToken = (route.query.via as string | undefined) ?? null
   try {
     const res = await $fetch<{
@@ -447,6 +451,15 @@ const exportUtils = useExport()
 
 // Sync engine
 const syncEngine = useSyncEngine()
+
+// Server-side AI generation gate (AER-60 #1). On the native shells AI runs
+// on-device via ONNX, so generation stays available offline there — only the
+// WEB path hits the server. Gate the generate/expand dialogs' primary CTAs when
+// offline AND not native. Collab (below) is always server-backed.
+const aiGenOfflineDisabled = computed(() => !syncEngine.isOnline.value && !platform.isNative.value)
+const offlineActionHint = computed(() =>
+  syncEngine.isOnline.value ? undefined : t('common.offline.action_unavailable'),
+)
 
 // Semantic processor
 const semanticProcessor = useSemanticProcessor()
@@ -2449,6 +2462,8 @@ useHead({
     <LazyCanvasGenerateMapDialog
       :visible="showGenerateMapDialog"
       :is-loading="isAILoading"
+      :offline-disabled="aiGenOfflineDisabled"
+      :offline-hint="offlineActionHint"
       @close="showGenerateMapDialog = false"
       @generate="handleGenerateMap"
     />
@@ -2456,6 +2471,8 @@ useHead({
     <LazyCanvasExpandMapDialog
       :visible="showExpandDialog"
       :is-loading="isAILoading"
+      :offline-disabled="aiGenOfflineDisabled"
+      :offline-hint="offlineActionHint"
       :initial="expandNodeCount"
       :initial-style="expandStyle"
       :initial-tone="expandTone"

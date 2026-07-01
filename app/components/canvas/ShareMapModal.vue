@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, reactive } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
+import { useSyncEngine } from '~/composables/useSyncEngine'
 import NcSelect from '~/components/ui/NcSelect.vue'
 
 interface ShareRow {
@@ -17,6 +18,11 @@ interface ShareRow {
 const props = defineProps<{ mapId: string; mapTitle: string; nodeCount: number }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 const { t } = useI18n()
+
+// Sharing is server-only (create/revoke links, send email invites). Gate the
+// mutating actions when offline; the offline hint reuses common.offline.*.
+const { isOnline } = useSyncEngine()
+const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
 
 const shares = ref<ShareRow[]>([])
 const loading = ref(true)
@@ -230,7 +236,7 @@ onMounted(load)
         <section class="create-row">
           <div class="row-head">
             <div class="row-title">{{ t('canvas.share_modal.create_new') }}</div>
-            <div class="row-hint">{{ t('canvas.share_modal.editor_requires_signin') }}</div>
+            <div class="row-hint">{{ offlineHint ?? t('canvas.share_modal.editor_requires_signin') }}</div>
           </div>
           <div class="row-fields">
             <input
@@ -253,7 +259,7 @@ onMounted(load)
               class="expiry-select"
               @update:model-value="v => newExpiry = v as typeof newExpiry"
             />
-            <button class="btn-primary" :disabled="creating" @click="createLink">
+            <button class="btn-primary" :disabled="creating || !isOnline" :title="offlineHint" @click="createLink">
               {{ creating ? t('canvas.share_modal.creating') : t('canvas.share_modal.create') }}
             </button>
           </div>
@@ -300,7 +306,8 @@ onMounted(load)
                 <button
                   class="icon-btn"
                   :aria-label="t('canvas.share_modal.invite_aria')"
-                  :disabled="!!s.revokedAt"
+                  :disabled="!!s.revokedAt || !isOnline"
+                  :title="offlineHint"
                   :class="{ 'is-open': inviteForms[s.id]?.open }"
                   @click="toggleInvite(s.id)"
                 >
@@ -309,7 +316,7 @@ onMounted(load)
                 <button class="icon-btn" :aria-label="t('canvas.share_modal.copy_link')" :disabled="!!s.revokedAt" @click="copyToken(s.token)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                 </button>
-                <button v-if="!s.revokedAt" class="icon-btn danger" :aria-label="t('canvas.share_modal.revoke')" @click="revoke(s.id)">
+                <button v-if="!s.revokedAt" class="icon-btn danger" :aria-label="t('canvas.share_modal.revoke')" :disabled="!isOnline" :title="offlineHint" @click="revoke(s.id)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" /></svg>
                 </button>
               </div>
@@ -337,7 +344,8 @@ onMounted(load)
                   <span v-else class="invite-hint">{{ t('canvas.share_modal.invite_hint') }}</span>
                   <button
                     class="btn-primary btn-sm"
-                    :disabled="inviteForms[s.id]!.sending"
+                    :disabled="inviteForms[s.id]!.sending || !isOnline"
+                    :title="offlineHint"
                     @click="sendInvite(s.id)"
                   >
                     {{ inviteForms[s.id]!.sending ? t('canvas.share_modal.invite_sending') : t('canvas.share_modal.invite_send') }}
