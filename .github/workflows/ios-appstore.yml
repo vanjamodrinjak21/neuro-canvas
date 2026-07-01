@@ -125,7 +125,7 @@ jobs:
         env:
           DEVICE_UDID: ${{ inputs.device_udid }}
         run: |
-          python3 -m pip install --quiet --disable-pip-version-check pyjwt cryptography
+          python3 -m pip install --quiet --disable-pip-version-check --break-system-packages pyjwt cryptography
           python3 - <<'PY'
           import os, time, json, urllib.request, urllib.error, jwt
           kid, iss = os.environ["ASC_KEY_ID"], os.environ["ASC_ISSUER_ID"]
@@ -159,7 +159,7 @@ jobs:
       # the limit; nothing local is affected.
       - name: Revoke all development certificates (tester-only account)
         run: |
-          python3 -m pip install --quiet --disable-pip-version-check pyjwt cryptography
+          python3 -m pip install --quiet --disable-pip-version-check --break-system-packages pyjwt cryptography
           python3 - <<'PY'
           import os, time, json, urllib.request, urllib.error, jwt
           kid, iss = os.environ["ASC_KEY_ID"], os.environ["ASC_ISSUER_ID"]
