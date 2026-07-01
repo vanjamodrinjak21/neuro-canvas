@@ -37,3 +37,16 @@ If you believe a secret has been committed:
 3. Contact maintainers so the secret can be purged from history.
 
 This repository ignores `.env`, `.env.local`, `*.dump`, `*.sql.gz`, and similar patterns by default. The only env file checked in is `.env.example`, which contains placeholders only.
+
+## Dependency risk register
+
+Known `npm audit` findings we have reviewed and accepted, with rationale (last reviewed 2026-07-01):
+
+| Advisory chain | Severity | Reach | Rationale |
+| --- | --- | --- | --- |
+| `undici` ≤6.26.0 via `miniflare` → `partykit` | High | **Dev only** | Only loaded by the PartyKit CLI for local collab dev/deploy; never bundled into the production server. Waiting on upstream `partykit` to bump `miniflare`. |
+| `esbuild` dev-server advisories via `partykit`, `@eslint/config-inspector` | Moderate | Dev only | Affects the esbuild *dev server*, which we never expose; build-only usage here. |
+| `@hono/node-server` via `@prisma/dev` → `prisma` | Moderate | Dev only | Prisma CLI development tooling; not part of the runtime `@prisma/client`. |
+| `uuid` <11.1.1 via `next-auth@4` | Moderate | Runtime | Advisory requires calling uuid v3/v5/v6 with a caller-supplied `buf`; next-auth only generates v4 ids without `buf`. Real fix is the next-auth v5 (Auth.js) migration, tracked separately. `npm audit fix --force` would downgrade to next-auth 3 — rejected. |
+
+Re-run `npm audit --omit=dev` before each release; anything new that is production-reachable must be fixed or added here with rationale before shipping.
