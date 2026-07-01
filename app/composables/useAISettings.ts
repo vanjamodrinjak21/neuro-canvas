@@ -27,6 +27,69 @@ function _isCapacitor(): boolean {
     && !!(window as any).Capacitor?.isNativePlatform?.()
 }
 
+/**
+ * Stable, provider-scoped vault label for NATIVE-written BYOK keys (AER-61).
+ *
+ * The web flow labels each vault row with the volatile local provider id
+ * (`label: id`) — fine for a single browser session, but on native the local
+ * provider id is regenerated per install, so a fresh device would create a
+ * SECOND vault row for the same provider instead of updating the account's one
+ * key. Keying the upsert (`userId_provider_label`) on the provider TYPE gives a
+ * single, cross-device-stable row per provider per account — the whole point of
+ * account-linked keys. Web is deliberately left byte-for-byte unchanged.
+ */
+function _nativeVaultLabel(providerType: AIProviderType): string {
+  return `nc-native:${providerType}`
+}
+
+interface VaultCredentialMeta {
+  id: string
+  provider: string
+  label: string | null
+  keyHash?: string
+  encryptionVersion?: number
+}
+
+/**
+ * Authenticated vault call over the NATIVE HTTP transport, reusing each shell's
+ * own `remoteFetch` (which already attaches the persisted JWT as an explicit
+ * Cookie header — the pattern documented in useSyncEngine.syncFetch). Desktop
+ * (`useDesktopAuth`) speaks `RequestInit`; mobile (`useMobileAuth`) speaks
+ * `{ method, headers, data }`. This adapts the two so callers work in one shape
+ * and never re-implement the cookie/JWT logic.
+ *
+ * `auth` is the desktop/mobile composable instance; `tauri` picks the shape.
+ * Returns the parsed JSON body (both remoteFetch impls already parse). Throws
+ * on non-2xx (remoteFetch throws with the status in the message) so callers can
+ * distinguish 404 (missing) from transport failures.
+ */
+async function _nativeVaultFetch<T = unknown>(
+  auth: { remoteFetch: (path: string, options?: any) => Promise<any> },
+  tauri: boolean,
+  path: string,
+  options?: { method?: string; body?: unknown },
+): Promise<T> {
+  const method = options?.method || 'GET'
+  if (tauri) {
+    // Desktop remoteFetch takes RequestInit: body must be a JSON string and the
+    // Content-Type set explicitly.
+    const init: RequestInit = { method }
+    if (options?.body !== undefined) {
+      init.body = JSON.stringify(options.body)
+      init.headers = { 'Content-Type': 'application/json' }
+    }
+    return auth.remoteFetch(path, init) as Promise<T>
+  }
+  // Mobile remoteFetch takes { method, headers, data }: CapacitorHttp serialises
+  // `data` itself, so pass the object through.
+  const opts: { method?: string; headers?: Record<string, string>; data?: unknown } = { method }
+  if (options?.body !== undefined) {
+    opts.data = options.body
+    opts.headers = { 'Content-Type': 'application/json' }
+  }
+  return auth.remoteFetch(path, opts) as Promise<T>
+}
+
 // Shared state across all instances
 const state = reactive<{
   settings: AISettings
@@ -43,6 +106,12 @@ const state = reactive<{
 // One review/owner key-seed network attempt per app session (set only once a
 // signed-in request is actually made — see seedReviewKey()).
 let _reviewSeedAttempted = false
+
+// One vault reconcile (AER-61 migration + pull) per app session, spent only
+// once a native signed-in list fetch actually runs — so a cold-start call while
+// signed out leaves it unspent for a later retry (sign-in often lands AFTER the
+// first initialize()). Mirrors _reviewSeedAttempted's cold-start handling.
+let _vaultSyncAttempted = false
 
 export function useAISettings() {
   const db = useDatabase()
@@ -69,9 +138,11 @@ export function useAISettings() {
    */
   async function initialize(): Promise<void> {
     if (state.isInitialized) {
-      // Already loaded — still attempt the (idempotent) native review-key seed,
-      // since sign-in often happens AFTER the first initialize() call.
+      // Already loaded — still attempt the (idempotent) native review-key seed
+      // and vault reconcile, since sign-in often happens AFTER the first
+      // initialize() call (both are one-shot + no-op when not signed in).
       void seedReviewKey()
+      void syncVaultOnInit()
       return
     }
     state.isLoading = true
@@ -184,12 +255,159 @@ export function useAISettings() {
       }
       // Native: seed the review/owner key (no-op on web / when not signed in).
       void seedReviewKey()
+      // Native (AER-61): reconcile on-device BYOK keys with the account vault —
+      // migrate local-only keys up, pull account keys down onto a fresh device.
+      // No-op on web / guests / signed-out / offline; awaited so a fresh device
+      // has its keys populated before the first generation resolves a provider.
+      await syncVaultOnInit()
     } catch (e) {
       state.error = e instanceof Error ? e.message : 'Failed to load AI settings'
       console.error('Failed to initialize AI settings:', e)
     } finally {
       state.isLoading = false
     }
+  }
+
+  /**
+   * NATIVE + signed-in + online (AER-61): reconcile on-device BYOK keys with the
+   * account's server vault so keys are account-linked and cross-device. Runs
+   * once per initialize(). Three effects, all strictly additive & idempotent:
+   *
+   *   (a) MIGRATION (no loss, no plaintext at rest): any provider that has a
+   *       readKey()-decryptable localApiKey but whose credentialId does NOT
+   *       resolve to a real vault row is pushed to the vault via write-through.
+   *       Keyed on "vault row resolves", NOT on the `local-` string — so it also
+   *       retries earlier write-throughs that failed offline. The plaintext is
+   *       unwrapped on THIS device (where the material exists) and travels only
+   *       over the authenticated HTTPS POST; never persisted or logged.
+   *
+   *   (b) PULL (cross-device magic): for each account provider whose key is NOT
+   *       already present locally in usable form, reveal it, wrapKey() it into
+   *       localApiKey, and set credentialId. This lights up a fresh device.
+   *
+   * Guard: NEVER clobber a key the user already has on-device (same rule as
+   * seedReviewKey) — providers with a usable localApiKey are left untouched by
+   * the pull. NEVER throws; any failure leaves local state exactly as it was.
+   */
+  async function syncVaultOnInit(): Promise<void> {
+    if (_vaultSyncAttempted) return
+    const ready = nativeAuthIfReady()
+    // Not native / signed-out / offline — leave the attempt UNSPENT so a later
+    // call (after sign-in) actually runs the reconcile.
+    if (!ready) return
+
+    let list: VaultCredentialMeta[]
+    try {
+      const res = await _nativeVaultFetch<{ credentials?: VaultCredentialMeta[] }>(
+        ready.auth,
+        ready.tauri,
+        '/api/vault/credentials',
+      )
+      list = Array.isArray(res?.credentials) ? res.credentials : []
+    } catch {
+      // Offline / server error — do nothing; keys stay local. Leave the attempt
+      // UNSPENT so it retries on the next initialize().
+      return
+    }
+    // Reached the server with a signed-in session — spend the one-shot.
+    _vaultSyncAttempted = true
+
+    const vaultIds = new Set(list.map(c => c.id))
+    let changed = false
+
+    // ── (a) Migration + offline-write retry ────────────────────────────────
+    // Push any provider whose credentialId doesn't resolve to a live vault row
+    // but which still holds a decryptable local key. Idempotent via the
+    // provider-scoped label upsert (userId_provider_label).
+    for (const provider of state.settings.providers) {
+      if (provider.type === 'ollama' || provider.type === 'local') continue
+      const resolvesToVaultRow = !!provider.credentialId && vaultIds.has(provider.credentialId)
+      if (resolvesToVaultRow) continue
+      if (!provider.localApiKey) continue
+      // Unwrap on-origin (material lives here). null = wrapping material lost →
+      // nothing to migrate, leave the provider for the user to re-enter.
+      const raw = await readWrappedKey(provider.localApiKey)
+      if (!raw) continue
+      const ok = await vaultWriteThrough(provider, raw)
+      if (ok) {
+        // Newly-created/updated row — keep the pull below from re-revealing it.
+        if (provider.credentialId) vaultIds.add(provider.credentialId)
+        changed = true
+      }
+      // raw drops out of scope here; never stored, never logged.
+    }
+
+    // ── (b) Pull: populate providers missing a usable on-device key ─────────
+    // Match a vault row to a local provider by TYPE (the native label is
+    // provider-scoped). A provider that already has a localApiKey is respected
+    // (don't-clobber guard) and skipped.
+    for (const cred of list) {
+      const provider = state.settings.providers.find(p => p.type === cred.provider)
+      // Don't clobber a user-entered / already-present on-device key.
+      if (provider?.localApiKey) {
+        // Ensure the credentialId points at the real vault row (self-heal a
+        // stale `local-` placeholder now that we know the account row).
+        if (provider.credentialId !== cred.id && (!provider.credentialId || provider.credentialId.startsWith('local-'))) {
+          provider.credentialId = cred.id
+          changed = true
+        }
+        continue
+      }
+      // Reveal the account key and cache it locally (wrapped).
+      let revealed: { provider?: string; apiKey?: string } | null
+      try {
+        revealed = await _nativeVaultFetch<{ provider?: string; apiKey?: string }>(
+          ready.auth,
+          ready.tauri,
+          `/api/vault/credentials/${cred.id}/reveal`,
+        )
+      } catch {
+        // 404 (row vanished) / offline — skip this one, try the rest.
+        continue
+      }
+      const key = revealed?.apiKey
+      if (!key) continue
+      const providerType = (revealed.provider || cred.provider) as AIProviderType
+      let target = state.settings.providers.find(p => p.type === providerType)
+      if (target?.localApiKey) continue // re-check guard (async gap)
+      if (!target) {
+        // Fresh device with no local provider of this type yet — create it from
+        // the template WITHOUT a key (no redundant write-through; the row already
+        // exists on the account), then cache the revealed key locally below.
+        target = await addProvider(providerType)
+      }
+      // Cache the account key locally (AES-GCM wrapped) and point at the real
+      // vault row so the read-through/rotation logic works on this device.
+      target.localApiKey = await wrapKey(key)
+      target.credentialId = cred.id
+      target.isEnabled = true
+      changed = true
+      // key drops out of scope; never persisted in plaintext, never logged.
+    }
+
+    // Fresh-device default promotion: if the active default has no usable key
+    // (e.g. only the on-device `local` provider was auto-registered), promote a
+    // provider we just populated so generation works immediately. Mirrors the
+    // existing Capacitor self-heal rule — only fires when the default is broken,
+    // so a working user choice is never overridden.
+    if (changed) {
+      const currentDefault = state.settings.providers.find(p => p.id === state.settings.defaultProviderId)
+      const defaultUsable = !!currentDefault
+        && currentDefault.isEnabled
+        && (currentDefault.type === 'local'
+          ? true
+          : !!(currentDefault.localApiKey || currentDefault.credentialId))
+      if (!defaultUsable) {
+        const promote = state.settings.providers.find(p =>
+          p.isEnabled && p.type !== 'ollama' && p.type !== 'local' && !!p.localApiKey)
+        if (promote) {
+          state.settings.defaultProviderId = promote.id
+          for (const p of state.settings.providers) p.isDefault = (p.id === promote.id)
+        }
+      }
+    }
+
+    if (changed) await save()
   }
 
   /**
@@ -284,6 +502,68 @@ export function useAISettings() {
   }
 
   /**
+   * Native + signed-in helper: resolve the desktop/mobile auth instance IF this
+   * is a native shell and the user is actually signed in AND online. Returns
+   * null otherwise (web, guest, signed-out, or offline) so every vault path can
+   * gate on a single truthy check and pure-local behaviour is preserved for
+   * guests/signed-out/web. NEVER throws.
+   */
+  function nativeAuthIfReady(): { auth: any; tauri: boolean } | null {
+    if (typeof window === 'undefined') return null
+    const tauri = _isTauri()
+    const cap = _isCapacitor()
+    if (!tauri && !cap) return null
+    // Offline → no vault calls; caller keeps the local cache untouched.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return null
+    try {
+      const auth = tauri ? useDesktopAuth() : useMobileAuth()
+      if (!auth?.isSignedIn?.value) return null
+      return { auth, tauri }
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Native write-through (AER-61): after the local (offline-cache) key is set,
+   * mirror the RAW key into the server vault so it becomes account-linked and
+   * cross-device. On success, replace the `local-<id>` placeholder credentialId
+   * with the real vault id. On any failure (offline / transport / server) we
+   * leave the local key + placeholder in place and return false — the key is
+   * NEVER lost, the user is NEVER blocked, and the next initialize() migration
+   * pass retries the write (keyed on "no real vault row"). The plaintext travels
+   * ONLY over the authenticated HTTPS vault POST; it is never logged.
+   */
+  async function vaultWriteThrough(provider: AIProviderConfig, rawApiKey: string): Promise<boolean> {
+    const ready = nativeAuthIfReady()
+    if (!ready) return false
+    try {
+      const result = await _nativeVaultFetch<{ ok: boolean; credential?: { id: string } }>(
+        ready.auth,
+        ready.tauri,
+        '/api/vault/credentials',
+        {
+          method: 'POST',
+          body: {
+            provider: provider.type,
+            rawValue: rawApiKey,
+            label: _nativeVaultLabel(provider.type),
+          },
+        },
+      )
+      if (result?.ok && result.credential?.id) {
+        provider.credentialId = result.credential.id
+        return true
+      }
+      return false
+    } catch {
+      // Offline / server error — keep the local cache + placeholder; do not log
+      // the key or the error body (may echo request context). Retried on init.
+      return false
+    }
+  }
+
+  /**
    * Add a new provider
    */
   async function addProvider(
@@ -315,8 +595,15 @@ export function useAISettings() {
         // IndexedDB. Wrap with AES-GCM-256 so an IndexedDB dump / backup
         // theft / dev-tools snoop reveals only ciphertext. Legacy
         // plaintext keys still read via readKey() during transition.
+        // This local wrap is the OFFLINE CACHE — always written first so the
+        // key can never be lost even if the network step below fails.
         provider.localApiKey = await wrapKey(apiKey)
         provider.credentialId = `local-${id}`
+        // AER-61 write-through: when signed-in + online, mirror the RAW key into
+        // the server vault so it's account-linked & cross-device, and swap the
+        // `local-<id>` placeholder for the real vault id. On failure this is a
+        // no-op (local key stays; retried on next initialize migration pass).
+        await vaultWriteThrough(provider, apiKey)
       } else if (vault.isVaultAvailable.value) {
         // Web: send raw key to server vault (server-only encryption v4)
         try {
@@ -384,9 +671,32 @@ export function useAISettings() {
 
     if (_isTauri() || _isCapacitor()) {
       // Native shells (Tauri / Capacitor): store API key locally in
-      // IndexedDB, wrapped with AES-GCM-256 (see secureKeyStore.ts).
+      // IndexedDB, wrapped with AES-GCM-256 (see secureKeyStore.ts). The local
+      // wrap is the OFFLINE CACHE and is written first so a failed network step
+      // can never lose the key the user just typed.
+      const prevCredentialId = provider.credentialId
       provider.localApiKey = apiKey ? await wrapKey(apiKey) : ''
       provider.credentialId = apiKey ? `local-${id}` : ''
+      if (apiKey) {
+        // AER-61 write-through: mirror the RAW key into the server vault so the
+        // rotation propagates to the account's other devices. Replaces the
+        // `local-<id>` placeholder with the real vault id on success; on failure
+        // the local key stays and initialize()'s migration pass retries.
+        await vaultWriteThrough(provider, apiKey)
+      } else {
+        // Removal: also delete the account-linked vault row so a cross-device
+        // pull won't resurrect the key. Only attempt when the previous id was a
+        // REAL vault row (not the `local-` placeholder). Best-effort — never
+        // block the user, never log the key.
+        if (prevCredentialId && !prevCredentialId.startsWith('local-')) {
+          const ready = nativeAuthIfReady()
+          if (ready) {
+            try {
+              await _nativeVaultFetch(ready.auth, ready.tauri, `/api/vault/credentials/${prevCredentialId}`, { method: 'DELETE' })
+            } catch { /* offline / already gone — local removal already done */ }
+          }
+        }
+      }
     } else if (vault.isVaultAvailable.value) {
       if (apiKey) {
         // Web: send raw key to server vault (server-only encryption v4)
@@ -699,6 +1009,7 @@ export function useAISettings() {
     // Actions
     initialize,
     seedReviewKey,
+    syncVaultOnInit,
     save,
 
     // Provider actions
