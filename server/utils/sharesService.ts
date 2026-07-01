@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid'
 import { prisma } from './prisma'
+import { assertMapOwnership, OwnershipError } from './ownership'
 import type { ShareRole } from '../generated/prisma'
 
 export class ShareError extends Error {
@@ -29,9 +30,14 @@ const ROLE_TO_ENUM: Record<string, ShareRole> = {
 }
 
 async function assertOwnership(mapId: string, userId: string): Promise<void> {
-  const map = await prisma.map.findUnique({ where: { id: mapId }, select: { id: true, userId: true } })
-  if (!map) throw new ShareError(404, 'Map not found')
-  if (map.userId !== userId) throw new ShareError(403, 'Not the map owner')
+  try {
+    await assertMapOwnership(mapId, userId)
+  } catch (err) {
+    if (err instanceof OwnershipError) {
+      throw new ShareError(err.reason === 'not_found' ? 404 : 403, err.message)
+    }
+    throw err
+  }
 }
 
 export async function listShares(mapId: string, ownerUserId: string) {

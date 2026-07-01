@@ -8,6 +8,7 @@
 import { createHash } from 'node:crypto'
 import * as Y from 'yjs'
 import { prisma } from './prisma'
+import { assertMapOwnership, OwnershipError } from './ownership'
 import { yDocToMapDocument, mapDocumentToYDoc } from '../../app/utils/ydocConverter'
 import { cache, cacheKeys } from './redis'
 import type { MapDocument, Node, Edge, Camera, MapSettings } from '../../app/types'
@@ -87,13 +88,14 @@ export interface VersionDiff {
 }
 
 async function assertOwnership(mapId: string, userId: string) {
-  const map = await prisma.map.findUnique({
-    where: { id: mapId },
-    select: { id: true, userId: true, ydocVersion: true, syncVersion: true }
-  })
-  if (!map) throw new VersionError(404, 'Map not found')
-  if (map.userId !== userId) throw new VersionError(403, 'Not the map owner')
-  return map
+  try {
+    return await assertMapOwnership(mapId, userId)
+  } catch (err) {
+    if (err instanceof OwnershipError) {
+      throw new VersionError(err.reason === 'not_found' ? 404 : 403, err.message)
+    }
+    throw err
+  }
 }
 
 export async function listVersions(
