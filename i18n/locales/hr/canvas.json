@@ -423,6 +423,14 @@
       "notes_placeholder": "Bilješke...",
       "notes_full_placeholder": "Dodaj bilješke o ovom čvoru..."
     },
+    "cross_map_link": {
+      "label": "Poveži s mapom",
+      "none": "Bez povezane mape",
+      "linked": "Povezano",
+      "open": "Otvori povezanu mapu",
+      "indicator_tooltip": "Ovaj čvor vodi na drugu mapu",
+      "target_missing": "Ta mapa više nije dostupna — veza je uklonjena."
+    },
     "node_props_form": {
       "category": "Kategorija",
       "color": "Boja",
