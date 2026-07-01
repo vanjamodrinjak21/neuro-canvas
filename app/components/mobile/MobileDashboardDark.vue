@@ -8,6 +8,7 @@
 
 import { safeImageUrl } from '~/utils/safeUrl'
 import { resolveDisplayName } from '~/utils/userDisplay'
+import { useQuickCapture } from '~/composables/useQuickCapture'
 
 interface MapItem {
   id: string
@@ -96,6 +97,12 @@ function onRow(id: string) {
   haptics.selection()
   emit('openMap', id)
 }
+
+const quickCapture = useQuickCapture()
+function onCapture() {
+  haptics.selection()
+  quickCapture.open()
+}
 </script>
 
 <template>
@@ -107,6 +114,18 @@ function onRow(id: string) {
         <span class="mdash-wordmark">Neuro<span class="mdash-wordmark-em">Canvas</span></span>
       </div>
       <div class="mdash-top-right">
+        <!-- Quick-capture (AER-70): drop a thought / link into the Inbox map.
+             Opens the globally-mounted MobileQuickCaptureSheet via shared state. -->
+        <button
+          type="button"
+          class="mdash-capture"
+          :aria-label="t('mobile.capture.action')"
+          @click="onCapture"
+        >
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M10 3V17M3 10H17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </button>
         <NuxtLink to="/settings" class="mdash-avatar" :aria-label="t('common.nav.settings')">
           <img v-if="avatarSrc" :src="avatarSrc" :alt="user?.name || ''" class="mdash-avatar-img" referrerpolicy="no-referrer">
           <span v-else>{{ userInitials }}</span>
@@ -323,6 +342,18 @@ function onRow(id: string) {
   color: var(--mdash-mint);
 }
 .mdash-top-right { display: flex; align-items: center; gap: 10px; }
+
+.mdash-capture {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  background: rgba(0, 210, 190, 0.10);
+  border: 1px solid rgba(0, 210, 190, 0.30);
+  color: var(--mdash-mint);
+  cursor: pointer;
+  transition: background 150ms ease, transform 120ms ease;
+}
+.mdash-capture:active { transform: scale(0.94); background: rgba(0, 210, 190, 0.18); }
 
 .mdash-live-chip {
   display: flex; align-items: center; gap: 6px;

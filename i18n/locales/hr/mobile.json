@@ -326,6 +326,22 @@
       "generateMeta": "TEMA · STREAM",
       "modeEditor": "Uređivač",
       "modeGraph": "Graf"
+    },
+    "capture": {
+      "dialogLabel": "Brzo bilježenje u Pristiglo",
+      "close": "Zatvori",
+      "eyebrow": "PRISTIGLO — BRZO BILJEŽENJE",
+      "titleSans": "Zabilježi",
+      "titleSerif": "misao.",
+      "subtitle": "Ubaci bilješku ili poveznicu u mapu Pristiglo. Posloži je kasnije.",
+      "textLabel": "BILJEŠKA",
+      "linkLabel": "POVEZNICA",
+      "placeholder": "Upiši misao ili zalijepi poveznicu…",
+      "action": "Dodaj u Pristiglo",
+      "saving": "Dodajem…",
+      "saved": "Spremljeno u Pristiglo",
+      "error": "Spremanje nije uspjelo. Pokušaj ponovno.",
+      "hint": "Radi izvan mreže — sinkronizira se kad se vratiš online."
     }
   }
 }

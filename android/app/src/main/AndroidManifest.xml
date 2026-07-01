@@ -35,6 +35,23 @@
                 <data android:scheme="neurocanvas" />
             </intent-filter>
 
+            <!-- Quick-capture share target (AER-70). Makes NeuroCanvas appear in
+                 the Android "Share" sheet for plain text and links from any app.
+                 The shared EXTRA_TEXT is translated into a neurocanvas://capture
+                 deep link inside MainActivity.onCreate/onNewIntent so it flows
+                 through the exact same appUrlOpen → useQuickCapture path as the
+                 URL scheme above (single dispatch, no bespoke bridge). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
         </activity>
 
         <provider

@@ -326,6 +326,22 @@
       "generateMeta": "TOPIC · STREAM",
       "modeEditor": "Editor",
       "modeGraph": "Graph"
+    },
+    "capture": {
+      "dialogLabel": "Quick capture to Inbox",
+      "close": "Close",
+      "eyebrow": "INBOX — QUICK CAPTURE",
+      "titleSans": "Capture a",
+      "titleSerif": "thought.",
+      "subtitle": "Drop a note or link into your Inbox map. Sort it into place later.",
+      "textLabel": "NOTE",
+      "linkLabel": "LINK",
+      "placeholder": "Type a thought, or paste a link…",
+      "action": "Add to Inbox",
+      "saving": "Adding…",
+      "saved": "Saved to Inbox",
+      "error": "Couldn't save. Try again.",
+      "hint": "Works offline — syncs when you're back online."
     }
   }
 }

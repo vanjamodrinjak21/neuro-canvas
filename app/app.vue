@@ -100,6 +100,11 @@ useHead({
 
     <!-- Global toast stack -->
     <Toast />
+
+    <!-- Quick-capture sheet (AER-70) — mounted once, driven by shared
+         useQuickCapture state (header button or neurocanvas://capture deep
+         link / Android share intent). Renders nothing off mobile/native. -->
+    <MobileQuickCaptureSheet />
   </div>
 </template>
 
