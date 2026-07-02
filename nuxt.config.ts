@@ -148,6 +148,18 @@ export default defineNuxtConfig({
 
   // Route rules
   routeRules: {
+    // Landing LCP: the hero poster must be discoverable before the SPA
+    // bundle executes. Link preload headers fire at document-response time
+    // (a client-injected <link> would be minutes too late in CPU terms).
+    // Media-split: wide viewports paint the AVIF poster (scrub rail /
+    // static picture), narrow ones paint the JPG via the mobile video's
+    // poster attribute. `type` lets non-AVIF engines skip the first hint.
+    // Scoped to `/` only so app routes never pay for the download.
+    '/': {
+      headers: {
+        Link: '</landing/poster.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high; media="(min-width: 768px)", </landing/poster.jpg>; rel=preload; as=image; fetchpriority=high; media="(max-width: 767px)"'
+      }
+    },
     '/api/auth/**': {
       headers: {
         'X-Frame-Options': 'DENY',

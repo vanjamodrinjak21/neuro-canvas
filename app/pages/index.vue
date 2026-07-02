@@ -7,12 +7,10 @@ import { refreshScrollTriggers, useLenis } from '~/composables/useLenis'
 
 definePageMeta({ layout: false })
 
+// The hero poster (LCP element) is preloaded via a Link response header on
+// the `/` route rule (nuxt.config) — a client-injected <link> would fire
+// long after the SPA mounts and never beat the <img> request itself.
 useHead({
-  // The hero poster is the LCP element in every mode — hint it early.
-  // `type` lets non-AVIF engines skip the preload instead of double-fetching.
-  link: [
-    { rel: 'preload', as: 'image', href: '/landing/poster.avif', type: 'image/avif', fetchpriority: 'high' },
-  ],
   // Landing-only override of the app-shell viewport: marketing pages must
   // allow pinch zoom (WCAG 1.4.4); the app surfaces keep their own meta.
   meta: [
