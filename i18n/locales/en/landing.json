@@ -27,6 +27,18 @@
       "title_b": "how you actually think.",
       "subtitle_v2": "Drop in an idea. Connect it to another. Ask the AI to keep going. NeuroCanvas turns scattered notes into structured maps — without the cards-and-folders ceremony."
     },
+    "scrub_chapters": {
+      "ch2": {
+        "line_1": "Ideas become nodes.",
+        "line_2": "Links become reasoning.",
+        "body": "Type one sentence. The AI drafts the branches and groups the clusters — the map stays yours to rearrange."
+      },
+      "ch3": {
+        "line_1": "Your maps stay yours.",
+        "line_2": "On every device.",
+        "body": "Local-first SQLite storage, your own AI key, and one-click export to JSON or Markdown."
+      }
+    },
     "screenshot": {
       "window_title": "Cognitive Psychology — NeuroCanvas",
       "explorer_label": "EXPLORER",

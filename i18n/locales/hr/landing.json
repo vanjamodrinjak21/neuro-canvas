@@ -27,6 +27,18 @@
       "title_b": "kako stvarno razmišljaš.",
       "subtitle_v2": "Ubaci ideju. Spoji je s drugom. Pitaj AI da nastavi. NeuroCanvas pretvara razbacane bilješke u strukturirane mape — bez ceremonije s karticama i mapama."
     },
+    "scrub_chapters": {
+      "ch2": {
+        "line_1": "Ideje postaju čvorovi.",
+        "line_2": "Veze postaju zaključivanje.",
+        "body": "Upiši jednu rečenicu. AI skicira grane i grupira klastere — a mapa ostaje tvoja za preslagivanje."
+      },
+      "ch3": {
+        "line_1": "Tvoje mape ostaju tvoje.",
+        "line_2": "Na svakom uređaju.",
+        "body": "Lokalna SQLite pohrana, vlastiti AI ključ i izvoz u JSON ili Markdown jednim klikom."
+      }
+    },
     "screenshot": {
       "window_title": "Kognitivna psihologija — NeuroCanvas",
       "explorer_label": "PREGLEDNIK",
