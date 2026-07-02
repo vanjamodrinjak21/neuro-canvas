@@ -307,7 +307,13 @@ export function useSyncEngine() {
       state.syncStatus = 'idle'
       state.lastSyncAt = Date.now()
       await db.saveSyncMeta({ lastSyncAt: Date.now() })
-    } catch {
+    } catch (err: any) {
+      if ((err?.statusCode || err?.response?.status) === 401) {
+        // Account deleted or session revoked — stop all sync immediately
+        state.syncStatus = 'error'
+        disconnectSSE()
+        return
+      }
       state.syncStatus = isOnline.value ? 'error' : 'offline'
     }
   }
@@ -426,22 +432,34 @@ export function useSyncEngine() {
     eventSource.onerror = () => {
       disconnectSSE()
 
-      // Stop reconnecting after too many attempts (likely auth failure, not transient)
-      if (reconnectAttempts >= 5) {
-        state.syncStatus = 'error'
-        return
-      }
-
-      // Only reconnect if we still have an active session
       if (!isSyncEnabled.value) {
         state.syncStatus = 'disabled'
         return
       }
 
-      // Exponential backoff reconnect
-      const delay = Math.min(1000 * 2 ** reconnectAttempts, 30000)
-      reconnectAttempts++
-      reconnectTimer = setTimeout(connectSSE, delay)
+      // EventSource exposes no HTTP status in onerror. Probe /api/sync/pull
+      // (auth-protected, cheap) to distinguish a terminal 401 (account deleted
+      // or session revoked) from a transient network blip before scheduling any
+      // reconnect attempt. Using current time as `since` returns 0 maps.
+      const attemptReconnect = () => {
+        if (reconnectAttempts >= 5) {
+          state.syncStatus = 'error'
+          return
+        }
+        const delay = Math.min(1000 * 2 ** reconnectAttempts, 30000)
+        reconnectAttempts++
+        reconnectTimer = setTimeout(connectSSE, delay)
+      }
+
+      syncFetch<unknown>('/api/sync/pull', { params: { since: new Date().toISOString() } })
+        .then(() => attemptReconnect())
+        .catch((probeErr: any) => {
+          if ((probeErr?.statusCode || probeErr?.response?.status) === 401) {
+            state.syncStatus = 'error'
+            return
+          }
+          attemptReconnect()
+        })
     }
   }
 

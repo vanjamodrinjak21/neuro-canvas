@@ -360,9 +360,13 @@ export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body)
   if (!result.success) {
     const firstIssue = result.error.issues[0]
+    console.error('[validateBody] Zod issues:', JSON.stringify(result.error.issues))
+    // path.join('.') is empty for root-level union failures; fall back to the
+    // Zod error code (e.g. "invalid_union") so the log message is actionable.
+    const path = firstIssue?.path.join('.') || firstIssue?.code || 'root'
     throw createError({
       statusCode: 400,
-      statusMessage: `Validation failed: ${firstIssue?.path.join('.')} — ${firstIssue?.message}`
+      message: `Validation failed: ${path} — ${firstIssue?.message}`,
     })
   }
   return result.data
