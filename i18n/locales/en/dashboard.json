@@ -67,8 +67,8 @@
         },
         "import_modal": {
             "title": "Import File",
-            "description": "Import Markdown or OPML outline files",
-            "accepts": "Accepts: .md, .opml",
+            "description": "Import a NeuroCanvas export, or a Markdown or OPML outline",
+            "accepts": "Accepts: .json, .md, .opml",
             "cancel": "Cancel"
         },
         "delete_confirm": {

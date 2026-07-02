@@ -67,8 +67,8 @@
         },
         "import_modal": {
             "title": "Uvezi datoteku",
-            "description": "Uvezite Markdown ili OPML datoteke",
-            "accepts": "Prihva\u0107a: .md, .opml",
+            "description": "Uvezite NeuroCanvas izvoz ili Markdown/OPML strukturu",
+            "accepts": "Prihva\u0107a: .json, .md, .opml",
             "cancel": "Odustani"
         },
         "delete_confirm": {

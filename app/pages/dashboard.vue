@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
-import { parseLosslessMarkdown, parseMapJson, MapImportError } from '~/utils/mapImport'
+import { parseLosslessMarkdown, parseMapJson, parseOpml, parseMarkdownOutline, MapImportError } from '~/utils/mapImport'
 import { useMapStore } from '~/stores/mapStore'
 import { useAISettings } from '~/composables/useAISettings'
 import { useSyncEngine } from '~/composables/useSyncEngine'
@@ -525,34 +525,36 @@ async function processImportedFile(file: File) {
     return
   }
 
-  // ── Markdown: try lossless first, fall back to legacy outline parser ─
-  if (ext === 'md') {
+  const fileTitle = file.name.replace(/\.[^/.]+$/, '')
+
+  // ── Markdown: NeuroCanvas lossless export first, else generic outline ─
+  if (ext === 'md' || ext === 'markdown') {
     try {
       const lossless = parseLosslessMarkdown(text)
       if (lossless) {
         await importLosslessDoc(lossless)
         return
       }
+      // Not a NeuroCanvas export — treat as a generic Markdown outline
+      // (Obsidian, plain bullet trees, exported notes).
+      const doc = parseMarkdownOutline(text)
+      await importLosslessDoc({ ...doc, title: fileTitle || doc.title })
     } catch (err) {
-      const msg = err instanceof MapImportError ? err.message : 'Markdown is not a NeuroCanvas export'
-      alert(`Could not parse markdown export: ${msg}`)
-      return
+      const msg = err instanceof MapImportError ? err.message : 'Could not read Markdown file'
+      alert(`Could not import Markdown: ${msg}`)
     }
-    const nodes = parseMarkdown(text)
-    if (nodes.length === 0) {
-      alert('No content found in file.')
-      return
-    }
-    const title = file.name.replace(/\.[^/.]+$/, '')
-    await createMapFromNodes(nodes, title)
     return
   }
 
+  // ── OPML: Workflowy / OmniOutliner / podcast / feed-reader exports ───
   if (ext === 'opml') {
-    const nodes = parseOPML(text)
-    if (nodes.length === 0) { alert('No content found in file.'); return }
-    const title = file.name.replace(/\.[^/.]+$/, '')
-    await createMapFromNodes(nodes, title)
+    try {
+      const doc = parseOpml(text)
+      await importLosslessDoc({ ...doc, title: fileTitle || doc.title })
+    } catch (err) {
+      const msg = err instanceof MapImportError ? err.message : 'Could not read OPML file'
+      alert(`Could not import OPML: ${msg}`)
+    }
     return
   }
 
@@ -578,70 +580,6 @@ async function importLosslessDoc(doc: DBMapDocument) {
   await navigateTo(`/map/${finalDoc.id}`)
 }
 
-function parseMarkdown(text: string): { content: string; level: number }[] {
-  const lines = text.split('\n')
-  const nodes: { content: string; level: number }[] = []
-  for (const line of lines) {
-    const headerMatch = line.match(/^(#{1,6})\s+(.+)$/)
-    if (headerMatch?.[1] && headerMatch[2]) {
-      nodes.push({ content: headerMatch[2], level: headerMatch[1].length })
-    }
-  }
-  return nodes
-}
-
-function parseOPML(text: string): { content: string; level: number }[] {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(text, 'text/xml')
-  const nodes: { content: string; level: number }[] = []
-  function traverse(element: Element, level: number) {
-    const outlines = element.querySelectorAll(':scope > outline')
-    outlines.forEach(outline => {
-      const nodeText = outline.getAttribute('text') || outline.getAttribute('title') || ''
-      if (nodeText) {
-        nodes.push({ content: nodeText, level })
-        traverse(outline, level + 1)
-      }
-    })
-  }
-  const body = doc.querySelector('body')
-  if (body) traverse(body, 1)
-  return nodes
-}
-
-async function createMapFromNodes(nodes: { content: string; level: number }[], title: string) {
-  mapStore.newDocument()
-  mapStore.setTitle(title)
-  const nodeStack: { id: string; level: number }[] = []
-  let currentY = 100
-  const xSpacing = 200
-  const levelIndices: Record<number, number> = {}
-  for (const node of nodes) {
-    const level = node.level
-    levelIndices[level] = (levelIndices[level] || 0)
-    const xPos = 100 + (level - 1) * xSpacing
-    const yPos = currentY
-    const newNode = mapStore.addNode({
-      content: node.content,
-      position: { x: xPos, y: yPos }
-    })
-    while (nodeStack.length > 0 && (nodeStack[nodeStack.length - 1]?.level ?? Number.NEGATIVE_INFINITY) >= level) {
-      nodeStack.pop()
-    }
-    const parent = nodeStack[nodeStack.length - 1]
-    if (parent) {
-      mapStore.addEdge(parent.id, newNode.id)
-    }
-    nodeStack.push({ id: newNode.id, level })
-    levelIndices[level]++
-    currentY += newNode.size.height + 30
-  }
-  mapStore.resolveOverlaps()
-  const doc = mapStore.toSerializable()
-  await db.saveMap(doc)
-  if (syncEngine.isSyncEnabled.value) syncEngine.debouncedPush(doc.id)
-  await navigateTo(`/map/${doc.id}`)
-}
 
 // Templates
 async function createFromTemplate(template: typeof templates.value[0]) {

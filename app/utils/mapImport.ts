@@ -1,7 +1,7 @@
 /**
- * Lossless import helpers for NeuroCanvas mind-map files.
+ * Import helpers for NeuroCanvas mind-map files.
  *
- * Two formats are supported:
+ * Lossless (NeuroCanvas-native) formats:
  *   - JSON: produced by `useExport().exportAsJson` — already lossless;
  *     parseMapJson validates shape.
  *   - Markdown (lossless): produced by `useExport().exportAsMarkdown` —
@@ -9,11 +9,24 @@
  *     <!--nc-edges …--> trailer. parseLosslessMarkdown reconstructs the
  *     full DBMapDocument byte-for-byte.
  *
- * If a markdown file does NOT contain the nc-document marker, callers
- * should fall back to the legacy outline parser in dashboard.vue.
+ * Generic (foreign) formats — migration tooling for Workflowy /
+ * OmniOutliner / Obsidian / OPML podcast exports:
+ *   - OPML: parseOpml maps <outline> nesting → node hierarchy.
+ *   - Markdown outline: parseMarkdownOutline maps ATX headings and
+ *     indented bullet lists → node hierarchy.
+ *
+ * Both generic parsers synthesise a fresh DBMapDocument (new ids, tidy
+ * tree layout, default styles) exactly as the store would, so downstream
+ * rendering/sizing behaves identically to a hand-built map.
+ *
+ * If a markdown file does NOT contain the nc-document marker,
+ * parseLosslessMarkdown returns null so the caller can fall back to the
+ * generic parseMarkdownOutline.
  */
+import { nanoid } from 'nanoid'
 import type { DBMapDocument, DBNode, DBEdge } from '~/composables/useDatabase'
-import type { Anchor, Camera, MapSettings } from '~/types'
+import type { Anchor, Camera, MapSettings, NodeStyle, EdgeStyle } from '~/types'
+import { measureNodeSize } from '~/utils/nodeSizing'
 
 const NC_DOCUMENT_RE = /<!--nc-document ([\s\S]+?)-->/
 const NC_EDGES_RE = /<!--nc-edges ([\s\S]+?)-->/
@@ -22,6 +35,159 @@ export class MapImportError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'MapImportError'
+  }
+}
+
+// ── Shared defaults ──────────────────────────────────────────────────
+// Kept in sync with mapStore's DEFAULT_* constants so a node/edge/doc
+// synthesised here is indistinguishable from one built via the store.
+// (mapStore is a Vue-pinned module and can't be imported into a plain
+// util, so the small style seeds are mirrored rather than re-exported.)
+
+const DEFAULT_NODE_STYLE: NodeStyle = {
+  shape: 'rounded',
+  fillColor: '#111113',
+  borderColor: '#27272A',
+  borderWidth: 1.5,
+  textColor: '#FAFAFA',
+  fontSize: 14,
+  fontWeight: 500,
+  shadowEnabled: true,
+  glowEnabled: false
+}
+
+const DEFAULT_EDGE_STYLE: EdgeStyle = {
+  type: 'bezier',
+  strokeColor: '#2A2A30',
+  strokeWidth: 2,
+  arrowStart: 'none',
+  arrowEnd: 'arrow',
+  animated: false
+}
+
+function defaultSettings(): MapSettings {
+  return {
+    gridEnabled: true,
+    gridSize: 32,
+    snapToGrid: true,
+    backgroundColor: '#0D0D0F',
+    defaultNodeStyle: { ...DEFAULT_NODE_STYLE },
+    defaultEdgeStyle: { ...DEFAULT_EDGE_STYLE }
+  }
+}
+
+function defaultCamera(): Camera {
+  return { x: 0, y: 0, zoom: 1 }
+}
+
+/**
+ * Hard cap on how many nodes a generic import may produce. Mirrors the
+ * upper bound the AI generator and the store's load-time cap respect, so
+ * an enormous OPML/outline can't lock up the reactive store or canvas.
+ */
+export const MAX_IMPORT_NODES = 10000
+
+/**
+ * A single parsed outline item before it becomes a DBNode: its text and
+ * its depth in the hierarchy (0 = top level). Ordering is preserved.
+ */
+interface OutlineItem {
+  content: string
+  depth: number
+}
+
+/**
+ * Turn an ordered, depth-tagged outline into a laid-out DBMapDocument.
+ *
+ * Layout mirrors the legacy `createMapFromNodes` tidy layout used by the
+ * dashboard: x grows with depth (indent columns), y advances top-to-bottom
+ * by each node's measured height. Parent/child edges are added via a depth
+ * stack. Every node gets fresh ids, `now` timestamps, the default style,
+ * and `type: 'text'` — matching mapStore.addNode exactly.
+ *
+ * Throws MapImportError when the outline is empty (nothing importable) or
+ * exceeds MAX_IMPORT_NODES (matches how the JSON importer refuses to load
+ * an oversize map rather than silently truncating).
+ */
+function buildDocFromOutline(items: OutlineItem[], title: string): DBMapDocument {
+  const cleaned = items
+    .map(it => ({ content: it.content.trim(), depth: Math.max(0, it.depth) }))
+    .filter(it => it.content.length > 0)
+
+  if (cleaned.length === 0) {
+    throw new MapImportError('No importable content found')
+  }
+  if (cleaned.length > MAX_IMPORT_NODES) {
+    throw new MapImportError(
+      `Outline has ${cleaned.length} items, which exceeds the ${MAX_IMPORT_NODES}-node import limit`
+    )
+  }
+
+  const now = Date.now()
+  const nodes: DBNode[] = []
+  const edges: DBEdge[] = []
+  // Stack of { id, depth } for the current ancestor chain.
+  const stack: { id: string; depth: number }[] = []
+  const xSpacing = 200
+  let currentY = 100
+  let rootNodeId: string | null = null
+
+  for (const item of cleaned) {
+    const style: NodeStyle = { ...DEFAULT_NODE_STYLE }
+    const size = measureNodeSize(item.content, style.fontSize, style.fontWeight, style.shape)
+    const id = nanoid()
+    const isRoot = nodes.length === 0
+    const x = 100 + item.depth * xSpacing
+
+    nodes.push({
+      id,
+      type: 'text',
+      position: { x, y: currentY },
+      size,
+      content: item.content,
+      style,
+      collapsed: false,
+      locked: false,
+      isRoot,
+      metadata: {},
+      createdAt: now,
+      updatedAt: now
+    })
+    if (isRoot) rootNodeId = id
+    currentY += size.height + 30
+
+    // Pop ancestors at or deeper than this item so the parent is the
+    // nearest shallower node.
+    while (stack.length > 0 && (stack[stack.length - 1]?.depth ?? -1) >= item.depth) {
+      stack.pop()
+    }
+    const parent = stack[stack.length - 1]
+    if (parent) {
+      const node = nodes[nodes.length - 1]!
+      node.parentId = parent.id
+      edges.push({
+        id: nanoid(),
+        sourceId: parent.id,
+        targetId: id,
+        style: { ...DEFAULT_EDGE_STYLE },
+        createdAt: now,
+        updatedAt: now
+      })
+    }
+    stack.push({ id, depth: item.depth })
+  }
+
+  return {
+    id: nanoid(),
+    title: title.trim() || 'Imported Map',
+    nodes,
+    edges,
+    camera: defaultCamera(),
+    settings: defaultSettings(),
+    rootNodeId: rootNodeId ?? undefined,
+    createdAt: now,
+    updatedAt: now,
+    tags: []
   }
 }
 
@@ -187,6 +353,185 @@ export function parseLosslessMarkdown(text: string): DBMapDocument | null {
     updatedAt: meta.updatedAt,
     tags: Array.isArray(meta.tags) ? meta.tags : []
   }
+}
+
+// ── OPML ─────────────────────────────────────────────────────────────
+
+/**
+ * Parse an OPML outline (Workflowy, OmniOutliner, podcast tools, generic
+ * feed readers) into a fresh DBMapDocument.
+ *
+ * `<outline>` nesting becomes the node hierarchy; each outline's `text`
+ * (falling back to `title`) attribute becomes the node content. The map
+ * title comes from `<head><title>`, falling back to a default.
+ *
+ * The top-level outline(s) become root node(s). When there is more than
+ * one top-level outline, a synthetic root (named from the OPML `<title>`)
+ * is inserted so the map has a single connected root — the store and
+ * canvas assume one primary topic.
+ *
+ * Rejects malformed OPML (unparseable XML, missing `<body>`, or no usable
+ * outline text) with MapImportError.
+ */
+export function parseOpml(text: string): DBMapDocument {
+  if (typeof DOMParser === 'undefined') {
+    throw new MapImportError('OPML import requires a DOM environment')
+  }
+  const trimmed = text.trim()
+  if (!trimmed) throw new MapImportError('OPML file is empty')
+
+  const doc = new DOMParser().parseFromString(trimmed, 'text/xml')
+
+  // Browsers surface XML parse failures via a <parsererror> element rather
+  // than throwing; treat its presence as malformed input.
+  if (doc.querySelector('parsererror')) {
+    throw new MapImportError('OPML is not well-formed XML')
+  }
+  const root = doc.documentElement
+  if (!root || root.nodeName.toLowerCase() !== 'opml') {
+    throw new MapImportError('Not an OPML document (missing <opml> root)')
+  }
+
+  const body = doc.querySelector('body')
+  if (!body) throw new MapImportError('OPML has no <body>')
+
+  const headTitle = doc.querySelector('head > title')?.textContent?.trim() || ''
+
+  const outlineText = (el: Element): string =>
+    (el.getAttribute('text') ?? el.getAttribute('title') ?? '').trim()
+
+  const items: OutlineItem[] = []
+
+  // Depth-first walk that preserves document order. `:scope > outline`
+  // keeps us to direct children so nesting maps to depth 1:1.
+  const walk = (el: Element, depth: number): void => {
+    const children = Array.from(el.children).filter(
+      c => c.nodeName.toLowerCase() === 'outline'
+    )
+    for (const child of children) {
+      const content = outlineText(child)
+      // Skip contentless separators but still descend so their children
+      // aren't orphaned — they graft onto the current depth.
+      if (content) {
+        items.push({ content, depth })
+        walk(child, depth + 1)
+      } else {
+        walk(child, depth)
+      }
+    }
+  }
+
+  const topLevel = Array.from(body.children).filter(
+    c => c.nodeName.toLowerCase() === 'outline'
+  )
+  const topWithText = topLevel.filter(el => outlineText(el))
+
+  if (topWithText.length === 0) {
+    throw new MapImportError('OPML contains no outline items with text')
+  }
+
+  const mapTitle = headTitle || 'Imported OPML'
+
+  if (topWithText.length === 1) {
+    // Single natural root — use it directly.
+    walk(body, 0)
+  } else {
+    // Multiple roots — synthesise one from the head title so the map is
+    // singly-rooted and everything hangs beneath it.
+    items.push({ content: mapTitle, depth: 0 })
+    walk(body, 1)
+  }
+
+  return buildDocFromOutline(items, mapTitle)
+}
+
+// ── Generic Markdown outline ─────────────────────────────────────────
+
+// Content is trimmed downstream, so we capture greedily and let the
+// trailing whitespace fall inside the group (avoids `.*\S` + `\s*$`
+// backtracking overlap). Group 1 = markers/indent, group 2 = text.
+const HEADING_RE = /^(#{1,6})[ \t]+(\S.*)$/
+// Bullet list item: capture leading indent (marker non-capturing) and text.
+const BULLET_RE = /^([ \t]*)[-*+][ \t]+(\S.*)$/
+// Ordered list item: `1.` / `2)` etc.
+const ORDERED_RE = /^([ \t]*)\d+[.)][ \t]+(\S.*)$/
+
+/** Convert a leading-whitespace run to a bullet indent level (tab or 2 spaces = 1). */
+function indentLevel(indent: string): number {
+  let cols = 0
+  for (const ch of indent) cols += ch === '\t' ? 2 : 1
+  return Math.floor(cols / 2)
+}
+
+/**
+ * Parse a generic Markdown outline (Obsidian notes, plain outlines,
+ * exported bullet trees) into a fresh DBMapDocument.
+ *
+ * Hierarchy rules:
+ *   - ATX headings (`#`..`######`) set the structural spine: `#` is depth
+ *     0, `##` depth 1, and so on. A heading nests under the nearest
+ *     shallower heading.
+ *   - Bullet / ordered list items (`-`, `*`, `+`, `1.`) attach under the
+ *     most recent heading, with their own indentation adding depth beneath
+ *     it. With no preceding heading they hang off the first item as root.
+ *   - Blank lines, code fences, and non-list prose are ignored.
+ *
+ * Rejects an empty/unparseable outline with MapImportError so the
+ * dashboard fallback chain can surface a clean message.
+ */
+export function parseMarkdownOutline(text: string): DBMapDocument {
+  const lines = text.split(/\r?\n/)
+  const items: OutlineItem[] = []
+  // Depth of the most recent heading (list items nest beneath it).
+  let headingBaseDepth = -1
+  let sawHeading = false
+  let inFence = false
+
+  for (const line of lines) {
+    // Toggle fenced code blocks (``` or ~~~) — their contents are literal.
+    const fence = line.trim()
+    if (/^(?:```|~~~)/.test(fence)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+
+    const heading = line.match(HEADING_RE)
+    if (heading) {
+      const depth = heading[1]!.length - 1 // '#' → 0, '######' → 5
+      items.push({ content: heading[2]!.trim(), depth })
+      headingBaseDepth = depth
+      sawHeading = true
+      continue
+    }
+
+    const bullet = line.match(BULLET_RE) ?? line.match(ORDERED_RE)
+    if (bullet) {
+      const indent = indentLevel(bullet[1]!)
+      // List items sit one level below the current heading (if any).
+      const depth = headingBaseDepth + 1 + indent
+      items.push({ content: bullet[2]!.trim(), depth })
+      continue
+    }
+    // Everything else (blank lines, prose, tables) is skipped.
+  }
+
+  if (items.length === 0) {
+    throw new MapImportError('No headings or list items found in Markdown outline')
+  }
+
+  // With no heading spine, several top-level bullets would each become a
+  // disconnected root. Synthesise a single root so the map is connected —
+  // mirrors the multi-root OPML handling.
+  if (!sawHeading) {
+    const topLevel = items.filter(it => it.depth === 0).length
+    if (topLevel > 1) {
+      for (const it of items) it.depth += 1
+      items.unshift({ content: 'Imported Outline', depth: 0 })
+    }
+  }
+
+  return buildDocFromOutline(items, 'Imported Outline')
 }
 
 // Re-export Anchor for parser consumers (avoids dead-code linter issues).
