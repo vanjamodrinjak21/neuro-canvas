@@ -5,7 +5,7 @@
 # Usage: ./scripts/build-landing-sequence.sh [path-to-master.mp4]
 #
 # Output:
-#   public/landing/seq/frame_0001.avif ... frame_NNNN.avif  (1920w, color-graded)
+#   public/landing/seq/frame_0001.avif ... frame_NNNN.avif  (WIDTH-wide, color-graded)
 #   public/landing/poster.jpg / poster.avif                 (first frame, LCP fallback)
 #   public/landing/hero-mobile.mp4                          (720p autoplay loop for <768px)
 #   public/landing/seq/manifest.json                        ({count,width,height,pattern})
@@ -13,12 +13,13 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-SRC="${1:-.assets-src/landing/hero-master-nonlinear.mp4}"
+SRC="${1:-.assets-src/landing/hero-master-4k.mp4}"
 OUT_SEQ="public/landing/seq"
 OUT_DIR="public/landing"
-# -13° hue rotation + 1.2 saturation calibrated against brand teal #00D2BE
-# (raw Seedance output drifts ~20° cold/cyan; see AER-73)
-GRADE="hue=h=-13:s=1.2"
+# Hue rotation + saturation calibrated against brand teal #00D2BE per master:
+# raw Seedance drifts ~20° cold/cyan (-13 fit the 1080p master), but the
+# ByteDance aigc 4K upscale re-warms the palette, so the 4K master needs -8.
+GRADE="${GRADE:-hue=h=-8:s=1.15}"
 # every 2nd frame of the 289-frame master -> 145 frames, plenty for a 400vh rail
 SELECT="select=not(mod(n\,2))"
 # 2560w from the 4K upscaled master: supersampled + near-1:1 on retina canvases
