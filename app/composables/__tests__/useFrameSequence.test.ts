@@ -8,6 +8,7 @@ import {
   probeAvifDecode,
   resetAvifProbeForTests,
   useFrameSequence,
+  warmupPlan,
 } from '../useFrameSequence'
 
 // ─── Pure helpers ────────────────────────────────────────────────────
@@ -112,6 +113,28 @@ describe('frameUrlFor', () => {
   it('expands the %04d pattern with 1-based numbering', () => {
     expect(frameUrlFor('/landing/seq/frame_%04d.avif', 0)).toBe('/landing/seq/frame_0001.avif')
     expect(frameUrlFor('/landing/seq/frame_%04d.avif', 144)).toBe('/landing/seq/frame_0145.avif')
+  })
+})
+
+describe('warmupPlan', () => {
+  it('yields the first n indices in order', () => {
+    expect(warmupPlan(145, 4)).toEqual([0, 1, 2, 3])
+  })
+
+  it('caps the plan at the sequence length', () => {
+    expect(warmupPlan(3, 24)).toEqual([0, 1, 2])
+  })
+
+  it('floors fractional n and rejects non-positive n', () => {
+    expect(warmupPlan(145, 2.9)).toEqual([0, 1])
+    expect(warmupPlan(145, 0)).toEqual([])
+    expect(warmupPlan(145, -5)).toEqual([])
+  })
+
+  it('returns empty for degenerate counts', () => {
+    expect(warmupPlan(0, 24)).toEqual([])
+    expect(warmupPlan(-1, 24)).toEqual([])
+    expect(warmupPlan(Number.NaN, 24)).toEqual([])
   })
 })
 
@@ -223,5 +246,37 @@ describe('useFrameSequence', () => {
     expect(seq.currentBitmap.value).toBeNull()
     seq.setProgress(1)
     expect(seq.currentIndex.value).toBe(-1)
+  })
+
+  it('warmup decodes the requested leading frames exactly once', async () => {
+    const { fetchMock } = stubFetchAndBitmap({ avifDecodes: true })
+    // radius 0 keeps load()'s own prefetch to frame 0 only.
+    const seq = useFrameSequence({ manifestUrl: '/landing/seq/manifest.json', radius: 0 })
+    await seq.load()
+    await vi.waitFor(() => expect(seq.ready.value).toBe(true))
+
+    await expect(seq.warmup(3)).resolves.toBe(3)
+    // Re-warming is fully served from the cache — no extra fetches.
+    const before = fetchMock.mock.calls.length
+    await expect(seq.warmup(3)).resolves.toBe(3)
+    expect(fetchMock.mock.calls.length).toBe(before)
+
+    const frameUrls = fetchMock.mock.calls
+      .map(call => String(call[0]))
+      .filter(u => u.includes('/frame_'))
+    expect(new Set(frameUrls).size).toBe(frameUrls.length)
+    expect(frameUrls).toContain('/landing/seq/frame_0002.avif')
+    expect(frameUrls).toContain('/landing/seq/frame_0003.avif')
+    // Warmup never presents — frame 0 (from load) stays current.
+    expect(seq.currentIndex.value).toBe(0)
+  })
+
+  it('warmup no-ops before the manifest loads and after dispose', async () => {
+    stubFetchAndBitmap({ avifDecodes: true })
+    const seq = useFrameSequence({ manifestUrl: '/landing/seq/manifest.json' })
+    await expect(seq.warmup(4)).resolves.toBe(0)
+    await seq.load()
+    seq.dispose()
+    await expect(seq.warmup(4)).resolves.toBe(0)
   })
 })

@@ -92,6 +92,16 @@ export function frameUrlFor(pattern: string, index: number): string {
     String(index + 1).padStart(Number(width), '0'))
 }
 
+/**
+ * Warmup plan: the first `n` frame indices, [0 .. min(n, count) - 1].
+ * Degenerate counts and non-positive n produce an empty plan.
+ */
+export function warmupPlan(count: number, n: number): number[] {
+  if (!Number.isFinite(count) || count <= 0) return []
+  const length = Math.min(Math.max(0, Math.floor(n)), Math.floor(count))
+  return Array.from({ length }, (_, i) => i)
+}
+
 // ─── AVIF decode probe ──────────────────────────────────────────────
 
 // Minimal valid 1×1 AVIF (same probe payload used by avif.js / modernizr).
@@ -263,6 +273,21 @@ export function useFrameSequence(options: UseFrameSequenceOptions = {}) {
     }
   }
 
+  /**
+   * Decode the first `frames` frames into the cache without presenting
+   * them (scrub start becomes instant). Deduped against the cache and
+   * in-flight fetches; frames beyond the live window are evicted by the
+   * next setProgress as usual. Resolves to the number of decoded frames.
+   */
+  async function warmup(frames: number): Promise<number> {
+    const m = manifest.value
+    if (!m || disposed || unsupported.value) return 0
+    const results = await Promise.all(
+      warmupPlan(m.count, frames).map(index => decodeFrame(index)),
+    )
+    return results.filter(bitmap => bitmap !== null).length
+  }
+
   function dispose(): void {
     if (disposed) return
     disposed = true
@@ -286,6 +311,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions = {}) {
     currentBitmap,
     load,
     setProgress,
+    warmup,
     dispose,
   }
 }

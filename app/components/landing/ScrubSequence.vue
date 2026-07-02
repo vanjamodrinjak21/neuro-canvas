@@ -18,10 +18,13 @@ const props = withDefaults(defineProps<{
   manifestUrl?: string
   posterAvif?: string
   posterJpg?: string
+  /** Meaningful alt for the poster (the sequence's LCP element). */
+  posterAlt?: string
 }>(), {
   manifestUrl: '/landing/seq/manifest.json',
   posterAvif: '/landing/poster.avif',
   posterJpg: '/landing/poster.jpg',
+  posterAlt: '',
 })
 
 const emit = defineEmits<{
@@ -106,6 +109,33 @@ watch(unsupported, (value) => {
   if (value) emit('unsupported')
 })
 
+// ── Idle warmup ──
+// After the window load event (and only when the main thread is idle),
+// decode the first frames into the cache so the scrub start is instant.
+// requestIdleCallback where available; small timeout fallback for WebKit.
+const WARMUP_FRAMES = 24
+
+function runWarmup(): void {
+  if (typeof window === 'undefined') return
+  const kick = (): void => {
+    void sequence.warmup(WARMUP_FRAMES)
+  }
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(kick, { timeout: 4000 })
+  } else {
+    window.setTimeout(kick, 350)
+  }
+}
+
+function scheduleWarmup(): void {
+  if (typeof window === 'undefined') return
+  if (document.readyState === 'complete') {
+    runWarmup()
+    return
+  }
+  window.addEventListener('load', runWarmup, { once: true })
+}
+
 onMounted(() => {
   syncCanvasSize()
   if (rootEl.value && typeof ResizeObserver !== 'undefined') {
@@ -116,11 +146,17 @@ onMounted(() => {
     resizeObserver.observe(rootEl.value)
   }
   void sequence.load().then((ok) => {
-    if (ok) sequence.setProgress(props.progress)
+    if (ok) {
+      sequence.setProgress(props.progress)
+      scheduleWarmup()
+    }
   })
 })
 
 onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('load', runWarmup)
+  }
   resizeObserver?.disconnect()
   resizeObserver = null
   ctx = null
@@ -130,13 +166,13 @@ defineExpose({ ready, hasDrawn, unsupported })
 </script>
 
 <template>
-  <div ref="rootEl" class="scrub-seq" aria-hidden="true">
-    <canvas ref="canvasEl" class="scrub-seq-canvas" />
+  <div ref="rootEl" class="scrub-seq">
+    <canvas ref="canvasEl" class="scrub-seq-canvas" aria-hidden="true" />
     <picture class="scrub-seq-poster" :class="{ 'is-hidden': hasDrawn }">
       <source :srcset="posterAvif" type="image/avif">
       <img
         :src="posterJpg"
-        alt=""
+        :alt="posterAlt"
         loading="eager"
         fetchpriority="high"
         decoding="async"
@@ -166,7 +202,7 @@ defineExpose({ ready, hasDrawn, unsupported })
   inset: 0;
   display: block;
   opacity: 1;
-  transition: opacity 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 250ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
   pointer-events: none;
 }
 
