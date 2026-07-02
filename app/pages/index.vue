@@ -7,6 +7,19 @@ import { refreshScrollTriggers, useLenis } from '~/composables/useLenis'
 
 definePageMeta({ layout: false })
 
+useHead({
+  // The hero poster is the LCP element in every mode — hint it early.
+  // `type` lets non-AVIF engines skip the preload instead of double-fetching.
+  link: [
+    { rel: 'preload', as: 'image', href: '/landing/poster.avif', type: 'image/avif', fetchpriority: 'high' },
+  ],
+  // Landing-only override of the app-shell viewport: marketing pages must
+  // allow pinch zoom (WCAG 1.4.4); the app surfaces keep their own meta.
+  meta: [
+    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+  ],
+})
+
 const _isNative = typeof window !== 'undefined' && (
   ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
   || ('Capacitor' in window && (window as any).Capacitor?.isNativePlatform?.())
@@ -128,6 +141,69 @@ const onNarrowChange = (e: MediaQueryListEvent): void => {
 
 let revealObserver: IntersectionObserver | null = null
 
+// ═══════════════════════════════════════════════════════════
+// NAV OVERLAY — transparent over the hero video, solid past it
+// ═══════════════════════════════════════════════════════════
+// Two IntersectionObserver conditions, both required:
+//   1. the hero's 1px top probe has left through the viewport top
+//      (the video is fully behind the nav band), and
+//   2. the hero still reaches below the nav's bottom edge.
+// The nav therefore resolidifies BEFORE any below-fold content can
+// slide underneath it — the transparent state only ever sits over the
+// dark video, whose top scrim guarantees >= 4.5:1 for the light links.
+const navEl = ref<HTMLElement | null>(null)
+const staticHeroEl = ref<HTMLElement | null>(null)
+const navProbeEl = ref<HTMLElement | null>(null)
+
+const heroCoversNavTop = ref(false)
+const heroUnderNav = ref(false)
+const navOverlay = computed(() => heroCoversNavTop.value && heroUnderNav.value)
+
+let navTopObserver: IntersectionObserver | null = null
+let navBottomObserver: IntersectionObserver | null = null
+let navResizeTimer: number | undefined
+
+function teardownNavObservers(): void {
+  navTopObserver?.disconnect()
+  navTopObserver = null
+  navBottomObserver?.disconnect()
+  navBottomObserver = null
+}
+
+function setupNavObservers(): void {
+  teardownNavObservers()
+  const hero = railEl.value ?? staticHeroEl.value
+  const probe = navProbeEl.value
+  if (!hero || !probe) {
+    heroCoversNavTop.value = false
+    heroUnderNav.value = false
+    return
+  }
+  const navHeight = navEl.value?.offsetHeight ?? 76
+
+  navTopObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      heroCoversNavTop.value = !entry.isIntersecting && entry.boundingClientRect.top < 0
+    }
+  }, { threshold: 0 })
+  navTopObserver.observe(probe)
+
+  // Root shrunk by the nav height: the hero intersects it exactly while
+  // its bottom edge is still below the nav's bottom edge.
+  navBottomObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      heroUnderNav.value = entry.isIntersecting
+    }
+  }, { threshold: 0, rootMargin: `-${navHeight}px 0px 0px 0px` })
+  navBottomObserver.observe(hero)
+}
+
+/** Nav height changes at breakpoints — rebuild the margin-bound observer. */
+function onNavResize(): void {
+  window.clearTimeout(navResizeTimer)
+  navResizeTimer = window.setTimeout(setupNavObservers, 160)
+}
+
 onMounted(() => {
   if (typeof window === 'undefined') return
   // Trigger hero entrance choreography
@@ -142,6 +218,8 @@ onMounted(() => {
   })
 
   syncMotionEngines()
+  setupNavObservers()
+  window.addEventListener('resize', onNavResize, { passive: true })
 
   // Recompute scroll-linked positions once the rail has mounted and
   // again once the webfonts have settled (layout shifts move triggers).
@@ -176,6 +254,7 @@ watch([scrubEnabled, isReduced, isNarrow], async () => {
   if (typeof window === 'undefined') return
   await nextTick()
   syncMotionEngines()
+  setupNavObservers()
   refreshScrollTriggers()
 })
 
@@ -183,6 +262,9 @@ onBeforeUnmount(() => {
   detachScrub()
   destroyLenis()
   narrowMql?.removeEventListener('change', onNarrowChange)
+  window.removeEventListener('resize', onNavResize)
+  window.clearTimeout(navResizeTimer)
+  teardownNavObservers()
   revealObserver?.disconnect()
   revealObserver = null
 })
@@ -191,7 +273,7 @@ onBeforeUnmount(() => {
 <template>
   <div ref="lpRoot" class="lp">
     <!-- ══════ TOP NAV ══════ -->
-    <nav class="nav">
+    <nav ref="navEl" class="nav" :class="{ 'nav--overlay': navOverlay }">
       <div class="nav-left">
         <NuxtLink to="/" class="brand">
           <NcLogo :size="14" :container-size="24" :radius="6" />
@@ -214,8 +296,13 @@ onBeforeUnmount(() => {
 
     <!-- ══════ HERO — SCRUB RAIL ══════ -->
     <section v-if="scrubEnabled" ref="railEl" class="rail" aria-label="NeuroCanvas">
+      <div ref="navProbeEl" class="nav-probe" aria-hidden="true" />
       <div class="rail-stage">
-        <LandingScrubSequence :progress="scrubProgress" @unsupported="avifOk = false" />
+        <LandingScrubSequence
+          :progress="scrubProgress"
+          :poster-alt="$t('landing.hero.poster_alt')"
+          @unsupported="avifOk = false"
+        />
         <div class="rail-scrim" aria-hidden="true" />
 
         <div class="rail-chapters">
@@ -267,7 +354,8 @@ onBeforeUnmount(() => {
     </section>
 
     <!-- ══════ HERO — STATIC FALLBACK (reduced motion / narrow / native / no AVIF) ══════ -->
-    <section v-else class="hero-static" aria-label="NeuroCanvas">
+    <section v-else ref="staticHeroEl" class="hero-static" aria-label="NeuroCanvas">
+      <div ref="navProbeEl" class="nav-probe" aria-hidden="true" />
       <video
         v-if="showMobileVideo"
         class="hero-static-media"
@@ -279,9 +367,9 @@ onBeforeUnmount(() => {
         playsinline
         aria-hidden="true"
       />
-      <picture v-else class="hero-static-media" aria-hidden="true">
+      <picture v-else class="hero-static-media">
         <source srcset="/landing/poster.avif" type="image/avif">
-        <img src="/landing/poster.jpg" alt="" loading="eager" fetchpriority="high" decoding="async" class="hero-static-img">
+        <img src="/landing/poster.jpg" :alt="$t('landing.hero.poster_alt')" loading="eager" fetchpriority="high" decoding="async" class="hero-static-img">
       </picture>
       <div class="rail-scrim" aria-hidden="true" />
 
@@ -562,15 +650,15 @@ onBeforeUnmount(() => {
           <h2 class="sec-h rv-d1" data-reveal>{{ $t('landing.section_05.heading') }}</h2>
           <div class="privacy-cols">
             <div class="privacy-col rv-d2" data-reveal>
-              <h4>{{ $t('landing.section_05.col_local.title') }}</h4>
+              <h3>{{ $t('landing.section_05.col_local.title') }}</h3>
               <p>{{ $t('landing.section_05.col_local.body') }}</p>
             </div>
             <div class="privacy-col rv-d3" data-reveal>
-              <h4>{{ $t('landing.section_05.col_byok.title') }}</h4>
+              <h3>{{ $t('landing.section_05.col_byok.title') }}</h3>
               <p>{{ $t('landing.section_05.col_byok.body') }}</p>
             </div>
             <div class="privacy-col rv-d4" data-reveal>
-              <h4>{{ $t('landing.section_05.col_export.title') }}</h4>
+              <h3>{{ $t('landing.section_05.col_export.title') }}</h3>
               <p>{{ $t('landing.section_05.col_export.body') }}</p>
             </div>
           </div>
@@ -641,12 +729,24 @@ onBeforeUnmount(() => {
   --border-4: #3F3F46;
   --text: #FAFAFA;
   --text-2: #A1A1AA;
-  --text-3: #52525B;
+  /* Smallest text tier — #52525B measured 2.4:1 on --bg; #83838C holds
+     >= 4.5:1 on every landing surface (bg, bg-2, bg-3). Hierarchy still
+     reads through weight + the --text/--text-2/--text-3 value steps. */
+  --text-3: #83838C;
   --accent: #00D2BE;
   --accent-soft: rgba(0, 210, 190, 0.08);
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --serif: 'Instrument Serif', Georgia, serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Layout rhythm (Phase 4) ──
+     One max-width container and one horizontal gutter for every band:
+     the gutter grows past --lp-max so content stays centered on ultrawide
+     while full-bleed borders/backgrounds keep spanning the viewport. */
+  --lp-max: 1360px;
+  --lp-pad-x: 56px;
+  --lp-gutter: max(var(--lp-pad-x), calc((100% - var(--lp-max)) / 2));
+  --lp-sec-y: 128px;
 
   background: var(--bg);
   color: var(--text);
@@ -669,7 +769,8 @@ onBeforeUnmount(() => {
   --border-4: #999999;
   --text: #111111;
   --text-2: #555555;
-  --text-3: #777777;
+  /* #777777 measured 4.3:1 on #FAFAF9 — #6B6B6B clears 4.5:1. */
+  --text-3: #6B6B6B;
 }
 
 /* ═══════════════════════ NAV ═══════════════════════ */
@@ -677,7 +778,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 56px;
+  padding: 24px var(--lp-gutter);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
@@ -685,9 +786,49 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   z-index: 100;
+  transition:
+    background-color 200ms var(--ease-out),
+    border-color 200ms var(--ease-out);
 }
 
 :root.light .nav { background: rgba(250, 250, 249, 0.85); }
+
+/* Overlay state — only ever active while the dark hero video is fully
+   behind the nav band (IntersectionObserver-gated in script). The rail's
+   top scrim (>= 0.88 backing) keeps every link >= 4.5:1 in both themes. */
+.nav--overlay {
+  background: transparent;
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:root.light .nav--overlay { background: transparent; }
+
+.nav--overlay .brand,
+.nav--overlay .brand-name { color: #FAFAFA; }
+.nav--overlay .nav-links a,
+.nav--overlay .nav-signin { color: #D4D4D8; }
+.nav--overlay .nav-links a:hover,
+.nav--overlay .nav-signin:hover { color: #FAFAFA; }
+.nav--overlay .nav-dash {
+  color: #FAFAFA;
+  border-color: rgba(250, 250, 250, 0.4);
+}
+.nav--overlay .nav-dash:hover {
+  border-color: rgba(250, 250, 250, 0.75);
+  background: rgba(250, 250, 250, 0.06);
+}
+
+/* 1px marker at the hero's top edge — drives the nav overlay observer. */
+.nav-probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
 
 .nav-left {
   display: flex;
@@ -724,7 +865,7 @@ onBeforeUnmount(() => {
   line-height: 18px;
   color: var(--text-2);
   text-decoration: none;
-  transition: color 120ms ease;
+  transition: color var(--micro);
 }
 
 .nav-links a:hover { color: var(--text); }
@@ -743,7 +884,7 @@ onBeforeUnmount(() => {
   line-height: 18px;
   color: var(--text-2);
   text-decoration: none;
-  transition: color 120ms ease;
+  transition: color var(--micro);
 }
 
 .nav-signin:hover { color: var(--text); }
@@ -758,23 +899,30 @@ onBeforeUnmount(() => {
   line-height: 18px;
   color: var(--text);
   text-decoration: none;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition:
+    border-color var(--micro),
+    background var(--micro),
+    color var(--micro);
 }
 
 .nav-dash:hover { border-color: var(--border-4); background: var(--bg-2); }
 
 /* ═══════════════════════ MOTION ═══════════════════════ */
+/* One vocabulary below the rail: every transition rides the shared token
+   curve — reveals at 500-700ms, micro-interactions at 150-250ms. */
 .lp {
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out: var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  --micro: 200ms var(--ease-out);
 }
 
-/* Scroll reveals — opacity + small lift only, unified 60ms stagger scale */
+/* Scroll reveals — one-shot rise (observer unobserves after entry),
+   unified 60ms sibling stagger for grouped elements */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(14px);
   transition:
-    opacity 360ms var(--ease-out) var(--reveal-delay, 0ms),
-    transform 360ms var(--ease-out) var(--reveal-delay, 0ms);
+    opacity 600ms var(--ease-out) var(--reveal-delay, 0ms),
+    transform 600ms var(--ease-out) var(--reveal-delay, 0ms);
 }
 [data-reveal].is-visible {
   opacity: 1;
@@ -798,7 +946,7 @@ onBeforeUnmount(() => {
 }
 /* demo-pop nodes carry positioning transforms — animate opacity only */
 .demo-frame.is-visible .demo-pop {
-  animation: mc-fade 380ms var(--ease-out) var(--mc-delay, 0ms) forwards;
+  animation: mc-fade 500ms var(--ease-out) var(--mc-delay, 0ms) forwards;
 }
 
 @keyframes lp-rise {
@@ -809,6 +957,15 @@ onBeforeUnmount(() => {
 }
 @keyframes mc-draw {
   to { stroke-dashoffset: 0; }
+}
+
+/* ═══════════════════════ FOCUS ═══════════════════════ */
+/* Visible teal focus ring on every interactive element — including the
+   CTAs over the video, where the scrim keeps the ring legible. Rings are
+   never clipped: masked spans (.ch-line) contain no focusables. */
+.lp :is(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 /* ═══════════════════════ BUTTONS ═══════════════════════ */
@@ -827,7 +984,7 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   cursor: pointer;
   text-decoration: none;
-  transition: background 120ms ease, transform 80ms ease;
+  transition: background var(--micro), transform 150ms var(--ease-out);
 }
 
 .btn-primary:hover { background: #00BFAB; }
@@ -847,7 +1004,10 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   cursor: pointer;
   text-decoration: none;
-  transition: border-color 120ms ease, color 120ms ease, transform 80ms ease;
+  transition:
+    border-color var(--micro),
+    color var(--micro),
+    transform 150ms var(--ease-out);
 }
 
 .btn-outline:hover { border-color: var(--text-2); }
@@ -875,8 +1035,12 @@ onBeforeUnmount(() => {
   color: #FAFAFA;
 }
 
-/* Readability scrim — text never sits on raw video. Bottom-anchored,
-   transparent at the top to rgba(10,10,12,0.85) where the copy lives. */
+/* Readability scrim — text never sits on raw video.
+   Top band: >= 0.88 backing under the (transparent) nav so its light links
+   hold >= 4.5:1 even against the brightest possible frame.
+   Bottom ramp: >= 0.82 behind the subtitle/CTA/receipt zone (small text),
+   >= 0.55 behind the headline zone (large-scale text still clears 4.5:1
+   worst-case); the middle stays clear so the video reads through. */
 .rail-scrim {
   position: absolute;
   inset: 0;
@@ -884,10 +1048,13 @@ onBeforeUnmount(() => {
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    rgba(10, 10, 12, 0) 0%,
-    rgba(10, 10, 12, 0) 40%,
-    rgba(10, 10, 12, 0.45) 68%,
-    rgba(10, 10, 12, 0.85) 100%
+    rgba(10, 10, 12, 0.88) 0%,
+    rgba(10, 10, 12, 0.88) 7%,
+    rgba(10, 10, 12, 0) 20%,
+    rgba(10, 10, 12, 0) 34%,
+    rgba(10, 10, 12, 0.55) 52%,
+    rgba(10, 10, 12, 0.82) 66%,
+    rgba(10, 10, 12, 0.94) 100%
   );
 }
 
@@ -900,8 +1067,8 @@ onBeforeUnmount(() => {
 /* ── Chapters — swap at progress breakpoints ── */
 .ch {
   position: absolute;
-  left: 56px;
-  right: 56px;
+  left: var(--lp-gutter);
+  right: var(--lp-gutter);
   bottom: clamp(56px, 10vh, 128px);
   max-width: 720px;
   opacity: 0;
@@ -1052,8 +1219,8 @@ onBeforeUnmount(() => {
 
 .hero-static-copy {
   position: absolute;
-  left: 56px;
-  right: 56px;
+  left: var(--lp-gutter);
+  right: var(--lp-gutter);
   bottom: clamp(56px, 10vh, 128px);
   z-index: 3;
   max-width: 720px;
@@ -1078,17 +1245,19 @@ onBeforeUnmount(() => {
 .hrd-4 { animation-delay: 260ms; }
 
 /* ═══════════════════════ SECTIONS ═══════════════════════ */
+/* One vertical beat (--lp-sec-y) and one gutter (--lp-gutter) for every
+   band; borders/backgrounds stay full-bleed, content stays centered. */
 .sec {
-  padding: 120px 56px;
+  padding: var(--lp-sec-y) var(--lp-gutter);
   border-top: 1px solid var(--border);
 }
 
-.sec-01 { padding-top: 160px; padding-bottom: 120px; }
-.sec-02 { background: var(--bg-2); padding: 120px 56px; }
-.sec-03 { padding: 120px 0; }
-.sec-03 .sec-grid--head { padding: 0 56px; }
-.sec-04 { background: var(--bg-2); padding: 120px 0 120px 56px; border-top: none; }
-.sec-05 { padding: 160px 56px; }
+.sec-02 { background: var(--bg-2); }
+.sec-03 { padding-inline: 0; }
+.sec-03 .sec-grid--head { padding: 0 var(--lp-gutter); }
+/* 03/04 zero their own inline padding so children's --lp-gutter %
+   resolves against the full viewport width (keeps content centered). */
+.sec-04 { background: var(--bg-2); padding-inline: 0; border-top: none; }
 
 .sec-grid {
   display: flex;
@@ -1096,7 +1265,7 @@ onBeforeUnmount(() => {
   gap: 64px;
 }
 
-.sec-grid--head { margin-bottom: 56px; }
+.sec-grid--head { margin-bottom: 64px; }
 
 .sec-eyebrow {
   flex-basis: 280px;
@@ -1139,7 +1308,7 @@ onBeforeUnmount(() => {
   line-height: 18px;
   color: var(--text);
   text-decoration: none;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: border-color var(--micro), background var(--micro);
 }
 
 .browse-all:hover { border-color: var(--border-4); background: var(--bg-3); }
@@ -1174,10 +1343,10 @@ onBeforeUnmount(() => {
 .sec-p {
   font-family: var(--sans);
   font-size: calc(17px * var(--nc-text-scale, 1));
-  line-height: 30px;
+  line-height: 1.7;
   color: var(--text-2);
   margin: 0;
-  max-width: 680px;
+  max-width: 68ch;
 }
 
 /* ── 02 Demo Frame ── */
@@ -1358,7 +1527,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-start;
   gap: 64px;
-  padding: 48px 56px;
+  padding: 48px var(--lp-gutter);
   border-top: 1px solid var(--border);
 }
 
@@ -1410,9 +1579,10 @@ onBeforeUnmount(() => {
 .step-body p {
   font-family: var(--sans);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  line-height: 28px;
+  line-height: 1.7;
   color: var(--text-2);
   margin: 0;
+  max-width: 68ch;
 }
 
 .step-chip {
@@ -1483,14 +1653,14 @@ onBeforeUnmount(() => {
 
 /* ── 04 Templates ── */
 .sec-04 .sec-grid--head {
-  padding-right: 56px;
+  padding-inline: var(--lp-gutter);
 }
 
 .tpl-rail {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
-  padding-right: 56px;
+  padding-inline: var(--lp-gutter);
 }
 
 .tpl {
@@ -1502,7 +1672,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: border-color 180ms ease, background 180ms ease;
+  transition: border-color var(--micro), background var(--micro);
   text-decoration: none;
   color: inherit;
 }
@@ -1596,7 +1766,7 @@ onBeforeUnmount(() => {
 .tpl-meta p {
   font-family: var(--sans);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  line-height: 16px;
+  line-height: 1.5;
   color: var(--text-3);
   margin: 0;
 }
@@ -1623,7 +1793,7 @@ onBeforeUnmount(() => {
   padding-right: 0;
 }
 
-.privacy-col h4 {
+.privacy-col h3 {
   font-family: var(--sans);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
@@ -1635,14 +1805,15 @@ onBeforeUnmount(() => {
 .privacy-col p {
   font-family: var(--sans);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  line-height: 22px;
+  line-height: 1.6;
   color: var(--text-2);
   margin: 0;
+  max-width: 60ch;
 }
 
 /* ═══════════════════════ FINAL CTA ═══════════════════════ */
 .cta {
-  padding: 200px 56px 160px;
+  padding: calc(var(--lp-sec-y) * 1.5) var(--lp-gutter) calc(var(--lp-sec-y) * 1.25);
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -1671,7 +1842,7 @@ onBeforeUnmount(() => {
 .cta-receipt {
   font-family: var(--sans);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  line-height: 16px;
+  line-height: 1.5;
   color: var(--text-3);
   margin: 0;
 }
@@ -1681,7 +1852,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 48px 56px 36px;
+  padding: 48px var(--lp-gutter) 36px;
   border-top: 1px solid var(--border);
 }
 
@@ -1742,26 +1913,21 @@ onBeforeUnmount(() => {
 .footer-col a {
   font-family: var(--sans);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  line-height: 16px;
+  line-height: 1.5;
   color: var(--text-2);
   text-decoration: none;
-  transition: color 120ms ease;
+  transition: color var(--micro);
 }
 
 .footer-col a:hover { color: var(--text); }
 
 /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+/* Gutters and vertical rhythm cascade from the .lp variables — the
+   breakpoints only retune the scale, never re-list paddings. */
 @media (max-width: 1280px) {
-  .nav { padding: 20px 32px; }
-  .ch,
-  .hero-static-copy { left: 32px; right: 32px; }
-  .sec, .sec-01, .sec-02, .sec-03, .sec-04, .sec-05 {
-    padding-left: 32px; padding-right: 32px;
-  }
-  .sec-04 { padding-right: 0; }
-  .sec-04 .sec-grid--head { padding-right: 32px; }
-  .tpl-rail { padding-right: 32px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cta, .footer { padding-left: 32px; padding-right: 32px; }
+  .lp { --lp-pad-x: 32px; }
+  .nav { padding-block: 20px; }
+  .tpl-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1024px) {
@@ -1777,39 +1943,48 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
-  .nav { padding: 16px 20px; }
+  .lp { --lp-pad-x: 20px; --lp-sec-y: 72px; }
+  .nav { padding-block: 16px; }
   .nav-links { display: none; }
   .hero-static { min-height: 100svh; }
-  .hero-static-copy { left: 20px; right: 20px; bottom: 48px; }
+  .hero-static-copy { bottom: 48px; }
   .ch-t1 { font-size: clamp(38px, 11vw, 56px); }
   .ch-t2 { font-size: clamp(42px, 12vw, 62px); }
   .ch-sub { font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 26px; margin-bottom: 28px; }
   .ch-cta { flex-direction: column; align-items: stretch; width: 100%; }
   .ch-cta .btn-primary, .ch-cta .btn-outline { justify-content: center; }
-  .sec, .sec-01, .sec-02, .sec-03, .sec-04, .sec-05 {
-    padding: 64px 20px;
-  }
-  .sec-01 { padding-top: 80px; }
-  .sec-04 { padding-right: 0; }
   .sec-grid, .sec-grid--head { flex-direction: column; gap: 16px; }
+  .sec-grid--head { margin-bottom: 40px; }
   .sec-eyebrow, .sec-aside { flex-basis: auto; padding-top: 0; }
-  .tpl-rail { grid-template-columns: minmax(0, 1fr); padding-right: 20px; }
+  .tpl-rail { grid-template-columns: minmax(0, 1fr); }
   .sec-h { font-size: calc(28px * var(--nc-text-scale, 1)); line-height: 1.25; }
   .sec-h2 { font-size: calc(24px * var(--nc-text-scale, 1)); }
-  .step { flex-direction: column; gap: 16px; padding: 32px 0; }
+  .step { flex-direction: column; gap: 16px; padding-block: 32px; }
   .step-num { flex-basis: auto; }
   .step-numeral { font-size: calc(48px * var(--nc-text-scale, 1)); }
   .step-body h3 { font-size: calc(20px * var(--nc-text-scale, 1)); }
-  .cta { padding: 96px 20px 80px; }
   .cta-h { font-size: calc(44px * var(--nc-text-scale, 1)); line-height: 1; }
   .cta-row { flex-direction: column; align-items: stretch; width: 100%; }
   .cta-row .btn-primary, .cta-row .btn-outline { justify-content: center; }
-  .footer { flex-direction: column; align-items: flex-start; gap: 32px; padding: 32px 20px; }
+  .footer { flex-direction: column; align-items: flex-start; gap: 32px; padding-block: 32px; }
   .footer-cols { flex-wrap: wrap; gap: 24px; }
 }
 
 /* ═══════════════════════ REDUCED MOTION ═══════════════════════ */
 @media (prefers-reduced-motion: reduce) {
+  /* Nav overlay still toggles (contrast requires it) — just without motion.
+     Hover/press micro-transitions collapse to instant state changes. */
+  .lp .nav,
+  .lp .nav-links a,
+  .lp .nav-signin,
+  .lp .nav-dash,
+  .lp .btn-primary,
+  .lp .btn-outline,
+  .lp .browse-all,
+  .lp .tpl,
+  .lp .footer-col a {
+    transition: none !important;
+  }
   .lp .hs-rise,
   .lp .demo-line,
   .lp .demo-pop,
