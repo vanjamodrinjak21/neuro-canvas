@@ -1,0 +1,15 @@
+diff --git a/node_modules/next-auth/package.json b/node_modules/next-auth/package.json
+index c093782..5c2fc77 100644
+--- a/node_modules/next-auth/package.json
++++ b/node_modules/next-auth/package.json
+@@ -31,6 +31,10 @@
+       "types": "./index.d.ts",
+       "default": "./index.js"
+     },
++    "./core": {
++      "types": "./core/index.d.ts",
++      "default": "./core/index.js"
++    },
+     "./adapters": {
+       "types": "./adapters.d.ts"
+     },
