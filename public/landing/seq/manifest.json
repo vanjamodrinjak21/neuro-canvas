@@ -1,0 +1,9 @@
+{
+  "count": 145,
+  "width": 1920,
+  "height": 1080,
+  "pattern": "/landing/seq/frame_%04d.avif",
+  "poster": "/landing/poster.jpg",
+  "posterAvif": "/landing/poster.avif",
+  "mobileVideo": "/landing/hero-mobile.mp4"
+}
