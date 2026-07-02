@@ -80,6 +80,10 @@ export function useLenis() {
       gsap.ticker.remove(tickerCallback)
       tickerCallback = null
     }
+    // lagSmoothing(0) is a global GSAP side effect — restore the library
+    // defaults so animations elsewhere in the SPA regain frame-skip
+    // protection after leaving the landing page.
+    gsap.ticker.lagSmoothing(500, 33)
     lenis.destroy()
     lenisRef.value = null
   }

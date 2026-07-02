@@ -168,6 +168,11 @@ export function useFrameSequence(options: UseFrameSequenceOptions = {}) {
   let direction: ScrollDirection = 1
   let lastRequested = 0
   let disposed = false
+  /**
+   * Highest frame index the idle warmup may park in the cache even though
+   * it lies outside the live ±radius window. -1 until warmup() runs.
+   */
+  let warmupHorizon = -1
 
   function decodeFrame(index: number): Promise<ImageBitmap | null> {
     const cached = cache.get(index)
@@ -188,6 +193,16 @@ export function useFrameSequence(options: UseFrameSequenceOptions = {}) {
           bitmap.close()
           return null
         }
+        // The window may have moved while this frame was decoding (fast
+        // scroll jump, stale prefetch). Caching it would strand an
+        // out-of-window bitmap until the next eviction pass — close it
+        // instead, unless it belongs to the still-relevant warmup region.
+        const inWindow = Math.abs(index - lastRequested) <= radius
+        const inWarmupRegion = index <= warmupHorizon && lastRequested <= warmupHorizon
+        if (!inWindow && !inWarmupRegion) {
+          bitmap.close()
+          return null
+        }
         cache.set(index, bitmap)
         return bitmap
       } catch {
@@ -201,8 +216,14 @@ export function useFrameSequence(options: UseFrameSequenceOptions = {}) {
   }
 
   function present(index: number, bitmap: ImageBitmap): void {
+    const prev = currentBitmap.value
+    const prevIndex = currentIndex.value
     currentIndex.value = index
     currentBitmap.value = bitmap
+    // A fast jump can evict the on-screen frame from the cache (delete
+    // without close — see evictOutside); once it is replaced here nothing
+    // else references it, so close it now to avoid orphaning ~14 MiB.
+    if (prev && prev !== bitmap && cache.get(prevIndex) !== prev) prev.close()
     if (!ready.value) ready.value = true
   }
 
@@ -282,9 +303,14 @@ export function useFrameSequence(options: UseFrameSequenceOptions = {}) {
   async function warmup(frames: number): Promise<number> {
     const m = manifest.value
     if (!m || disposed || unsupported.value) return 0
-    const results = await Promise.all(
-      warmupPlan(m.count, frames).map(index => decodeFrame(index)),
-    )
+    // Idle warmup can fire after the user has already scrubbed deep —
+    // decoding the sequence start would just park ~24 out-of-window
+    // bitmaps in memory, so skip it entirely.
+    if (lastRequested > radius) return 0
+    const plan = warmupPlan(m.count, frames)
+    if (plan.length === 0) return 0
+    warmupHorizon = plan[plan.length - 1] ?? -1
+    const results = await Promise.all(plan.map(index => decodeFrame(index)))
     return results.filter(bitmap => bitmap !== null).length
   }
 
@@ -292,6 +318,10 @@ export function useFrameSequence(options: UseFrameSequenceOptions = {}) {
     if (disposed) return
     disposed = true
     aborter.abort()
+    // The on-screen bitmap may have been evicted from the cache (delete
+    // without close) — close it explicitly so it can't be orphaned.
+    const current = currentBitmap.value
+    if (current && cache.get(currentIndex.value) !== current) current.close()
     for (const bitmap of cache.values()) bitmap.close()
     cache.clear()
     inflight.clear()

@@ -280,3 +280,147 @@ describe('useFrameSequence', () => {
     await expect(seq.warmup(4)).resolves.toBe(0)
   })
 })
+
+// ─── Bitmap close discipline (reviewed hazards: orphaned bitmaps) ────
+
+interface TrackedBitmap {
+  width: number
+  height: number
+  close: ReturnType<typeof vi.fn>
+}
+
+/**
+ * Like stubFetchAndBitmap, but every created bitmap is recorded (creation
+ * order) and individual frame fetches can be gated behind a manual release.
+ */
+function stubTrackedBitmaps(): {
+  bitmaps: TrackedBitmap[]
+  fetchMock: FetchMock
+  /** Hold the fetch for a frame URL suffix until release() is called. */
+  gate: (suffix: string) => { release: () => void }
+} {
+  const bitmaps: TrackedBitmap[] = []
+  const gates = new Map<string, Promise<void>>()
+  const releases = new Map<string, () => void>()
+
+  const fetchMock = vi.fn(async (input: string | URL | Request) => {
+    const url = String(input)
+    if (url.endsWith('manifest.json')) {
+      return new Response(JSON.stringify({
+        count: 5,
+        width: 1920,
+        height: 1080,
+        pattern: '/landing/seq/frame_%04d.avif',
+        poster: '/landing/poster.jpg',
+        posterAvif: '/landing/poster.avif',
+        mobileVideo: '/landing/hero-mobile.mp4',
+      }), { status: 200 })
+    }
+    for (const [suffix, promise] of gates) {
+      if (url.endsWith(suffix)) await promise
+    }
+    return new Response(new Blob(['x']), { status: 200 })
+  })
+  const bitmapMock = vi.fn(async () => {
+    const bitmap: TrackedBitmap = { width: 1920, height: 1080, close: vi.fn() }
+    bitmaps.push(bitmap)
+    return bitmap as unknown as ImageBitmap
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  vi.stubGlobal('createImageBitmap', bitmapMock)
+
+  return {
+    bitmaps,
+    fetchMock,
+    gate: (suffix: string) => {
+      const promise = new Promise<void>((resolve) => {
+        releases.set(suffix, resolve)
+      })
+      gates.set(suffix, promise)
+      return { release: () => releases.get(suffix)?.() }
+    },
+  }
+}
+
+describe('useFrameSequence bitmap close discipline', () => {
+  beforeEach(() => resetAvifProbeForTests())
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    resetAvifProbeForTests()
+  })
+
+  it('closes the previous on-screen bitmap after a fast jump evicts it', async () => {
+    const { bitmaps } = stubTrackedBitmaps()
+    // radius 0: jumping 0 -> 4 evicts frame 0 while it is still on screen.
+    const seq = useFrameSequence({ manifestUrl: '/landing/seq/manifest.json', radius: 0 })
+    await seq.load()
+    await vi.waitFor(() => expect(seq.currentIndex.value).toBe(0))
+    const frame0 = bitmaps.find(b => !(b.close as ReturnType<typeof vi.fn>).mock.calls.length)
+    // bitmaps[0] is the AVIF probe (closed immediately); frame 0 is the survivor.
+    expect(frame0).toBeDefined()
+
+    seq.setProgress(1)
+    await vi.waitFor(() => expect(seq.currentIndex.value).toBe(4))
+    // Frame 0 was evicted from the cache by the jump, then replaced on
+    // screen — present() must have closed it rather than orphaning it.
+    expect(frame0!.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes a stale decode that lands after the window moved on', async () => {
+    const { bitmaps, fetchMock, gate } = stubTrackedBitmaps()
+    const seq = useFrameSequence({ manifestUrl: '/landing/seq/manifest.json', radius: 0 })
+    const held = gate('frame_0003.avif')
+    await seq.load()
+    await vi.waitFor(() => expect(seq.currentIndex.value).toBe(0))
+
+    seq.setProgress(0.5) // requests frame index 2 — held in flight
+    seq.setProgress(1) //   window jumps to index 4
+    await vi.waitFor(() => expect(seq.currentIndex.value).toBe(4))
+    const created = bitmaps.length
+    held.release()
+    await vi.waitFor(() => expect(bitmaps.length).toBe(created + 1))
+
+    const stale = bitmaps[bitmaps.length - 1]!
+    await vi.waitFor(() => expect(stale.close).toHaveBeenCalledTimes(1))
+    // ...and it must NOT be served from the cache later: re-requesting
+    // frame 2 refetches it.
+    const fetchesBefore = fetchMock.mock.calls
+      .map(call => String(call[0]))
+      .filter(u => u.endsWith('frame_0003.avif'))
+      .length
+    seq.setProgress(0.5)
+    await vi.waitFor(() => {
+      const after = fetchMock.mock.calls
+        .map(call => String(call[0]))
+        .filter(u => u.endsWith('frame_0003.avif'))
+        .length
+      expect(after).toBe(fetchesBefore + 1)
+    })
+  })
+
+  it('warmup no-ops once the user has scrubbed past the start region', async () => {
+    const { fetchMock } = stubTrackedBitmaps()
+    const seq = useFrameSequence({ manifestUrl: '/landing/seq/manifest.json', radius: 1 })
+    await seq.load()
+    seq.setProgress(1)
+    await vi.waitFor(() => expect(seq.currentIndex.value).toBe(4))
+
+    const before = fetchMock.mock.calls.length
+    await expect(seq.warmup(3)).resolves.toBe(0)
+    expect(fetchMock.mock.calls.length).toBe(before)
+  })
+
+  it('dispose closes the on-screen bitmap even when the cache no longer holds it', async () => {
+    const { bitmaps, gate } = stubTrackedBitmaps()
+    const seq = useFrameSequence({ manifestUrl: '/landing/seq/manifest.json', radius: 0 })
+    // Hold frame 4 so the jump evicts frame 0 without ever replacing it.
+    gate('frame_0005.avif')
+    await seq.load()
+    await vi.waitFor(() => expect(seq.currentIndex.value).toBe(0))
+    const frame0 = bitmaps[bitmaps.length - 1]!
+
+    seq.setProgress(1) // evicts frame 0 from the cache; decode of 4 never lands
+    seq.dispose()
+    expect(frame0.close).toHaveBeenCalledTimes(1)
+  })
+})

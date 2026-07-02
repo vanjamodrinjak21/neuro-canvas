@@ -51,9 +51,10 @@ for png in "$TMP"/frame_*.png; do
   [ $((i % 25)) -eq 0 ] && echo "    $i/$COUNT"
 done
 
-echo "==> poster (JPEG fallback + AVIF)"
+echo "==> poster (JPEG fallback + AVIF + 960w mobile variant)"
 ffmpeg -hide_banner -v error -i "$SRC" -vf "$GRADE,scale=$WIDTH:-2:flags=lanczos" -frames:v 1 -q:v 2 "$OUT_DIR/poster.jpg" -y
 ffmpeg -hide_banner -v error -i "$SRC" -vf "$GRADE,scale=$WIDTH:-2:flags=lanczos" -frames:v 1 -c:v libsvtav1 -crf 30 -preset 4 "$OUT_DIR/poster.avif" -y
+ffmpeg -hide_banner -v error -i "$SRC" -vf "$GRADE,scale=960:-2:flags=lanczos" -frames:v 1 -q:v 3 "$OUT_DIR/poster-mobile.jpg" -y
 
 echo "==> mobile autoplay loop (720p h264)"
 ffmpeg -hide_banner -v error -i "$SRC" \

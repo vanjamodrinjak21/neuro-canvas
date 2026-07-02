@@ -44,7 +44,10 @@ const lpRoot = ref<HTMLElement | null>(null)
 const { isReduced } = useReducedMotion()
 const { lenis, init: initLenis, destroy: destroyLenis } = useLenis()
 
-const isNarrow = ref(false)
+// Initialized synchronously (SPA — window always exists at setup) so the
+// first render on phones goes straight to the fallback hero instead of
+// mounting the 400vh rail for one tick and kicking a wasted AVIF probe.
+const isNarrow = ref(typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches)
 /** null = probe pending (optimistic), false = AVIF undecodable. */
 const avifOk = ref<boolean | null>(null)
 
@@ -160,6 +163,7 @@ const navOverlay = computed(() => heroCoversNavTop.value && heroUnderNav.value)
 let navTopObserver: IntersectionObserver | null = null
 let navBottomObserver: IntersectionObserver | null = null
 let navResizeTimer: number | undefined
+let navSizeObserver: ResizeObserver | null = null
 
 function teardownNavObservers(): void {
   navTopObserver?.disconnect()
@@ -218,12 +222,22 @@ onMounted(() => {
   syncMotionEngines()
   setupNavObservers()
   window.addEventListener('resize', onNavResize, { passive: true })
+  // The nav's own height can change without a window resize (text-scale
+  // setting, late font swap) — the bottom observer's rootMargin bakes the
+  // height in, so rebuild when the nav itself resizes.
+  if (typeof ResizeObserver !== 'undefined' && navEl.value) {
+    navSizeObserver = new ResizeObserver(onNavResize)
+    navSizeObserver.observe(navEl.value)
+  }
 
   // Recompute scroll-linked positions once the rail has mounted and
   // again once the webfonts have settled (layout shifts move triggers).
   void nextTick(() => refreshScrollTriggers())
   if ('fonts' in document) {
-    void document.fonts.ready.then(() => refreshScrollTriggers())
+    void document.fonts.ready.then(() => {
+      refreshScrollTriggers()
+      setupNavObservers()
+    })
   }
 
   // Scroll-reveal observer for [data-reveal] elements
@@ -262,6 +276,8 @@ onBeforeUnmount(() => {
   narrowMql?.removeEventListener('change', onNarrowChange)
   window.removeEventListener('resize', onNavResize)
   window.clearTimeout(navResizeTimer)
+  navSizeObserver?.disconnect()
+  navSizeObserver = null
   teardownNavObservers()
   revealObserver?.disconnect()
   revealObserver = null
@@ -358,7 +374,7 @@ onBeforeUnmount(() => {
         v-if="showMobileVideo"
         class="hero-static-media"
         src="/landing/hero-mobile.mp4"
-        poster="/landing/poster.jpg"
+        poster="/landing/poster-mobile.jpg"
         autoplay
         muted
         loop
@@ -366,8 +382,8 @@ onBeforeUnmount(() => {
         aria-hidden="true"
       />
       <picture v-else class="hero-static-media">
-        <source srcset="/landing/poster.avif" type="image/avif">
-        <img src="/landing/poster.jpg" :alt="$t('landing.hero.poster_alt')" loading="eager" fetchpriority="high" decoding="async" class="hero-static-img">
+        <source srcset="/landing/poster.avif" type="image/avif" media="(min-width: 768px)">
+        <img src="/landing/poster.jpg" srcset="/landing/poster-mobile.jpg 960w, /landing/poster.jpg 2560w" sizes="100vw" :alt="$t('landing.hero.poster_alt')" loading="eager" fetchpriority="high" decoding="async" class="hero-static-img">
       </picture>
       <div class="rail-scrim" aria-hidden="true" />
 

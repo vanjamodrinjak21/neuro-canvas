@@ -157,7 +157,7 @@ export default defineNuxtConfig({
     // Scoped to `/` only so app routes never pay for the download.
     '/': {
       headers: {
-        Link: '</landing/poster.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high; media="(min-width: 768px)", </landing/poster.jpg>; rel=preload; as=image; fetchpriority=high; media="(max-width: 767px)"'
+        Link: '</landing/poster.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high; media="(min-width: 768px)", </landing/poster-mobile.jpg>; rel=preload; as=image; fetchpriority=high; media="(max-width: 767px)"'
       }
     },
     '/api/auth/**': {
