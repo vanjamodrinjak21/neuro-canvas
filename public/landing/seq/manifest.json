@@ -1,7 +1,7 @@
 {
   "count": 145,
-  "width": 1920,
-  "height": 1080,
+  "width": 2560,
+  "height": 1440,
   "pattern": "/landing/seq/frame_%04d.avif",
   "poster": "/landing/poster.jpg",
   "posterAvif": "/landing/poster.avif",

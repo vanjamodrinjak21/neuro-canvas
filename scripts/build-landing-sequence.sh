@@ -21,7 +21,10 @@ OUT_DIR="public/landing"
 GRADE="hue=h=-13:s=1.2"
 # every 2nd frame of the 289-frame master -> 145 frames, plenty for a 400vh rail
 SELECT="select=not(mod(n\,2))"
-CRF=36
+# 2560w from the 4K upscaled master: supersampled + near-1:1 on retina canvases
+# (3840 would balloon decoded-bitmap RAM in the prefetch window; 2560 is the ceiling)
+WIDTH="${WIDTH:-2560}"
+CRF="${CRF:-32}"
 PRESET=5
 
 [ -f "$SRC" ] || { echo "ERROR: master not found: $SRC" >&2; exit 1; }
@@ -31,9 +34,9 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$OUT_SEQ"
 
-echo "==> extracting graded PNG frames (every 2nd frame @1920w)"
+echo "==> extracting graded PNG frames (every 2nd frame @${WIDTH}w)"
 ffmpeg -hide_banner -v error -i "$SRC" \
-  -vf "$SELECT,$GRADE,scale=1920:-2" -fps_mode vfr \
+  -vf "$SELECT,$GRADE,scale=$WIDTH:-2:flags=lanczos" -fps_mode vfr \
   "$TMP/frame_%04d.png"
 
 COUNT=$(ls "$TMP"/frame_*.png | wc -l | tr -d ' ')
@@ -48,8 +51,8 @@ for png in "$TMP"/frame_*.png; do
 done
 
 echo "==> poster (JPEG fallback + AVIF)"
-ffmpeg -hide_banner -v error -i "$SRC" -vf "$GRADE,scale=1920:-2" -frames:v 1 -q:v 2 "$OUT_DIR/poster.jpg" -y
-ffmpeg -hide_banner -v error -i "$SRC" -vf "$GRADE,scale=1920:-2" -frames:v 1 -c:v libsvtav1 -crf 30 -preset 4 "$OUT_DIR/poster.avif" -y
+ffmpeg -hide_banner -v error -i "$SRC" -vf "$GRADE,scale=$WIDTH:-2:flags=lanczos" -frames:v 1 -q:v 2 "$OUT_DIR/poster.jpg" -y
+ffmpeg -hide_banner -v error -i "$SRC" -vf "$GRADE,scale=$WIDTH:-2:flags=lanczos" -frames:v 1 -c:v libsvtav1 -crf 30 -preset 4 "$OUT_DIR/poster.avif" -y
 
 echo "==> mobile autoplay loop (720p h264)"
 ffmpeg -hide_banner -v error -i "$SRC" \

@@ -68,7 +68,6 @@ function draw(): void {
   if (!canvas || !bitmap) return
   if (!ctx) {
     ctx = canvas.getContext('2d', { alpha: false })
-    if (ctx) ctx.imageSmoothingEnabled = true
   }
   if (!ctx) return
 
@@ -79,6 +78,10 @@ function draw(): void {
   const index = currentIndex.value
   if (index === lastDrawnIndex && width === lastDrawnWidth && height === lastDrawnHeight) return
 
+  // Re-assert per blit: mutating canvas.width/height resets context state,
+  // and the default 'low' quality visibly softens the resample.
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
   const { sx, sy, sw, sh } = coverSourceRect(bitmap.width, bitmap.height, width, height)
   ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, width, height)
 
