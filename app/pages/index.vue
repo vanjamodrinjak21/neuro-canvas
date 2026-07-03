@@ -29,7 +29,7 @@ function handleTryFree() {
 /* ---- smooth scroll bus (Lenis ↔ ScrollTrigger, one RAF loop) ------------ */
 let lenis: Lenis | null = null
 let lenisTick: ((time: number) => void) | null = null
-const triggers: ScrollTrigger[] = []
+let proseObserver: IntersectionObserver | null = null
 
 const scrollToTarget = (target: string) => {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -74,27 +74,30 @@ onMounted(() => {
     gsap.ticker.lagSmoothing(0)
   }
 
-  // quiet fade-rise for station prose (titles reveal themselves)
+  // quiet fade-rise for station prose (titles reveal themselves) — an
+  // IntersectionObserver reads the live viewport, so layout shifts after
+  // mount (font swap, canvas sizing) can't strand the prose invisible
   if (!reducedMotion) {
-    for (const el of gsap.utils.toArray<HTMLElement>(
+    const prose = gsap.utils.toArray<HTMLElement>(
       '.lp .station__eyebrow, .lp .station__body, .lp .station__chip, .lp .finale__sub, .lp .finale .cta-row',
-    )) {
-      gsap.set(el, { autoAlpha: 0, y: 26 })
-      triggers.push(
-        ScrollTrigger.create({
-          trigger: el,
-          start: 'top 86%',
-          once: true,
-          onEnter: () =>
-            gsap.to(el, { autoAlpha: 1, y: 0, duration: 1.1, ease: 'expo.out' }),
-        }),
-      )
-    }
+    )
+    for (const el of prose) gsap.set(el, { autoAlpha: 0, y: 26 })
+    proseObserver = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue
+          proseObserver?.unobserve(e.target)
+          gsap.to(e.target, { autoAlpha: 1, y: 0, duration: 1.1, ease: 'expo.out' })
+        }
+      },
+      { rootMargin: '0px 0px -14% 0px' },
+    )
+    for (const el of prose) proseObserver.observe(el)
   }
 })
 
 onBeforeUnmount(() => {
-  triggers.forEach((tr) => tr.kill())
+  proseObserver?.disconnect()
   if (lenisTick) gsap.ticker.remove(lenisTick)
   lenis?.destroy()
   lenis = null
