@@ -1590,3 +1590,29 @@ html.is-menu-open .menu-btn__tick {
 .lp .card__file-size {
   white-space: nowrap;
 }
+
+/* hover tip: exact version + file behind a download link */
+.lp .tip {
+  position: relative;
+}
+
+.lp .tip[data-tip]:hover::after,
+.lp .tip[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 0.55rem);
+  left: 0;
+  z-index: 30;
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  border-radius: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+}

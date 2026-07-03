@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 /**
  * Masked word-rise reveal. Words render server-side (SEO-safe); GSAP lifts
@@ -51,7 +50,7 @@ const tokens = computed<TokenPart[][]>(() => {
 
 const root = ref<HTMLElement>()
 const isStatic = ref(false)
-let trigger: ScrollTrigger | null = null
+let io: IntersectionObserver | null = null
 let tween: gsap.core.Tween | null = null
 
 function play(fast = false) {
@@ -73,20 +72,26 @@ onMounted(() => {
     isStatic.value = true
     return
   }
-  gsap.registerPlugin(ScrollTrigger)
   // words are visible in the server-rendered HTML (no-JS readers keep the
   // headings); hide them from JS only once we know we can animate them out
   if (root.value) gsap.set(root.value.querySelectorAll('.wi'), { yPercent: 115 })
   if (props.immediate) {
     play()
-  } else {
-    trigger = ScrollTrigger.create({
-      trigger: root.value,
-      start: 'top 82%',
-      once: true,
-      onEnter: () => play(),
-    })
+    return
   }
+  // IntersectionObserver reads the live viewport, so layout shifts after
+  // mount (font swap, canvas sizing) can't strand words inside the mask
+  // the way cached scroll-trigger positions could
+  io = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return
+      io?.disconnect()
+      io = null
+      play()
+    },
+    { rootMargin: '0px 0px -18% 0px' },
+  )
+  if (root.value) io.observe(root.value)
 })
 
 // locale switch re-renders the words — hide the fresh DOM, then reveal
@@ -98,7 +103,7 @@ watch(tokens, async () => {
 })
 
 onBeforeUnmount(() => {
-  trigger?.kill()
+  io?.disconnect()
   tween?.kill()
 })
 </script>

@@ -77,7 +77,7 @@ function archLabel(a: Asset): string | null {
   return null
 }
 
-interface FileRow { label: string, size: string, url: string }
+interface FileRow { label: string, size: string, url: string, name: string }
 
 function rowsFor(key: Platform): FileRow[] {
   const assets = (release.value?.assets ?? []).filter((a) => a.platform === key)
@@ -90,6 +90,7 @@ function rowsFor(key: Platform): FileRow[] {
       label: `.${a.format}${arch ? ` · ${arch}` : ''}`,
       size: `${Math.round(a.size / 1048576)} MB`,
       url: a.url,
+      name: a.name,
     })
   }
   return rows
@@ -111,7 +112,7 @@ const cards = computed(() => {
     key,
     name: NAMES[key],
     num: String(i + 1).padStart(2, '0'),
-    files: [{ label: t('topo.download.viaReleases'), size: '', url }],
+    files: [{ label: t('topo.download.viaReleases'), size: '', url, name: '' }],
   }))
 })
 
@@ -121,10 +122,25 @@ const recommended = computed(() => {
   const card = cards.value.find((c) => c.key === detected.value)
   const file = card?.files[0]
   if (!card || !file) return null
-  return { name: card.name, ...file }
+  return { platform: card.name, ...file }
 })
 
 const versionTag = computed(() => (release.value?.tag ?? 'beta').toUpperCase())
+
+/** app version as published — read from the asset filenames */
+const version = computed(() => {
+  for (const a of release.value?.assets ?? []) {
+    const m = a.name.match(/\d+\.\d+\.\d+/)
+    if (m) return m[0]
+  }
+  return null
+})
+
+/** hover tip: exact version + exact file behind the link */
+function tip(f: FileRow): string | undefined {
+  if (!f.name) return undefined
+  return `NeuroCanvas ${version.value ?? versionTag.value} · ${f.name}`
+}
 
 const instKey: Record<Platform, string> = {
   macos: 'instMacos',
@@ -153,13 +169,14 @@ const instKey: Record<Platform, string> = {
 
     <div v-if="recommended" class="download-cta">
       <a
-        class="btn-primary"
+        class="btn-primary tip"
         :href="recommended.url"
+        :data-tip="tip(recommended)"
         target="_blank"
         rel="noopener"
         data-cursor="link"
       >
-        {{ t('topo.download.downloadFor', { platform: recommended.name }) }}
+        {{ t('topo.download.downloadFor', { platform: recommended.platform }) }}
         <span aria-hidden="true">↓</span>
         <span class="sr-only">{{ t('topo.a11y.newTab') }}</span>
       </a>
@@ -181,8 +198,9 @@ const instKey: Record<Platform, string> = {
           <a
             v-for="f in p.files"
             :key="f.label"
-            class="card__file"
+            class="card__file tip"
             :href="f.url"
+            :data-tip="tip(f)"
             target="_blank"
             rel="noopener"
             data-cursor="link"
