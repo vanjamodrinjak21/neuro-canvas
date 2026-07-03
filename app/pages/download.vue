@@ -136,10 +136,10 @@ const version = computed(() => {
   return null
 })
 
-/** hover tip: exact version + exact file behind the link */
+/** hover tip: the app version behind the link */
 function tip(f: FileRow): string | undefined {
   if (!f.name) return undefined
-  return `NeuroCanvas ${version.value ?? versionTag.value} · ${f.name}`
+  return `NeuroCanvas ${version.value ?? versionTag.value}`
 }
 
 const instKey: Record<Platform, string> = {
