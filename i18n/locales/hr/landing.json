@@ -408,7 +408,8 @@
       "instWindows": "Pokreni installer. Ako se pojavi SmartScreen, odaberi “More info” → “Run anyway”.",
       "instAndroid": "Dozvoli instalaciju iz preglednika kad te pita, pa otvori preuzeti .apk.",
       "instLinux": "Učini AppImage izvršnim (chmod +x) i pokreni ga, ili instaliraj .deb kroz package manager.",
-      "viaReleases": "putem GitHub Releases"
+      "viaReleases": "putem GitHub Releases",
+      "downloadFor": "Preuzmi za {platform}"
     }
   }
 }

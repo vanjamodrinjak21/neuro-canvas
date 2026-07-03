@@ -408,7 +408,8 @@
       "instWindows": "Run the installer. If SmartScreen appears, choose “More info” → “Run anyway”.",
       "instAndroid": "Allow installs from your browser when prompted, then open the downloaded .apk.",
       "instLinux": "Make the AppImage executable (chmod +x) and run it, or install the .deb with your package manager.",
-      "viaReleases": "via GitHub Releases"
+      "viaReleases": "via GitHub Releases",
+      "downloadFor": "Download for {platform}"
     }
   }
 }

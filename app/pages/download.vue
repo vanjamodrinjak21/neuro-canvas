@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * /download — landing-styled downloads page. Pulls /api/releases/latest and
- * builds the platform cards from the assets that actually exist in the
- * release (real format, arch and size, direct download links), with a
- * GitHub-releases fallback when the API is unavailable. Per-platform
- * install notes cover the first-launch security prompts.
+ * /download — landing-styled downloads page. Pulls /api/releases/latest,
+ * puts a "Download for <detected platform>" button up top, then one card
+ * per platform listing the installer files that actually exist in the
+ * release (real format, arch, size, direct links). Falls back to
+ * GitHub-releases links when the API is unavailable.
  */
 definePageMeta({ layout: false })
 
@@ -51,12 +51,13 @@ onMounted(() => {
   else if (p.includes('linux') || /linux/.test(ua)) detected.value = 'linux'
 })
 
-/** preferred install format per platform — first published match wins */
-const PREFERRED: Record<Platform, string[]> = {
-  macos: ['dmg', 'app.tar.gz'],
-  windows: ['exe', 'msi', 'nsis.zip'],
+/** installer formats users actually download, in display order — updater
+ * artifacts (app.tar.gz, aab) stay out of the list */
+const USER_FACING: Record<Platform, string[]> = {
+  macos: ['dmg'],
+  windows: ['exe', 'msi'],
   linux: ['AppImage', 'deb'],
-  android: ['apk', 'aab'],
+  android: ['apk'],
   ios: ['ipa'],
 }
 
@@ -76,40 +77,51 @@ function archLabel(a: Asset): string | null {
   return null
 }
 
-function fileLine(a: Asset): string {
-  const bits = [`.${a.format}`]
-  const arch = archLabel(a)
-  if (arch) bits.push(arch)
-  bits.push(`${Math.round(a.size / 1048576)} MB`)
-  return bits.join(' · ')
-}
+interface FileRow { label: string, size: string, url: string }
 
-/** one card per platform that actually has a build in the latest release;
- * static GitHub-releases cards only when the API gave us nothing */
-const cards = computed(() => {
-  const order: Platform[] = ['macos', 'windows', 'linux', 'android', 'ios']
-  const out: { key: Platform, name: string, file: string, url: string, num: string }[] = []
-  for (const key of order) {
-    const assets = (release.value?.assets ?? []).filter((a) => a.platform === key)
-    if (!assets.length) continue
-    const best
-      = PREFERRED[key].map((f) => assets.find((a) => a.format === f)).find(Boolean) ?? assets[0]!
-    out.push({
-      key,
-      name: NAMES[key],
-      file: fileLine(best),
-      url: best.url,
-      num: String(out.length + 1).padStart(2, '0'),
+function rowsFor(key: Platform): FileRow[] {
+  const assets = (release.value?.assets ?? []).filter((a) => a.platform === key)
+  const rows: FileRow[] = []
+  for (const fmt of USER_FACING[key]) {
+    const a = assets.find((x) => x.format === fmt)
+    if (!a) continue
+    const arch = archLabel(a)
+    rows.push({
+      label: `.${a.format}${arch ? ` · ${arch}` : ''}`,
+      size: `${Math.round(a.size / 1048576)} MB`,
+      url: a.url,
     })
   }
+  return rows
+}
+
+/** one card per platform that actually ships a build in the latest
+ * release; static GitHub-releases cards only when the API gave nothing */
+const cards = computed(() => {
+  const order: Platform[] = ['macos', 'windows', 'linux', 'android', 'ios']
+  const out: { key: Platform, name: string, num: string, files: FileRow[] }[] = []
+  for (const key of order) {
+    const files = rowsFor(key)
+    if (!files.length) continue
+    out.push({ key, name: NAMES[key], num: String(out.length + 1).padStart(2, '0'), files })
+  }
   if (out.length) return out
+  const url = release.value?.htmlUrl ?? RELEASES
   return (['macos', 'windows', 'android'] as Platform[]).map((key, i) => ({
     key,
     name: NAMES[key],
-    file: t('topo.download.viaReleases'),
-    url: release.value?.htmlUrl ?? RELEASES,
     num: String(i + 1).padStart(2, '0'),
+    files: [{ label: t('topo.download.viaReleases'), size: '', url }],
   }))
+})
+
+/** the big button: best installer for the visitor's platform */
+const recommended = computed(() => {
+  if (!detected.value) return null
+  const card = cards.value.find((c) => c.key === detected.value)
+  const file = card?.files[0]
+  if (!card || !file) return null
+  return { name: card.name, ...file }
 })
 
 const versionTag = computed(() => (release.value?.tag ?? 'beta').toUpperCase())
@@ -139,24 +151,51 @@ const instKey: Record<Platform, string> = {
     />
     <p class="subpage__sub">{{ t('topo.download.sub') }}</p>
 
-    <div class="card-grid card-grid--three">
+    <div v-if="recommended" class="download-cta">
       <a
-        v-for="p in cards"
-        :key="p.key"
-        class="card survey-frame"
-        :class="{ 'is-detected': detected === p.key }"
-        :href="p.url"
+        class="btn-primary"
+        :href="recommended.url"
         target="_blank"
         rel="noopener"
         data-cursor="link"
       >
-        <p class="card__num">{{ p.num }}</p>
-        <h2 class="card__title">{{ p.name }}</h2>
-        <p class="card__desc">{{ p.file }}</p>
-        <p v-if="detected === p.key" class="card__badge">{{ t('topo.download.detected') }}</p>
-        <span class="card__go" aria-hidden="true">↓</span>
+        {{ t('topo.download.downloadFor', { platform: recommended.name }) }}
+        <span aria-hidden="true">↓</span>
         <span class="sr-only">{{ t('topo.a11y.newTab') }}</span>
       </a>
+      <p class="download-cta__meta" aria-hidden="true">
+        {{ recommended.label }}{{ recommended.size ? ` · ${recommended.size}` : '' }}
+      </p>
+    </div>
+
+    <div class="card-grid card-grid--three">
+      <div
+        v-for="p in cards"
+        :key="p.key"
+        class="card survey-frame"
+        :class="{ 'is-detected': detected === p.key }"
+      >
+        <p class="card__num">{{ p.num }}</p>
+        <h2 class="card__title">{{ p.name }}</h2>
+        <div class="card__files">
+          <a
+            v-for="f in p.files"
+            :key="f.label"
+            class="card__file"
+            :href="f.url"
+            target="_blank"
+            rel="noopener"
+            data-cursor="link"
+          >
+            <span>{{ f.label }}</span>
+            <span class="card__file-size"
+              >{{ f.size }} <span aria-hidden="true">↓</span></span
+            >
+            <span class="sr-only">{{ t('topo.a11y.newTab') }}</span>
+          </a>
+        </div>
+        <p v-if="detected === p.key" class="card__badge">{{ t('topo.download.detected') }}</p>
+      </div>
     </div>
 
     <section class="install" aria-labelledby="install-title">

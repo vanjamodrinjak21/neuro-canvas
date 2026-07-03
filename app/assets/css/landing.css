@@ -1543,3 +1543,50 @@ html.is-menu-open .menu-btn__tick {
     grid-template-columns: 1fr;
   }
 }
+
+/* the big platform button above the cards */
+.lp .download-cta {
+  margin-top: 2.6rem;
+}
+
+.lp .download-cta .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.lp .download-cta__meta {
+  margin-top: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* per-file rows inside a platform card */
+.lp .card__files {
+  margin-top: 1.2rem;
+  display: grid;
+}
+
+.lp .card__file {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--hair);
+  transition: color 0.25s var(--ease-out);
+}
+
+.lp .card__file:hover {
+  color: var(--cyan);
+}
+
+.lp .card__file-size {
+  white-space: nowrap;
+}
