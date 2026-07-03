@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import type { TopoScene } from '~/lib/topo-scene/topo-scene'
+
 /**
  * Native boot screen (Tauri desktop + Capacitor mobile).
  * The smallest possible mind map — three white thought-nodes — waking up
- * on the survey map: contour rings breathe behind it, signals pulse
- * between the nodes, a hairline gauge tracks progress.
+ * on the survey map: the landing's topographic terrain breathes behind it
+ * (static camera, no pointer deformation), signals pulse between the
+ * nodes, a hairline gauge tracks progress. SVG contour rings paint
+ * instantly and stay as the no-WebGL fallback.
  *
  * API consumed by app.vue: props { status, progress }, exposed leave().
  */
@@ -20,6 +24,54 @@ const props = withDefaults(defineProps<Props>(), {
 const mounted = ref(false)
 const leaving = ref(false)
 const root = ref<HTMLElement | null>(null)
+
+// --- topographic backdrop (no mouse interaction) -------------------------
+const bgCanvas = ref<HTMLCanvasElement | null>(null)
+const webglOk = ref(false)
+
+let scene: TopoScene | null = null
+let ro: ResizeObserver | null = null
+let raf = 0
+let last = 0
+let intro = 0
+// event-driven flag, not visibilityState: rAF already pauses when hidden,
+// and polling the live state skips frames in occluded-but-woken windows
+let visible = true
+const onVisibility = () => {
+  visible = document.visibilityState === 'visible'
+}
+
+async function bootTopo() {
+  if (!bgCanvas.value) return
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  try {
+    // three stays out of the critical boot path — the SVG contours paint first
+    const { TopoScene } = await import('~/lib/topo-scene/topo-scene')
+    scene = new TopoScene(bgCanvas.value, { reducedMotion: reduced })
+  } catch {
+    return // no WebGL — the contour rings remain
+  }
+  scene.pointerLeave() // static map: the terrain never follows a cursor
+  ro = new ResizeObserver(() => scene?.resize())
+  ro.observe(bgCanvas.value)
+  document.addEventListener('visibilitychange', onVisibility)
+  webglOk.value = true
+  last = performance.now()
+  const loop = (t: number) => {
+    const dt = Math.min((t - last) / 1000, 0.1)
+    last = t
+    if (visible && scene) {
+      // surface the first cluster like the landing intro (0 → 0.14 in ~2.6s)
+      if (intro < 0.14) {
+        intro = Math.min(0.14, intro + dt * 0.055)
+        scene.setIntroReveal(intro)
+      }
+      scene.update(dt)
+    }
+    raf = requestAnimationFrame(loop)
+  }
+  raf = requestAnimationFrame(loop)
+}
 
 // progress rides one CSS custom property — no inline style bindings
 watch(
@@ -39,6 +91,15 @@ onMounted(() => {
     mounted.value = true
     root.value?.style.setProperty('--load-p', String(Math.max(props.progress, 0) / 100))
   })
+  bootTopo()
+})
+
+onBeforeUnmount(() => {
+  cancelAnimationFrame(raf)
+  document.removeEventListener('visibilitychange', onVisibility)
+  ro?.disconnect()
+  scene?.dispose()
+  scene = null
 })
 
 function leave(): Promise<void> {
@@ -73,6 +134,14 @@ defineExpose({ leave })
       <path class="app-loading__cross" d="M700 180h16M708 172v16" />
       <path class="app-loading__cross" d="M110 700h14M117 693v14" />
     </svg>
+
+    <!-- the real terrain fades in over the rings once WebGL is up -->
+    <canvas
+      ref="bgCanvas"
+      class="app-loading__topo"
+      :class="{ 'is-on': webglOk }"
+      aria-hidden="true"
+    />
 
     <!-- survey corners -->
     <span class="app-loading__corner app-loading__corner--tl" aria-hidden="true">+</span>
@@ -151,6 +220,20 @@ defineExpose({ leave })
   pointer-events: none;
 }
 
+/* --- topographic terrain (WebGL, pointer-less) --- */
+.app-loading__topo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+
+.app-loading__topo.is-on {
+  opacity: 1;
+}
+
 /* --- contour field --- */
 .app-loading__contours {
   position: absolute;
@@ -193,6 +276,7 @@ defineExpose({ leave })
 /* --- survey corners --- */
 .app-loading__corner {
   position: absolute;
+  z-index: 1;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 15px;
   color: var(--al-coral);
@@ -216,6 +300,8 @@ defineExpose({ leave })
 
 /* --- the mark --- */
 .app-loading__logo {
+  position: relative;
+  z-index: 1;
   width: clamp(72px, 18vw, 96px);
   height: clamp(72px, 18vw, 96px);
   opacity: 0;
@@ -267,6 +353,8 @@ defineExpose({ leave })
 
 /* --- wordmark --- */
 .app-loading__wordmark {
+  position: relative;
+  z-index: 1;
   margin-top: 26px;
   font-family: 'Cabinet Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
   font-size: calc(24px * var(--nc-text-scale, 1));
@@ -285,6 +373,8 @@ defineExpose({ leave })
 
 /* --- status --- */
 .app-loading__status {
+  position: relative;
+  z-index: 1;
   margin-top: 14px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: calc(10px * var(--nc-text-scale, 1));
@@ -304,6 +394,8 @@ defineExpose({ leave })
 
 /* --- depth gauge --- */
 .app-loading__gauge {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -347,6 +439,7 @@ defineExpose({ leave })
 /* --- version --- */
 .app-loading__version {
   position: absolute;
+  z-index: 1;
   bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: calc(10px * var(--nc-text-scale, 1));
