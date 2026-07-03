@@ -39,6 +39,17 @@ RUN npm ci --legacy-peer-deps --ignore-scripts
 # during `nuxt build` for the docs cache; bcrypt is used at runtime by auth).
 RUN npm rebuild better-sqlite3 bcrypt
 
+# Apply dependency patches — postinstall's `patch-package` was skipped by
+# --ignore-scripts above, so it must run manually here.
+# Why: next-auth 4.24.x dropped the `./core` subpath from its exports map,
+# but @sidebase/nuxt-auth's server handler imports `next-auth/core`. Without
+# the patch, `nuxt build` dies at prerender init (ERR_PACKAGE_PATH_NOT_EXPORTED)
+# and the unpatched package.json traced into .output/server/node_modules would
+# crash the server at startup the same way.
+# (Copied after `npm ci` so patch edits don't invalidate the install layer.)
+COPY patches ./patches/
+RUN npx patch-package
+
 # Run the postinstall steps we DO need, manually.
 RUN npx prisma generate && npx nuxi prepare
 
