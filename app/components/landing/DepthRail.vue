@@ -30,24 +30,27 @@ onMounted(() => {
     end: 'max',
     onUpdate: (self) => {
       progress.value = self.progress
+      // one CSS variable drives fill + readout — no inline style bindings
+      railEl.value?.style.setProperty('--rail-p', String(self.progress))
     },
   })
 })
 
 onBeforeUnmount(() => trigger?.kill())
+
+const railEl = ref<HTMLElement | null>(null)
 </script>
 
 <template>
-  <nav class="rail" aria-label="Sections">
+  <nav ref="railEl" class="rail" aria-label="Sections">
     <div class="rail__track" aria-hidden="true">
-      <div class="rail__fill" :style="{ transform: `scaleY(${progress})` }" />
+      <div class="rail__fill" />
     </div>
     <button
       v-for="s in stations"
       :key="s.id"
       class="rail__tick"
       :class="{ 'is-passed': progress >= s.at }"
-      :style="{ top: `${s.at * 100}%` }"
       type="button"
       data-cursor="link"
       @click="scrollTo(s.id)"
@@ -55,8 +58,6 @@ onBeforeUnmount(() => trigger?.kill())
       <span class="rail__dot" aria-hidden="true" />
       <span class="rail__label">{{ s.label }}</span>
     </button>
-    <div class="rail__readout" aria-hidden="true" :style="{ top: `${progress * 100}%` }">
-      DPT {{ depth }}
-    </div>
+    <div class="rail__readout" aria-hidden="true">DPT {{ depth }}</div>
   </nav>
 </template>

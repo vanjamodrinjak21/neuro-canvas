@@ -116,7 +116,7 @@ onBeforeUnmount(() => {
 
     <NuxtLink class="wordmark" to="/dashboard" aria-label="NeuroCanvas" data-cursor="link">
       <span v-for="(ch, i) in letters" :key="i" class="ch-mask"
-        ><span class="ch" :style="{ transitionDelay: `${i * 18}ms` }"
+        ><span class="ch"
           ><span class="ch__a">{{ ch }}</span
           ><span class="ch__b" aria-hidden="true">{{ ch }}</span></span
         ></span

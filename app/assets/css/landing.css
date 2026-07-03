@@ -1444,3 +1444,33 @@ html.is-menu-open .menu-btn__tick {
   background: var(--cyan);
   color: var(--bg);
 }
+
+/* rail geometry lives in CSS — tick positions are the station map,
+   the scroll-driven values ride one --rail-p custom property */
+.lp .rail__fill {
+  transform: scaleY(var(--rail-p, 0));
+}
+
+.lp .rail__readout {
+  top: calc(var(--rail-p, 0) * 100%);
+}
+
+.lp .rail__tick:nth-of-type(1) { top: 0%; }
+.lp .rail__tick:nth-of-type(2) { top: 18%; }
+.lp .rail__tick:nth-of-type(3) { top: 37%; }
+.lp .rail__tick:nth-of-type(4) { top: 56%; }
+.lp .rail__tick:nth-of-type(5) { top: 75%; }
+.lp .rail__tick:nth-of-type(6) { top: 94%; }
+
+/* wordmark roll stagger — was a per-letter inline transition-delay */
+.lp .wordmark .ch-mask:nth-child(1) .ch { transition-delay: 0ms; }
+.lp .wordmark .ch-mask:nth-child(2) .ch { transition-delay: 18ms; }
+.lp .wordmark .ch-mask:nth-child(3) .ch { transition-delay: 36ms; }
+.lp .wordmark .ch-mask:nth-child(4) .ch { transition-delay: 54ms; }
+.lp .wordmark .ch-mask:nth-child(5) .ch { transition-delay: 72ms; }
+.lp .wordmark .ch-mask:nth-child(6) .ch { transition-delay: 90ms; }
+.lp .wordmark .ch-mask:nth-child(7) .ch { transition-delay: 108ms; }
+.lp .wordmark .ch-mask:nth-child(8) .ch { transition-delay: 126ms; }
+.lp .wordmark .ch-mask:nth-child(9) .ch { transition-delay: 144ms; }
+.lp .wordmark .ch-mask:nth-child(10) .ch { transition-delay: 162ms; }
+.lp .wordmark .ch-mask:nth-child(11) .ch { transition-delay: 180ms; }
