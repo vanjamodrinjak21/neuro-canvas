@@ -5,6 +5,8 @@ definePageMeta({
 
 const { t } = useI18n()
 
+useHead(() => ({ title: `${t('topo.auth.signupTitle').replace(/\*/g, '')} — NeuroCanvas` }))
+
 let signIn: any = null
 try {
   const auth = useAuth()
@@ -59,7 +61,8 @@ async function handleAppleSignin() {
 const name = ref('')
 const email = ref('')
 const password = ref('')
-const showPassword = ref(false)
+const passwordConfirm = ref('')
+const touched = ref(false)
 const isLoading = ref(false)
 const message = ref('')
 const messageType = ref<'error' | 'success'>('error')
@@ -71,17 +74,20 @@ const hasNumber = computed(() => /\d/.test(password.value))
 const hasMinLength = computed(() => password.value.length >= 8)
 const isPasswordValid = computed(() => hasLowercase.value && hasUppercase.value && hasNumber.value && hasMinLength.value)
 const isEmailValid = computed(() => emailRegex.test(email.value))
+const confirmValid = computed(() => password.value.length > 0 && passwordConfirm.value === password.value)
 
 const canSubmit = computed(() =>
   email.value &&
   password.value &&
   isEmailValid.value &&
   isPasswordValid.value &&
+  confirmValid.value &&
   !isLoading.value
 )
 
 async function handleSignup() {
   message.value = ''
+  touched.value = true
   if (!email.value || !password.value) {
     message.value = t('auth.signup.validation.empty')
     messageType.value = 'error'
@@ -94,6 +100,11 @@ async function handleSignup() {
   }
   if (!isPasswordValid.value) {
     message.value = t('auth.signup.validation.invalid_password')
+    messageType.value = 'error'
+    return
+  }
+  if (!confirmValid.value) {
+    message.value = t('topo.auth.passwordMismatch')
     messageType.value = 'error'
     return
   }
@@ -120,755 +131,156 @@ async function handleSignup() {
   }
 }
 </script>
-
 <template>
-  <div class="auth-page">
-    <!-- Brand Panel -->
-    <div class="brand-panel">
-      <NuxtLink to="/" class="brand-logo">
-        <NcLogo :size="18" :container-size="32" :radius="8" />
-        <span class="logo-text">NeuroCanvas</span>
-      </NuxtLink>
+  <LandingShell>
+    <main id="content" class="subpage auth">
+    <div class="auth__card survey-frame">
+      <p class="subpage__eyebrow">
+        <span class="num">ACCESS</span> · {{ t('topo.auth.eyebrowUp') }}
+      </p>
+      <LandingRevealText
+        :text="t('topo.auth.signupTitle')"
+        as="h1"
+        class="auth__title"
+        immediate
+        :delay="0.15"
+      />
+      <p class="auth__sub">{{ t('topo.auth.signupSub') }}</p>
 
-      <div class="brand-content">
-        <span class="brand-eyebrow" aria-hidden="true">ACCESS<span class="brand-eyebrow-accent"> · </span>SIGN UP</span>
-        <h1 class="brand-headline">{{ $t('auth.signup.brand_headline') }}</h1>
-        <p class="brand-desc">{{ $t('auth.signup.brand_desc') }}</p>
+      <div class="auth__providers">
+        <button
+          class="auth__provider"
+          type="button"
+          :disabled="isGoogleLoading"
+          data-cursor="link"
+          @click="handleGoogleSignin"
+        >
+          <LandingProviderIcon name="google" />
+          {{ t('topo.auth.continueWith', { provider: 'Google' }) }}
+        </button>
+        <button
+          v-if="!isNative"
+          class="auth__provider"
+          type="button"
+          :disabled="isGithubLoading"
+          data-cursor="link"
+          @click="handleGithubSignin"
+        >
+          <LandingProviderIcon name="github" />
+          {{ t('topo.auth.continueWith', { provider: 'GitHub' }) }}
+        </button>
+        <button
+          v-if="appleAuthEnabled"
+          class="auth__provider"
+          type="button"
+          :disabled="isAppleLoading"
+          data-cursor="link"
+          @click="handleAppleSignin"
+        >
+          <LandingProviderIcon name="apple" />
+          {{ t('topo.auth.continueWith', { provider: 'Apple' }) }}
+        </button>
       </div>
 
-      <div class="stats-row">
-        <div class="stat">
-          <span class="stat-value">{{ $t('auth.signup.stat_maps_value') }}</span>
-          <span class="stat-label">{{ $t('auth.signup.stat_maps') }}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{{ $t('auth.signup.stat_free_value') }}</span>
-          <span class="stat-label">{{ $t('auth.signup.stat_free') }}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value accent">{{ $t('auth.signup.stat_platforms_value') }}</span>
-          <span class="stat-label">{{ $t('auth.signup.stat_platforms') }}</span>
-        </div>
+      <div class="auth__divider" aria-hidden="true">
+        <span>{{ t('topo.auth.or') }}</span>
       </div>
-    </div>
 
-    <!-- Form Panel -->
-    <div class="form-panel">
-      <div class="form-container">
-        <div class="form-header">
-          <span class="form-eyebrow" aria-hidden="true">ACCESS<span class="form-eyebrow-accent"> · </span>SIGN UP</span>
-          <h2 class="form-title">
-            {{ $t('auth.signup.form_title') }}<span class="form-title-italic">.</span>
-          </h2>
-          <p class="form-subtitle">{{ $t('auth.signup.form_subtitle') }}</p>
-        </div>
+      <form class="auth__form" @submit.prevent="handleSignup">
+        <label class="auth__label" for="auth-email">{{ t('topo.auth.emailLabel') }}</label>
+        <input
+          id="auth-email"
+          v-model="email"
+          class="auth__input"
+          type="email"
+          name="email"
+          autocomplete="email"
+          :placeholder="t('topo.auth.emailPlaceholder')"
+        >
 
-        <!-- OAuth -->
-        <div class="oauth-buttons">
-          <button class="oauth-btn" :disabled="isGoogleLoading || isGithubLoading || isAppleLoading" @click="handleGoogleSignin">
-            <svg v-if="!isGoogleLoading" class="oauth-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            <span v-else class="i-lucide-loader-2 animate-spin" />
-            <span>{{ $t('auth.oauth.google') }}</span>
-          </button>
-          <button v-if="appleAuthEnabled" class="oauth-btn" :disabled="isGoogleLoading || isGithubLoading || isAppleLoading" @click="handleAppleSignin">
-            <svg v-if="!isAppleLoading" class="oauth-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-            <span v-else class="i-lucide-loader-2 animate-spin" />
-            <span>{{ $t('auth.oauth.apple') }}</span>
-          </button>
-          <button v-if="!isNative" class="oauth-btn" :disabled="isGoogleLoading || isGithubLoading || isAppleLoading" @click="handleGithubSignin">
-            <svg v-if="!isGithubLoading" class="oauth-icon" viewBox="0 0 24 24"><path :fill="'currentColor'" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            <span v-else class="i-lucide-loader-2 animate-spin" />
-            <span>{{ $t('auth.oauth.github') }}</span>
-          </button>
-        </div>
-
-        <!-- Divider -->
-        <div class="divider">
-          <div class="divider-line" />
-          <span class="divider-text">{{ $t('auth.signup.divider') }}</span>
-          <div class="divider-line" />
-        </div>
-
-        <!-- Form -->
-        <form class="fields" @submit.prevent="handleSignup">
-          <div class="field">
-            <label class="field-label">{{ $t('auth.signup.name_label') }}</label>
+        <!-- opens automatically once the email is valid -->
+        <Transition name="field">
+          <div v-if="isEmailValid" class="auth__reveal">
+            <label class="auth__label" for="auth-pass">{{ t('topo.auth.passwordLabel') }}</label>
             <input
-              v-model="name"
-              type="text"
-              :placeholder="$t('auth.signup.name_placeholder')"
-              class="field-input"
-              :disabled="isLoading"
+              id="auth-pass"
+              v-model="password"
+              class="auth__input"
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              placeholder="••••••••"
+              :aria-invalid="touched && !isPasswordValid ? 'true' : undefined"
+              aria-describedby="auth-pass-hint"
             >
+            <p
+              id="auth-pass-hint"
+              class="auth__hint"
+              :class="{ 'is-ok': isPasswordValid, 'is-bad': touched && !isPasswordValid }"
+            >
+              {{ t('topo.auth.passwordHint') }}
+            </p>
           </div>
-          <div class="field">
-            <label class="field-label">{{ $t('auth.signup.email_label') }}</label>
+        </Transition>
+
+        <Transition name="field">
+          <div v-if="isEmailValid" class="auth__reveal">
+            <label class="auth__label" for="auth-confirm">{{ t('topo.auth.confirmLabel') }}</label>
             <input
-              v-model="email"
-              type="email"
-              :placeholder="$t('auth.signup.email_placeholder')"
-              class="field-input"
-              :disabled="isLoading"
+              id="auth-confirm"
+              v-model="passwordConfirm"
+              class="auth__input"
+              type="password"
+              name="password-confirm"
+              autocomplete="new-password"
+              placeholder="••••••••"
+              :aria-invalid="touched && !confirmValid ? 'true' : undefined"
             >
+            <p v-if="touched && !confirmValid" class="auth__hint is-bad">
+              {{ t('topo.auth.passwordMismatch') }}
+            </p>
           </div>
-          <div class="field">
-            <label class="field-label">{{ $t('auth.signup.password_label') }}</label>
-            <div class="input-wrap">
-              <input
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                :placeholder="$t('auth.signup.password_placeholder')"
-                class="field-input"
-                :disabled="isLoading"
-              >
-              <button type="button" class="toggle-pw" :aria-label="showPassword ? $t('auth.password.toggle_hide') : $t('auth.password.toggle_show')" @click="showPassword = !showPassword">
-                <span :class="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" />
-              </button>
-            </div>
-          </div>
+        </Transition>
 
-          <!-- Password requirements -->
-          <div v-if="password.length > 0" class="pw-requirements">
-            <span :class="['pw-req', { met: hasMinLength }]">
-              <span :class="hasMinLength ? 'i-lucide-check' : 'i-lucide-circle'" class="pw-req-icon" />
-              {{ $t('auth.password.requirements.8_chars') }}
-            </span>
-            <span :class="['pw-req', { met: hasLowercase }]">
-              <span :class="hasLowercase ? 'i-lucide-check' : 'i-lucide-circle'" class="pw-req-icon" />
-              {{ $t('auth.password.requirements.lowercase') }}
-            </span>
-            <span :class="['pw-req', { met: hasUppercase }]">
-              <span :class="hasUppercase ? 'i-lucide-check' : 'i-lucide-circle'" class="pw-req-icon" />
-              {{ $t('auth.password.requirements.uppercase') }}
-            </span>
-            <span :class="['pw-req', { met: hasNumber }]">
-              <span :class="hasNumber ? 'i-lucide-check' : 'i-lucide-circle'" class="pw-req-icon" />
-              {{ $t('auth.password.requirements.number') }}
-            </span>
-          </div>
+        <button
+          class="btn-primary auth__submit"
+          type="submit"
+          data-cursor="link"
+          :disabled="!canSubmit"
+        >
+          {{ t('topo.auth.continue') }}
+        </button>
+      </form>
 
-          <Transition name="nc-fade-down">
-            <div v-if="message" :class="['form-message', messageType]">{{ message }}</div>
-          </Transition>
+      <p
+        v-if="message"
+        class="auth__hint"
+        :class="messageType === 'success' ? 'is-ok' : 'is-bad'"
+        role="status"
+      >
+        {{ message }}
+      </p>
 
-          <button type="submit" class="submit-btn" :disabled="!canSubmit || isLoading">
-            {{ isLoading ? $t('auth.signup.submit_loading') : $t('auth.signup.submit') }}
-          </button>
-        </form>
+      <p class="auth__switch">
+        {{ t('topo.auth.haveAccount') }}
+        <NuxtLink to="/auth/signin" data-cursor="link">{{ t('topo.auth.switchIn') }}</NuxtLink>
+      </p>
 
-        <div class="form-footer-wrap">
-          <p class="terms-text">{{ $t('auth.signup.terms') }} <NuxtLink to="/terms">{{ $t('auth.signup.terms_link_tos') }}</NuxtLink> and <NuxtLink to="/privacy">{{ $t('auth.signup.terms_link_privacy') }}</NuxtLink>.</p>
-          <p class="form-footer">
-            {{ $t('auth.signup.footer') }}
-            <NuxtLink to="/auth/signin" class="footer-link">{{ $t('auth.signup.footer_link') }}</NuxtLink>
-          </p>
-        </div>
-      </div>
+      <p class="auth__legal">
+        {{ t('topo.auth.legalNote') }}
+        <NuxtLink to="/terms" data-cursor="link">{{ t('topo.footer.terms') }}</NuxtLink>
+        ·
+        <NuxtLink to="/privacy" data-cursor="link">{{ t('topo.footer.privacy') }}</NuxtLink>
+      </p>
     </div>
-  </div>
+  </main>
+  </LandingShell>
 </template>
 
 <style scoped>
-.auth-page {
-  /* Landing/docs palette, scoped to the auth page only. The rest of the app
-     keeps the global tokens; light theme remaps below. */
-  --nc-accent: #5EF2E8;
-  --nc-accent-glow: rgba(94, 242, 232, 0.08);
-  --nc-accent-glow-strong: rgba(94, 242, 232, 0.15);
-  --docs-coral: #FF8A5C;
-
-  display: flex;
-  min-height: 100vh;
-  background: var(--nc-bg);
-  color: var(--nc-text);
-  font-family: var(--nc-font-body);
-}
-
-/* deep-map black behind the auth page in dark mode, like the landing */
-:root:not(.light) .auth-page {
-  --nc-bg: #050508;
-  --nc-surface: #0d0d11;
-}
-
-:root.light .auth-page {
-  --nc-accent: #0b9e93;
-  --nc-accent-glow: rgba(11, 158, 147, 0.08);
-  --nc-accent-glow-strong: rgba(11, 158, 147, 0.15);
-  --docs-coral: #d95f2f;
-}
-
-/* Brand Panel */
-.brand-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: 640px;
-  flex-shrink: 0;
-  padding: 48px 56px;
-  background: var(--nc-surface);
-  border-right: 1px solid var(--nc-border);
-}
-
-.brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--nc-text);
-}
-
-.logo-text {
-  font-family: var(--nc-font-display);
-  font-size: calc(17px * var(--nc-text-scale, 1));
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.brand-content {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding-bottom: 80px;
-}
-
-.brand-eyebrow {
-  font-family: var(--nc-font-mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--nc-text-muted);
-}
-
-.brand-eyebrow-accent {
-  color: var(--docs-coral);
-}
-
-.brand-headline {
-  font-family: var(--nc-font-display);
-  font-size: calc(44px * var(--nc-text-scale, 1));
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  margin: 0;
-  color: var(--nc-text);
-}
-
-.brand-desc {
-  font-size: calc(16px * var(--nc-text-scale, 1));
-  line-height: 26px;
-  color: var(--nc-text-muted);
-  margin: 0;
-  max-width: 420px;
-}
-
-/* Stats Row */
-.stats-row {
-  display: flex;
-  gap: 48px;
-  padding-top: 32px;
-  border-top: 1px solid var(--nc-border);
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-value {
-  font-family: var(--nc-font-display);
-  font-size: calc(24px * var(--nc-text-scale, 1));
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--nc-text);
-  line-height: 30px;
-}
-
-.stat-value.accent {
-  color: var(--nc-accent);
-}
-
-.stat-label {
-  font-family: var(--nc-font-mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--nc-text-muted);
-}
-
-/* Form Panel */
-.form-panel {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px;
-}
-
-/* Survey-frame card */
-.form-container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 400px;
-  gap: 32px;
-  padding: 40px;
-  background: var(--nc-surface);
-  border: 1px dashed var(--nc-border-active);
-  border-radius: 8px;
-}
-
-.form-container::before,
-.form-container::after {
-  content: '+';
-  position: absolute;
-  font-family: var(--nc-font-mono);
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  line-height: 1;
-  color: var(--docs-coral);
-  pointer-events: none;
-}
-
-.form-container::before {
-  top: -7px;
-  left: -7px;
-}
-
-.form-container::after {
-  bottom: -7px;
-  right: -7px;
-}
-
-.form-header {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.form-eyebrow {
-  font-family: var(--nc-font-mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--nc-text-muted);
-}
-
-.form-eyebrow-accent {
-  color: var(--docs-coral);
-}
-
-.form-title {
-  font-family: var(--nc-font-display);
-  font-size: calc(36px * var(--nc-text-scale, 1));
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-  margin: 0;
-}
-
-.form-title-italic {
-  font-family: var(--nc-font-serif);
-  font-style: italic;
-  font-weight: 400;
-  color: var(--nc-accent);
-}
-
-.form-subtitle {
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted);
-  margin: 0;
-  line-height: 1.55;
-}
-
-/* OAuth */
-.oauth-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.oauth-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 44px;
-  gap: 10px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid var(--nc-border);
-  color: var(--nc-text-secondary);
-  font-family: var(--nc-font-mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition: border-color 150ms var(--nc-ease-out), color 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out);
-}
-
-.oauth-btn:hover:not(:disabled) {
-  border-color: var(--nc-accent);
-  color: var(--nc-accent);
-  background: var(--nc-accent-glow);
-}
-
-.oauth-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.oauth-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.oauth-icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* Divider */
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.divider-line {
-  flex: 1;
-  height: 1px;
-  background: var(--nc-border);
-}
-
-.divider-text {
-  font-family: var(--nc-font-mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--nc-text-muted);
-}
-
-/* Fields */
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-label {
-  font-family: var(--nc-font-mono);
-  font-size: calc(10px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--nc-text-muted);
-}
-
-.input-wrap {
-  position: relative;
-}
-
-.field-input {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  background: color-mix(in srgb, var(--nc-surface) 60%, transparent);
-  border: 1px solid var(--nc-border);
-  border-radius: 8px;
-  color: var(--nc-text);
-  font-family: var(--nc-font-body);
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  outline: none;
-  transition: border-color 150ms var(--nc-ease-out);
-}
-
-.field-input::placeholder {
-  color: var(--nc-text-muted);
-}
-
-.field-input:focus {
-  border-color: var(--nc-accent);
-}
-
-.field-input:disabled {
+/* landing had provider anchors — the app uses real buttons */
+.auth__provider:disabled {
   opacity: 0.5;
-}
-
-.input-wrap .field-input {
-  padding-right: 44px;
-}
-
-.toggle-pw {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--nc-text-muted);
-  cursor: pointer;
-  font-size: calc(16px * var(--nc-text-scale, 1));
-  display: flex;
-  align-items: center;
-}
-
-/* Password requirements */
-.pw-requirements {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-}
-
-.pw-req {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--nc-font-mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.04em;
-  color: var(--nc-text-muted);
-  transition: color 120ms var(--nc-ease-out);
-}
-
-.pw-req.met {
-  color: var(--nc-success);
-}
-
-.pw-req-icon {
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  flex-shrink: 0;
-}
-
-/* Message */
-.form-message {
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  line-height: 18px;
-}
-
-.form-message.error {
-  background: var(--nc-danger-glow);
-  border: 1px solid color-mix(in srgb, var(--nc-danger) 25%, transparent);
-  color: var(--nc-danger);
-}
-
-.form-message.success {
-  background: var(--nc-accent-glow-strong);
-  border: 1px solid color-mix(in srgb, var(--nc-accent) 30%, transparent);
-  color: var(--nc-accent);
-}
-
-/* Submit */
-.submit-btn {
-  height: 48px;
-  border-radius: 10px;
-  background: var(--nc-text);
-  color: var(--nc-bg);
-  font-family: var(--nc-font-display);
-  font-size: calc(15px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: background 150ms var(--nc-ease-out), color 150ms var(--nc-ease-out), transform 100ms var(--nc-ease-out);
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: var(--nc-accent);
-  color: var(--nc-bg);
-}
-
-.submit-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.submit-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* Footer */
-.form-footer-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-align: center;
-}
-
-.terms-text {
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted);
-  margin: 0;
-  line-height: 18px;
-}
-
-.terms-text a {
-  color: var(--nc-text-secondary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.15s;
-}
-
-.terms-text a:hover {
-  color: var(--nc-accent);
-}
-
-.form-footer {
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted);
-  margin: 0;
-}
-
-.footer-link {
-  color: var(--nc-accent);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.footer-link:hover {
-  text-decoration: underline;
-}
-
-/* Utilities */
-.animate-spin {
-  animation: spin 600ms linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-spin {
-    animation-duration: 2s;
-  }
-}
-
-/* Ensure error messages have high contrast */
-.form-message.error {
-  font-weight: 500;
-}
-
-/* Laptop breakpoint */
-@media (max-width: 1366px) {
-  .brand-panel {
-    width: 520px;
-    padding: 48px 48px;
-  }
-
-  .brand-headline {
-    font-size: calc(38px * var(--nc-text-scale, 1));
-    line-height: 46px;
-  }
-
-  .brand-desc {
-    font-size: calc(15px * var(--nc-text-scale, 1));
-    line-height: 24px;
-  }
-
-  .form-container {
-    width: 380px;
-    gap: 28px;
-  }
-
-  .form-title {
-    font-size: calc(28px * var(--nc-text-scale, 1));
-    line-height: 34px;
-  }
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .brand-panel {
-    display: none;
-  }
-
-  .form-panel {
-    padding: 32px 24px;
-  }
-}
-
-@media (max-width: 768px) {
-  .form-panel {
-    padding: calc(env(safe-area-inset-top, 0px) + 20px) 24px env(safe-area-inset-bottom, 0px);
-    justify-content: flex-start;
-  }
-
-  .form-container {
-    width: 100%;
-    padding: 0;
-    border: none;
-    background: transparent;
-    border-radius: 0;
-  }
-
-  /* Drop the survey-frame corner marks on mobile so they don't clip the edge */
-  .form-container::before,
-  .form-container::after {
-    display: none;
-  }
-
-  .form-title {
-    font-size: calc(32px * var(--nc-text-scale, 1));
-    line-height: 40px;
-    letter-spacing: -0.03em;
-    font-weight: 800;
-  }
-
-  .form-subtitle {
-    font-size: calc(15px * var(--nc-text-scale, 1));
-    line-height: 22px;
-    margin-bottom: 12px;
-  }
-
-  .oauth-buttons {
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-
-  .oauth-btn {
-    height: 52px;
-    border-radius: 8px;
-    font-size: calc(12px * var(--nc-text-scale, 1));
-  }
-
-  .divider {
-    margin-bottom: 28px;
-  }
-
-  .divider span {
-    font-size: calc(12px * var(--nc-text-scale, 1));
-  }
-
-  .field-input {
-    height: 52px;
-    border-radius: 8px;
-    padding: 0 16px;
-    font-size: calc(15px * var(--nc-text-scale, 1));
-  }
-
-  .submit-btn {
-    height: 52px;
-    border-radius: 8px;
-    font-size: calc(15px * var(--nc-text-scale, 1));
-    font-weight: 700;
-    margin-bottom: 16px;
-  }
-
-  .form-footer {
-    font-size: calc(14px * var(--nc-text-scale, 1));
-    justify-content: center;
-  }
-
-  .form-footer a {
-    font-size: calc(14px * var(--nc-text-scale, 1));
-    font-weight: 600;
-  }
+  cursor: wait;
 }
 </style>

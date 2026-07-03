@@ -1474,3 +1474,25 @@ html.is-menu-open .menu-btn__tick {
 .lp .wordmark .ch-mask:nth-child(9) .ch { transition-delay: 144ms; }
 .lp .wordmark .ch-mask:nth-child(10) .ch { transition-delay: 162ms; }
 .lp .wordmark .ch-mask:nth-child(11) .ch { transition-delay: 180ms; }
+
+/* body-equivalent base — the landing set these on <body>, but element
+   resets were dropped when scoping, so the wrapper carries them */
+.lp {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* provider buttons are real <button>s in the app (anchors on the landing) —
+   strip the UA button chrome so they match */
+.lp .auth__provider {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}

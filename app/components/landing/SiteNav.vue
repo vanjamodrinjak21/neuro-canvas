@@ -26,10 +26,9 @@ interface NavLink {
 
 const links = computed<NavLink[]>(() => [
   // header nav shows the first three; the mobile menu lists everything
-  { label: t('topo.nav.templates'), to: '/templates' },
+  { label: t('topo.nav.download'), to: '/download' },
   { label: t('topo.nav.docs'), to: '/docs' },
   { label: 'GitHub', href: 'https://github.com/vanjamodrinjak21/neuro-canvas', external: true },
-  { label: t('topo.nav.download'), to: '/download' },
   { label: t('topo.nav.signin'), to: '/auth/signin' },
 ])
 

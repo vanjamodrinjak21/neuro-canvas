@@ -370,6 +370,38 @@
     "a11y": {
       "newTab": "(otvara se u novoj kartici)",
       "skip": "Preskoči na sadržaj"
+    },
+    "auth": {
+      "eyebrowIn": "Prijava",
+      "eyebrowUp": "Registracija",
+      "signinTitle": "Natrag na *mapu*.",
+      "signupTitle": "Posadi svoj prvi *čvor*.",
+      "signinSub": "Nastavi tamo gdje je razmišljanje stalo.",
+      "signupSub": "Od prvog kanvasa dijeli te jedno pitanje.",
+      "continueWith": "Nastavi s {provider}",
+      "or": "ili",
+      "emailLabel": "E-pošta",
+      "emailPlaceholder": "ti{'@'}primjer.com",
+      "passwordLabel": "Lozinka",
+      "confirmLabel": "Potvrdi lozinku",
+      "passwordHint": "Najmanje 8 znakova, jedno veliko slovo i jedna znamenka",
+      "passwordMismatch": "Lozinke se ne podudaraju",
+      "continue": "Nastavi e-poštom",
+      "noAccount": "Nemaš račun?",
+      "haveAccount": "Već imaš račun?",
+      "switchUp": "Registriraj se",
+      "switchIn": "Prijavi se",
+      "legalNote": "Nastavkom prihvaćaš",
+      "nameLabel": "Ime (neobavezno)",
+      "namePlaceholder": "Ada Lovelace",
+      "twofaLabel": "2FA kod"
+    },
+    "download": {
+      "eyebrow": "Desktop aplikacija",
+      "title": "Ponesi mapu *offline*.",
+      "sub": "Nativna desktop aplikacija na Tauriju — lagana, brza i tvoja.",
+      "detected": "Prepoznato za tebe",
+      "note": "Svi buildovi i checksumi žive na"
     }
   }
 }

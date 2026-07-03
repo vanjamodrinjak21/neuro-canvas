@@ -370,6 +370,38 @@
     "a11y": {
       "newTab": "(opens in a new tab)",
       "skip": "Skip to content"
+    },
+    "auth": {
+      "eyebrowIn": "Sign in",
+      "eyebrowUp": "Create account",
+      "signinTitle": "Back to the *map*.",
+      "signupTitle": "Plant your first *node*.",
+      "signinSub": "Pick up where your thinking left off.",
+      "signupSub": "One question away from your first canvas.",
+      "continueWith": "Continue with {provider}",
+      "or": "or",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you{'@'}example.com",
+      "passwordLabel": "Password",
+      "confirmLabel": "Confirm password",
+      "passwordHint": "At least 8 characters, one uppercase letter and one number",
+      "passwordMismatch": "Passwords don't match",
+      "continue": "Continue with email",
+      "noAccount": "No account yet?",
+      "haveAccount": "Already have an account?",
+      "switchUp": "Create one",
+      "switchIn": "Sign in",
+      "legalNote": "By continuing you accept the",
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "Ada Lovelace",
+      "twofaLabel": "2FA code"
+    },
+    "download": {
+      "eyebrow": "Desktop app",
+      "title": "Take the map *offline*.",
+      "sub": "A native desktop app built with Tauri — light, fast and yours.",
+      "detected": "Detected for you",
+      "note": "All builds and checksums live on"
     }
   }
 }
