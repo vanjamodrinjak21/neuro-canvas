@@ -401,7 +401,14 @@
       "title": "Take the map *offline*.",
       "sub": "A native desktop app built with Tauri — light, fast and yours.",
       "detected": "Detected for you",
-      "note": "All builds and checksums live on"
+      "note": "All builds and checksums live on",
+      "notesTitle": "Install notes",
+      "notesIntro": "The builds are signed by an independent developer, so your system may ask for confirmation on first launch.",
+      "instMacos": "Open the .dmg and drag NeuroCanvas into Applications. If Gatekeeper objects, right-click the app → Open → Open. First launch only.",
+      "instWindows": "Run the installer. If SmartScreen appears, choose “More info” → “Run anyway”.",
+      "instAndroid": "Allow installs from your browser when prompted, then open the downloaded .apk.",
+      "instLinux": "Make the AppImage executable (chmod +x) and run it, or install the .deb with your package manager.",
+      "viaReleases": "via GitHub Releases"
     }
   }
 }

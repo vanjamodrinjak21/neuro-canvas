@@ -1496,3 +1496,50 @@ html.is-menu-open .menu-btn__tick {
   cursor: pointer;
   text-align: left;
 }
+
+/* install notes under the download cards */
+.lp .install {
+  margin-top: 4rem;
+}
+
+.lp .install__eyebrow {
+  margin-bottom: 1rem;
+}
+
+.lp .install__intro {
+  color: var(--ink-dim);
+  max-width: 40rem;
+  margin-bottom: 2rem;
+}
+
+.lp .install__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.lp .install__item {
+  border-top: 1px solid var(--hair);
+  padding-top: 1.1rem;
+}
+
+.lp .install__name {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 0.7rem;
+}
+
+.lp .install__text {
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+@media (max-width: 760px) {
+  .lp .install__grid {
+    grid-template-columns: 1fr;
+  }
+}

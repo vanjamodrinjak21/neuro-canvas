@@ -401,7 +401,14 @@
       "title": "Ponesi mapu *offline*.",
       "sub": "Nativna desktop aplikacija na Tauriju — lagana, brza i tvoja.",
       "detected": "Prepoznato za tebe",
-      "note": "Svi buildovi i checksumi žive na"
+      "note": "Svi buildovi i checksumi žive na",
+      "notesTitle": "Upute za instalaciju",
+      "notesIntro": "Buildovi su potpisani od nezavisnog developera pa sustav može tražiti potvrdu pri prvom pokretanju.",
+      "instMacos": "Otvori .dmg i povuci NeuroCanvas u Applications. Ako se Gatekeeper buni, desni klik na aplikaciju → Open → Open. Samo pri prvom pokretanju.",
+      "instWindows": "Pokreni installer. Ako se pojavi SmartScreen, odaberi “More info” → “Run anyway”.",
+      "instAndroid": "Dozvoli instalaciju iz preglednika kad te pita, pa otvori preuzeti .apk.",
+      "instLinux": "Učini AppImage izvršnim (chmod +x) i pokreni ga, ili instaliraj .deb kroz package manager.",
+      "viaReleases": "putem GitHub Releases"
     }
   }
 }
