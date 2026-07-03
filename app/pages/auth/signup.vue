@@ -131,6 +131,7 @@ async function handleSignup() {
       </NuxtLink>
 
       <div class="brand-content">
+        <span class="brand-eyebrow" aria-hidden="true">ACCESS<span class="brand-eyebrow-accent"> · </span>SIGN UP</span>
         <h1 class="brand-headline">{{ $t('auth.signup.brand_headline') }}</h1>
         <p class="brand-desc">{{ $t('auth.signup.brand_desc') }}</p>
       </div>
@@ -155,7 +156,7 @@ async function handleSignup() {
     <div class="form-panel">
       <div class="form-container">
         <div class="form-header">
-          <span class="form-eyebrow">00 — sign up</span>
+          <span class="form-eyebrow" aria-hidden="true">ACCESS<span class="form-eyebrow-accent"> · </span>SIGN UP</span>
           <h2 class="form-title">
             {{ $t('auth.signup.form_title') }}<span class="form-title-italic">.</span>
           </h2>
@@ -269,19 +270,31 @@ async function handleSignup() {
 
 <style scoped>
 .auth-page {
-  --a-bg: #09090B;
-  --a-surface: #0D0D10;
-  --a-border: #1A1A1E;
-  --a-text: #FAFAFA;
-  --a-text-2: #888890;
-  --a-text-3: #555560;
-  --a-accent: #00D2BE;
+  /* Landing/docs palette, scoped to the auth page only. The rest of the app
+     keeps the global tokens; light theme remaps below. */
+  --nc-accent: #5EF2E8;
+  --nc-accent-glow: rgba(94, 242, 232, 0.08);
+  --nc-accent-glow-strong: rgba(94, 242, 232, 0.15);
+  --docs-coral: #FF8A5C;
 
   display: flex;
   min-height: 100vh;
-  background: var(--a-bg);
-  color: var(--a-text);
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-bg);
+  color: var(--nc-text);
+  font-family: var(--nc-font-body);
+}
+
+/* deep-map black behind the auth page in dark mode, like the landing */
+:root:not(.light) .auth-page {
+  --nc-bg: #050508;
+  --nc-surface: #0d0d11;
+}
+
+:root.light .auth-page {
+  --nc-accent: #0b9e93;
+  --nc-accent-glow: rgba(11, 158, 147, 0.08);
+  --nc-accent-glow-strong: rgba(11, 158, 147, 0.15);
+  --docs-coral: #d95f2f;
 }
 
 /* Brand Panel */
@@ -292,8 +305,8 @@ async function handleSignup() {
   width: 640px;
   flex-shrink: 0;
   padding: 48px 56px;
-  background: var(--a-surface);
-  border-right: 1px solid var(--a-border);
+  background: var(--nc-surface);
+  border-right: 1px solid var(--nc-border);
 }
 
 .brand-logo {
@@ -301,10 +314,11 @@ async function handleSignup() {
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--a-text);
+  color: var(--nc-text);
 }
 
 .logo-text {
+  font-family: var(--nc-font-display);
   font-size: calc(17px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -313,25 +327,37 @@ async function handleSignup() {
 .brand-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
   padding-bottom: 80px;
 }
 
+.brand-eyebrow {
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--nc-text-muted);
+}
+
+.brand-eyebrow-accent {
+  color: var(--docs-coral);
+}
+
 .brand-headline {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-display);
   font-size: calc(44px * var(--nc-text-scale, 1));
-  font-weight: 400;
-  font-style: italic;
-  line-height: 52px;
+  font-weight: 800;
+  line-height: 1.08;
   letter-spacing: -0.02em;
   margin: 0;
-  color: var(--a-text);
+  color: var(--nc-text);
 }
 
 .brand-desc {
   font-size: calc(16px * var(--nc-text-scale, 1));
   line-height: 26px;
-  color: var(--a-text-3);
+  color: var(--nc-text-muted);
   margin: 0;
   max-width: 420px;
 }
@@ -341,7 +367,7 @@ async function handleSignup() {
   display: flex;
   gap: 48px;
   padding-top: 32px;
-  border-top: 1px solid var(--a-border);
+  border-top: 1px solid var(--nc-border);
 }
 
 .stat {
@@ -351,20 +377,24 @@ async function handleSignup() {
 }
 
 .stat-value {
+  font-family: var(--nc-font-display);
   font-size: calc(24px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--a-text);
+  color: var(--nc-text);
   line-height: 30px;
 }
 
 .stat-value.accent {
-  color: var(--a-accent);
+  color: var(--nc-accent);
 }
 
 .stat-label {
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--a-text-3);
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-muted);
 }
 
 /* Form Panel */
@@ -376,11 +406,38 @@ async function handleSignup() {
   padding: 48px;
 }
 
+/* Survey-frame card */
 .form-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 400px;
   gap: 32px;
+  padding: 40px;
+  background: var(--nc-surface);
+  border: 1px dashed var(--nc-border-active);
+  border-radius: 8px;
+}
+
+.form-container::before,
+.form-container::after {
+  content: '+';
+  position: absolute;
+  font-family: var(--nc-font-mono);
+  font-size: calc(14px * var(--nc-text-scale, 1));
+  line-height: 1;
+  color: var(--docs-coral);
+  pointer-events: none;
+}
+
+.form-container::before {
+  top: -7px;
+  left: -7px;
+}
+
+.form-container::after {
+  bottom: -7px;
+  right: -7px;
 }
 
 .form-header {
@@ -390,31 +447,37 @@ async function handleSignup() {
 }
 
 .form-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--a-text-4, #52525B);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--nc-text-muted);
+}
+
+.form-eyebrow-accent {
+  color: var(--docs-coral);
 }
 
 .form-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(36px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.05;
   margin: 0;
 }
 
 .form-title-italic {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic;
   font-weight: 400;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .form-subtitle {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--a-text-3);
+  color: var(--nc-text-muted);
   margin: 0;
   line-height: 1.55;
 }
@@ -432,25 +495,23 @@ async function handleSignup() {
   justify-content: center;
   height: 44px;
   gap: 10px;
-  border-radius: 10px;
-  background: var(--a-surface);
-  border: 1px solid var(--a-border);
-  color: var(--a-text);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1));
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  transition: border-color 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out);
+  transition: border-color 150ms var(--nc-ease-out), color 150ms var(--nc-ease-out), background 150ms var(--nc-ease-out);
 }
 
 .oauth-btn:hover:not(:disabled) {
-  border-color: #3F3F46;
-  background: #121216;
-}
-
-:root.light .oauth-btn:hover:not(:disabled) {
-  background: #F4F2EC;
-  border-color: #C8C4B8;
+  border-color: var(--nc-accent);
+  color: var(--nc-accent);
+  background: var(--nc-accent-glow);
 }
 
 .oauth-btn:active:not(:disabled) {
@@ -458,7 +519,7 @@ async function handleSignup() {
 }
 
 .oauth-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -477,12 +538,15 @@ async function handleSignup() {
 .divider-line {
   flex: 1;
   height: 1px;
-  background: var(--a-border);
+  background: var(--nc-border);
 }
 
 .divider-text {
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--a-text-3);
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-muted);
 }
 
 /* Fields */
@@ -499,9 +563,12 @@ async function handleSignup() {
 }
 
 .field-label {
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--a-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-muted);
 }
 
 .input-wrap {
@@ -512,22 +579,22 @@ async function handleSignup() {
   width: 100%;
   height: 44px;
   padding: 0 14px;
-  background: var(--a-surface);
-  border: 1px solid var(--a-border);
-  border-radius: 6px;
-  color: var(--a-text);
-  font-family: 'Inter', system-ui, sans-serif;
+  background: color-mix(in srgb, var(--nc-surface) 60%, transparent);
+  border: 1px solid var(--nc-border);
+  border-radius: 8px;
+  color: var(--nc-text);
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   outline: none;
   transition: border-color 150ms var(--nc-ease-out);
 }
 
 .field-input::placeholder {
-  color: var(--a-text-3);
+  color: var(--nc-text-muted);
 }
 
 .field-input:focus {
-  border-color: var(--a-accent);
+  border-color: var(--nc-accent);
 }
 
 .field-input:disabled {
@@ -545,7 +612,7 @@ async function handleSignup() {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--a-text-3);
+  color: var(--nc-text-muted);
   cursor: pointer;
   font-size: calc(16px * var(--nc-text-scale, 1));
   display: flex;
@@ -563,13 +630,15 @@ async function handleSignup() {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--a-text-3);
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  letter-spacing: 0.04em;
+  color: var(--nc-text-muted);
   transition: color 120ms var(--nc-ease-out);
 }
 
 .pw-req.met {
-  color: #22C55E;
+  color: var(--nc-success);
 }
 
 .pw-req-icon {
@@ -580,40 +649,41 @@ async function handleSignup() {
 /* Message */
 .form-message {
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 18px;
 }
 
 .form-message.error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #EF4444;
+  background: var(--nc-danger-glow);
+  border: 1px solid color-mix(in srgb, var(--nc-danger) 25%, transparent);
+  color: var(--nc-danger);
 }
 
 .form-message.success {
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.2);
-  color: var(--a-accent);
+  background: var(--nc-accent-glow-strong);
+  border: 1px solid color-mix(in srgb, var(--nc-accent) 30%, transparent);
+  color: var(--nc-accent);
 }
 
 /* Submit */
 .submit-btn {
   height: 48px;
-  border-radius: 6px;
-  background: var(--a-accent);
-  color: #09090B;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 10px;
+  background: var(--nc-text);
+  color: var(--nc-bg);
+  font-family: var(--nc-font-display);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
   cursor: pointer;
   margin-top: 8px;
-  transition: opacity 150ms var(--nc-ease-out), transform 100ms var(--nc-ease-out);
+  transition: background 150ms var(--nc-ease-out), color 150ms var(--nc-ease-out), transform 100ms var(--nc-ease-out);
 }
 
 .submit-btn:hover:not(:disabled) {
-  opacity: 0.9;
+  background: var(--nc-accent);
+  color: var(--nc-bg);
 }
 
 .submit-btn:active:not(:disabled) {
@@ -621,7 +691,7 @@ async function handleSignup() {
 }
 
 .submit-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -635,7 +705,7 @@ async function handleSignup() {
 
 .terms-text {
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #444450;
+  color: var(--nc-text-muted);
   margin: 0;
   line-height: 18px;
 }
@@ -648,17 +718,17 @@ async function handleSignup() {
 }
 
 .terms-text a:hover {
-  color: #00D2BE;
+  color: var(--nc-accent);
 }
 
 .form-footer {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--a-text-3);
+  color: var(--nc-text-muted);
   margin: 0;
 }
 
 .footer-link {
-  color: var(--a-accent);
+  color: var(--nc-accent);
   font-weight: 500;
   text-decoration: none;
 }
@@ -683,26 +753,6 @@ async function handleSignup() {
 /* Ensure error messages have high contrast */
 .form-message.error {
   font-weight: 500;
-}
-
-/* Improve terms text contrast */
-.terms-text {
-  color: var(--a-text-3);
-}
-
-/* Light theme */
-:root.light .auth-page {
-  --a-bg: #FAFAF9;
-  --a-surface: #F5F5F3;
-  --a-border: #E8E8E6;
-  --a-text: #111111;
-  --a-text-2: #71717A;
-  --a-text-3: #777777;
-  --a-accent: #00D2BE;
-}
-
-:root.light .submit-btn {
-  color: #FFFFFF;
 }
 
 /* Laptop breakpoint */
@@ -752,6 +802,16 @@ async function handleSignup() {
 
   .form-container {
     width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  /* Drop the survey-frame corner marks on mobile so they don't clip the edge */
+  .form-container::before,
+  .form-container::after {
+    display: none;
   }
 
   .form-title {
@@ -775,7 +835,7 @@ async function handleSignup() {
   .oauth-btn {
     height: 52px;
     border-radius: 8px;
-    font-size: calc(15px * var(--nc-text-scale, 1));
+    font-size: calc(12px * var(--nc-text-scale, 1));
   }
 
   .divider {

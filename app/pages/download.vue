@@ -253,6 +253,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
           v-show="buckets[p].length"
           :key="p"
           class="dl-card"
+          :class="{ 'dl-card--detected': detected.platform === p }"
         >
           <header class="dl-card-head">
             <span class="dl-card-icon">
@@ -339,19 +340,32 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
    /download — Paper-exact (H42-0 / H76-0 / HAA-0 + light variants)
    ═══════════════════════════════════════════════════════ */
 .dl {
-  --bg: #09090B;
-  --surface: #111114;
-  --surface-3: #1A1A1E;
-  --border: #1E1E22;
-  --border-active: #2A2A30;
-  --text: #FAFAFA;
-  --text-2: #A1A1AA;
-  --text-3: #777777;
-  --text-faint: #52525B;
-  --accent: #00D2BE;
-  --on-accent: #0A0A0C;
-  --sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --serif: 'Instrument Serif', Georgia, serif;
+  /* Landing palette, scoped to the /download subtree only — the rest of the
+     app keeps the global tokens. Light theme remaps below. */
+  --nc-accent: #5EF2E8;
+  --nc-accent-light: #8FF7EF;
+  --nc-accent-dark: #3AC2B9;
+  --nc-accent-glow: rgba(94, 242, 232, 0.08);
+  --nc-accent-glow-strong: rgba(94, 242, 232, 0.15);
+  --nc-accent-glow-intense: rgba(94, 242, 232, 0.25);
+  --nc-accent-rgb: 94, 242, 232;
+  --docs-coral: #FF8A5C;
+
+  /* Local aliases resolve to global tokens — no hardcoded colors. */
+  --bg: var(--nc-bg);
+  --surface: var(--nc-surface);
+  --surface-3: var(--nc-surface-3);
+  --border: var(--nc-border);
+  --border-active: var(--nc-border-active);
+  --text: var(--nc-text);
+  --text-2: var(--nc-text-secondary);
+  --text-3: var(--nc-text-secondary);
+  --text-faint: var(--nc-text-dim);
+  --accent: var(--nc-accent);
+  --on-accent: var(--nc-bg);
+  --sans: var(--nc-font-body);
+  --serif: var(--nc-font-serif);
+  --mono: var(--nc-font-mono);
 
   background: var(--bg);
   color: var(--text);
@@ -362,16 +376,22 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   overflow-x: hidden;
 }
 
+/* deep-map black behind /download in dark mode, like the landing */
+:root:not(.light) .dl {
+  --nc-bg: #050508;
+  --nc-bg-rgb: 5, 5, 8;
+  --nc-surface: #0d0d11;
+}
+
 :root.light .dl {
-  --bg: #FAFAF9;
-  --surface: #F5F5F3;
-  --surface-3: #E8E8E6;
-  --border: #E8E8E6;
-  --border-active: #D4D4D8;
-  --text: #111111;
-  --text-2: #555555;
-  --text-3: #777777;
-  --text-faint: #A1A1AA;
+  --nc-accent: #0b9e93;
+  --nc-accent-light: #0fb5a8;
+  --nc-accent-dark: #087f76;
+  --nc-accent-glow: rgba(11, 158, 147, 0.08);
+  --nc-accent-glow-strong: rgba(11, 158, 147, 0.15);
+  --nc-accent-glow-intense: rgba(11, 158, 147, 0.25);
+  --nc-accent-rgb: 11, 158, 147;
+  --docs-coral: #d95f2f;
 }
 
 /* ═══════════════════════ NAV (matches landing .nav exactly) ═══════════════════════ */
@@ -383,12 +403,11 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  background: rgba(9, 9, 11, 0.85);
+  background: rgba(var(--nc-bg-rgb), 0.85);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   z-index: 100;
 }
-:root.light .dl-nav { background: rgba(250, 250, 249, 0.85); }
 
 .dl-nav-left { display: flex; align-items: center; gap: 40px; }
 .dl-brand {
@@ -477,8 +496,10 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   background: var(--accent);
   border: none;
   border-radius: 999px;
-  font-family: var(--sans);
-  font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600;
+  font-family: var(--mono);
+  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--on-accent);
   text-decoration: none;
   cursor: pointer;
@@ -501,7 +522,10 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 .dl-receipt {
   display: flex; align-items: center; gap: 8px;
   margin: 0; padding-top: 4px;
-  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--text-3);
+  font-family: var(--mono);
+  font-size: calc(12px * var(--nc-text-scale, 1));
+  letter-spacing: 0.03em;
+  color: var(--nc-text-muted);
 }
 .dl-receipt svg { color: var(--text-3); flex-shrink: 0; }
 .dl-receipt-link { color: var(--accent); text-decoration: none; }
@@ -536,55 +560,108 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   gap: 20px;
 }
 .dl-section-eyebrow {
+  display: flex; align-items: baseline; gap: 8px;
   margin: 0;
-  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--text-faint);
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
+  font-family: var(--mono);
+  font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--text-faint);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.dl-section-eyebrow::before {
+  content: '//';
+  color: var(--docs-coral);
+  flex-shrink: 0;
 }
 .dl-state {
   font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--text-3);
   padding: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  background: transparent;
+  border: 1px dashed var(--border-active);
+  border-radius: 6px;
 }
 .dl-state a { color: var(--accent); text-decoration: none; }
 
-/* ═══════════════════════ PLATFORM CARDS ═══════════════════════ */
+/* ═══════════════════════ PLATFORM CARDS — survey frames ═══════════════════════ */
 .dl-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  counter-reset: dlcard;
 }
 .dl-card {
+  position: relative;
   display: flex; flex-direction: column;
   gap: 14px;
   padding: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  transition: border-color 120ms ease;
+  background: transparent;
+  border: 1px dashed var(--border-active);
+  border-radius: 6px;
+  counter-increment: dlcard;
+  transition: border-color 120ms ease, background 120ms ease,
+              transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.dl-card:hover { border-color: var(--border-active); }
+/* Coral "+" survey corner marks */
+.dl-card::before,
+.dl-card::after {
+  content: '+';
+  position: absolute;
+  font-family: var(--mono);
+  font-size: calc(12px * var(--nc-text-scale, 1));
+  line-height: 1;
+  color: var(--docs-coral);
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.dl-card::before { top: 6px; left: 8px; }
+.dl-card::after { bottom: 6px; right: 8px; }
+.dl-card:hover {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--nc-accent-glow);
+  transform: translateY(-2px);
+}
+.dl-card:hover::before,
+.dl-card:hover::after { opacity: 1; }
+/* Detected-platform highlight — solid accent frame */
+.dl-card--detected {
+  border-color: var(--accent);
+  border-style: solid;
+}
 .dl-card-head { display: flex; align-items: center; gap: 12px; }
 .dl-card-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 40px; height: 40px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface-3);
   color: var(--text);
   flex-shrink: 0;
 }
 .dl-card-title {
+  display: flex; align-items: baseline; gap: 8px;
   margin: 0;
-  font-family: 'Cabinet Grotesk', var(--sans);
+  font-family: var(--nc-font-display);
   font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text);
 }
+/* Decorative survey index — 01, 02, … mono coral */
+.dl-card-title::before {
+  content: '0' counter(dlcard);
+  font-family: var(--mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--docs-coral);
+  flex-shrink: 0;
+}
 .dl-card-sub {
   margin: 0;
-  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--text-3);
+  font-family: var(--mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nc-text-muted);
 }
 .dl-card-chips-wrap {
   position: relative;
@@ -596,7 +673,10 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   padding: 6px 12px;
   background: var(--surface-3);
   border-radius: 6px;
-  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500;
+  font-family: var(--mono);
+  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-3);
   transition: opacity 180ms ease, transform 180ms ease;
   pointer-events: none;
@@ -636,16 +716,21 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   display: inline-flex; align-items: center;
   padding: 6px 12px;
   background: var(--surface-3);
+  border: 1px solid transparent;
   border-radius: 6px;
-  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500;
+  font-family: var(--mono);
+  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text);
   text-decoration: none;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 .dl-chip:hover,
 .dl-chip:focus-visible {
   background: var(--accent);
   color: var(--on-accent);
+  border-color: var(--accent);
   outline: none;
 }
 .dl-chip-ghost {
@@ -666,7 +751,10 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   gap: 12px;
 }
 .dl-notes-gh {
-  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--accent);
+  font-family: var(--mono);
+  font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   text-decoration: none;
 }
 .dl-notes-gh:hover { text-decoration: underline; }
@@ -674,9 +762,9 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   display: flex; flex-direction: column;
   gap: 16px;
   padding: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  background: transparent;
+  border: 1px dashed var(--border-active);
+  border-radius: 6px;
   max-width: 1100px;
 }
 .dl-notes-row {
@@ -691,9 +779,11 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 .dl-tag {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 3px 10px;
-  border-radius: 6px;
-  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 700;
-  letter-spacing: 0.06em;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   flex-shrink: 0;
 }
 .dl-tag-feat { background: var(--accent); color: var(--on-accent); }
@@ -737,9 +827,10 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   min-width: 100px;
 }
 .dl-foot-col-head {
-  font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 600;
+  font-family: var(--mono);
+  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 600;
   color: var(--text-faint);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 4px;
 }
@@ -787,7 +878,7 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
 
   /* Mobile platform list — single column rows with extension chip pulled right */
   .dl-grid { grid-template-columns: 1fr; gap: 10px; }
-  .dl-card { flex-direction: row; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; }
+  .dl-card { flex-direction: row; align-items: center; gap: 14px; padding: 14px; border-radius: 6px; }
   .dl-card-head { flex: 1; gap: 14px; }
   .dl-card-icon { width: 36px; height: 36px; }
   .dl-card-title { font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; }
@@ -818,6 +909,9 @@ const versionLabel = computed(() => release.value?.tag ?? release.value?.name ??
   .dl-card-title { grid-column: 2; grid-row: 1; align-self: end; }
   .dl-card-sub { grid-column: 2; grid-row: 2; align-self: start; }
   .dl-card-chips-wrap { grid-column: 3; grid-row: 1 / span 2; }
+  /* Decorative survey flourishes are desktop-only — keep the mobile row clean */
+  .dl-card::before, .dl-card::after { display: none; }
+  .dl-card-title::before { display: none; }
 
   .dl-section-notes { padding-bottom: 24px; }
   .dl-notes-card { padding: 16px; gap: 14px; }
