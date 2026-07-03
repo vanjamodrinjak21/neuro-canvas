@@ -26,13 +26,14 @@ const isExternal = computed(() => {
 .prose-link {
   color: var(--nc-accent);
   font-weight: 500;
-  text-decoration: none;
-  transition: color 0.15s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: transparent;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
 }
 
 .prose-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-color: var(--nc-accent);
 }
 
 .external-icon {

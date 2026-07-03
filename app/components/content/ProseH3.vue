@@ -18,9 +18,9 @@ defineProps<{
   align-items: baseline;
   gap: 6px;
   font-size: calc(17px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
   margin-top: 32px;
   margin-bottom: 12px;
   color: var(--nc-text);

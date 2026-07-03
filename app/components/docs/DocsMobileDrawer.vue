@@ -94,9 +94,23 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .docs-drawer {
+  /* teleported to <body>, outside .docs-root — re-declare the docs-scoped
+     landing palette so the sidebar inside matches (see DocsLayout.vue) */
+  --nc-accent: #5EF2E8;
+  --nc-accent-glow: rgba(94, 242, 232, 0.08);
+  --nc-accent-glow-strong: rgba(94, 242, 232, 0.15);
+  --docs-coral: #FF8A5C;
+
   position: fixed;
   inset: 0;
   z-index: 150;
+}
+
+:root.light .docs-drawer {
+  --nc-accent: #0b9e93;
+  --nc-accent-glow: rgba(11, 158, 147, 0.08);
+  --nc-accent-glow-strong: rgba(11, 158, 147, 0.15);
+  --docs-coral: #d95f2f;
 }
 
 .docs-drawer__backdrop {
@@ -141,9 +155,11 @@ onBeforeUnmount(() => {
 }
 
 .docs-drawer__brand-text {
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--nc-text);
 }
 

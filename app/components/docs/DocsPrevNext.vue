@@ -72,16 +72,18 @@ defineProps<Props>()
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 16px;
-  border: 1px solid var(--nc-border);
-  border-radius: 8px;
+  padding: 16px 18px;
+  border: 1px dashed var(--nc-border-active);
+  border-radius: 6px;
   text-decoration: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .docs-prev-next__card:hover {
   border-color: var(--nc-accent);
-  background: rgba(0, 210, 190, 0.04);
+  border-style: solid;
+  background: var(--nc-accent-glow);
+  transform: translateY(-2px);
 }
 
 .docs-prev-next__card--prev {
@@ -97,12 +99,12 @@ defineProps<Props>()
 .docs-prev-next__label {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  gap: 6px;
+  font-family: var(--nc-font-mono);
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.18em;
   color: var(--nc-text-muted);
   line-height: 1;
 }
@@ -147,14 +149,14 @@ defineProps<Props>()
 
 :root.light .docs-prev-next__card:hover {
   border-color: var(--nc-accent);
-  background: rgba(0, 210, 190, 0.04);
+  background: var(--nc-accent-glow);
 }
 
 :root.light .docs-prev-next__label {
-  color: #A1A1AA;
+  color: var(--nc-text-muted);
 }
 
 :root.light .docs-prev-next__label svg {
-  color: #A1A1AA;
+  color: var(--nc-text-muted);
 }
 </style>

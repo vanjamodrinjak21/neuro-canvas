@@ -20,7 +20,7 @@ defineProps<{
   font-size: calc(22px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.3;
+  line-height: 1.2;
   margin-top: 48px;
   padding-top: 24px;
   border-top: 1px solid var(--nc-border);

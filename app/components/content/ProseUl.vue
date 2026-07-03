@@ -22,6 +22,6 @@
 }
 
 .prose-ul :deep(li::marker) {
-  color: var(--nc-text-dim);
+  color: var(--nc-accent);
 }
 </style>

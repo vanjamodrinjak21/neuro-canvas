@@ -19,11 +19,11 @@
 <style scoped>
 .prose-blockquote {
   display: flex;
-  gap: 10px;
-  border-left: 3px solid var(--nc-accent);
-  background: rgba(0, 210, 190, 0.04);
-  padding: 14px 16px;
-  border-radius: 0 6px 6px 0;
+  gap: 12px;
+  border-left: 2px solid var(--nc-accent);
+  background: var(--nc-accent-glow);
+  padding: 14px 16px 14px 18px;
+  border-radius: 0 var(--nc-radius-sm) var(--nc-radius-sm) 0;
   margin: 16px 0 24px;
 }
 
@@ -31,12 +31,14 @@
   flex-shrink: 0;
   color: var(--nc-accent);
   line-height: 0;
-  margin-top: 1px;
+  margin-top: 4px;
 }
 
 .blockquote-content {
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  line-height: 1.6;
+  font-family: var(--nc-font-serif, Georgia, serif);
+  font-style: italic;
+  font-size: calc(17px * var(--nc-text-scale, 1));
+  line-height: 1.55;
   color: var(--nc-text-secondary);
   min-width: 0;
 }
@@ -50,7 +52,7 @@
 }
 
 :root.light .prose-blockquote {
-  background: rgba(0, 210, 190, 0.06);
+  background: var(--nc-accent-glow-strong);
 }
 
 :root.light .blockquote-content {

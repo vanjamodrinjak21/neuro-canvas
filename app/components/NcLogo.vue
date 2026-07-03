@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
  * NcLogo — Canonical NeuroCanvas logo mark
- * 6-spoke neural network icon from the Paper brand identity sheet.
- * Use this everywhere instead of inline SVGs.
+ * Three connected thought-nodes (monochrome white) — the smallest
+ * possible mind map. Use this everywhere instead of inline SVGs.
  */
 const props = withDefaults(defineProps<{
   /** Rendered width/height of the SVG in px */
   size?: number
-  /** Whether to show the teal container box */
+  /** Whether to show the dark container box */
   container?: boolean
   /** Container size override (defaults to size + padding) */
   containerSize?: number
@@ -35,55 +35,44 @@ const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.
     <svg
       :width="size"
       :height="size"
-      viewBox="0 0 72 72"
+      viewBox="0 0 64 64"
       fill="none"
     >
-      <!-- Spokes -->
-      <line x1="36" y1="28" x2="36" y2="19" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
-      <line x1="43" y1="32" x2="50" y2="27" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
-      <line x1="43" y1="40" x2="50" y2="45" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
-      <line x1="36" y1="44" x2="36" y2="53" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
-      <line x1="29" y1="40" x2="22" y2="45" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
-      <line x1="29" y1="32" x2="22" y2="27" stroke="#09090B" stroke-width="2.5" opacity="0.5" />
-      <!-- Nodes -->
-      <circle cx="36" cy="16" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="52" cy="26" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="52" cy="46" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="36" cy="56" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="20" cy="46" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="20" cy="26" r="5" fill="#09090B" opacity="0.7" />
-      <circle cx="36" cy="36" r="8" fill="#09090B" />
+      <path
+        d="M19.5 42.5 42.5 21M20.5 46l24.5 1.6"
+        stroke="rgba(244,244,248,0.55)"
+        stroke-width="3.2"
+        stroke-linecap="round"
+      />
+      <circle cx="14.5" cy="46.5" r="7" fill="#F4F4F8" />
+      <circle cx="47.5" cy="16" r="8.4" fill="#F4F4F8" />
+      <circle cx="49.5" cy="48" r="4.9" fill="#F4F4F8" />
     </svg>
   </div>
   <svg
     v-else
     :width="size"
     :height="size"
-    viewBox="0 0 72 72"
+    viewBox="0 0 64 64"
     fill="none"
   >
-    <!-- Spokes -->
-    <line x1="36" y1="28" x2="36" y2="19" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
-    <line x1="43" y1="32" x2="50" y2="27" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
-    <line x1="43" y1="40" x2="50" y2="45" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
-    <line x1="36" y1="44" x2="36" y2="53" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
-    <line x1="29" y1="40" x2="22" y2="45" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
-    <line x1="29" y1="32" x2="22" y2="27" stroke="currentColor" stroke-width="2.5" opacity="0.5" />
-    <!-- Nodes -->
-    <circle cx="36" cy="16" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="52" cy="26" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="52" cy="46" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="36" cy="56" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="20" cy="46" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="20" cy="26" r="5" fill="currentColor" opacity="0.7" />
-    <circle cx="36" cy="36" r="8" fill="currentColor" />
+    <path
+      d="M19.5 42.5 42.5 21M20.5 46l24.5 1.6"
+      stroke="currentColor"
+      stroke-width="3.2"
+      stroke-linecap="round"
+      opacity="0.55"
+    />
+    <circle cx="14.5" cy="46.5" r="7" fill="currentColor" />
+    <circle cx="47.5" cy="16" r="8.4" fill="currentColor" />
+    <circle cx="49.5" cy="48" r="4.9" fill="currentColor" />
   </svg>
 </template>
 
 <style scoped>
 .nc-logo-mark {
-  background: #00D2BE;
-  background: var(--nc-accent, #00D2BE);
+  background: #050508;
+  border: 1px solid rgba(244, 244, 248, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;
