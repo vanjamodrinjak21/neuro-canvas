@@ -16,6 +16,7 @@ const route = useRoute()
 const { data: session, status, getSession, signOut } = useAuth()
 
 const code = ref('')
+const remember = ref(false)
 const isLoading = ref(false)
 const error = ref('')
 
@@ -46,7 +47,7 @@ async function submit() {
   try {
     await $fetch('/api/user/totp/verify-session', {
       method: 'POST',
-      body: { code: code.value }
+      body: { code: code.value, remember: remember.value }
     })
     // Refresh the session so totpPending clears before navigating.
     await getSession({ force: true })
@@ -87,6 +88,10 @@ async function handleSignOut() {
           :placeholder="t('auth.twofa.code_placeholder')"
           autofocus
         >
+        <label class="twofa__remember">
+          <input v-model="remember" type="checkbox" class="twofa__checkbox">
+          <span>{{ t('auth.twofa.remember') }}</span>
+        </label>
         <p v-if="error" class="twofa__error" role="alert">{{ error }}</p>
         <button type="submit" class="twofa__submit" :disabled="!canSubmit">
           {{ isLoading ? t('auth.twofa.submit_loading') : t('auth.twofa.submit') }}
@@ -184,6 +189,24 @@ async function handleSignOut() {
 
 .twofa__input:focus {
   border-color: #00D2BE;
+}
+
+.twofa__remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: #A1A1AA;
+  cursor: pointer;
+  user-select: none;
+}
+
+.twofa__checkbox {
+  accent-color: #00D2BE;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
 }
 
 .twofa__error {

@@ -29,6 +29,9 @@ vi.mock('../../../../utils/encryption', () => ({
 }))
 vi.mock('../../../../utils/totpStepUp', () => ({
   markTotpStepUp: vi.fn(),
+  issueTotpRememberToken: vi.fn(async () => 'raw-remember-token'),
+  TOTP_REMEMBER_COOKIE: 'nc-2fa-remember',
+  TOTP_REMEMBER_TTL_SEC: 14 * 24 * 60 * 60,
 }))
 // otpauth is mocked so tests control validation outcomes deterministically.
 const totpValidate = vi.fn()
@@ -40,6 +43,7 @@ vi.mock('otpauth', () => ({
 vi.stubGlobal('defineEventHandler', (fn: unknown) => fn)
 vi.stubGlobal('createError', h3CreateError)
 vi.stubGlobal('readBody', vi.fn())
+vi.stubGlobal('setCookie', vi.fn())
 
 // Dynamic import AFTER the vi.stubGlobal calls above — a static import hoists
 // past them and the handler module evaluates before defineEventHandler exists.
@@ -117,5 +121,30 @@ describe('POST /api/user/totp/verify-session', () => {
     readBodyMock.mockResolvedValue({ code: 'abc' })
 
     await expect(callStatus((handler as (e: never) => Promise<unknown>)(EVENT))).resolves.toBe('status:400')
+  })
+})
+
+describe('remember-device (14 days)', () => {
+  it('sets the httpOnly remember cookie when remember=true', async () => {
+    readBodyMock.mockResolvedValue({ code: '123456', remember: true })
+    const setCookieMock = (globalThis as Record<string, unknown>).setCookie as ReturnType<typeof vi.fn>
+
+    await (handler as (e: never) => Promise<unknown>)(EVENT)
+
+    expect(setCookieMock).toHaveBeenCalledWith(
+      EVENT,
+      'nc-2fa-remember',
+      'raw-remember-token',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', maxAge: 14 * 24 * 60 * 60 })
+    )
+  })
+
+  it('sets no cookie without the tick', async () => {
+    readBodyMock.mockResolvedValue({ code: '123456' })
+    const setCookieMock = (globalThis as Record<string, unknown>).setCookie as ReturnType<typeof vi.fn>
+
+    await (handler as (e: never) => Promise<unknown>)(EVENT)
+
+    expect(setCookieMock).not.toHaveBeenCalled()
   })
 })

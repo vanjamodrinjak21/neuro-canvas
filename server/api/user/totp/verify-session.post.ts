@@ -4,7 +4,12 @@ import { prisma } from '../../../utils/prisma'
 import { checkRateLimit } from '../../../utils/redis'
 import { serverDecrypt } from '../../../utils/encryption'
 import { requireAuthSession } from '../../../utils/syncHelpers'
-import { markTotpStepUp } from '../../../utils/totpStepUp'
+import {
+  markTotpStepUp,
+  issueTotpRememberToken,
+  TOTP_REMEMBER_COOKIE,
+  TOTP_REMEMBER_TTL_SEC,
+} from '../../../utils/totpStepUp'
 
 /**
  * Post-login TOTP verification for an EXISTING session (AER-84).
@@ -19,7 +24,10 @@ import { markTotpStepUp } from '../../../utils/totpStepUp'
  */
 
 const bodySchema = z.object({
-  code: z.string().length(6).regex(/^\d{6}$/, 'Code must be 6 digits')
+  code: z.string().length(6).regex(/^\d{6}$/, 'Code must be 6 digits'),
+  // "Remember this device for 14 days" — sets an httpOnly device token so
+  // this browser skips the prompt on future sign-ins (see totpStepUp.ts).
+  remember: z.boolean().optional()
 }).strict()
 
 export default defineEventHandler(async (event) => {
@@ -68,6 +76,17 @@ export default defineEventHandler(async (event) => {
   await prisma.user.update({ where: { id: user.id }, data: { lastTotpDelta: encoded } })
 
   await markTotpStepUp(userId, iat)
+
+  if (parsed.data.remember) {
+    const rememberToken = await issueTotpRememberToken(userId)
+    setCookie(event, TOTP_REMEMBER_COOKIE, rememberToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: TOTP_REMEMBER_TTL_SEC,
+    })
+  }
 
   return { success: true }
 })
