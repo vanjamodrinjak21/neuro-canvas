@@ -39,6 +39,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo(`/map/${claimedId}`)
       }
     }
+
+    // 2FA-enabled accounts signing in via OAuth get no code prompt from the
+    // provider flow (AER-84). The session carries totpPending until
+    // /api/user/totp/verify-session succeeds — route them to the code prompt
+    // before any protected page.
+    if ((session.user as { totpPending?: boolean }).totpPending && to.path !== '/auth/2fa') {
+      return navigateTo(`/auth/2fa?redirect=${encodeURIComponent(to.fullPath)}`)
+    }
+
     return
   }
 
