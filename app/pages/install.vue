@@ -251,9 +251,8 @@ async function copyMacCmd() {
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  /* Flat sticky nav — no glass in chrome (REDESIGN.md §5) */
+  background: rgba(var(--nc-bg-rgb), 0.92);
   z-index: 100;
 }
 :root.light .dl-nav { background: rgba(var(--nc-bg-rgb), 0.85); }

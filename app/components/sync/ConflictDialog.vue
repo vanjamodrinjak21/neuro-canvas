@@ -80,8 +80,8 @@ async function keepRemote() {
 .conflict-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  /* Flat scrim — no backdrop blur in chrome (REDESIGN.md §5) */
+  background: rgba(var(--nc-bg-rgb), 0.66);
   display: flex;
   align-items: center;
   justify-content: center;

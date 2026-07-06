@@ -107,9 +107,8 @@ onBeforeUnmount(() => {
 .docs-drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* Flat scrim — no backdrop blur in chrome (REDESIGN.md §5) */
+  background: rgba(var(--nc-bg-rgb), 0.66);
 }
 
 .docs-drawer__panel {
