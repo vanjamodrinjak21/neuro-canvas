@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   // Resolve API key from vault (never from request body)
   let apiKey: string | null = null
   if (body.provider !== 'ollama') {
-    const cred = await resolveCredential(userId, body.credentialId)
+    const cred = await resolveCredential(userId, body.credentialId, { provider: body.provider })
     apiKey = cred.apiKey
   }
 
