@@ -113,6 +113,16 @@ function buildLightColors(): CanvasColors {
   }
 }
 
+/**
+ * Resolve the full canvas palette for a theme without any Vue reactivity.
+ * Used by offscreen renderers (raster image export) that run outside a
+ * component lifecycle but must match the live canvas exactly — including
+ * the theme's canvas background token (dark #050508 / light #FAFAF9).
+ */
+export function getCanvasColors(isLight: boolean): CanvasColors {
+  return isLight ? buildLightColors() : buildDarkColors()
+}
+
 export function useCanvasTheme() {
   const isLight = ref(false)
 

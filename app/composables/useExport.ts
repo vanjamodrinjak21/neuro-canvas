@@ -1,6 +1,30 @@
+import { toRaw } from 'vue'
 import type { MapStore } from '~/stores/mapStore'
 import type { DBNode } from '~/composables/useDatabase'
 import { useGuestMode } from '~/composables/useGuestMode'
+import { getCanvasColors } from '~/composables/useCanvasTheme'
+import { readCurrentTextScale } from '~/composables/useTextScale'
+import { computeContentBounds, computeExportFit } from '~/utils/exportFit'
+import { lerpColor } from '~/utils/color'
+import { drawNode } from '~/components/canvas/renderers/drawNode'
+import { drawEdge } from '~/components/canvas/renderers/drawEdge'
+import { drawRootIndicator } from '~/components/canvas/renderers/drawOverlays'
+
+/** Raster formats supported by the image export path. */
+type RasterFormat = 'png' | 'jpg'
+
+interface RasterFormatSpec {
+  mime: string
+  extensions: string[]
+  filterName: string
+  /** Encoder quality (JPEG only). */
+  quality?: number
+}
+
+const RASTER_FORMATS: Record<RasterFormat, RasterFormatSpec> = {
+  png: { mime: 'image/png', extensions: ['png'], filterName: 'PNG Image' },
+  jpg: { mime: 'image/jpeg', extensions: ['jpg', 'jpeg'], filterName: 'JPEG Image', quality: 0.92 },
+}
 
 /**
  * Mind map export & share utilities.
@@ -29,17 +53,121 @@ export function useExport() {
     return btoa(binary)
   }
 
-  // ── PNG export ──────────────────────────────────────────────────────
-  function exportAsPng(canvasEl: HTMLCanvasElement, title: string) {
-    if (!guest.requireFeature('export')) return
-    canvasEl.toBlob(async (blob) => {
-      if (blob) {
-        const bytes = new Uint8Array(await blob.arrayBuffer())
-        await saveFile(bytes, sanitizeFilename(title) + '.png', [
-          { name: 'PNG Image', extensions: ['png'] }
-        ])
+  // ── Raster export (PNG / JPG) ───────────────────────────────────────
+  // Offscreen render of the FULL map, independent of the current camera,
+  // zoom, screen DPR and the 360px detail-panel overlay. The previous
+  // implementation blobbed the live canvas element, so exports were plain
+  // viewport screenshots: off-screen nodes were cut off and the output
+  // resolution was whatever the window happened to be. This path computes
+  // the content bounding box of every node + edge, fits it (plus padding)
+  // into a supersampled canvas, and re-draws the map with the same pure
+  // renderers the live canvas uses.
+
+  /** Render the whole map to an image blob at export quality. */
+  async function renderMapToBlob(mapStore: MapStore, format: RasterFormat): Promise<Blob> {
+    // toRaw: iterating reactive Maps costs ~15x native and export touches
+    // every node/edge. Same underlying objects, so nothing goes stale.
+    const nodes = toRaw(mapStore.nodes)
+    const edges = toRaw(mapStore.edges)
+    const rootNodeId = mapStore.rootNodeId
+
+    // Empty map → framed blank canvas rather than a failure.
+    const bounds = computeContentBounds(nodes, edges.values())
+      ?? { minX: 0, minY: 0, maxX: 800, maxY: 600 }
+    const fit = computeExportFit(bounds, {
+      devicePixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio : 1,
+    })
+
+    const isLight = typeof document !== 'undefined'
+      && document.documentElement.classList.contains('light')
+    const colors = getCanvasColors(isLight)
+    const textScale = readCurrentTextScale()
+
+    // Node text renders in the app font — wait for it so glyphs rasterize
+    // crisp instead of falling back to a default font mid-export.
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      try {
+        await document.fonts.ready
+      } catch { /* non-fatal: fall back to whatever is loaded */ }
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = fit.width
+    canvas.height = fit.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas 2D context unavailable')
+
+    // JPEG has no alpha channel — paint the active theme's canvas bg token
+    // first so transparency never collapses to black (PNG gets the exact
+    // same background the app shows).
+    ctx.fillStyle = colors.canvasBg
+    ctx.fillRect(0, 0, fit.width, fit.height)
+
+    // Content-space → supersampled pixels. Everything below draws in the
+    // same world coordinates the live renderers use.
+    ctx.setTransform(fit.scale, 0, 0, fit.scale, fit.translateX, fit.translateY)
+
+    const noSelection = new Set<string>()
+
+    for (const edge of edges.values()) {
+      drawEdge(ctx, edge, nodes, noSelection, noSelection, colors)
+    }
+
+    for (const node of nodes.values()) {
+      const isRoot = node.isRoot || node.id === rootNodeId
+      const parentNode = node.parentId ? nodes.get(node.parentId) : null
+      const parentIsRoot = !!(parentNode && (parentNode.isRoot || parentNode.id === rootNodeId))
+      drawNode(
+        ctx, node, 'normal', colors,
+        false, false, isRoot,
+        lerpColor,
+        undefined,
+        isLight,
+        parentIsRoot,
+        textScale,
+      )
+    }
+
+    // Root badge on top, matching the live render order.
+    for (const node of nodes.values()) {
+      if (node.isRoot || node.id === rootNodeId) {
+        drawRootIndicator(ctx, node, colors)
       }
-    }, 'image/png')
+    }
+
+    const spec = RASTER_FORMATS[format]
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob)
+          else reject(new Error(`Canvas toBlob (${spec.mime}) failed`))
+        },
+        spec.mime,
+        spec.quality,
+      )
+    })
+  }
+
+  async function exportAsImage(mapStore: MapStore, title: string, format: RasterFormat) {
+    if (!guest.requireFeature('export')) return
+    try {
+      const spec = RASTER_FORMATS[format]
+      const blob = await renderMapToBlob(mapStore, format)
+      const bytes = new Uint8Array(await blob.arrayBuffer())
+      await saveFile(bytes, `${sanitizeFilename(title)}.${spec.extensions[0]}`, [
+        { name: spec.filterName, extensions: [...spec.extensions] }
+      ])
+    } catch (e) {
+      console.error('[Export] Raster export failed:', e)
+    }
+  }
+
+  function exportAsPng(mapStore: MapStore, title: string) {
+    return exportAsImage(mapStore, title, 'png')
+  }
+
+  function exportAsJpg(mapStore: MapStore, title: string) {
+    return exportAsImage(mapStore, title, 'jpg')
   }
 
   // ── JSON export ─────────────────────────────────────────────────────
@@ -318,6 +446,7 @@ export function useExport() {
 
   return {
     exportAsPng,
+    exportAsJpg,
     exportAsJson,
     exportAsMarkdown,
     exportAsPdf,

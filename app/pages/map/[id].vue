@@ -898,8 +898,9 @@ function handleShare() {
 }
 
 function handleExportPng() {
-  const el = canvasRef.value?.canvasRef
-  if (el) exportUtils.exportAsPng(el, mapStore.title as string)
+  // Offscreen full-map render — no longer a screenshot of the visible
+  // canvas, so camera position, zoom and the detail panel don't matter.
+  exportUtils.exportAsPng(mapStore, mapStore.title as string)
 }
 
 function handleExportJson() {
