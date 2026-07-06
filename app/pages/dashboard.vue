@@ -5,6 +5,7 @@ import { useMapStore } from '~/stores/mapStore'
 import { useAISettings } from '~/composables/useAISettings'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useGenerationQueue } from '~/composables/useGenerationQueue'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { safeImageUrl } from '~/utils/safeUrl'
 import { resolveDisplayName, resolveAvatarInitials } from '~/utils/userDisplay'
 import type { GenerationTone } from '~/types'
@@ -88,9 +89,8 @@ const recentMaps = ref<DBMapDocument[]>([])
 const isLoading = ref(true)
 const isCreatingMap = ref(false)
 
-// Delete confirmation
-const deleteConfirmVisible = ref(false)
-const deleteTargetId = ref<string | null>(null)
+// Delete confirmation — shared NcConfirmDialog (unified app-wide)
+const { confirm, ConfirmDialog } = useConfirmDialog()
 
 // AI Quick Start — generation runs in the BACKGROUND via the generation queue
 // (see GenerationProgressDock) so the user can leave this page while a map
@@ -280,7 +280,6 @@ function handleKeydown(e: KeyboardEvent) {
     showAIModal.value = false
     showTemplatesModal.value = false
     showImportModal.value = false
-    deleteConfirmVisible.value = false
   }
 }
 
@@ -411,17 +410,17 @@ function openMap(mapId: string) {
   router.push(`/map/${mapId}`)
 }
 
-function deleteMap(mapId: string, event: Event) {
+async function deleteMap(mapId: string, event: Event) {
   event.stopPropagation()
-  deleteTargetId.value = mapId
-  deleteConfirmVisible.value = true
-}
-
-async function confirmDeleteMap() {
-  const mapId = deleteTargetId.value
-  if (!mapId) return
-  deleteConfirmVisible.value = false
-  deleteTargetId.value = null
+  const confirmed = await confirm({
+    title: t('dashboard.delete_confirm.title'),
+    description: t('dashboard.delete_confirm.message'),
+    confirmText: t('dashboard.delete_confirm.delete'),
+    cancelText: t('dashboard.delete_confirm.cancel'),
+    variant: 'danger',
+    icon: 'i-lucide-trash-2'
+  })
+  if (!confirmed) return
   try {
     // Delete from server (soft-delete in PostgreSQL)
     if (syncEngine.isSyncEnabled.value) {
@@ -444,11 +443,6 @@ async function confirmDeleteMap() {
   } catch (error) {
     console.error('Failed to delete map:', error)
   }
-}
-
-function cancelDeleteMap() {
-  deleteConfirmVisible.value = false
-  deleteTargetId.value = null
 }
 
 function formatDate(timestamp: number): string {
@@ -1039,23 +1033,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
       </Teleport>
 
       <!-- Delete Confirm -->
-      <Teleport to="body">
-        <div v-if="deleteConfirmVisible" class="modal-overlay" @click.self="cancelDeleteMap">
-          <div class="modal" style="max-width: 400px;">
-            <div class="modal-header">
-              <div class="modal-icon modal-icon-danger"><span class="i-lucide-trash-2" /></div>
-              <h2 class="modal-title">{{ $t('dashboard.delete_confirm.title') }}</h2>
-              <p class="modal-subtitle">{{ $t('dashboard.delete_confirm.message') }}</p>
-            </div>
-            <div class="modal-footer">
-              <button class="dbtn dbtn-ghost" @click="cancelDeleteMap">{{ $t('dashboard.delete_confirm.cancel') }}</button>
-              <button class="dbtn dbtn-danger" @click="confirmDeleteMap">
-                <span class="i-lucide-trash-2" />{{ $t('dashboard.delete_confirm.delete') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Teleport>
+      <component :is="ConfirmDialog" />
     </div>
 
     <div v-else class="auth-loading"><div class="loading-spinner" /></div>
@@ -1222,12 +1200,6 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   background: transparent;
   color: var(--d-text-2);
   border-color: var(--d-border-2);
-}
-
-.dbtn-danger {
-  background: #DC2626;
-  color: #FAFAFA;
-  font-weight: 600;
 }
 
 /* Section label */
@@ -1715,7 +1687,6 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   background: var(--d-accent-soft); color: var(--d-accent);
   font-size: calc(20px * var(--nc-text-scale, 1)); margin-bottom: 16px;
 }
-.modal-icon-danger { background: rgba(220, 38, 38, 0.1); color: #DC2626; }
 .modal-title { font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0 0 6px; }
 .modal-subtitle { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0; line-height: 1.5; }
 .modal-body { padding: 20px 24px; }

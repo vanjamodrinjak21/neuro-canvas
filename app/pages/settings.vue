@@ -4,8 +4,10 @@ import { useAISettings } from '~/composables/useAISettings'
 import { PROVIDER_TEMPLATES } from '~/types/ai-settings'
 import { resolveAvatarInitials } from '~/utils/userDisplay'
 import { useMobileBack } from '~/composables/useMobileBack'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 
 const { t, locale, setLocale, locales: i18nLocales } = useI18n()
+const { confirm, ConfirmDialog } = useConfirmDialog()
 
 definePageMeta({
   layout: false,
@@ -601,7 +603,15 @@ function handleMobileSettingsSignIn(provider: 'apple' | 'google' | 'github' | 'e
 async function handleMobileDeleteAccount() {
   // Irreversible — confirm before hitting the destructive endpoint. The server
   // also requires the exact confirmation string, so accidental calls are safe.
-  if (typeof window !== 'undefined' && !window.confirm(t('mobile.settingsAccount.deleteTitle'))) return
+  const confirmed = await confirm({
+    title: t('mobile.settingsAccount.deleteTitle'),
+    description: t('mobile.settingsAccount.deleteItalic', { n: 30 }),
+    confirmText: t('mobile.settingsAccount.deleteTitle'),
+    cancelText: t('common.buttons.cancel'),
+    variant: 'danger',
+    icon: 'i-lucide-trash-2'
+  })
+  if (!confirmed) return
   try {
     await $fetch('/api/user/account', {
       method: 'DELETE',
@@ -1067,6 +1077,8 @@ function handleAccountClose() {
     <Teleport to="body">
       <div ref="settingsOverlayRef" class="settings-swipe-overlay" />
     </Teleport>
+
+    <component :is="ConfirmDialog" />
   </div>
 </template>
 
