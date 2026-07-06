@@ -41,6 +41,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # onnxruntime-node postinstall downloads CUDA EP binaries on linux/x64 from
+  # the NuGet CDN, which is flaky on runners. CI never uses the CUDA provider.
+  ONNXRUNTIME_NODE_INSTALL: skip
+
 jobs:
   appstore:
     name: iOS (App Store upload)
