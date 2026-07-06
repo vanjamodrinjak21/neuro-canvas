@@ -160,18 +160,20 @@ function formatSegment(segment: string): string {
 }
 
 .docs-breadcrumb__separator {
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-size: calc(10px * var(--nc-text-scale, 1));
   color: var(--nc-text-dim);
-  margin: 0 6px;
+  margin: 0 8px;
   user-select: none;
   line-height: 1;
 }
 
 .docs-breadcrumb__link {
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-soft, var(--nc-text-secondary));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nc-text-muted);
   text-decoration: none;
   transition: color var(--nc-duration-fast) ease;
   line-height: 1;
@@ -182,20 +184,22 @@ function formatSegment(segment: string): string {
 }
 
 .docs-breadcrumb__current {
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-text-secondary);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nc-accent);
   line-height: 1;
 }
 
 /* Light theme */
 :root.light .docs-breadcrumb__separator {
-  color: #D4D4D8;
+  color: var(--nc-text-dim);
 }
 
 :root.light .docs-breadcrumb__link {
-  color: #777777;
+  color: var(--nc-text-muted);
 }
 
 :root.light .docs-breadcrumb__link:hover {
@@ -203,6 +207,6 @@ function formatSegment(segment: string): string {
 }
 
 :root.light .docs-breadcrumb__current {
-  color: #555555;
+  color: var(--nc-accent);
 }
 </style>

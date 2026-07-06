@@ -62,9 +62,37 @@ watch(
 
 <style scoped>
 .docs-root {
+  /* Landing palette, scoped to the docs subtree only — the rest of the
+     app keeps the global tokens. Light theme remaps below. */
+  --nc-accent: #5EF2E8;
+  --nc-accent-light: #8FF7EF;
+  --nc-accent-dark: #3AC2B9;
+  --nc-accent-glow: rgba(94, 242, 232, 0.08);
+  --nc-accent-glow-strong: rgba(94, 242, 232, 0.15);
+  --nc-accent-glow-intense: rgba(94, 242, 232, 0.25);
+  --nc-accent-rgb: 94, 242, 232;
+  --docs-coral: #FF8A5C;
+
   min-height: 100vh;
   background: var(--nc-bg);
   transition: background 0.3s ease;
+}
+
+/* deep-map black behind the docs in dark mode, like the landing */
+:root:not(.light) .docs-root {
+  --nc-bg: #050508;
+  --nc-surface: #0d0d11;
+}
+
+:root.light .docs-root {
+  --nc-accent: #0b9e93;
+  --nc-accent-light: #0fb5a8;
+  --nc-accent-dark: #087f76;
+  --nc-accent-glow: rgba(11, 158, 147, 0.08);
+  --nc-accent-glow-strong: rgba(11, 158, 147, 0.15);
+  --nc-accent-glow-intense: rgba(11, 158, 147, 0.25);
+  --nc-accent-rgb: 11, 158, 147;
+  --docs-coral: #d95f2f;
 }
 
 .docs-wrapper {

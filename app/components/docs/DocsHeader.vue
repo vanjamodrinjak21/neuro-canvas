@@ -247,9 +247,10 @@ function applyThemeChange() {
 }
 
 .docs-header__brand-name {
-  font-family: 'Inter', var(--nc-font-body);
-  font-weight: 600;
-  font-size: calc(14px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-display);
+  font-weight: 700;
+  font-size: calc(15px * var(--nc-text-scale, 1));
+  letter-spacing: 0.01em;
   line-height: 1;
   color: var(--nc-text);
 }
@@ -263,9 +264,11 @@ function applyThemeChange() {
 }
 
 .docs-header__docs-link {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-mono);
   font-weight: 500;
-  font-size: calc(14px * var(--nc-text-scale, 1));
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--nc-text-secondary);
   text-decoration: none;
   line-height: 1;
@@ -273,7 +276,7 @@ function applyThemeChange() {
 }
 
 .docs-header__docs-link:hover {
-  color: var(--nc-text);
+  color: var(--nc-accent);
 }
 
 /* ─── Center search ─── */
@@ -303,8 +306,9 @@ function applyThemeChange() {
 }
 
 .docs-header__search-text {
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(12px * var(--nc-text-scale, 1));
+  letter-spacing: 0.04em;
   color: var(--nc-text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -314,7 +318,7 @@ function applyThemeChange() {
 .docs-header__kbd {
   margin-left: auto;
   padding: 2px 6px;
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-muted);
@@ -337,26 +341,24 @@ function applyThemeChange() {
   height: 32px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  padding: 0 14px;
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--nc-text-secondary);
   text-decoration: none;
   border: 1px solid var(--nc-border);
-  border-radius: 6px;
+  border-radius: 999px;
   background: none;
   transition: color var(--nc-duration-fast) ease, border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
 }
 
 .docs-header__app-btn:hover {
-  color: var(--nc-text);
-  border-color: var(--nc-border-active);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-:root.light .docs-header__app-btn:hover {
-  background: rgba(0, 0, 0, 0.03);
+  color: var(--nc-bg);
+  border-color: var(--nc-text);
+  background: var(--nc-text);
 }
 
 /* ─── Language toggle ─── */
@@ -370,10 +372,10 @@ function applyThemeChange() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.14em;
   color: var(--nc-text-secondary);
   transition: color var(--nc-duration-fast) ease, border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
   flex-shrink: 0;
@@ -453,7 +455,7 @@ function applyThemeChange() {
   bottom: 0;
   width: 100vw;
   height: 100vh;
-  background: #00D2BE;
+  background: var(--nc-accent);
   z-index: 9999;
   pointer-events: none;
 }

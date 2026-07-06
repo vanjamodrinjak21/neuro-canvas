@@ -14,4 +14,8 @@
   color: var(--nc-text-secondary);
   margin-bottom: 6px;
 }
+
+.prose-li::marker {
+  color: var(--nc-accent);
+}
 </style>

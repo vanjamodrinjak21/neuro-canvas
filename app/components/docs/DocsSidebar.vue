@@ -163,30 +163,39 @@ function isActive(path: string): boolean {
 .docs-sidebar::-webkit-scrollbar-thumb:hover { background: var(--nc-text-muted); }
 
 .docs-sidebar__nav {
-  padding: 16px 0;
+  padding: 20px 0;
+  counter-reset: docsec;
 }
 
 .docs-sidebar__section {
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .docs-sidebar__section-label {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  gap: 8px;
   padding: 8px 20px;
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-family: var(--nc-font-mono);
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.18em;
   color: var(--nc-text-dim);
   user-select: none;
 }
 
-.docs-sidebar__section-label svg {
+/* survey-index numbering replaces the icon set */
+.docs-sidebar__section-label::before {
+  counter-increment: docsec;
+  content: '0' counter(docsec);
+  font-family: var(--nc-font-mono);
+  color: var(--docs-coral, var(--nc-accent));
   flex-shrink: 0;
-  opacity: 0.7;
+}
+
+.docs-sidebar__section-label svg {
+  display: none;
 }
 
 .docs-sidebar__list {
@@ -222,14 +231,14 @@ function isActive(path: string): boolean {
 }
 
 .docs-sidebar__link--active {
-  color: #00D2BE;
-  border-left-color: #00D2BE;
-  background: rgba(0, 210, 190, 0.06);
+  color: var(--nc-accent);
+  border-left-color: var(--nc-accent);
+  background: var(--nc-accent-glow);
 }
 
 .docs-sidebar__link--active:hover {
-  color: #00D2BE;
-  background: rgba(0, 210, 190, 0.08);
+  color: var(--nc-accent);
+  background: var(--nc-accent-glow-strong);
 }
 
 .docs-sidebar__empty {

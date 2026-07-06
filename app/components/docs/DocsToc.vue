@@ -140,11 +140,11 @@ onBeforeUnmount(() => {
 }
 
 .docs-toc__label {
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-family: var(--nc-font-mono);
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.18em;
   color: var(--nc-text-muted);
   margin-bottom: 12px;
   padding-left: 12px;
@@ -167,7 +167,7 @@ onBeforeUnmount(() => {
   left: -1px;
   top: 0;
   bottom: 0;
-  width: 1px;
+  width: 2px;
   background: var(--nc-accent);
 }
 
@@ -197,7 +197,7 @@ onBeforeUnmount(() => {
 
 /* Light theme */
 :root.light .docs-toc__label {
-  color: #A1A1AA;
+  color: var(--nc-text-muted);
 }
 
 :root.light .docs-toc__list {
@@ -205,11 +205,11 @@ onBeforeUnmount(() => {
 }
 
 :root.light .docs-toc__link {
-  color: #A1A1AA;
+  color: var(--nc-text-muted);
 }
 
 :root.light .docs-toc__link:hover {
-  color: #555555;
+  color: var(--nc-text-secondary);
 }
 
 :root.light .docs-toc__link--active {

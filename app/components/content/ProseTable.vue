@@ -19,7 +19,7 @@
   width: 100%;
   border-collapse: collapse;
   border: 1px solid var(--nc-border);
-  border-radius: 6px;
+  border-radius: var(--nc-radius-md);
   overflow: hidden;
 }
 
@@ -30,10 +30,11 @@
 .prose-table :deep(th) {
   text-align: left;
   padding: 10px 16px;
+  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.14em;
   color: var(--nc-text-muted);
   border-bottom: 1px solid var(--nc-border);
   white-space: nowrap;
@@ -55,7 +56,7 @@
 }
 
 .prose-table :deep(tbody tr:hover) {
-  background: var(--nc-accent-glow);
+  background: var(--nc-surface-3);
 }
 
 .table-wrapper::-webkit-scrollbar {
@@ -72,6 +73,6 @@
 }
 
 :root.light .prose-table :deep(tbody tr:hover) {
-  background: rgba(0, 210, 190, 0.04);
+  background: var(--nc-surface-3);
 }
 </style>

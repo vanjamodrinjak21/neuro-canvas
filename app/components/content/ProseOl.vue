@@ -22,7 +22,7 @@
 }
 
 .prose-ol :deep(li::marker) {
-  color: var(--nc-text-dim);
+  color: var(--nc-accent);
   font-weight: 500;
 }
 </style>

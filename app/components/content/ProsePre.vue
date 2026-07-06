@@ -70,7 +70,7 @@ async function copyCode() {
 <style scoped>
 .code-block {
   border: 1px solid var(--nc-border);
-  border-radius: 6px;
+  border-radius: var(--nc-radius-md);
   overflow: hidden;
   margin: 16px 0 24px;
 }
@@ -90,7 +90,9 @@ async function copyCode() {
 
 .code-filename {
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--nc-text-muted);
   font-weight: 500;
   user-select: none;
@@ -105,18 +107,21 @@ async function copyCode() {
   border-radius: 4px;
   background: transparent;
   color: var(--nc-text-muted);
+  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .code-copy:hover {
   background: var(--nc-surface-3);
-  color: var(--nc-text-secondary);
+  color: var(--nc-accent);
 }
 
 .code-body {
   padding: 16px 20px;
-  background: var(--nc-surface-elevated);
+  background: var(--nc-surface);
   font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
   font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.7;
