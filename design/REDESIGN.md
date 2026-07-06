@@ -96,7 +96,11 @@ Keep the app's existing `--nc-duration-*` (120–300ms) and `--nc-z-*` scales. L
 
 `NcLogo.vue` + landing `BrandMark` currently hardcode `#f4f4f8` fills / `rgba(244,244,248,0.55)` stroke. Convert to `currentColor` (component sets `color: var(--nc-text)`), stroke via opacity on currentColor. The mark must render correctly on both `#050508` and `#FAFAF9` with no per-theme SVG swaps.
 
-## 8. What stays OUT of app chrome
+## 8. OFF-LIMITS: the landing page (user directive)
+
+**Do not touch:** `app/assets/css/landing.css`, `app/components/landing/*`, `app/pages/index.vue`, `app/lib/topo-scene/*`. The landing shipped and is the *reference*, not a target. (The `.header-cta` orphan fix was reverted per this rule.)
+
+## 8b. What stays OUT of app chrome
 
 Cursor reticle (never — hostile in a productivity app), coords readout, depth rail (allowed only as docs reading-progress hairline), topo shader (boot screen only — already done), giant wordmark, wire-drop cue, grain/vignette, 165vh sticky sections, Lenis smooth scroll, 0.9–1.15s word-mask entrances (page titles at most, ≤0.5s, first paint only), dual-layer roll hovers, glassmorphism panels.
 
