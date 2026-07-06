@@ -40,7 +40,14 @@ function getAuthSecret(): string {
     || ''
 }
 
-export async function requireAuthSession(event: H3Event): Promise<{ userId: string; email: string }> {
+export interface AuthSession {
+  userId: string
+  email: string
+  /** Sign-in instant from the JWT — stable across rolling re-issues; keys the post-login TOTP verification mark (AER-84). */
+  iat: number
+}
+
+export async function requireAuthSession(event: H3Event): Promise<AuthSession> {
   const secret = getAuthSecret()
   const token = await getToken({
     event,
@@ -101,5 +108,5 @@ export async function requireAuthSession(event: H3Event): Promise<{ userId: stri
     }
   }
 
-  return { userId: user.id, email: user.email }
+  return { userId: user.id, email: user.email, iat: iat ?? 0 }
 }

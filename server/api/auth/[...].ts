@@ -309,7 +309,9 @@ providers.push(
         await verifyTOTP({ id: user.id, totpSecret: user.totpSecret!, lastTotpDelta: user.lastTotpDelta, backupCodes: user.backupCodes }, totpCode)
       }
 
-      return { id: user.id, email: user.email, name: user.name, image: user.image }
+      // totpVerified feeds the jwt callback's `totp` claim (AER-84): reaching
+      // this line with 2FA enabled means verifyTOTP passed for THIS sign-in.
+      return { id: user.id, email: user.email, name: user.name, image: user.image, totpVerified: user.totpEnabled === true }
     },
   })
 )
@@ -404,6 +406,25 @@ export default NuxtAuthHandler({
         token.iat = Math.floor(Date.now() / 1000)
         delete (token as Record<string, unknown>).expired
         delete (token as Record<string, unknown>).lastPwCheck
+
+        // `totp` claim (AER-84): 'verified' | 'pending' | 'none'. Credentials
+        // sign-ins verified TOTP in authorize(); OAuth sign-ins have no second
+        // factor, so a 2FA-enabled account lands 'pending' and must step up
+        // (see requireAiAuthSession + /auth/2fa). Claim failure modes are safe:
+        // the API gate re-reads totpEnabled from the DB on every request.
+        if ((user as { totpVerified?: boolean }).totpVerified === true) {
+          token.totp = 'verified'
+        } else {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { totpEnabled: true },
+            })
+            token.totp = dbUser?.totpEnabled ? 'pending' : 'none'
+          } catch {
+            token.totp = 'none' // DB unreachable — the gate still enforces
+          }
+        }
       }
 
       // Password-change invalidation (check every 5 min to avoid DB spam).
@@ -421,7 +442,7 @@ export default NuxtAuthHandler({
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: token.email as string },
-            select: { passwordChangedAt: true, name: true, image: true },
+            select: { passwordChangedAt: true, name: true, image: true, totpEnabled: true },
           })
           ;(token as Record<string, unknown>).lastPwCheck = now
 
@@ -430,6 +451,17 @@ export default NuxtAuthHandler({
           // token field.
           if (dbUser?.name) token.name = dbUser.name
           if (dbUser?.image) token.picture = dbUser.image
+
+          // Keep the `totp` claim honest as 2FA gets toggled (AER-84):
+          // disabled → 'none'; enabled later (or legacy claimless token) →
+          // 'pending'. Never invents 'verified'.
+          if (dbUser) {
+            if (!dbUser.totpEnabled) {
+              token.totp = 'none'
+            } else if (!token.totp || token.totp === 'none') {
+              token.totp = 'pending'
+            }
+          }
 
           if (dbUser?.passwordChangedAt) {
             const changedAt = Math.floor(dbUser.passwordChangedAt.getTime() / 1000)
@@ -467,6 +499,20 @@ export default NuxtAuthHandler({
           email: token.email as string,
           name: token.name as string,
           image: token.picture as string,
+        }
+
+        // totpPending drives the /auth/2fa redirect (AER-84): 2FA is enabled
+        // but this session neither verified at sign-in nor stepped up yet.
+        // Redis is consulted only for 'pending' sessions and fails open here —
+        // the API gate (requireAiAuthSession) is the enforcement boundary.
+        if (token.totp === 'pending') {
+          try {
+            const { hasTotpStepUp } = await import('../../utils/totpStepUp')
+            const steppedUp = await hasTotpStepUp(token.id as string, token.iat as number)
+            ;(session.user as Record<string, unknown>).totpPending = !steppedUp
+          } catch {
+            ;(session.user as Record<string, unknown>).totpPending = false
+          }
         }
       }
       return session
