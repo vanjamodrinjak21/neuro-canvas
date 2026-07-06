@@ -86,8 +86,10 @@
   --nc-selection-bg: var(--nc-accent);
   --nc-selection-text: var(--nc-bg);
 
-  /* Coral — live markers / attention ONLY, never a 2nd interactive color */
-  --nc-coral: #FF8A5C;
+  /* Attention red — live markers / destructive ONLY, never a 2nd
+     interactive color. User directive 2026-07-06: red, not orange
+     (landing keeps its own coral in the .lp scope). 5.35:1 on bg. */
+  --nc-coral: #EF4444;
 
   /* Chip + input fill */
   --nc-chip-bg: rgba(244, 244, 248, 0.04);
@@ -195,7 +197,7 @@
   --nc-danger-glow: rgba(239, 68, 68, 0.12);
   --nc-bg-rgb: 5, 5, 8;
   --nc-accent-rgb: 94, 242, 232;
-  --nc-coral-rgb: 255, 138, 92;
+  --nc-coral-rgb: 239, 68, 68;
   --nc-surface-rgb: 13, 13, 17;
   --nc-surface-2-rgb: 19, 19, 24;
   --nc-success-rgb: 34, 197, 94;
@@ -257,9 +259,9 @@
   --nc-selection-bg: var(--nc-accent-dark);
   --nc-selection-text: #FFFFFF;
 
-  /* Coral — deepened from the provisional #d95f2f (3.57:1, fails AA
-     for the error/danger TEXT usages) to hold 4.97:1 on bg. */
-  --nc-coral: #b64c22;
+  /* Attention red — user directive 2026-07-06: red, not orange.
+     #DC2626 holds 4.62:1 on paper (AA as text). */
+  --nc-coral: #DC2626;
   --nc-chip-bg: rgba(17, 17, 17, 0.04);
 
   --nc-teal-glow: rgba(11, 158, 147, 0.08);
@@ -281,7 +283,7 @@
   --nc-danger-glow: rgba(220, 38, 38, 0.08);
   --nc-bg-rgb: 250, 250, 249;
   --nc-accent-rgb: 11, 158, 147;
-  --nc-coral-rgb: 182, 76, 34;
+  --nc-coral-rgb: 220, 38, 38;
   --nc-surface-rgb: 255, 255, 255;
   --nc-surface-2-rgb: 246, 246, 244;
   --nc-success-rgb: 21, 128, 61;

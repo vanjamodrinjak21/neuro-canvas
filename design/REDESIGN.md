@@ -18,7 +18,7 @@ Extracted from `neurocanvas-3d-landing` (already ported in-repo as `app/assets/c
 --nc-text-dim:       rgba(244, 244, 248, 0.38);  /* decorative/disabled ONLY (3.25:1) */
 --nc-accent:         #5EF2E8;                    /* canonical. #00D2BE is LEGACY — remove */
 --nc-accent-dark:    #3AC2B9;
---nc-coral:          #FF8A5C;                    /* live markers/attention ONLY, never a 2nd interactive color */
+--nc-coral:          #EF4444;                    /* attention RED (user directive 2026-07-06: red, not orange) — live markers/destructive ONLY, never a 2nd interactive color. Landing + boot splash keep the original coral. */
 --nc-chip-bg:        rgba(244, 244, 248, 0.04);  /* chip + input fill */
 --nc-ease:           cubic-bezier(0.16, 1, 0.3, 1);  /* the single easing curve */
 ```
@@ -48,9 +48,8 @@ Keep the app's existing `--nc-duration-*` (120–300ms) and `--nc-z-*` scales. L
 --nc-accent-contrast: #111111;   /* text ON accent fills — white is 3.32:1, fails */
 --nc-selection-bg:    var(--nc-accent-dark);   /* #087f76 */
 --nc-selection-text:  #FFFFFF;   /* 4.88:1 — accent bg + bg text pair is 3.18:1 */
---nc-coral:           #b64c22;   /* 4.97:1 — DEEPENED from provisional #d95f2f
-                                    (3.57:1: fails AA for coral TEXT usages —
-                                    error labels, danger buttons) */
+--nc-coral:           #DC2626;   /* attention RED (user directive: red, not
+                                    orange) — 4.62:1 on paper, AA as text */
 --nc-chip-bg:         rgba(17, 17, 17, 0.04);
 --nc-success:         #15803D;   --nc-warning: #A16207;
 --nc-error:           #DC2626;   --nc-info:    #2563EB;  /* all ≥4.6:1 as text */
@@ -81,7 +80,7 @@ Keep the app's existing `--nc-duration-*` (120–300ms) and `--nc-z-*` scales. L
 | `#8C8C89` dim on bg / surface | 3.23 / 3.37 | decorative/disabled only |
 | `#087f76` accent-text on bg / surface / surface-2 | 4.67 / 4.88 / 4.51 | AA |
 | `#0b9e93` accent on bg / surface | 3.18 / 3.32 | UI components / large text only |
-| `#b64c22` coral on bg / surface | 4.97 / 5.19 | AA (deepened from `#d95f2f` @ 3.57) |
+| `#DC2626` attention-red on bg / surface | 4.62 / 4.83 | AA (red replaced orange per user directive; dark `#EF4444` = 5.35 on `#050508`) |
 | Primary button: `#FAFAF9` on ink `#111111` | 18.08 | AAA |
 | Button on accent: `--nc-accent-contrast` `#111111` on `#0b9e93` | 5.69 | AA (white would be 3.32 — FAIL) |
 | AI button hover: `#111111` on `#0fb5a8` | 7.37 | AAA |
