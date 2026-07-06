@@ -192,15 +192,17 @@ defineExpose({ leave })
 
 <style scoped>
 .app-loading {
-  /* self-contained landing palette — this screen boots before any theme */
-  --al-bg: #050508;
-  --al-ink: #f4f4f8;
-  --al-ink-dim: rgba(244, 244, 248, 0.62);
-  --al-ink-faint: rgba(244, 244, 248, 0.3);
-  --al-hair: rgba(244, 244, 248, 0.1);
-  --al-cyan: #5ef2e8;
-  --al-coral: #ff8a5c;
-  --al-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* --al-* aliases now consume the global tokens (AER-76) — the values
+     used to be a hardcoded landing-palette copy with slight drift
+     (ink-faint 0.3, hair 0.1); normalized to the spec tiers. */
+  --al-bg: var(--nc-bg);
+  --al-ink: var(--nc-text);
+  --al-ink-dim: var(--nc-text-secondary);
+  --al-ink-faint: var(--nc-text-dim);
+  --al-hair: var(--nc-border-subtle);
+  --al-cyan: var(--nc-accent);
+  --al-coral: var(--nc-coral);
+  --al-ease: var(--nc-ease);
 
   position: fixed;
   inset: 0;
@@ -269,7 +271,7 @@ defineExpose({ leave })
 }
 
 .app-loading__cross {
-  stroke: rgba(244, 244, 248, 0.14) !important;
+  stroke: var(--nc-border) !important;
   stroke-width: 1.5;
 }
 

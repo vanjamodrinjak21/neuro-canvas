@@ -29,70 +29,79 @@ export default defineConfig({
     transformerVariantGroup()
   ],
 
-  // Infinite Canvas Theme — Spatial, immersive, tool-forward
+  // Theme-aware utilities — every color references tokens.css (the single
+  // source of truth, see design/REDESIGN.md §1). Colors that are used with
+  // alpha modifiers (e.g. `bg-nc-accent/20`) go through comma rgb-triplet
+  // companion vars via the `%alpha` placeholder, because plain var() colors
+  // can't take `/alpha`.
   theme: {
     colors: {
       // Canvas Environment — Minimal
-      'nc-bg': '#0A0A0C',
-      'nc-canvas': '#0A0A0C',
-      'nc-surface': '#111114',
-      'nc-surface-2': '#111114',
-      'nc-surface-3': '#1A1A1E',
-      'nc-surface-4': '#1C1C26',
+      'nc-bg': 'rgba(var(--nc-bg-rgb), %alpha)',
+      'nc-canvas': 'var(--nc-canvas)',
+      'nc-surface': 'rgba(var(--nc-surface-rgb), %alpha)',
+      'nc-surface-2': 'rgba(var(--nc-surface-2-rgb), %alpha)',
+      'nc-surface-3': 'var(--nc-surface-3)',
+      'nc-surface-4': 'var(--nc-surface-4)',
 
       // Legacy mappings
-      'nc-charcoal': '#0A0A0C',
-      'nc-graphite': '#111114',
-      'nc-pencil': '#1E1E22',
+      'nc-charcoal': 'var(--nc-charcoal)',
+      'nc-graphite': 'rgba(var(--nc-surface-rgb), %alpha)',
+      'nc-pencil': 'var(--nc-pencil)',
 
       // Borders
-      'nc-border': '#1E1E22',
-      'nc-border-subtle': '#1E1E22',
-      'nc-border-active': '#2A2A30',
+      'nc-border': 'var(--nc-border)',
+      'nc-border-subtle': 'var(--nc-border-subtle)',
+      'nc-border-active': 'var(--nc-border-active)',
 
       // Text
-      'nc-ink': '#FAFAFA',
-      'nc-ink-soft': '#888890',
-      'nc-ink-muted': '#555558',
-      'nc-ink-faint': '#52525B',
-      'nc-text': '#FAFAFA',
-      'nc-text-secondary': '#888890',
-      'nc-text-muted': '#555558',
+      'nc-ink': 'var(--nc-ink)',
+      'nc-ink-soft': 'var(--nc-ink-soft)',
+      'nc-ink-muted': 'var(--nc-ink-muted)',
+      'nc-ink-faint': 'var(--nc-ink-faint)',
+      'nc-text': 'var(--nc-text)',
+      'nc-text-secondary': 'var(--nc-text-secondary)',
+      'nc-text-muted': 'var(--nc-text-muted)',
 
-      // Accent — Petronas Teal
-      'nc-accent': '#00D2BE',
-      'nc-accent-light': '#00FFE5',
-      'nc-accent-dark': '#00A89A',
-      'nc-teal': '#00D2BE',
-      'nc-teal-light': '#00FFE5',
-      'nc-teal-dark': '#00A89A',
+      // Accent — landing cyan
+      'nc-accent': 'rgba(var(--nc-accent-rgb), %alpha)',
+      'nc-accent-light': 'var(--nc-accent-light)',
+      'nc-accent-dark': 'var(--nc-accent-dark)',
+      'nc-accent-text': 'var(--nc-accent-text)',
+      'nc-teal': 'rgba(var(--nc-accent-rgb), %alpha)',
+      'nc-teal-light': 'var(--nc-teal-light)',
+      'nc-teal-dark': 'var(--nc-teal-dark)',
+
+      // Coral (live markers only) + chip fill
+      'nc-coral': 'var(--nc-coral)',
+      'nc-chip': 'var(--nc-chip-bg)',
 
       // Node Colors
-      'nc-node-purple': '#A78BFA',
-      'nc-node-pink': '#F472B6',
-      'nc-node-blue': '#60A5FA',
-      'nc-node-green': '#4ADE80',
-      'nc-node-orange': '#FB923C',
-      'nc-node-yellow': '#FACC15',
+      'nc-node-purple': 'var(--nc-node-purple)',
+      'nc-node-pink': 'var(--nc-node-pink)',
+      'nc-node-blue': 'var(--nc-node-blue)',
+      'nc-node-green': 'var(--nc-node-green)',
+      'nc-node-orange': 'var(--nc-node-orange)',
+      'nc-node-yellow': 'var(--nc-node-yellow)',
 
       // Status
-      'nc-success': '#22C55E',
-      'nc-warning': '#EAB308',
-      'nc-error': '#EF4444',
-      'nc-info': '#3B82F6',
+      'nc-success': 'rgba(var(--nc-success-rgb), %alpha)',
+      'nc-warning': 'rgba(var(--nc-warning-rgb), %alpha)',
+      'nc-error': 'rgba(var(--nc-error-rgb), %alpha)',
+      'nc-info': 'rgba(var(--nc-info-rgb), %alpha)',
 
       // Semantic
-      'nc-primary': '#00D2BE',
-      'nc-secondary': '#0C0C12',
-      'nc-surface-elevated': '#111118',
-      'nc-surface-hover': '#16161E'
+      'nc-primary': 'rgba(var(--nc-accent-rgb), %alpha)',
+      'nc-secondary': 'var(--nc-secondary)',
+      'nc-surface-elevated': 'var(--nc-surface-elevated)',
+      'nc-surface-hover': 'var(--nc-surface-hover)'
     },
 
     fontFamily: {
       display: ['Cabinet Grotesk', 'Inter', 'system-ui', 'sans-serif'],
-      body: ['Cabinet Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+      body: ['Inter', 'system-ui', 'sans-serif'],
       serif: ['Instrument Serif', 'Georgia', 'serif'],
-      sans: ['Cabinet Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+      sans: ['Inter', 'system-ui', 'sans-serif'],
       mono: ['JetBrains Mono', 'ui-monospace', 'SF Mono', 'monospace']
     },
 
@@ -108,20 +117,20 @@ export default defineConfig({
     },
 
     borderRadius: {
-      'nc-sm': '6px',
-      'nc-md': '8px',
-      'nc-lg': '12px',
-      'nc-xl': '16px',
-      'nc-2xl': '20px'
+      'nc-sm': 'var(--nc-radius-sm)',
+      'nc-md': 'var(--nc-radius-md)',
+      'nc-lg': 'var(--nc-radius-lg)',
+      'nc-xl': 'var(--nc-radius-xl)',
+      'nc-2xl': 'var(--nc-radius-2xl)'
     },
 
     boxShadow: {
-      'nc-sm': '0 1px 3px rgba(0, 0, 0, 0.3)',
-      'nc-md': '0 4px 12px rgba(0, 0, 0, 0.4)',
-      'nc-lg': '0 8px 32px rgba(0, 0, 0, 0.5)',
-      'nc-xl': '0 16px 48px rgba(0, 0, 0, 0.6)',
-      'nc-glow': '0 0 32px rgba(0, 210, 190, 0.25)',
-      'nc-glow-accent': '0 0 32px rgba(0, 210, 190, 0.25)'
+      'nc-sm': 'var(--nc-shadow-sm)',
+      'nc-md': 'var(--nc-shadow-md)',
+      'nc-lg': 'var(--nc-shadow-lg)',
+      'nc-xl': 'var(--nc-shadow-xl)',
+      'nc-glow': 'var(--nc-glow-accent)',
+      'nc-glow-accent': 'var(--nc-glow-accent)'
     },
 
     zIndex: {
@@ -138,52 +147,62 @@ export default defineConfig({
 
     animation: {
       keyframes: {
-        'nc-pulse-glow': '{0%, 100% { box-shadow: 0 0 0 0 rgba(0, 210, 190, 0.12) } 50% { box-shadow: 0 0 0 8px transparent }}',
+        'nc-pulse-glow': '{0%, 100% { box-shadow: 0 0 0 0 var(--nc-teal-glow) } 50% { box-shadow: 0 0 0 8px transparent }}',
         'nc-fade-in': '{from { opacity: 0 } to { opacity: 1 }}',
         'nc-slide-in': '{from { opacity: 0; transform: translateX(20px) } to { opacity: 1; transform: translateX(0) }}',
-        'nc-scale-in': '{from { opacity: 0; transform: scale(0.8) } to { opacity: 1; transform: scale(1) }}',
-        'nc-node-appear': '{from { opacity: 0; transform: scale(0.8) } to { opacity: 1; transform: scale(1) }}'
+        'nc-scale-in': '{from { opacity: 0; transform: scale(0.95) } to { opacity: 1; transform: scale(1) }}',
+        'nc-node-appear': '{from { opacity: 0; transform: scale(0.95) } to { opacity: 1; transform: scale(1) }}'
       },
       durations: {
-        'nc-press': '120ms',
-        'nc-instant': '100ms',
-        'nc-fast': '150ms',
-        'nc-normal': '200ms',
-        'nc-slow': '300ms',
-        'nc-slower': '500ms',
-        'nc-reveal': '700ms'
+        'nc-press': 'var(--nc-duration-press)',
+        'nc-instant': 'var(--nc-duration-instant)',
+        'nc-fast': 'var(--nc-duration-fast)',
+        'nc-normal': 'var(--nc-duration-normal)',
+        'nc-slow': 'var(--nc-duration-slow)',
+        'nc-slower': 'var(--nc-duration-slower)',
+        'nc-reveal': 'var(--nc-duration-reveal)'
       },
       timingFns: {
-        'nc-ease': 'cubic-bezier(0.23, 1, 0.32, 1)',
-        'nc-ease-out': 'cubic-bezier(0.23, 1, 0.32, 1)',
-        'nc-ease-in-out': 'cubic-bezier(0.77, 0, 0.175, 1)',
-        'nc-ease-entrance': 'cubic-bezier(0.22, 1, 0.36, 1)',
-        'nc-ease-bounce': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-        'nc-ease-smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
-        'nc-ease-drawer': 'cubic-bezier(0.32, 0.72, 0, 1)'
+        'nc-ease': 'var(--nc-ease)',
+        'nc-ease-out': 'var(--nc-ease-out)',
+        'nc-ease-in-out': 'var(--nc-ease-in-out)',
+        'nc-ease-entrance': 'var(--nc-ease-entrance)',
+        'nc-ease-bounce': 'var(--nc-ease-bounce)',
+        'nc-ease-smooth': 'var(--nc-ease-smooth)',
+        'nc-ease-drawer': 'var(--nc-ease-drawer)'
       }
     }
   },
 
-  shortcuts: {
-    // Glass panels
-    'nc-glass': 'bg-[rgba(12,12,18,0.85)] backdrop-blur-24 border border-nc-border shadow-nc-lg',
-    'nc-glass-elevated': 'bg-[rgba(12,12,18,0.95)] backdrop-blur-32 border border-nc-border shadow-nc-lg',
-    'nc-glass-dark': 'bg-[rgba(5,5,8,0.95)] backdrop-blur-24 border border-nc-border-subtle shadow-nc-xl',
+  rules: [
+    // Explicit transition properties (REDESIGN.md §6 — never `transition: all`)
+    ['nc-anim', {
+      'transition-property': 'color, background-color, border-color, opacity, transform, box-shadow',
+      'transition-duration': 'var(--nc-duration-normal)',
+      'transition-timing-function': 'var(--nc-ease)'
+    }]
+  ],
 
-    // Buttons
-    'nc-btn': 'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-nc-md font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
-    'nc-btn-primary': 'nc-btn bg-nc-accent text-nc-bg hover:bg-nc-accent-dark hover:shadow-nc-glow active:scale-98',
-    'nc-btn-secondary': 'nc-btn nc-glass text-nc-ink hover:border-nc-border-active hover:shadow-nc-glow',
-    'nc-btn-ghost': 'nc-btn text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-2 bg-transparent border-transparent',
+  shortcuts: {
+    // Flat surfaces — legacy "glass" names, de-glassed per REDESIGN.md §5:
+    // flat surface + 1px hairline, NO backdrop-blur anywhere in chrome.
+    'nc-glass': 'bg-nc-surface-2 border border-nc-border',
+    'nc-glass-elevated': 'bg-nc-surface-2 border border-nc-border shadow-nc-md',
+    'nc-glass-dark': 'bg-nc-bg border border-nc-border-subtle',
+
+    // Buttons (REDESIGN.md §5 component grammar; no glow in chrome)
+    'nc-btn': 'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-nc-md font-medium nc-anim cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed',
+    'nc-btn-primary': 'nc-btn rounded-[2.4rem] bg-nc-ink text-nc-bg font-display font-bold hover:bg-nc-accent hover:translate-y-[-1px] active:scale-97',
+    'nc-btn-secondary': 'nc-btn rounded-[2.4rem] bg-transparent text-nc-ink border border-nc-border hover:border-nc-ink-soft active:scale-97',
+    'nc-btn-ghost': 'nc-btn text-nc-ink-muted hover:text-nc-ink hover:bg-nc-chip bg-transparent border-transparent',
     'nc-btn-icon': 'nc-btn p-2 aspect-square',
 
-    // Cards
-    'nc-card': 'nc-glass rounded-nc-xl p-4 shadow-nc-md',
-    'nc-card-elevated': 'nc-glass-elevated rounded-nc-xl p-4 shadow-nc-lg',
+    // Cards — flat surface + hairline, radius ≤ 0.5rem
+    'nc-card': 'bg-nc-surface-2 border border-nc-border rounded-nc-md p-4',
+    'nc-card-elevated': 'bg-nc-surface-2 border border-nc-border rounded-nc-md p-4 shadow-nc-md',
 
-    // Inputs
-    'nc-input': 'w-full px-4 py-2 rounded-nc-md bg-nc-surface-2 text-nc-ink placeholder-nc-ink-faint border border-nc-border focus:border-nc-accent focus:ring-2 focus:ring-[rgba(0,210,190,0.2)] transition-all duration-200',
+    // Inputs — chip fill, hairline; focus = border-color only, no ring/glow
+    'nc-input': 'w-full px-4 py-2 rounded-nc-md bg-nc-chip text-nc-ink placeholder-nc-ink-faint border border-nc-border focus:border-nc-accent focus:outline-none nc-anim',
 
     // Layout
     'nc-center': 'flex items-center justify-center',
@@ -192,10 +211,10 @@ export default defineConfig({
     'nc-row': 'flex flex-row gap-4',
 
     // Text
-    'nc-heading': 'font-semibold text-nc-ink font-display',
+    'nc-heading': 'font-bold text-nc-ink font-display tracking-[-0.015em]',
     'nc-body': 'text-nc-ink',
     'nc-muted': 'text-nc-ink-muted',
-    'nc-label': 'text-xs font-semibold uppercase tracking-wide text-nc-ink-faint'
+    'nc-label': 'font-mono text-xs uppercase tracking-[0.16em] text-nc-ink-soft'
   },
 
   safelist: [
