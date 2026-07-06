@@ -162,17 +162,19 @@ const errorInfo = computed(() => {
   fill: var(--nc-coral);
 }
 
-/* Copy */
+/* Copy — mono micro-label eyebrow, 0.14em tracking (REDESIGN.md §4) */
 .error-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   color: var(--nc-text-muted);
   margin-bottom: 12px;
 }
 
+/* Status-page headline keeps the serif empty-state grammar; face comes
+   from the token, never re-hardcoded (REDESIGN.md §9) */
 .heading {
-  font-family: 'Instrument Serif', serif;
+  font-family: var(--nc-font-serif);
   font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;

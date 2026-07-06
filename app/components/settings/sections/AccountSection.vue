@@ -204,10 +204,54 @@ async function exportAllData() {
 }
 
 // ── Delete Account ──────────────────────────────────────────────────
+// Bespoke type-to-confirm dialog (intentionally NOT NcConfirmDialog — it
+// needs the confirmation input) but its shell follows the NcConfirmDialog
+// grammar exactly: surface-2 + hairline, radius 0.5rem, centered
+// scale(0.97)+opacity enter 200ms / exit 150ms, danger = red grammar.
 const showDeleteConfirm = ref(false)
 const deleteConfirmText = ref('')
 const isDeleting = ref(false)
 const deleteError = ref<string | null>(null)
+const deleteInputRef = ref<HTMLInputElement | null>(null)
+const deleteDialogRef = ref<HTMLElement | null>(null)
+let deleteTriggerEl: HTMLElement | null = null
+
+function openDeleteConfirm(e: MouseEvent) {
+  deleteTriggerEl = e.currentTarget as HTMLElement
+  showDeleteConfirm.value = true
+  nextTick(() => deleteInputRef.value?.focus())
+}
+
+function closeDeleteConfirm() {
+  if (isDeleting.value) return
+  showDeleteConfirm.value = false
+  deleteConfirmText.value = ''
+  deleteError.value = null
+  deleteTriggerEl?.focus()
+  deleteTriggerEl = null
+}
+
+// Minimal focus trap — Tab/Shift+Tab cycle within the dialog while open.
+function trapDeleteFocus(e: KeyboardEvent) {
+  const root = deleteDialogRef.value
+  if (!root) return
+  const focusables = Array.from(
+    root.querySelectorAll<HTMLElement>('input, button:not(:disabled)')
+  )
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  if (!first || !last) return
+  const active = document.activeElement as HTMLElement | null
+  if (e.shiftKey) {
+    if (active === first || !root.contains(active)) {
+      e.preventDefault()
+      last.focus()
+    }
+  } else if (active === last || !root.contains(active)) {
+    e.preventDefault()
+    first.focus()
+  }
+}
 
 async function deleteAccount() {
   if (deleteConfirmText.value !== 'DELETE MY ACCOUNT') return
@@ -489,30 +533,47 @@ async function onSignOut() {
       </div>
 
       <!-- Delete Account -->
-      <div class="setting-row danger-row" :class="{ expanded: showDeleteConfirm }">
-        <template v-if="!showDeleteConfirm">
-          <div class="setting-info">
-            <span class="setting-title">{{ t('settings.account.delete_account') }}</span>
-            <span class="setting-desc">{{ t('settings.account.delete_account_desc') }}</span>
-          </div>
-          <button class="delete-btn" @click="showDeleteConfirm = true">
-            {{ t('settings.account.delete') }}
-          </button>
-        </template>
+      <div class="setting-row danger-row">
+        <div class="setting-info">
+          <span class="setting-title">{{ t('settings.account.delete_account') }}</span>
+          <span class="setting-desc">{{ t('settings.account.delete_account_desc') }}</span>
+        </div>
+        <button class="delete-btn" @click="openDeleteConfirm">
+          {{ t('settings.account.delete') }}
+        </button>
+      </div>
+    </div>
 
-        <template v-else>
-          <div class="delete-form">
-            <div class="setting-info">
-              <span class="setting-title delete-title">{{ t('settings.account.delete_account') }}</span>
-              <span class="setting-desc">
+    <!-- Type-to-confirm delete dialog — NcConfirmDialog shell grammar -->
+    <Teleport to="body">
+      <Transition name="dc">
+        <div
+          v-if="showDeleteConfirm"
+          class="dc-overlay"
+          @click.self="closeDeleteConfirm"
+          @keydown.esc.prevent="closeDeleteConfirm"
+        >
+          <div
+            ref="deleteDialogRef"
+            class="dc-modal"
+            role="alertdialog"
+            aria-modal="true"
+            :aria-label="t('settings.account.delete_account')"
+            @keydown.tab="trapDeleteFocus"
+          >
+            <div class="dc-header">
+              <span class="dc-eyebrow">{{ t('settings.account.section_danger') }}</span>
+              <h2 class="dc-title">{{ t('settings.account.delete_account') }}</h2>
+              <p class="dc-subtitle">
                 {{ t('settings.account.delete_confirm_desc_prefix') }}
                 <strong>{{ t('settings.account.delete_confirmation_placeholder') }}</strong>
                 {{ t('settings.account.delete_confirm_desc_suffix') }}
-              </span>
+              </p>
             </div>
 
-            <div class="form-fields">
+            <div class="dc-body">
               <input
+                ref="deleteInputRef"
                 v-model="deleteConfirmText"
                 type="text"
                 class="setting-input delete-input"
@@ -525,27 +586,24 @@ async function onSignOut() {
                 <span class="i-lucide-alert-circle" />
                 {{ deleteError }}
               </div>
+            </div>
 
-              <div class="form-actions">
-                <button
-                  class="cancel-btn"
-                  @click="showDeleteConfirm = false; deleteConfirmText = ''; deleteError = null"
-                >
-                  Cancel
-                </button>
-                <button
-                  class="delete-confirm-btn"
-                  :disabled="isDeleting || deleteConfirmText !== 'DELETE MY ACCOUNT'"
-                  @click="deleteAccount"
-                >
-                  {{ isDeleting ? 'Deleting...' : 'Delete Forever' }}
-                </button>
-              </div>
+            <div class="dc-footer">
+              <button class="dc-btn-ghost" @click="closeDeleteConfirm">
+                {{ t('common.buttons.cancel') }}
+              </button>
+              <button
+                class="dc-btn-danger"
+                :disabled="isDeleting || deleteConfirmText !== 'DELETE MY ACCOUNT'"
+                @click="deleteAccount"
+              >
+                {{ isDeleting ? t('settings.account.deleting') : t('settings.account.delete_forever') }}
+              </button>
             </div>
           </div>
-        </template>
-      </div>
-    </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Sign Out (not in Paper but essential) -->
     <div class="settings-section">
@@ -726,9 +784,8 @@ async function onSignOut() {
   flex-shrink: 0;
 }
 
-/* Password / Delete forms */
-.password-form,
-.delete-form {
+/* Password form */
+.password-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -991,6 +1048,174 @@ async function onSignOut() {
   border-radius: 0.4rem;
   text-align: center;
   user-select: all;
+}
+
+/* ── Delete-account dialog — NcConfirmDialog shell grammar ──
+   Flat surface-2 + hairline, radius 0.5rem, centered origin,
+   scale(0.97)+opacity enter 200ms / exit 150ms (REDESIGN.md §5/§6). */
+.dc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(var(--nc-bg-rgb), 0.66);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dc-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-xl);
+  overflow: hidden;
+  transform-origin: center;
+}
+
+.dc-enter-active { transition: opacity 200ms var(--nc-ease); }
+.dc-leave-active { transition: opacity 150ms var(--nc-ease); }
+.dc-enter-active .dc-modal { transition: transform 200ms var(--nc-ease); }
+.dc-leave-active .dc-modal { transition: transform 150ms var(--nc-ease); }
+.dc-enter-from,
+.dc-leave-to { opacity: 0; }
+.dc-enter-from .dc-modal,
+.dc-leave-to .dc-modal { transform: scale(0.97); }
+
+.dc-header {
+  padding: 24px 24px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--nc-border-subtle);
+}
+
+/* Mono micro-label eyebrow — coral in danger context (REDESIGN.md §4) */
+.dc-eyebrow {
+  display: block;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-coral);
+  margin-bottom: 10px;
+}
+
+/* Dialog title — display font 700, tight tracking (REDESIGN.md §4) */
+.dc-title {
+  font-family: var(--nc-font-display);
+  font-size: calc(18px * var(--nc-text-scale, 1));
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+  color: var(--nc-text);
+}
+
+.dc-subtitle {
+  font-family: var(--nc-font-body);
+  font-size: calc(13px * var(--nc-text-scale, 1));
+  color: var(--nc-text-secondary);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+.dc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+}
+
+.dc-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--nc-border-subtle);
+  background: var(--nc-chip-bg);
+}
+
+/* Ghost — mono uppercase text link with underline-grow (REDESIGN.md §5) */
+.dc-btn-ghost {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  border-radius: 0.4rem;
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.78rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.dc-btn-ghost::after {
+  content: '';
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 0.3em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 0.3s var(--nc-ease);
+}
+
+.dc-btn-ghost:active { transform: scale(0.97); }
+
+/* Danger confirm — red pill, destructive-confirm grammar (REDESIGN.md §1) */
+.dc-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: var(--nc-coral);
+  color: var(--nc-bg);
+  border: none;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
+  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.dc-btn-danger:active:not(:disabled) { transform: scale(0.97); }
+
+.dc-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dc-btn-ghost:hover { color: var(--nc-accent); }
+  .dc-btn-ghost:hover::after { transform: scaleX(1); }
+  .dc-btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-enter-active,
+  .dc-leave-active,
+  .dc-enter-active .dc-modal,
+  .dc-leave-active .dc-modal,
+  .dc-btn-ghost,
+  .dc-btn-ghost::after,
+  .dc-btn-danger {
+    transition: none;
+  }
+  .dc-enter-from .dc-modal,
+  .dc-leave-to .dc-modal { transform: none; }
 }
 
 /* Light theme is fully token-driven — tokens.css rebases every --nc-* var

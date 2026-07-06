@@ -211,13 +211,20 @@ function applyThemeChange() {
   text-decoration: none;
   border: 1px solid var(--nc-border);
   border-radius: 6px;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .legal-header__back:hover {
   color: var(--nc-text);
   border-color: var(--nc-border-active);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.legal-header__back:active {
+  transform: scale(0.97);
 }
 
 /* Light: ink-alpha hover wash (base is white-alpha, invisible on paper) */

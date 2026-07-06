@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, reactive } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import NcSelect from '~/components/ui/NcSelect.vue'
 
 interface ShareRow {
@@ -23,6 +24,8 @@ const { t } = useI18n()
 // mutating actions when offline; the offline hint reuses common.offline.*.
 const { isOnline } = useSyncEngine()
 const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
+
+const { confirm, ConfirmDialog } = useConfirmDialog()
 
 const shares = ref<ShareRow[]>([])
 const loading = ref(true)
@@ -174,15 +177,28 @@ async function createLink() {
   }
 }
 
-async function revoke(shareId: string) {
+async function revoke(share: ShareRow) {
+  // Revoking is irreversible for the link (anyone holding it loses access
+  // immediately) — gate it behind a danger confirm (NcConfirmDialog grammar).
+  const confirmed = await confirm({
+    title: t('canvas.share_modal.revoke_confirm_title'),
+    description: t('canvas.share_modal.revoke_confirm_desc', {
+      label: share.label || t('canvas.share_modal.untitled')
+    }),
+    confirmText: t('canvas.share_modal.revoke'),
+    cancelText: t('common.buttons.cancel'),
+    variant: 'danger',
+    icon: 'i-lucide-link-2-off'
+  })
+  if (!confirmed) return
   try {
     // X-Requested-With satisfies the CSRF middleware for bodyless DELETE calls
     // (no Content-Type means the JSON-body bypass doesn't fire).
-    const res = await $fetch<{ ok: true; share: ShareRow }>(`/api/maps/${props.mapId}/shares/${shareId}`, {
+    const res = await $fetch<{ ok: true; share: ShareRow }>(`/api/maps/${props.mapId}/shares/${share.id}`, {
       method: 'DELETE',
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-    shares.value = shares.value.map(s => s.id === shareId ? res.share : s)
+    shares.value = shares.value.map(s => s.id === share.id ? res.share : s)
   } catch (e: unknown) {
     console.error('[share] revoke failed', e)
     error.value = userFriendlyError(e, t)
@@ -316,7 +332,7 @@ onMounted(load)
                 <button class="icon-btn" :aria-label="t('canvas.share_modal.copy_link')" :disabled="!!s.revokedAt" @click="copyToken(s.token)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                 </button>
-                <button v-if="!s.revokedAt" class="icon-btn danger" :aria-label="t('canvas.share_modal.revoke')" :disabled="!isOnline" :title="offlineHint" @click="revoke(s.id)">
+                <button v-if="!s.revokedAt" class="icon-btn danger" :aria-label="t('canvas.share_modal.revoke')" :disabled="!isOnline" :title="offlineHint" @click="revoke(s)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" /></svg>
                 </button>
               </div>
@@ -362,6 +378,7 @@ onMounted(load)
         </footer>
       </div>
     </div>
+    <component :is="ConfirmDialog" />
   </Teleport>
 </template>
 

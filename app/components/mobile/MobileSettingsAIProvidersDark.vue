@@ -435,6 +435,14 @@ function maskKey(type: string): string {
   appearance: none;
   outline: none;
 }
+/* The reset above kills the UA ring — restore keyboard focus visibility
+   per base.css grammar (REDESIGN.md §1); text inputs keep the
+   focus-within border grammar instead. */
+.map button:focus-visible,
+.map select:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 2px;
+}
 .map {
   --map-bg: var(--nc-bg);
   --map-ink: var(--nc-ink);
@@ -889,9 +897,8 @@ function maskKey(type: string): string {
   color: var(--map-ink);
   margin: 10px 0 0 0;
 }
+/* Accent dot — inherits display face; serif never in sheets (REDESIGN.md §4) */
 .map-sheet-title-dot {
-  font-family: var(--nc-font-serif);
-  font-style: italic;
   color: var(--nc-accent-text);
   margin-left: 2px;
 }

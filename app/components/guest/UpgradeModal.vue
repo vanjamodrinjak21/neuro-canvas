@@ -393,10 +393,8 @@ function handleKeepExploring() {
   margin: 0;
 }
 
+/* Accent line — inherits display face; serif never in modals (REDESIGN.md §4) */
 .auth-serif {
-  font-family: var(--nc-font-serif);
-  font-style: italic;
-  font-weight: 400;
   color: var(--nc-accent);
 }
 

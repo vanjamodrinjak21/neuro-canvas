@@ -194,9 +194,10 @@ onMounted(() => {
   }
 }
 
-/* Copy */
+/* Copy — status-page headline keeps the serif empty-state grammar;
+   face comes from the token, never re-hardcoded (REDESIGN.md §9) */
 .heading {
-  font-family: 'Instrument Serif', serif;
+  font-family: var(--nc-font-serif);
   font-size: calc(28px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;

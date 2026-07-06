@@ -268,6 +268,14 @@ async function submitPassword() {
   appearance: none;
   outline: none;
 }
+/* The reset above kills the UA ring — restore keyboard focus visibility
+   per base.css grammar (REDESIGN.md §1); text inputs keep the
+   border-color focus grammar instead. */
+.macc button:focus-visible,
+.macc select:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 2px;
+}
 .macc {
   --macc-bg: var(--nc-bg);
   --macc-ink: var(--nc-ink);
@@ -497,9 +505,10 @@ async function submitPassword() {
   font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--macc-ink);
 }
+/* Danger-row description — body face; serif never in list rows (REDESIGN.md §4) */
 .macc-danger-italic {
-  font-family: var(--nc-font-serif);
-  font-style: italic; font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--macc-body);
+  font-family: var(--nc-font-body);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--macc-body);
 }
 
 .macc-spacer {

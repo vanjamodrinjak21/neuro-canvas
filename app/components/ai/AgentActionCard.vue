@@ -106,7 +106,15 @@ const actionLabels: Record<string, string> = {
   font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.nc-action-accept:active,
+.nc-action-dismiss:active {
+  transform: scale(0.97);
 }
 
 .nc-action-accept {

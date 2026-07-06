@@ -157,7 +157,9 @@
             "delete_account_desc": "Permanently delete your account and all data. This cannot be undone.",
             "delete": "Delete",
             "delete_confirm_desc_prefix": "Type",
-            "delete_confirm_desc_suffix": "to confirm"
+            "delete_confirm_desc_suffix": "to confirm",
+            "delete_forever": "Delete Forever",
+            "deleting": "Deleting…"
         },
         "signin_section": {
             "title": "Sign In",

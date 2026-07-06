@@ -157,7 +157,9 @@
             "delete_account_desc": "Trajno obriši račun i sve podatke. Ovo se ne može poništiti.",
             "delete": "Obriši",
             "delete_confirm_desc_prefix": "Upiši",
-            "delete_confirm_desc_suffix": "za potvrdu"
+            "delete_confirm_desc_suffix": "za potvrdu",
+            "delete_forever": "Izbriši zauvijek",
+            "deleting": "Brisanje…"
         },
         "signin_section": {
             "title": "Prijava",

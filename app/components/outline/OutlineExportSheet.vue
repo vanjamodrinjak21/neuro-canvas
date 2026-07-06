@@ -200,12 +200,15 @@ async function handleShare() {
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--nc-duration-fast) var(--nc-ease);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .nc-export-action:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .nc-export-action--primary {
@@ -219,12 +222,19 @@ async function handleShare() {
   background: var(--nc-accent-dark, #3AC2B9);
 }
 
-/* Sheet transition */
+/* Sheet transition — overlay fades, sheet slides; explicit properties on
+   the single ease, enter 300ms / exit 200ms (REDESIGN.md §6) */
 .nc-sheet-enter-active {
-  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 300ms var(--nc-ease);
 }
 .nc-sheet-leave-active {
-  transition: all 200ms ease-in;
+  transition: opacity 200ms var(--nc-ease);
+}
+.nc-sheet-enter-active .nc-export-sheet {
+  transition: transform 300ms var(--nc-ease);
+}
+.nc-sheet-leave-active .nc-export-sheet {
+  transition: transform 200ms var(--nc-ease);
 }
 .nc-sheet-enter-from .nc-export-sheet,
 .nc-sheet-leave-to .nc-export-sheet {

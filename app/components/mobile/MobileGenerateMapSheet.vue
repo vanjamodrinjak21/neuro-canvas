@@ -228,10 +228,11 @@ watch(() => props.streamingText, () => {
   letter-spacing: -0.02em;
   color: var(--nc-text);
 }
+/* Accent word — display face; serif never in sheets (REDESIGN.md §4) */
 .mgs-title-serif {
-  font-family: var(--nc-font-serif);
-  font-style: italic; font-weight: 400;
-  font-size: calc(38px * var(--nc-text-scale, 1)); line-height: 32px;
+  font-family: var(--nc-font-display);
+  font-weight: 700;
+  font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.02em;
   color: var(--nc-accent-text);
 }

@@ -102,13 +102,15 @@ const aiEnabled = ref(false)
   color: var(--nc-text-soft, #A1A1AA);
   font-size: calc(18px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: all var(--nc-duration-fast) var(--nc-ease);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .nc-outline-tool:active:not(:disabled) {
   background: var(--nc-surface-3, #1a1a20);
-  transform: scale(0.92);
+  transform: scale(0.97);
 }
 
 .nc-outline-tool:disabled {

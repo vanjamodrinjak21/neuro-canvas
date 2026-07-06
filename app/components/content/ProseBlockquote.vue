@@ -34,10 +34,12 @@
   margin-top: 4px;
 }
 
+/* Quote body — italic body face; serif is reserved for the single accent
+   word in top-level page titles, never body copy (REDESIGN.md §4). */
 .blockquote-content {
-  font-family: var(--nc-font-serif, Georgia, serif);
+  font-family: var(--nc-font-body);
   font-style: italic;
-  font-size: calc(17px * var(--nc-text-scale, 1));
+  font-size: calc(16px * var(--nc-text-scale, 1));
   line-height: 1.55;
   color: var(--nc-text-secondary);
   min-width: 0;

@@ -120,14 +120,13 @@ onKeyStroke('Escape', () => emit('close'))
           <div
             v-if="visible"
             class="sm-shortcuts-card"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="$t('canvas.shortcuts.title')"
             @click.stop
           >
             <header class="sm-shortcuts-header">
-              <div class="sm-shortcuts-eyebrow">{{ $t('canvas.shortcuts.title') }}</div>
-              <h2 class="sm-shortcuts-title">
-                <span>Speed up your</span>
-                <em>flow.</em>
-              </h2>
+              <h2 class="sm-shortcuts-title">{{ $t('canvas.shortcuts.title') }}</h2>
               <button
                 class="sm-shortcuts-close"
                 :aria-label="$t('canvas.shortcuts.close') || 'Close'"
@@ -245,40 +244,15 @@ onKeyStroke('Escape', () => emit('close'))
   border-bottom: 1px solid var(--nc-border-subtle);
 }
 
-/* Eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
-.sm-shortcuts-eyebrow {
-  font-family: var(--nc-font-mono);
-  font-size: calc(10.5px * var(--nc-text-scale, 1));
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--nc-text-secondary);
-  font-weight: 500;
-  margin-bottom: 10px;
-}
-
-/* Modal title — display face (REDESIGN.md §4) */
+/* Modal title — display face, no serif accent in dense UI (REDESIGN.md §4) */
 .sm-shortcuts-title {
   font-family: var(--nc-font-display);
-  font-size: calc(28px * var(--nc-text-scale, 1));
+  font-size: calc(20px * var(--nc-text-scale, 1));
   line-height: 1.05;
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--nc-text);
   margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: baseline;
-}
-
-/* Serif italic accent — once per title (REDESIGN.md §4) */
-.sm-shortcuts-title em {
-  font-family: var(--nc-font-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.05em;
-  letter-spacing: -0.01em;
-  color: var(--nc-accent-text);
 }
 
 .sm-shortcuts-close {
@@ -485,7 +459,7 @@ onKeyStroke('Escape', () => emit('close'))
 .sm-shortcuts-sep {
   font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
   font-weight: 400;
 }
 
@@ -521,7 +495,7 @@ onKeyStroke('Escape', () => emit('close'))
   align-items: center;
   gap: 8px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
 }
 
 .sm-shortcuts-footer-link {
@@ -580,6 +554,5 @@ onKeyStroke('Escape', () => emit('close'))
   .sm-shortcuts-search { margin: 12px 16px 6px; }
   .sm-shortcuts-body { padding: 12px 16px; }
   .sm-shortcuts-footer { padding: 12px 18px; }
-  .sm-shortcuts-title { font-size: calc(24px * var(--nc-text-scale, 1)); }
 }
 </style>

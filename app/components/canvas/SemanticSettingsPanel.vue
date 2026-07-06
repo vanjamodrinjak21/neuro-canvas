@@ -429,6 +429,12 @@ async function loadBackend() {
   outline: none;
 }
 
+/* Keyboard focus stays visible — accent ring grammar (REDESIGN.md §1) */
+.nc-slider:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
 .nc-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;

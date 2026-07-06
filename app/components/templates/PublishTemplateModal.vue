@@ -608,6 +608,13 @@ if (typeof document !== 'undefined') {
   border-radius: var(--nc-radius-md);
   min-height: 38px;
   align-items: center;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+/* The inner tag input is borderless — the container carries the focus
+   grammar (accent border only, REDESIGN.md §5). */
+.tags-container:focus-within {
+  border-color: var(--nc-accent);
 }
 
 .tag-chip {

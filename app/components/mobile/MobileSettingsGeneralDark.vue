@@ -440,6 +440,13 @@ async function manualUpdateCheck() {
   appearance: none;
   outline: none;
 }
+/* The reset above kills the UA ring — restore keyboard focus visibility
+   per base.css grammar (REDESIGN.md §1). */
+.mgen button:focus-visible,
+.mgen select:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 2px;
+}
 .mgen {
   --mgen-bg: var(--nc-bg);
   --mgen-ink: var(--nc-ink);
@@ -679,10 +686,11 @@ async function manualUpdateCheck() {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+/* Type-preview glyph — display face; serif never in list rows (REDESIGN.md §4) */
 .mgen-tile-mini-text {
-  font-family: var(--nc-font-serif);
-  font-style: italic;
-  font-size: calc(18px * var(--nc-text-scale, 1)); line-height: 18px; color: var(--mgen-ink);
+  font-family: var(--nc-font-display);
+  font-weight: 700;
+  font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 18px; color: var(--mgen-ink);
 }
 .mgen-chev { flex-shrink: 0; color: var(--nc-text-dim); }
 

@@ -133,6 +133,13 @@ const localeLabel = computed(() => {
   appearance: none;
   outline: none;
 }
+/* The reset above kills the UA ring — restore keyboard focus visibility
+   per base.css grammar (REDESIGN.md §1). */
+.mper button:focus-visible,
+.mper select:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 2px;
+}
 .mper {
   --mper-bg: var(--nc-bg);
   --mper-ink: var(--nc-ink);

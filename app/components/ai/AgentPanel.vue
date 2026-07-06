@@ -237,12 +237,18 @@ function handleEnd() {
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-agent-start-btn:hover {
   background: rgba(167, 139, 250, 0.15);
   border-color: #A78BFA;
+}
+
+.nc-agent-start-btn:active {
+  transform: scale(0.97);
 }
 
 .nc-agent-chat {
@@ -373,12 +379,19 @@ function handleEnd() {
   border-radius: 8px;
   color: #A78BFA;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-agent-send-btn:hover:not(:disabled) {
   background: rgba(167, 139, 250, 0.25);
   border-color: #A78BFA;
+}
+
+.nc-agent-send-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .nc-agent-send-btn:disabled {

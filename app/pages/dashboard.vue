@@ -1542,9 +1542,12 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   cursor: pointer;
   text-align: left;
   transition: background-color var(--nc-duration-fast) var(--nc-ease),
-              border-color var(--nc-duration-fast) var(--nc-ease);
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   width: 100%;
 }
+
+.dai-banner:active { transform: scale(0.97); }
 
 @media (hover: hover) and (pointer: fine) {
   .dai-banner:hover {
@@ -1574,17 +1577,18 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 
 .dai-banner-title {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
   color: var(--nc-text);
 }
 
+/* Example prompt — italic body face; serif never in panels (REDESIGN.md §4) */
 .dai-banner-quote {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-body);
   font-style: italic;
-  font-size: calc(16px * var(--nc-text-scale, 1));
+  font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 20px;
   color: var(--nc-text-secondary);
 }
@@ -2301,9 +2305,9 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   }
   .doverview-eyebrow,
   .doverview-period {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--nc-font-mono);
     font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 500;
-    letter-spacing: 0.06em; line-height: 12px;
+    letter-spacing: 0.14em; line-height: 12px;
     text-transform: uppercase;
     color: var(--nc-text-muted);
   }
@@ -2315,17 +2319,16 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     display: flex; flex-direction: column; gap: 4px;
     flex: 1; min-width: 0;
   }
+  /* Stat numerals stay display-face on mobile too — serif is reserved for
+     italic title accents (REDESIGN.md §4); base .dov-num rule carries the
+     face/weight/tracking. */
   .dov-num {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: calc(36px * var(--nc-text-scale, 1)); font-weight: 400; line-height: 1;
-    letter-spacing: -0.01em;
-    color: var(--nc-text);
+    font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 1;
   }
-  .dov-num.accent { color: var(--nc-accent); }
   .doverview-stats > div > span:last-child {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--nc-font-mono);
     font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 500;
-    letter-spacing: 0.04em; line-height: 12px;
+    letter-spacing: 0.14em; line-height: 12px;
     color: var(--nc-text-muted);
   }
   .doverview-chart {
