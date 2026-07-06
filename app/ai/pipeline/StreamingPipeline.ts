@@ -7,6 +7,7 @@ export interface StreamEvent {
   content?: string
   usage?: unknown
   message?: string
+  statusCode?: number
 }
 
 export interface StreamOptions {
@@ -15,6 +16,12 @@ export interface StreamOptions {
   onError?: (error: string) => void
   signal?: AbortSignal
 }
+
+// Resource guards (AER-81). Stall: even the slowest Opus full-map runs emit
+// deltas far more often than this — 90s of silence means a dead connection.
+// Size: mirrors the server-side cap in server/utils/streamBudget.ts.
+const STREAM_STALL_MS = 90_000
+const MAX_STREAM_BYTES = 2_000_000
 
 function isTauriEnvironment(): boolean {
   if (typeof window === 'undefined') return false
@@ -101,33 +108,64 @@ export async function streamCompletion(
     const decoder = new TextDecoder()
     let buffer = ''
     let accumulated = ''
+    let received = 0
 
     while (true) {
-      const { done, value } = await reader.read()
+      // Resource guards (AER-81): a silent connection must surface as an
+      // error instead of "generating…" forever, and a runaway stream must
+      // not grow unbounded in memory.
+      let stallTimer: ReturnType<typeof setTimeout> | undefined
+      const result = await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          stallTimer = setTimeout(
+            () => reject(new Error('AI stream stalled — no data received for 90 seconds. Try again.')),
+            STREAM_STALL_MS
+          )
+        })
+      ]).catch(async (err) => {
+        await reader.cancel().catch(() => { /* already dead */ })
+        throw err
+      }).finally(() => clearTimeout(stallTimer))
+
+      const { done, value } = result
       if (done) break
+
+      received += value.byteLength
+      if (received > MAX_STREAM_BYTES) {
+        await reader.cancel().catch(() => { /* already dead */ })
+        throw new Error('AI response exceeded the 2 MB stream limit. Try a smaller generation.')
+      }
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n\n')
       buffer = lines.pop() || ''
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const event: StreamEvent = JSON.parse(line.slice(6))
+        if (!line.startsWith('data: ')) continue
 
-            if (event.type === 'delta' && event.content) {
-              accumulated += event.content
-              onDelta?.(event.content, accumulated)
-            } else if (event.type === 'done') {
-              onDone?.(accumulated, event.usage)
-            } else if (event.type === 'error') {
-              onError?.(event.message || 'Unknown streaming error')
-              throw new Error(event.message || 'Streaming error')
-            }
-          } catch (e) {
-            if (e instanceof Error && e.message.includes('Streaming error')) throw e
-            // Skip malformed SSE data
-          }
+        // Only JSON.parse is guarded here. Event handling must stay OUTSIDE
+        // the catch: server-reported provider failures arrive as `error`
+        // events on an HTTP-200 stream, and swallowing them makes a failed
+        // generation look like a successful empty response (AER-77).
+        let event: StreamEvent
+        try {
+          event = JSON.parse(line.slice(6))
+        } catch {
+          continue // Skip malformed SSE data
+        }
+
+        if (event.type === 'delta' && event.content) {
+          accumulated += event.content
+          onDelta?.(event.content, accumulated)
+        } else if (event.type === 'done') {
+          onDone?.(accumulated, event.usage)
+        } else if (event.type === 'error') {
+          const message = event.message || 'Unknown streaming error'
+          onError?.(message)
+          const err = new Error(message) as Error & { statusCode?: number }
+          if (event.statusCode) err.statusCode = event.statusCode
+          throw err
         }
       }
     }
@@ -258,9 +296,8 @@ export function autoCloseJSON(partial: string): string {
   // Close any unclosed strings
   if (inString) result += '"'
 
-  // Close brackets in reverse order
-  while (braces > 0) { result += '}'; braces-- }
-  while (brackets > 0) { result += ']'; brackets-- }
-
-  return result
+  // Close brackets in reverse order — joined once, not appended per char
+  // (per-char appends re-copy the string each time: O(n²) on inputs with
+  // many unclosed brackets, see AER-81).
+  return result + '}'.repeat(Math.max(0, braces)) + ']'.repeat(Math.max(0, brackets))
 }

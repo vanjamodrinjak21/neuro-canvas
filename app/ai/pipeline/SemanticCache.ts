@@ -32,15 +32,24 @@ const MAX_LOCAL_ENTRIES = 200
 
 /**
  * Hash a string for cache keys.
+ *
+ * Two independent 32-bit FNV-1a passes joined into a 64-bit key (AER-81):
+ * the previous 31x rolling hash was 32-bit and collided on short strings
+ * (e.g. "Aa"/"BB"), silently serving the WRONG cached AI response for a
+ * colliding prompt. Changing the scheme invalidates existing entries, which
+ * is fine — every TTL is ≤ 24h.
  */
-function hashKey(input: string): string {
-  let hash = 0
+function fnv1a(input: string, seed: number): number {
+  let hash = seed >>> 0
   for (let i = 0; i < input.length; i++) {
-    const char = input.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash |= 0
+    hash ^= input.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
   }
-  return Math.abs(hash).toString(36)
+  return hash >>> 0
+}
+
+function hashKey(input: string): string {
+  return fnv1a(input, 0x81_1C_9D_C5).toString(36) + '-' + fnv1a(input, 0x7E_E3_62_29).toString(36)
 }
 
 function isCapacitorEnvironment(): boolean {
@@ -130,6 +139,11 @@ export class SemanticCache {
     usage?: unknown,
     type: string = 'default'
   ): Promise<void> {
+    // An empty response is a failed generation, not a cacheable result: the
+    // server schema rejects it (400) and a locally cached '' would replay as
+    // a permanently broken hit until the TTL expires.
+    if (!response || !response.trim()) return
+
     const hash = hashKey(systemPrompt + '||' + userPrompt)
     const ttlSeconds: number = TTL_MAP[type] ?? TTL_MAP.default
 

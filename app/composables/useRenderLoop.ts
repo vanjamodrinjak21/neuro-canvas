@@ -119,6 +119,12 @@ export function useRenderLoop(deps: RenderLoopDeps) {
   // Frame timing
   let lastFrameTime = 0
 
+  // Last-drawn camera — any change (wheel zoom, programmatic pan, camera
+  // animation) must never be frame-skipped, gestures aside (AER-82).
+  let lastCamX = Number.NaN
+  let lastCamY = Number.NaN
+  let lastCamZoom = Number.NaN
+
   // Viewport culling dirty flag
   let cullingDirty = true
 
@@ -205,16 +211,31 @@ export function useRenderLoop(deps: RenderLoopDeps) {
     const colorsVal = deps.colors.value
     const dprVal = dpr.value
 
-    // --- Mobile idle frame skip (30fps cap when idle) --------------------
-    if (
-      isMobileViewport &&
-      !deps.isDragging.value &&
-      !deps.isPanning.value &&
-      !deps.isConnecting.value
-    ) {
+    // --- Idle frame skip (~30fps cap when nothing can move) --------------
+    // Mobile has always skipped gated on gestures alone. Desktop (AER-82)
+    // gets a stricter gate — camera motion, hover, and running animations
+    // all keep 60fps — so a static 1000-node map stops burning a full
+    // redraw budget every 16ms.
+    const cameraMoved = cam.x !== lastCamX || cam.y !== lastCamY || cam.zoom !== lastCamZoom
+    const gestureActive =
+      deps.isDragging.value ||
+      deps.isPanning.value ||
+      deps.isConnecting.value ||
+      (deps.isResizing?.value ?? false) ||
+      deps.getBoxRect() !== null
+    const idle = !gestureActive && !cameraMoved && (
+      isMobileViewport || (
+        deps.hoveredNodeId.value === null &&
+        !(deps.nodeAnimations?.hasActiveAnimations() ?? false)
+      )
+    )
+    if (idle) {
       const elapsed = currentTime - lastFrameTime
-      if (elapsed < 30) return // ~30fps cap when idle on mobile
+      if (elapsed < 30) return // ~30fps cap when idle
     }
+    lastCamX = cam.x
+    lastCamY = cam.y
+    lastCamZoom = cam.zoom
 
     // --- Delta time (capped at 64ms) ------------------------------------
     const dt =
@@ -396,10 +417,12 @@ export function useRenderLoop(deps: RenderLoopDeps) {
     }
 
     // --- 9. Draw root indicators on root nodes --------------------------
+    // Root check first and visibility-gated: this used to run getNodeState()
+    // on EVERY node every frame — 60k calls/s on a 1000-node map (AER-82).
     for (const node of nodesMap.values()) {
-      const isRoot = node.isRoot || node.id === rootNodeId
-      const nodeState = deps.getNodeState(node)
-      if (isRoot && nodeState !== 'dragging' && editingId !== node.id) {
+      if (!node.isRoot && node.id !== rootNodeId) continue
+      if (!visibleNodeIds.has(node.id) || editingId === node.id) continue
+      if (deps.getNodeState(node) !== 'dragging') {
         drawRootIndicator(ctx, node, colorsVal)
       }
     }

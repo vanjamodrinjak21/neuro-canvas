@@ -129,8 +129,13 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     }
   }
 
-  // Web: use server vault credential ID
-  if (!defaultProvider.credentialId && defaultProvider.type !== 'ollama') {
+  // Web: use server vault credential ID. Cloud providers may run WITHOUT
+  // local wiring — the server falls back to the account's most recent
+  // credential for the provider (AER-79) and 404s with the actionable
+  // "add a key" message if the vault is empty. Only on-device runtimes
+  // still need explicit local config.
+  const serverResolvable = ['anthropic', 'openai', 'openrouter', 'custom'].includes(defaultProvider.type)
+  if (!defaultProvider.credentialId && defaultProvider.type !== 'ollama' && !serverResolvable) {
     throw new Error('No API key configured for the selected provider. Please add one in Settings.')
   }
 
