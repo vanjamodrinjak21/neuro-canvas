@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Template, TemplateCategory } from '~/types'
+import type { Template, TemplateCategory, TemplateSortBy } from '~/types'
 import { useMapStore } from '~/stores/mapStore'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useDatabase } from '~/composables/useDatabase'
 import { resolveAvatarInitials } from '~/utils/userDisplay'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 definePageMeta({
   layout: false,
@@ -73,12 +74,23 @@ const categories = computed<Array<{ value: TemplateCategory | 'all' | 'my'; labe
 ])
 
 const activeCategory = ref<string>('all')
-const sortBy = ref('popular')
-const sortOptions = computed(() => [
+const sortBy = ref<TemplateSortBy>('popular')
+const sortOptions = computed<Array<{ value: TemplateSortBy; label: string }>>(() => [
   { value: 'popular', label: t('templates.filter.popular') },
   { value: 'newest', label: t('templates.filter.newest') },
   { value: 'alphabetical', label: t('templates.filter.a_z') },
 ])
+
+// Sort dropdown — same grammar as maps/index.vue (btn-sort + sort-menu)
+const sortMenuOpen = ref(false)
+const currentSortLabel = computed(() => sortOptions.value.find(o => o.value === sortBy.value)?.label ?? '')
+
+function toggleSortMenu() { sortMenuOpen.value = !sortMenuOpen.value }
+function pickSort(v: TemplateSortBy) {
+  sortBy.value = v
+  sortMenuOpen.value = false
+  setSortBy(v)
+}
 
 const displayedTemplates = computed(() => {
   if (activeCategory.value === 'my') return myTemplates.value ?? []
@@ -94,12 +106,6 @@ function handleCategoryChange(cat: string) {
     filters.myTemplates = false
     setCategory(cat as TemplateCategory | 'all')
   }
-}
-
-function handleSortChange(e: Event) {
-  const val = (e.target as HTMLSelectElement).value
-  sortBy.value = val
-  setSortBy(val as any)
 }
 
 let searchDebounce: ReturnType<typeof setTimeout>
@@ -175,6 +181,14 @@ async function handleAIGenerate() {
 }
 
 onMounted(async () => {
+  // Close the sort dropdown on outside click (same pattern as maps/index.vue)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null
+      if (target && !target.closest('.sort-wrap')) sortMenuOpen.value = false
+    })
+  }
+
   if (_isTauri && isDesktopSignedIn.value) {
     // Fetch from remote server using Tauri HTTP plugin (has auth cookies)
     try {
@@ -228,18 +242,62 @@ onMounted(async () => {
       </div>
       <h1 class="m-page-title">{{ $t('templates.page.title') }}</h1>
 
-      <!-- Header -->
+      <!-- Header — same grammar as maps/index.vue (eyebrow, display title
+           with one serif-italic accent, mono count readout, actions row) -->
       <div class="templates-header">
         <div class="header-left">
-          <h1 class="page-title">{{ $t('templates.page.title') }}</h1>
-          <p class="page-subtitle">{{ $t('templates.page.subtitle') }}</p>
+          <span class="header-eyebrow">{{ $t('templates.header.eyebrow') }}</span>
+          <h1 class="header-title">
+            {{ $t('templates.header.title_a') }} <span class="header-title-italic">{{ $t('templates.header.title_b') }}</span>
+          </h1>
+          <span class="header-count">{{ displayedTemplates.length === 1 ? $t('templates.count_label_one', { n: displayedTemplates.length }) : $t('templates.count_label_other', { n: displayedTemplates.length }) }}</span>
         </div>
-        <button v-if="!_isTauri" class="publish-btn" @click="showPublishModal = true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          {{ $t('templates.buttons.publish_template') }}
-        </button>
+
+        <div class="header-actions">
+          <div class="search-box search-box--desktop">
+            <span class="i-lucide-search search-icon" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="search-input"
+              :placeholder="$t('templates.filter.search_placeholder')"
+              @input="handleSearch"
+            >
+          </div>
+          <div class="sort-wrap">
+            <button class="btn-sort" @click="toggleSortMenu">
+              <span class="i-lucide-arrow-up-down" />
+              {{ $t('maps.sort.label') }} <span class="btn-sort-current">· {{ currentSortLabel }}</span>
+            </button>
+            <div v-if="sortMenuOpen" class="sort-menu">
+              <button
+                v-for="opt in sortOptions"
+                :key="opt.value"
+                :class="['sort-item', { active: sortBy === opt.value }]"
+                @click="pickSort(opt.value)"
+              >
+                <span class="i-lucide-check sort-item-check" />
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+          <button v-if="!_isTauri" class="publish-btn" @click="showPublishModal = true">
+            <span class="i-lucide-plus" />
+            {{ $t('templates.buttons.publish_template') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile search (outside header-actions so it stays visible) -->
+      <div class="search-box search-box--mobile">
+        <span class="i-lucide-search search-icon" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="search-input"
+          :placeholder="$t('templates.filter.search_placeholder')"
+          @input="handleSearch"
+        >
       </div>
 
       <!-- Desktop sign-in prompt (Tauri, not signed in) -->
@@ -256,22 +314,17 @@ onMounted(async () => {
         </button>
       </div>
 
-      <!-- AI Generate Bar (hide on Tauri — requires server) -->
+      <!-- AI Generate Bar (hide on Tauri — requires server) — same
+           generate-bar pattern as maps/dashboard, NcAiMark = the AI glyph -->
       <div v-if="!_isTauri" class="ai-bar">
         <div class="ai-bar-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-          </svg>
+          <NcAiMark :size="18" />
         </div>
         <div class="ai-bar-text">
           <span class="ai-bar-title">{{ $t('templates.ai_bar.title') }}</span>
           <span class="ai-bar-desc">{{ $t('templates.ai_bar.description') }}</span>
         </div>
         <div class="ai-bar-input-wrap">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
           <input
             v-model="aiPrompt"
             type="text"
@@ -281,9 +334,7 @@ onMounted(async () => {
           >
         </div>
         <button class="ai-generate-btn" :disabled="!aiPrompt.trim() || aiGenerating" @click="handleAIGenerate">
-          <svg v-if="!aiGenerating" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-          </svg>
+          <NcAiMark v-if="!aiGenerating" :size="14" />
           <div v-else class="btn-spinner" />
           {{ aiGenerating ? $t('templates.ai_bar.generating') : $t('templates.ai_bar.generate') }}
         </button>
@@ -296,7 +347,7 @@ onMounted(async () => {
         </button>
       </div>
 
-      <!-- Filter Bar -->
+      <!-- Category filter row — mono uppercase micro-label chips -->
       <div class="filter-bar">
         <div class="category-tabs">
           <button
@@ -307,27 +358,6 @@ onMounted(async () => {
           >
             {{ cat.label }}
           </button>
-        </div>
-
-        <div class="filter-right">
-          <div class="search-box">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <input
-              v-model="searchQuery"
-              type="text"
-              class="search-input"
-              :placeholder="$t('templates.filter.search_placeholder')"
-              @input="handleSearch"
-            >
-          </div>
-          <div class="sort-wrap">
-            <select v-model="sortBy" class="sort-select" @change="handleSortChange">
-              <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -376,24 +406,41 @@ onMounted(async () => {
 
 .templates-main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   padding: 32px 40px;
   min-width: 0;
   overflow-y: auto;
   max-height: 100vh;
 }
 
-/* Header */
+/* Header — maps/index.vue grammar (eyebrow + display title + count) */
 .templates-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
 }
 
-/* Page title = display 700 (REDESIGN.md §4) */
-.page-title {
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Section eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
+.header-eyebrow {
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
+}
+
+/* Page title — display 700, tight tracking, static size */
+.header-title {
   font-family: var(--nc-font-display);
-  font-size: calc(24px * var(--nc-text-scale, 1));
+  font-size: calc(30px * var(--nc-text-scale, 1));
   font-weight: 700;
   color: var(--nc-text);
   margin: 0;
@@ -401,11 +448,28 @@ onMounted(async () => {
   line-height: 1.05;
 }
 
-.page-subtitle {
-  font-family: var(--nc-font-body);
-  font-size: calc(14px * var(--nc-text-scale, 1));
+/* Serif italic accent — max once per page title (REDESIGN.md §4) */
+.header-title-italic {
+  font-family: var(--nc-font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--nc-accent);
+}
+
+/* Numeric readout — mono micro-label */
+.header-count {
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   color: var(--nc-text-secondary);
-  margin: 4px 0 0;
+  line-height: 14px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Primary CTA = ink pill (REDESIGN.md §5) */
@@ -447,7 +511,6 @@ onMounted(async () => {
   background: rgba(var(--nc-accent-rgb), 0.05);
   border: 1px solid rgba(var(--nc-accent-rgb), 0.16);
   border-radius: var(--nc-radius-md);
-  margin-bottom: 20px;
 }
 
 .ai-bar-icon {
@@ -552,12 +615,13 @@ onMounted(async () => {
   transform: none;
 }
 
-/* Errors are coral (REDESIGN.md §1) */
+/* Errors are coral (REDESIGN.md §1). Negative top margin pulls the banner
+   back toward the ai-bar inside the gap-based column (24 − 16 = 8px). */
 .ai-error-banner {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 8px 20px 0;
+  margin: -16px 0 0;
   padding: 10px 12px;
   background: rgba(var(--nc-coral-rgb), 0.08);
   border: 1px solid rgba(var(--nc-coral-rgb), 0.25);
@@ -611,7 +675,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
@@ -668,21 +731,20 @@ onMounted(async () => {
   background: var(--nc-accent);
 }
 
-.filter-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.search-box--mobile {
+  display: none;
 }
 
+/* Search — chip fill + hairline; focus = border-color only (REDESIGN.md §5) */
 .search-box {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 8px 14px;
   background: var(--nc-chip-bg);
   border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
-  color: var(--nc-text-muted);
+  min-width: 180px;
   transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
@@ -690,67 +752,126 @@ onMounted(async () => {
   border-color: var(--nc-accent);
 }
 
+.search-icon {
+  font-size: calc(14px * var(--nc-text-scale, 1));
+  color: var(--nc-text-secondary);
+  flex-shrink: 0;
+}
+
 .search-input {
+  flex: 1;
   background: none;
   border: none;
   outline: none;
   font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-text);
-  width: 140px;
+  min-width: 0;
 }
 
 .search-input::placeholder {
   color: var(--nc-text-dim);
 }
 
-/* Sort select — chip fill + hairline; chevron drawn with token hairlines
-   (a data-URI glyph can't consume tokens). */
-.sort-wrap {
-  position: relative;
-}
-
-.sort-wrap::after {
-  content: '';
-  position: absolute;
-  right: 11px;
-  top: 50%;
-  width: 6px;
-  height: 6px;
-  border-right: 1px solid var(--nc-text-muted);
-  border-bottom: 1px solid var(--nc-text-muted);
-  transform: translateY(-70%) rotate(45deg);
-  pointer-events: none;
-}
-
-.sort-select {
-  padding: 6px 28px 6px 12px;
+/* Sort control — mono uppercase micro-label on chip fill (maps grammar) */
+.btn-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border-input);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-text-secondary);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  font-family: var(--nc-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.btn-sort:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-sort:hover {
+    border-color: var(--nc-border-active);
+    color: var(--nc-text);
+  }
+}
+
+.btn-sort-current { color: var(--nc-text-muted); font-weight: 400; margin-left: 4px; }
+
+.sort-wrap { position: relative; }
+
+/* Dropdown — flat surface-2 + hairline, scale(0.97)+opacity entrance (REDESIGN.md §5) */
+.sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 180px;
+  padding: 4px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
   border-radius: var(--nc-radius-md);
+  box-shadow: var(--nc-shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transform-origin: top right;
+  animation: sort-menu-in var(--nc-duration-fast) var(--nc-ease);
+}
+
+@keyframes sort-menu-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sort-menu {
+    animation: none;
+  }
+}
+
+.sort-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: var(--nc-radius-sm);
+  text-align: left;
   font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-text);
-  appearance: none;
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  outline: none;
-  transition: border-color var(--nc-duration-fast) var(--nc-ease);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.sort-select:focus {
-  border-color: var(--nc-accent);
+@media (hover: hover) and (pointer: fine) {
+  .sort-item:hover { background: var(--nc-surface-3); color: var(--nc-text); }
 }
 
-.sort-select option {
-  background: var(--nc-surface-2);
-  color: var(--nc-text);
-}
+.sort-item.active { color: var(--nc-accent); }
+.sort-item-check { width: 14px; height: 14px; flex-shrink: 0; visibility: hidden; }
+.sort-item.active .sort-item-check { visibility: visible; }
 
 /* Focus discipline (REDESIGN.md §1) — inputs are border-only above */
 .publish-btn:focus-visible,
 .ai-generate-btn:focus-visible,
 .ai-error-dismiss:focus-visible,
 .cat-tab:focus-visible,
+.btn-sort:focus-visible,
+.sort-item:focus-visible,
 .prompt-signin-btn:focus-visible,
 .m-brand:focus-visible,
 .m-avatar-link:focus-visible {
@@ -758,11 +879,11 @@ onMounted(async () => {
   outline-offset: 3px;
 }
 
-/* Grid */
+/* Grid — same auto-fill card grid as maps/index.vue */
 .templates-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 /* Loading + Empty */
@@ -912,12 +1033,10 @@ onMounted(async () => {
 /* Laptop */
 @media (max-width: 1366px) {
   .templates-main { padding: 28px 32px; }
-  .templates-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Tablet */
 @media (max-width: 1024px) {
-  .templates-grid { grid-template-columns: repeat(2, 1fr); }
   .ai-bar-text { display: none; }
 }
 
@@ -971,28 +1090,29 @@ onMounted(async () => {
   .ai-bar,
   .ai-error-banner { display: none; }
 
-  /* Filter row: stack chips on top, search above */
-  .filter-bar {
-    display: flex; flex-direction: column; gap: 12px;
-    margin: 0 0 12px; padding: 0;
-  }
-  .filter-right { width: 100%; order: -1; }
-  .filter-right .search-box {
+  /* Search box — chip fill + hairline (maps grammar) */
+  .search-box--mobile {
     display: flex; align-items: center; gap: 10px;
-    width: 100%; height: auto;
-    padding: 12px; border-radius: var(--nc-radius-md);
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    border-radius: var(--nc-radius-md);
     background: var(--nc-chip-bg); border: 1px solid var(--nc-border-input);
+    min-width: 0;
   }
-  .filter-right .search-box svg { color: var(--nc-text-muted); flex-shrink: 0; }
-  .filter-right .search-input {
-    flex: 1; width: 100%;
-    background: none; border: none; outline: none;
+  .search-box--mobile .search-icon { color: var(--nc-text-secondary); flex-shrink: 0; }
+  .search-box--mobile .search-input {
+    flex: 1; background: none; border: none; outline: none;
     font-family: var(--nc-font-body);
     font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 18px;
     color: var(--nc-text); padding: 0;
   }
-  .filter-right .search-input::placeholder { color: var(--nc-text-dim); }
-  .sort-wrap { display: none; }
+  .search-box--mobile .search-input::placeholder { color: var(--nc-text-dim); }
+
+  /* Filter row: category chips only */
+  .filter-bar {
+    display: flex; flex-direction: column; gap: 12px;
+    margin: 0; padding: 0;
+  }
 
   /* Category chips — 44px touch targets (REDESIGN.md §9) */
   .category-tabs {
@@ -1024,13 +1144,13 @@ onMounted(async () => {
   }
 
   /* iOS — search stays on the 8px input radius */
-  :root.platform-ios .filter-right .search-box { border-radius: var(--nc-radius-md); }
+  :root.platform-ios .search-box--mobile { border-radius: var(--nc-radius-md); }
   :root.platform-ios .templates-main {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
   }
 
   /* Android (MD3) — full pills */
-  :root.platform-android .filter-right .search-box { border-radius: 999px; padding: 12px 16px; }
+  :root.platform-android .search-box--mobile { border-radius: 999px; padding: 12px 16px; }
   :root.platform-android .cat-tab { border-radius: 999px; }
   :root.platform-android .templates-main {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);

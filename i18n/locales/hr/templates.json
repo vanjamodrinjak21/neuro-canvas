@@ -4,6 +4,13 @@
             "title": "Predlo\u0161ci",
             "subtitle": "Pregledajte, izradite i podijelite predlo\u0161ke mentalnih mapa"
         },
+        "header": {
+            "eyebrow": "03 \u2014 predlo\u0161ci",
+            "title_a": "Kreni od",
+            "title_b": "provjerene strukture."
+        },
+        "count_label_one": "{n} predlo\u017eak",
+        "count_label_other": "{n} predlo\u017eaka",
         "buttons": {
             "publish_template": "Objavi predlo\u017eak"
         },
