@@ -130,6 +130,11 @@ export class SemanticCache {
     usage?: unknown,
     type: string = 'default'
   ): Promise<void> {
+    // An empty response is a failed generation, not a cacheable result: the
+    // server schema rejects it (400) and a locally cached '' would replay as
+    // a permanently broken hit until the TTL expires.
+    if (!response || !response.trim()) return
+
     const hash = hashKey(systemPrompt + '||' + userPrompt)
     const ttlSeconds: number = TTL_MAP[type] ?? TTL_MAP.default
 
