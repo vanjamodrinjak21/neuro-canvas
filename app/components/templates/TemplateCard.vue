@@ -130,12 +130,15 @@ const formattedUses = computed(() => {
   text-overflow: ellipsis;
 }
 
-/* ONE meta line — mono uppercase micro-label: category · uses · author */
+/* ONE meta line — mono uppercase micro-label: category · uses · author.
+   overflow:hidden clips the row at the card edge; the two variable-length
+   texts (category, author) ellipsize while dots and the uses count hold. */
 .card-meta {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
+  overflow: hidden;
   font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   text-transform: uppercase;
@@ -147,6 +150,13 @@ const formattedUses = computed(() => {
 
 .card-meta > span {
   flex-shrink: 0;
+}
+
+.card-meta > span:first-child {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meta-dot {
