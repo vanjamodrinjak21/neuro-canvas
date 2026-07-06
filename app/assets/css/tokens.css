@@ -214,7 +214,7 @@
   --nc-border-active: #D4D4D8;
 
   --nc-text: #111111;
-  --nc-text-secondary: #777777;
+  --nc-text-secondary: #6E6E6E; /* spec §2: #777 is 4.29:1 on #FAFAF9 — fails AA */
   --nc-text-muted: #71717A;
   --nc-text-dim: #A1A1AA;
   --nc-ink: var(--nc-text);
