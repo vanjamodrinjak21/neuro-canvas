@@ -496,3 +496,56 @@ describe('initialize — WEB pull wires vault credentials cross-device (AER-78)'
     expect(webFetch.mock.calls.length).toBe(callsAfterFirst)
   })
 })
+
+// ─── 7. WEB delete-propagation — disable, never delete (AER-78) ──────────────
+// A key deleted on another device leaves this browser's provider wired to a
+// dead row with nothing to fall back to (no vault row of its type at all).
+// The pull disables it — non-destructively — and promotes a usable default,
+// so the UI is honest instead of failing on every generation.
+describe('initialize — WEB pull disables providers whose keys were deleted elsewhere (AER-78)', () => {
+  const webFetch = vi.fn()
+
+  beforeEach(() => {
+    setPlatform('web')
+    webFetch.mockReset()
+    vi.stubGlobal('$fetch', webFetch)
+  })
+
+  it('disables a dead-wired provider with no vault row of its type and promotes a usable default', async () => {
+    dbSettings = defaultSettings([
+      makeProvider({ credentialId: 'cred-dead' }), // anthropic, current default
+      makeProvider({ id: 'prov-openai-1', type: 'openai', name: 'OpenAI', credentialId: 'cred-oai', isDefault: false }),
+    ])
+    dbSettings.defaultProviderId = 'prov-anthropic-1'
+    webFetch.mockResolvedValue({ credentials: [{ id: 'cred-oai', provider: 'openai', label: null }] })
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    const anthropic = ai.providers.value.find((p: any) => p.type === 'anthropic')
+    expect(anthropic).toBeTruthy()               // disabled, NOT deleted
+    expect(anthropic!.isEnabled).toBe(false)
+    expect(ai.defaultProvider.value?.type).toBe('openai')
+  })
+
+  it('disables the only provider when the vault is emptied elsewhere (no silent broken default)', async () => {
+    dbSettings = defaultSettings([makeProvider({ credentialId: 'cred-dead' })])
+    dbSettings.defaultProviderId = 'prov-anthropic-1'
+    webFetch.mockResolvedValue({ credentials: [] })
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    expect(ai.providers.value.find((p: any) => p.type === 'anthropic')!.isEnabled).toBe(false)
+  })
+
+  it('never disables a provider that still has an on-device key (native import safety)', async () => {
+    dbSettings = defaultSettings([makeProvider({ credentialId: 'cred-dead', localApiKey: 'wrapped:sk-local' })])
+    webFetch.mockResolvedValue({ credentials: [] })
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    expect(ai.providers.value.find((p: any) => p.type === 'anthropic')!.isEnabled).toBe(true)
+  })
+})

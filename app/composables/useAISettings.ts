@@ -476,6 +476,21 @@ export function useAISettings() {
       }
     }
 
+    // Delete-propagation (non-destructive): a cloud provider whose provider
+    // type no longer has ANY vault row cannot generate — the server-side
+    // provider fallback has nothing to fall back to. Disable it (never
+    // delete) so the default promotes to a usable provider and settings show
+    // the key is gone. Providers holding on-device key material (imported
+    // native settings) are never touched.
+    const vaultTypes = new Set(list.map(c => c.provider))
+    for (const p of state.settings.providers) {
+      if (p.type === 'ollama' || p.type === 'local') continue
+      if (!p.isEnabled || p.localApiKey) continue
+      if (vaultTypes.has(p.type)) continue
+      p.isEnabled = false
+      changed = true
+    }
+
     if (!changed) return
 
     // Broken-default promotion, same rule as the native pull but keyed on
