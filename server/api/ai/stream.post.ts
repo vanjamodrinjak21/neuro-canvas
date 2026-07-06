@@ -4,6 +4,7 @@ import { validateBody, aiCompletionSchema } from '../../utils/validation'
 import { validateOutboundUrl, safeFetch } from '../../utils/ssrf'
 import { resolveCredential } from '../../utils/resolveCredential'
 import { openaiTokenParams } from '../../utils/openaiChatBody'
+import { createStreamBudget } from '../../utils/streamBudget'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
@@ -58,6 +59,10 @@ export default defineEventHandler(async (event) => {
         sendEvent({ type: 'error', message, statusCode: detail?.status })
       }
 
+      // Resource caps (AER-81): a hung or malicious upstream (custom baseUrl
+      // is user-supplied) must not hold this connection or push bytes forever.
+      const budget = createStreamBudget()
+
       try {
         switch (body.provider) {
           case 'openai':
@@ -104,6 +109,13 @@ export default defineEventHandler(async (event) => {
             while (true) {
               const { done, value } = await reader.read()
               if (done) break
+
+              const violation = budget.consume(value.byteLength)
+              if (violation) {
+                await reader.cancel().catch(() => { /* upstream already gone */ })
+                sendError(violation)
+                return
+              }
 
               buffer += decoder.decode(value, { stream: true })
               const lines = buffer.split('\n')
@@ -168,6 +180,13 @@ export default defineEventHandler(async (event) => {
               const { done, value } = await reader.read()
               if (done) break
 
+              const violation = budget.consume(value.byteLength)
+              if (violation) {
+                await reader.cancel().catch(() => { /* upstream already gone */ })
+                sendError(violation)
+                return
+              }
+
               buffer += decoder.decode(value, { stream: true })
               const lines = buffer.split('\n')
               buffer = lines.pop() || ''
@@ -226,6 +245,13 @@ export default defineEventHandler(async (event) => {
             while (true) {
               const { done, value } = await reader.read()
               if (done) break
+
+              const violation = budget.consume(value.byteLength)
+              if (violation) {
+                await reader.cancel().catch(() => { /* upstream already gone */ })
+                sendError(violation)
+                return
+              }
 
               buffer += decoder.decode(value, { stream: true })
               const lines = buffer.split('\n')

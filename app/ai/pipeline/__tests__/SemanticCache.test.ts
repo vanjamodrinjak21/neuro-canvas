@@ -52,3 +52,23 @@ describe('SemanticCache.set', () => {
     expect(opts.body).toMatchObject({ response: '{"rootTopic":"x"}', ttlSeconds: 1800 })
   })
 })
+
+// ─── AER-81: collision-safe cache keys ───────────────────────────────────────
+// The old 31x rolling hash was 32-bit and collided on short strings — a
+// colliding prompt pair silently served the WRONG cached AI response.
+describe('SemanticCache — hash collisions (AER-81)', () => {
+  it('does not serve a cached response for a colliding prompt pair ("Aa" vs "BB")', async () => {
+    const cache = new SemanticCache()
+    await cache.set('Aa', 'p', '{"x":1}', null, 'generate')
+
+    // "Aa" and "BB" collide under hash*31+char at 32 bits (2112 === 2112).
+    await expect(cache.get('BB', 'p')).resolves.toBeNull()
+  })
+
+  it('still hits for the exact same prompts', async () => {
+    const cache = new SemanticCache()
+    await cache.set('sys', 'user', '{"y":2}', null, 'generate')
+
+    await expect(cache.get('sys', 'user')).resolves.toMatchObject({ response: '{"y":2}' })
+  })
+})
