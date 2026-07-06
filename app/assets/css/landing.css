@@ -244,36 +244,6 @@ html.is-menu-open .menu-btn__tick {
   }
 }
 
-/* sign-in CTA — mono uppercase hairline pill, same grammar as .menu-btn */
-.lp .header-cta {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--hair);
-  border-radius: 2rem;
-  padding: 0.55rem 1.1rem;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-  cursor: pointer;
-  transition:
-    color 0.3s var(--ease-out),
-    border-color 0.3s var(--ease-out);
-}
-
-.lp .header-cta:hover {
-  color: var(--cyan);
-  border-color: var(--ink-dim);
-}
-
-/* the fullscreen menu lists sign-in on small screens — keep the header lean */
-@media (max-width: 760px) {
-.lp .header-cta {
-    display: none;
-  }
-}
-
 .lp .menu {
   position: fixed;
   inset: 0;
