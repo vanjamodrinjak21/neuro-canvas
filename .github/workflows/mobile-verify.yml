@@ -15,6 +15,11 @@ concurrency:
   group: mobile-verify-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # onnxruntime-node postinstall downloads CUDA EP binaries on linux/x64 from
+  # the NuGet CDN, which is flaky on runners. CI never uses the CUDA provider.
+  ONNXRUNTIME_NODE_INSTALL: skip
+
 jobs:
   android:
     name: Android (debug, unsigned) — advisory
