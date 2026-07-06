@@ -731,10 +731,6 @@ onMounted(async () => {
   background: var(--nc-accent);
 }
 
-.search-box--mobile {
-  display: none;
-}
-
 /* Search — chip fill + hairline; focus = border-color only (REDESIGN.md §5) */
 .search-box {
   display: flex;
@@ -750,6 +746,12 @@ onMounted(async () => {
 
 .search-box:focus-within {
   border-color: var(--nc-accent);
+}
+
+/* Mobile variant hidden on desktop — must come AFTER the .search-box base
+   rule (equal specificity: source order decides; ≤768px re-enables it) */
+.search-box--mobile {
+  display: none;
 }
 
 .search-icon {

@@ -426,6 +426,12 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   border-color: var(--nc-accent);
 }
 
+/* Mobile variant hidden on desktop — after the .search-box base rule
+   (equal specificity: source order decides; ≤768px re-enables it) */
+.search-box--mobile {
+  display: none;
+}
+
 .search-icon {
   font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-muted);
