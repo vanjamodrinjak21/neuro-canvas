@@ -45,12 +45,7 @@ function getNodeColor(node: Node): string {
 </script>
 
 <template>
-  <Transition
-    enter-active-class="transition-all duration-300 ease-out"
-    leave-active-class="transition-all duration-200 ease-in"
-    enter-from-class="translate-x-full opacity-0"
-    leave-to-class="translate-x-full opacity-0"
-  >
+  <Transition name="backlinks-slide">
     <aside
       v-if="visible && node"
       class="fixed right-0 top-0 bottom-0 w-80 z-dropdown nc-glass-elevated flex flex-col"
@@ -64,7 +59,7 @@ function getNodeColor(node: Node): string {
           <span class="font-display font-semibold text-sm text-nc-ink">{{ $t('canvas.backlinks.links') }}</span>
         </div>
         <button
-          class="w-7 h-7 rounded-nc-md nc-center text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-2 transition-colors"
+          class="w-7 h-7 rounded-nc-md nc-center text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-3 nc-anim cursor-pointer active:scale-97"
           @click="emit('close')"
         >
           <span class="i-lucide-x text-lg" />
@@ -75,12 +70,12 @@ function getNodeColor(node: Node): string {
       <div class="flex-1 overflow-y-auto">
         <!-- Current Node Info -->
         <div class="p-4 border-b border-nc-border">
-          <div class="text-xs font-semibold uppercase tracking-wide text-nc-ink-muted mb-2">
+          <div class="font-mono text-[0.66rem] font-medium uppercase tracking-[0.14em] text-nc-text-secondary mb-2">
             Current Node
           </div>
           <div
-            class="p-3 rounded-nc-lg bg-nc-surface-2 border-l-4"
-            :style="{ borderLeftColor: getNodeColor(node) }"
+            class="backlinks-node-card p-3 rounded-nc-md bg-nc-chip"
+            :style="{ '--node-color': getNodeColor(node) }"
           >
             <p class="text-sm text-nc-ink font-medium">{{ getPreviewText(node.content, 80) }}</p>
           </div>
@@ -91,11 +86,11 @@ function getNodeColor(node: Node): string {
           <div class="nc-between mb-3">
             <div class="nc-row gap-2 items-center">
               <span class="i-lucide-corner-down-left text-nc-accent" />
-              <span class="text-xs font-semibold uppercase tracking-wide text-nc-ink-muted">
+              <span class="font-mono text-[0.66rem] font-medium uppercase tracking-[0.14em] text-nc-text-secondary">
                 Backlinks
               </span>
             </div>
-            <span class="text-xs text-nc-ink-faint bg-nc-surface-2 px-2 py-0.5 rounded-full">
+            <span class="font-mono text-[0.7rem] text-nc-text-secondary bg-nc-chip border border-nc-border px-2 py-0.5 rounded-[0.4rem]">
               {{ backlinks.length }}
             </span>
           </div>
@@ -111,17 +106,17 @@ function getNodeColor(node: Node): string {
               class="group"
             >
               <button
-                class="w-full text-left p-3 rounded-nc-lg bg-nc-surface hover:bg-nc-surface-2 border border-nc-border hover:border-nc-accent transition-all duration-200 flex items-center gap-3"
+                class="w-full text-left p-3 rounded-nc-md bg-nc-chip hover:bg-nc-surface-3 border border-nc-border hover:border-nc-border-active nc-anim cursor-pointer active:scale-97 flex items-center gap-3"
                 @click="navigateTo(link)"
               >
                 <div
-                  class="w-3 h-3 rounded-full shrink-0"
-                  :style="{ backgroundColor: getNodeColor(link) }"
+                  class="backlinks-dot w-3 h-3 rounded-full shrink-0"
+                  :style="{ '--node-color': getNodeColor(link) }"
                 />
                 <span class="text-sm text-nc-ink-soft group-hover:text-nc-ink flex-1 truncate">
                   {{ getPreviewText(link.content) }}
                 </span>
-                <span class="i-lucide-arrow-right text-nc-ink-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span class="i-lucide-arrow-right text-nc-ink-muted opacity-0 group-hover:opacity-100 transition-opacity duration-nc-fast ease-nc-ease" />
               </button>
             </li>
           </ul>
@@ -131,12 +126,12 @@ function getNodeColor(node: Node): string {
         <section class="p-4">
           <div class="nc-between mb-3">
             <div class="nc-row gap-2 items-center">
-              <span class="i-lucide-corner-right-up text-nc-node-purple" />
-              <span class="text-xs font-semibold uppercase tracking-wide text-nc-ink-muted">
+              <span class="i-lucide-corner-right-up text-nc-text-secondary" />
+              <span class="font-mono text-[0.66rem] font-medium uppercase tracking-[0.14em] text-nc-text-secondary">
                 Outgoing Links
               </span>
             </div>
-            <span class="text-xs text-nc-ink-faint bg-nc-surface-2 px-2 py-0.5 rounded-full">
+            <span class="font-mono text-[0.7rem] text-nc-text-secondary bg-nc-chip border border-nc-border px-2 py-0.5 rounded-[0.4rem]">
               {{ outlinks.length }}
             </span>
           </div>
@@ -152,17 +147,17 @@ function getNodeColor(node: Node): string {
               class="group"
             >
               <button
-                class="w-full text-left p-3 rounded-nc-lg bg-nc-surface hover:bg-nc-surface-2 border border-nc-border hover:border-nc-node-purple transition-all duration-200 flex items-center gap-3"
+                class="w-full text-left p-3 rounded-nc-md bg-nc-chip hover:bg-nc-surface-3 border border-nc-border hover:border-nc-border-active nc-anim cursor-pointer active:scale-97 flex items-center gap-3"
                 @click="navigateTo(link)"
               >
                 <div
-                  class="w-3 h-3 rounded-full shrink-0"
-                  :style="{ backgroundColor: getNodeColor(link) }"
+                  class="backlinks-dot w-3 h-3 rounded-full shrink-0"
+                  :style="{ '--node-color': getNodeColor(link) }"
                 />
                 <span class="text-sm text-nc-ink-soft group-hover:text-nc-ink flex-1 truncate">
                   {{ getPreviewText(link.content) }}
                 </span>
-                <span class="i-lucide-arrow-right text-nc-ink-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span class="i-lucide-arrow-right text-nc-ink-muted opacity-0 group-hover:opacity-100 transition-opacity duration-nc-fast ease-nc-ease" />
               </button>
             </li>
           </ul>
@@ -172,7 +167,7 @@ function getNodeColor(node: Node): string {
       <!-- Footer -->
       <footer class="p-4 border-t border-nc-border shrink-0">
         <button
-          class="w-full py-2 px-4 rounded-nc-lg bg-nc-surface-2 hover:bg-nc-surface-3 text-nc-ink-soft hover:text-nc-ink text-sm font-medium transition-all duration-200 nc-center gap-2"
+          class="w-full py-2 px-4 rounded-nc-md bg-nc-chip border border-nc-border hover:bg-nc-surface-3 text-nc-ink-soft hover:text-nc-ink text-sm font-medium nc-anim cursor-pointer active:scale-97 nc-center gap-2"
           @click="mapStore.openLocalGraph(node.id)"
         >
           <span class="i-lucide-git-branch" />
@@ -182,3 +177,28 @@ function getNodeColor(node: Node): string {
     </aside>
   </Transition>
 </template>
+
+<style scoped>
+/* Drawer motion — transform/opacity only, explicit properties, single ease
+   (REDESIGN.md §6). Enter 200ms, exit 150ms. */
+.backlinks-slide-enter-active {
+  transition: transform 200ms var(--nc-ease), opacity 200ms var(--nc-ease);
+}
+.backlinks-slide-leave-active {
+  transition: transform 150ms var(--nc-ease), opacity 150ms var(--nc-ease);
+}
+.backlinks-slide-enter-from,
+.backlinks-slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Node-color data markers — per-item value arrives as a single custom
+   property from the template (the one allowed :style form, REDESIGN.md §9). */
+.backlinks-node-card {
+  border-left: 2px solid var(--node-color, var(--nc-accent));
+}
+.backlinks-dot {
+  background: var(--node-color, var(--nc-accent));
+}
+</style>

@@ -518,28 +518,23 @@ const { t } = useI18n()
   align-items: flex-end;
 }
 
+/* Floating widget — flat surface + hairline, tokens flip per theme */
 .nc-minimap-body {
   display: flex;
   flex-direction: column;
   width: 220px;
   height: 156px;
-  background: var(--nc-surface, #111114);
-  border: 1px solid #2A2A2E;
-  border-radius: 10px;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  animation: minimap-appear 0.2s ease-out;
-}
-
-:root.light .nc-minimap-body {
-  background: var(--nc-surface, #F5F5F3);
-  border-color: #E4E4E7;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nc-shadow-sm);
+  animation: minimap-appear 200ms var(--nc-ease);
 }
 
 @keyframes minimap-appear {
-  from { opacity: 0; transform: translateY(4px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -556,11 +551,14 @@ const { t } = useI18n()
   flex-shrink: 0;
 }
 
+/* Panel title — mono uppercase micro-label (REDESIGN.md §4) */
 .nc-minimap-title {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .nc-minimap-collapse-btn {
@@ -570,20 +568,27 @@ const { t } = useI18n()
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   background: none;
   border: none;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-minimap-collapse-btn:focus-visible {
   outline: 2px solid var(--nc-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-.nc-minimap-collapse-btn:hover {
-  color: #A1A1AA;
+@media (hover: hover) and (pointer: fine) {
+  .nc-minimap-collapse-btn:hover {
+    color: var(--nc-text);
+  }
+}
+
+.nc-minimap-collapse-btn:active {
+  transform: scale(0.97);
 }
 
 .nc-minimap-canvas {
@@ -601,62 +606,37 @@ const { t } = useI18n()
   height: 100%;
 }
 
-/* Collapsed toggle */
+/* Collapsed toggle — theme-aware via tokens, no per-theme overrides needed */
 .nc-minimap-toggle {
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  background: var(--nc-surface, #111114);
-  border: 1px solid #2A2A2E;
-  color: var(--nc-ink-muted, #A1A1AA);
+  border-radius: 0.5rem;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  transition: color var(--nc-duration-fast) var(--nc-ease-out),
-              border-color var(--nc-duration-fast) var(--nc-ease-out);
+  box-shadow: var(--nc-shadow-sm);
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-minimap-toggle:hover {
-  color: var(--nc-accent, #00D2BE);
-  border-color: rgba(0, 210, 190, 0.3);
+@media (hover: hover) and (pointer: fine) {
+  .nc-minimap-toggle:hover {
+    color: var(--nc-accent-text);
+    border-color: rgba(var(--nc-accent-rgb), 0.3);
+  }
+}
+
+.nc-minimap-toggle:active {
+  transform: scale(0.97);
 }
 
 .nc-minimap-toggle:focus-visible {
   outline: 2px solid var(--nc-accent);
-  outline-offset: 2px;
-}
-
-/* Light theme */
-:root.light .nc-minimap-body {
-  background: var(--nc-surface, #F5F5F3);
-  border-color: #E8E8E6;
-}
-
-:root.light .nc-minimap-canvas {
-  background: #F5F5F3;
-}
-
-:root.light .nc-minimap-title {
-  color: #A1A1AA;
-}
-
-:root.light .nc-minimap-collapse-btn {
-  color: #A1A1AA;
-}
-
-:root.light .nc-minimap-collapse-btn:hover {
-  color: #71717A;
-}
-
-:root.light .nc-minimap-toggle {
-  background: var(--nc-surface, #F5F5F3);
-  border-color: #E8E8E6;
-  color: #A1A1AA;
-}
-
-:root.light .nc-minimap-toggle:hover {
-  border-color: rgba(0, 210, 190, 0.3);
+  outline-offset: 3px;
 }
 </style>

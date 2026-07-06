@@ -146,23 +146,28 @@ function applyThemeChange() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--nc-ink-soft, #777777);
-  transition: color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
+  color: var(--nc-text-secondary);
+  transition:
+    color var(--nc-duration-fast) var(--nc-ease),
+    background var(--nc-duration-fast) var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
   flex-shrink: 0;
 }
 
-.theme-toggle:hover {
-  color: var(--nc-ink, #FAFAFA);
-  background: rgba(255, 255, 255, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .theme-toggle:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
+}
+
+.theme-toggle:active {
+  transform: scale(0.97);
 }
 
 .theme-toggle:focus-visible {
   outline: 2px solid var(--nc-accent);
   outline-offset: 2px;
-}
-
-:root.light .theme-toggle:hover {
-  background: rgba(0, 0, 0, 0.06);
 }
 
 .theme-toggle-track {
@@ -176,8 +181,8 @@ function applyThemeChange() {
 
 .theme-icon {
   position: absolute;
-  transition: transform var(--nc-duration-slow) var(--nc-ease-smooth),
-              opacity var(--nc-duration-slow) ease;
+  transition: transform var(--nc-duration-slow) var(--nc-ease),
+              opacity var(--nc-duration-slow) var(--nc-ease);
 }
 
 /* Dark mode: show moon, hide sun */
@@ -202,11 +207,11 @@ function applyThemeChange() {
   transform: rotate(90deg) scale(0.5);
 }
 
-/* Animation burst on toggle */
+/* Animation burst on toggle — capped at 300ms, single ease (REDESIGN.md §6) */
 .is-animating .sun-icon,
 .is-animating .moon-icon {
-  transition: transform 500ms var(--nc-ease-bounce),
-              opacity var(--nc-duration-slow) ease;
+  transition: transform var(--nc-duration-slow) var(--nc-ease),
+              opacity var(--nc-duration-slow) var(--nc-ease);
 }
 
 /* Swipe overlay */
@@ -218,8 +223,8 @@ function applyThemeChange() {
   /* Sized/positioned inline as a disc; grown via transform:scale (composited)
      rather than clip-path (which repaints every frame and stutters). */
   border-radius: 50%;
-  background: #00D2BE;
-  z-index: 9999;
+  background: var(--nc-accent);
+  z-index: var(--nc-z-cursor);
   pointer-events: none;
   transform-origin: center;
   will-change: transform, opacity;

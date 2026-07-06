@@ -163,7 +163,7 @@ function selectTool(tool: CanvasTool) {
 }
 
 .nc-tool-indicator {
-  animation: indicator-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: indicator-pop 0.2s var(--nc-ease);
 }
 
 @keyframes indicator-pop {
@@ -183,7 +183,7 @@ function selectTool(tool: CanvasTool) {
   }
   .nc-semantic-spinner {
     animation: none;
-    border-color: var(--nc-accent, #00D2BE);
+    border-color: var(--nc-accent);
   }
   .nc-dot-ready {
     animation: none;
@@ -195,11 +195,13 @@ function selectTool(tool: CanvasTool) {
   bottom: -14px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--nc-accent, #00D2BE);
+  font-family: var(--nc-font-mono);
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--nc-accent-text);
   white-space: nowrap;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.14em;
   pointer-events: none;
 }
 
@@ -216,7 +218,7 @@ function selectTool(tool: CanvasTool) {
   min-width: 24px !important;
   padding: 0 !important;
   opacity: 0.5;
-  transition: opacity var(--nc-duration-fast) var(--nc-ease-out);
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
 }
 
 .nc-settings-gear:hover {
@@ -236,15 +238,16 @@ function selectTool(tool: CanvasTool) {
   width: 8px;
   height: 8px;
   border: 1.5px solid transparent;
-  border-top-color: var(--nc-accent, #00D2BE);
+  border-top-color: var(--nc-accent);
   border-radius: 50%;
   animation: nc-spin 0.8s linear infinite;
 }
 
 .nc-queue-count {
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent-text);
   line-height: 1;
 }
 
@@ -253,7 +256,7 @@ function selectTool(tool: CanvasTool) {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent);
   animation: nc-pulse-dot 2s ease-in-out infinite;
 }
 

@@ -97,11 +97,13 @@ onKeyStroke('Escape', () => emit('close'))
 
 <template>
   <Teleport to="body">
+    <!-- Keyboard-initiated ('?') — no animated entrance (REDESIGN.md §6):
+         opacity-only, <=100ms, no movement. -->
     <Transition
-      enter-active-class="transition-all duration-200 ease-out"
-      leave-active-class="transition-all duration-150 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
+      enter-active-class="sm-fade-active"
+      leave-active-class="sm-fade-active"
+      enter-from-class="sm-fade-hidden"
+      leave-to-class="sm-fade-hidden"
     >
       <div
         v-if="visible"
@@ -109,10 +111,10 @@ onKeyStroke('Escape', () => emit('close'))
         @click="emit('close')"
       >
         <Transition
-          enter-active-class="transition-all duration-250 ease-out"
-          leave-active-class="transition-all duration-150 ease-in"
-          enter-from-class="opacity-0 translate-y-2 scale-[0.98]"
-          leave-to-class="opacity-0 translate-y-1 scale-[0.99]"
+          enter-active-class="sm-fade-active"
+          leave-active-class="sm-fade-active"
+          enter-from-class="sm-fade-hidden"
+          leave-to-class="sm-fade-hidden"
           appear
         >
           <div
@@ -205,6 +207,16 @@ onKeyStroke('Escape', () => emit('close'))
 </template>
 
 <style scoped>
+/* Keyboard-initiated UI must not animate (REDESIGN.md §6):
+   opacity-only, 100ms max, no transform. */
+.sm-fade-active {
+  transition: opacity 100ms var(--nc-ease);
+}
+
+.sm-fade-hidden {
+  opacity: 0;
+}
+
 .sm-shortcuts-backdrop {
   display: flex;
   align-items: center;
@@ -212,39 +224,46 @@ onKeyStroke('Escape', () => emit('close'))
   background: rgba(0, 0, 0, 0.6);
 }
 
+/* Dialog — flat surface-2 + hairline (REDESIGN.md §5); tokens flip for light */
 .sm-shortcuts-card {
   position: relative;
   width: min(640px, calc(100vw - 32px));
   max-height: min(86vh, 880px);
   display: flex;
   flex-direction: column;
-  background: var(--nc-surface, #111114);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-md);
   overflow: hidden;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--nc-font-body);
 }
 
 .sm-shortcuts-header {
   position: relative;
   padding: 28px 32px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--nc-border-subtle);
 }
 
+/* Eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
 .sm-shortcuts-eyebrow {
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #A1A1AA);
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
   font-weight: 500;
   margin-bottom: 10px;
 }
 
+/* Modal title — display face (REDESIGN.md §4) */
 .sm-shortcuts-title {
+  font-family: var(--nc-font-display);
   font-size: calc(28px * var(--nc-text-scale, 1));
   line-height: 1.05;
-  font-weight: 600;
-  letter-spacing: -0.022em;
-  color: #FAFAFA;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   margin: 0;
   display: flex;
   flex-wrap: wrap;
@@ -252,13 +271,14 @@ onKeyStroke('Escape', () => emit('close'))
   align-items: baseline;
 }
 
+/* Serif italic accent — once per title (REDESIGN.md §4) */
 .sm-shortcuts-title em {
-  font-family: 'Instrument Serif', 'Times New Roman', serif;
+  font-family: var(--nc-font-serif);
   font-style: italic;
   font-weight: 400;
   font-size: 1.05em;
   letter-spacing: -0.01em;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
 }
 
 .sm-shortcuts-close {
@@ -270,21 +290,31 @@ onKeyStroke('Escape', () => emit('close'))
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 6px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  color: #A1A1AA;
+  border: 1px solid var(--nc-border-subtle);
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+  transition:
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.sm-shortcuts-close:hover {
-  color: #FAFAFA;
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.10);
+@media (hover: hover) and (pointer: fine) {
+  .sm-shortcuts-close:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border);
+  }
 }
 
-/* Search */
+.sm-shortcuts-close:active {
+  transform: scale(0.97);
+}
+
+/* Search — chip fill, hairline; focus = accent border only (REDESIGN.md §5) */
 .sm-shortcuts-search {
   position: relative;
   margin: 16px 24px 8px;
@@ -292,19 +322,18 @@ onKeyStroke('Escape', () => emit('close'))
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  transition: border-color 160ms ease, background 160ms ease;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  transition: border-color 150ms var(--nc-ease);
 }
 
 .sm-shortcuts-search:focus-within {
-  border-color: rgba(0, 210, 190, 0.35);
-  background: rgba(0, 210, 190, 0.04);
+  border-color: var(--nc-accent);
 }
 
 .sm-shortcuts-search-icon {
-  color: #71717A;
+  color: var(--nc-text-muted);
   flex-shrink: 0;
   font-size: calc(16px * var(--nc-text-scale, 1));
 }
@@ -314,24 +343,24 @@ onKeyStroke('Escape', () => emit('close'))
   background: transparent;
   border: 0;
   outline: 0;
-  color: #FAFAFA;
+  color: var(--nc-text);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-family: inherit;
   letter-spacing: -0.005em;
 }
 
 .sm-shortcuts-search-input::placeholder {
-  color: #52525B;
+  color: var(--nc-text-dim);
 }
 
 .sm-shortcuts-search-hint {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #71717A;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--nc-text-secondary);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
   padding: 2px 7px;
-  border-radius: 5px;
+  border-radius: 0.35rem;
   font-weight: 500;
 }
 
@@ -341,7 +370,7 @@ onKeyStroke('Escape', () => emit('close'))
   overflow-y: auto;
   padding: 16px 24px 8px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: var(--nc-border) transparent;
 }
 
 .sm-shortcuts-body::-webkit-scrollbar {
@@ -351,11 +380,11 @@ onKeyStroke('Escape', () => emit('close'))
   background: transparent;
 }
 .sm-shortcuts-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--nc-border-subtle);
   border-radius: 999px;
 }
 .sm-shortcuts-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--nc-border);
 }
 
 .sm-shortcuts-group {
@@ -363,7 +392,7 @@ onKeyStroke('Escape', () => emit('close'))
 }
 
 .sm-shortcuts-group + .sm-shortcuts-group {
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid var(--nc-border-subtle);
 }
 
 .sm-shortcuts-section {
@@ -377,16 +406,18 @@ onKeyStroke('Escape', () => emit('close'))
 .sm-shortcuts-section-tick {
   width: 14px;
   height: 1px;
-  background: rgba(0, 210, 190, 0.7);
+  background: rgba(var(--nc-accent-rgb), 0.7);
   flex-shrink: 0;
 }
 
+/* Section header — mono uppercase micro-label (REDESIGN.md §4) */
 .sm-shortcuts-section-label {
+  font-family: var(--nc-font-mono);
   font-size: calc(10.5px * var(--nc-text-scale, 1));
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #A1A1AA;
-  font-weight: 600;
+  color: var(--nc-text-secondary);
+  font-weight: 500;
 }
 
 .sm-shortcuts-list {
@@ -403,17 +434,19 @@ onKeyStroke('Escape', () => emit('close'))
   justify-content: space-between;
   gap: 16px;
   padding: 10px 12px;
-  border-radius: 8px;
-  transition: background 140ms ease;
+  border-radius: 0.5rem;
+  transition: background 150ms var(--nc-ease);
 }
 
-.sm-shortcuts-row:hover {
-  background: rgba(255, 255, 255, 0.025);
+@media (hover: hover) and (pointer: fine) {
+  .sm-shortcuts-row:hover {
+    background: var(--nc-surface-3);
+  }
 }
 
 .sm-shortcuts-desc {
   font-size: calc(13.5px * var(--nc-text-scale, 1));
-  color: #D4D4D8;
+  color: var(--nc-text);
   letter-spacing: -0.005em;
 }
 
@@ -424,6 +457,7 @@ onKeyStroke('Escape', () => emit('close'))
   flex-shrink: 0;
 }
 
+/* kbd — mono chip on hairline (REDESIGN.md §5 tooltip/chip grammar) */
 .sm-shortcuts-kbd {
   display: inline-flex;
   align-items: center;
@@ -431,30 +465,27 @@ onKeyStroke('Escape', () => emit('close'))
   min-width: 22px;
   height: 22px;
   padding: 0 7px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #E4E4E7;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom-color: rgba(255, 255, 255, 0.04);
-  border-radius: 6px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  color: var(--nc-text-secondary);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.35rem;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
 .sm-shortcuts-kbd-quiet {
   background: transparent;
-  border-color: rgba(255, 255, 255, 0.06);
-  color: #A1A1AA;
-  box-shadow: none;
+  border-color: var(--nc-border-subtle);
+  color: var(--nc-text-secondary);
 }
 
 .sm-shortcuts-sep {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
   font-weight: 400;
 }
 
@@ -465,7 +496,7 @@ onKeyStroke('Escape', () => emit('close'))
   justify-content: center;
   padding: 56px 24px;
   gap: 12px;
-  color: #71717A;
+  color: var(--nc-text-muted);
   text-align: center;
 }
 
@@ -481,8 +512,8 @@ onKeyStroke('Escape', () => emit('close'))
   justify-content: space-between;
   gap: 16px;
   padding: 14px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(0, 0, 0, 0.18);
+  border-top: 1px solid var(--nc-border-subtle);
+  background: var(--nc-surface);
 }
 
 .sm-shortcuts-footer-hint {
@@ -490,7 +521,7 @@ onKeyStroke('Escape', () => emit('close'))
   align-items: center;
   gap: 8px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #71717A;
+  color: var(--nc-text-muted);
 }
 
 .sm-shortcuts-footer-link {
@@ -499,68 +530,37 @@ onKeyStroke('Escape', () => emit('close'))
   gap: 6px;
   background: transparent;
   border: 0;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   padding: 6px 4px;
   border-radius: 6px;
-  transition: color 140ms ease, transform 140ms ease;
+  transition: transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.sm-shortcuts-footer-link:hover {
-  color: #00FFE5;
+@media (hover: hover) and (pointer: fine) {
+  .sm-shortcuts-footer-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.35em;
+  }
+
+  .sm-shortcuts-footer-link:hover .i-lucide-arrow-right {
+    transform: translateX(2px);
+  }
 }
 
-.sm-shortcuts-footer-link:hover .i-lucide-arrow-right {
-  transform: translateX(2px);
+.sm-shortcuts-footer-link:active {
+  transform: scale(0.97);
 }
 
 .sm-shortcuts-footer-link .i-lucide-arrow-right {
-  transition: transform 160ms ease;
+  transition: transform 150ms var(--nc-ease);
 }
-
-/* Light theme */
-:global(html.light) .sm-shortcuts-backdrop {
-  background: radial-gradient(ellipse at center, rgba(245, 245, 244, 0.85) 0%, rgba(220, 220, 218, 0.92) 100%);
-}
-
-:global(html.light) .sm-shortcuts-card {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAF9 100%);
-  border-color: rgba(0, 0, 0, 0.06);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 32px 80px -20px rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
-}
-
-:global(html.light) .sm-shortcuts-title { color: #111111; }
-:global(html.light) .sm-shortcuts-title em { color: #00A89A; }
-:global(html.light) .sm-shortcuts-eyebrow { color: #00A89A; }
-:global(html.light) .sm-shortcuts-header { border-bottom-color: rgba(0, 0, 0, 0.06); }
-:global(html.light) .sm-shortcuts-close { color: #777; border-color: rgba(0, 0, 0, 0.08); }
-:global(html.light) .sm-shortcuts-close:hover { color: #111; background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 0, 0, 0.12); }
-:global(html.light) .sm-shortcuts-search { background: rgba(0, 0, 0, 0.025); border-color: rgba(0, 0, 0, 0.06); }
-:global(html.light) .sm-shortcuts-search:focus-within { background: rgba(0, 178, 168, 0.05); border-color: rgba(0, 178, 168, 0.4); }
-:global(html.light) .sm-shortcuts-search-input { color: #111; }
-:global(html.light) .sm-shortcuts-search-input::placeholder { color: #A1A1AA; }
-:global(html.light) .sm-shortcuts-search-hint { color: #777; background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.08); }
-:global(html.light) .sm-shortcuts-section-label { color: #777; }
-:global(html.light) .sm-shortcuts-section-tick { background: rgba(0, 178, 168, 0.7); }
-:global(html.light) .sm-shortcuts-row:hover { background: rgba(0, 0, 0, 0.025); }
-:global(html.light) .sm-shortcuts-desc { color: #444; }
-:global(html.light) .sm-shortcuts-kbd { color: #333; background: #FFFFFF; border-color: rgba(0, 0, 0, 0.10); border-bottom-color: rgba(0, 0, 0, 0.16); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04); }
-:global(html.light) .sm-shortcuts-kbd-quiet { background: transparent; border-color: rgba(0, 0, 0, 0.10); color: #777; box-shadow: none; }
-:global(html.light) .sm-shortcuts-sep { color: #A1A1AA; }
-:global(html.light) .sm-shortcuts-empty { color: #999; }
-:global(html.light) .sm-shortcuts-footer { background: rgba(0, 0, 0, 0.02); border-top-color: rgba(0, 0, 0, 0.06); }
-:global(html.light) .sm-shortcuts-footer-hint { color: #888; }
-:global(html.light) .sm-shortcuts-footer-link { color: #00A89A; }
-:global(html.light) .sm-shortcuts-footer-link:hover { color: #009487; }
-:global(html.light) .sm-shortcuts-group + .sm-shortcuts-group { border-top-color: rgba(0, 0, 0, 0.05); }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  .sm-fade-active,
   .sm-shortcuts-card,
   .sm-shortcuts-row,
   .sm-shortcuts-close,
@@ -575,7 +575,6 @@ onKeyStroke('Escape', () => emit('close'))
   .sm-shortcuts-card {
     width: calc(100vw - 16px);
     max-height: 92vh;
-    border-radius: 18px;
   }
   .sm-shortcuts-header { padding: 22px 22px 16px; }
   .sm-shortcuts-search { margin: 12px 16px 6px; }

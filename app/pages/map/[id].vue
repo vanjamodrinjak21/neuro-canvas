@@ -1145,6 +1145,14 @@ function handleCanvasContextMenu(event: { node: Node | null; edge: Edge | null; 
   contextMenuVisible.value = true
 }
 
+// Default/AI node color follows the accent token (REDESIGN.md §1 — legacy
+// #00D2BE removed). Canvas renderers need a resolved string, so read the
+// live CSS custom property with the canonical dark value as fallback.
+function accentNodeColor(): string {
+  if (typeof document === 'undefined') return '#5EF2E8'
+  return getComputedStyle(document.documentElement).getPropertyValue('--nc-accent').trim() || '#5EF2E8'
+}
+
 const contextMenuItems = computed<ContextMenuItem[]>(() => {
   const items: ContextMenuItem[] = []
   if (contextMenuTargetNode.value) {
@@ -1156,7 +1164,7 @@ const contextMenuItems = computed<ContextMenuItem[]>(() => {
         label: t('canvas.context_menu.change_color'),
         icon: 'i-lucide-palette',
         children: [
-          { label: t('canvas.context_menu.color_teal'), icon: 'i-lucide-circle', action: () => changeNodeColor('#00D2BE') },
+          { label: t('canvas.context_menu.color_teal'), icon: 'i-lucide-circle', action: () => changeNodeColor(accentNodeColor()) },
           { label: t('canvas.context_menu.color_purple'), icon: 'i-lucide-circle', action: () => changeNodeColor('#A78BFA') },
           { label: t('canvas.context_menu.color_pink'), icon: 'i-lucide-circle', action: () => changeNodeColor('#F472B6') },
           { label: t('canvas.context_menu.color_blue'), icon: 'i-lucide-circle', action: () => changeNodeColor('#60A5FA') },
@@ -1401,7 +1409,7 @@ async function handleSmartExpand() {
         const newNode = mapStore.addNode({
           position: { x: baseX, y: node.position.y + offsetY },
           content: suggestion,
-          style: { ...node.style, borderColor: '#00D2BE' }
+          style: { ...node.style, borderColor: accentNodeColor() }
         })
         newIds.push(newNode.id)
         offsetY += newNode.size.height + 20
@@ -1672,7 +1680,7 @@ function handleAddSuggestion(suggestion: AISuggestion) {
       y: node.position.y + (aiSuggestions.value.indexOf(suggestion) * (node.size.height + 20))
     },
     content: suggestion.content,
-    style: { ...node.style, borderColor: '#00D2BE' }
+    style: { ...node.style, borderColor: accentNodeColor() }
   })
   mapStore.resolveOverlaps([newNode.id])
 
@@ -2140,7 +2148,7 @@ useHead({
     </div>
     <div v-else-if="loadError" class="absolute inset-0 z-50 flex items-center justify-center bg-nc-bg">
       <div class="flex flex-col items-center gap-3">
-        <span class="i-lucide-alert-circle text-3xl text-red-400" />
+        <span class="i-lucide-alert-circle text-3xl text-nc-coral" />
         <span class="text-sm text-nc-text-secondary">{{ loadError }}</span>
       </div>
     </div>
@@ -2150,8 +2158,8 @@ useHead({
     <!-- ═══════════════ LEFT SIDEBAR (Desktop only) ═══════════════ -->
     <template v-if="!isMobile">
     <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      leave-active-class="transition-all duration-200 ease-in"
+      enter-active-class="transition-[transform,opacity] duration-300 ease-[var(--nc-ease)]"
+      leave-active-class="transition-[transform,opacity] duration-200 ease-[var(--nc-ease)]"
       enter-from-class="-translate-x-full opacity-0"
       leave-to-class="-translate-x-full opacity-0"
     >
@@ -2565,8 +2573,8 @@ useHead({
   right: 24px;
   z-index: var(--nc-z-minimap, 90);
   pointer-events: auto;
-  transition: left var(--nc-duration-fast, 150ms) var(--nc-ease-out, ease),
-              right var(--nc-duration-fast, 150ms) var(--nc-ease-out, ease);
+  transition: left var(--nc-duration-fast) var(--nc-ease),
+              right var(--nc-duration-fast) var(--nc-ease);
 }
 
 /* When the right-side NodeDetailPanel is open, dock the minimap to the
@@ -2583,15 +2591,15 @@ body:has(.detail-panel) .minimap-wrapper {
   position: relative; z-index: 31;
   display: flex; align-items: center; gap: 8px;
   padding: 6px 12px 10px;
-  border-bottom: 1px solid var(--nc-border, #1E1E22);
-  background: var(--nc-bg, #0A0A0C);
+  border-bottom: 1px solid var(--nc-border);
+  background: var(--nc-bg);
   flex-shrink: 0;
 }
 .nc-mobile-topbtn {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 36px;
   background: none; border: none; padding: 0;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
   cursor: pointer; flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
 }
@@ -2600,37 +2608,27 @@ body:has(.detail-panel) .minimap-wrapper {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
 }
 .nc-mobile-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 100%;
 }
 .nc-mobile-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 14px;
-  color: var(--nc-text-secondary, #888890);
+  color: var(--nc-text-secondary);
 }
 .nc-mobile-aibtn {
   display: flex; align-items: center; justify-content: center;
   gap: 6px; padding: 8px 12px;
-  background: #00D2BE; border: none; border-radius: 8px;
-  color: #0A0A0C;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-accent); border: none; border-radius: 0.5rem;
+  color: var(--nc-bg);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
   cursor: pointer; flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
 }
-
-/* Light mode */
-:root.light .nc-mobile-topbar {
-  background: #FAFAF9;
-  border-bottom-color: #E8E8E6;
-}
-:root.light .nc-mobile-topbtn { color: #18181B; }
-:root.light .nc-mobile-title { color: #18181B; }
-:root.light .nc-mobile-subtitle { color: #6B6E74; }
-:root.light .nc-mobile-aibtn { background: #00D2BE; color: #0A0A0C; }
 
 /* iOS / Android refinements */
 :root.platform-ios .nc-mobile-aibtn { border-radius: 8px; }
@@ -2660,47 +2658,39 @@ body:has(.detail-panel) .minimap-wrapper {
   justify-content: center;
   gap: 6px;
   padding: 9px 12px;
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 8px;
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   background: transparent;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms var(--nc-ease), border-color 150ms var(--nc-ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .nc-segment-icon {
   width: 14px;
   height: 14px;
-  color: var(--nc-text-secondary, #888890);
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 
 .nc-segment-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
-  color: var(--nc-text-secondary, #888890);
+  color: var(--nc-text-secondary);
 }
 
 /* Active: filled card with brighter border (matches Paper "Editor" pill) */
 .nc-segment.active {
-  background: var(--nc-surface-2, #111114);
-  border-color: #2A2A30;
+  background: var(--nc-surface-2);
+  border-color: var(--nc-border-active);
 }
-.nc-segment.active .nc-segment-icon { color: var(--nc-ink, #FAFAFA); }
+.nc-segment.active .nc-segment-icon { color: var(--nc-ink); }
 .nc-segment.active .nc-segment-label {
   font-weight: 600;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
 }
-
-/* Light mode */
-:root.light .nc-segment { border-color: #E8E8E6; }
-:root.light .nc-segment-icon,
-:root.light .nc-segment-label { color: #6B6E74; }
-:root.light .nc-segment.active { background: #FFFFFF; border-color: #D4D4D2; }
-:root.light .nc-segment.active .nc-segment-icon,
-:root.light .nc-segment.active .nc-segment-label { color: #18181B; }
 
 /* Platform tweaks */
 :root.platform-android .nc-segment { border-radius: 999px; }
@@ -2716,11 +2706,11 @@ body:has(.detail-panel) .minimap-wrapper {
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  border-radius: 999px;
-  background: var(--nc-surface, #111114);
-  border: 1px solid rgba(0, 210, 190, 0.4);
-  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.6);
-  color: var(--nc-ink, #FAFAFA);
+  border-radius: 2.4rem;
+  background: var(--nc-surface);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.4);
+  box-shadow: var(--nc-shadow-md);
+  color: var(--nc-ink);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   pointer-events: none;
@@ -2728,7 +2718,7 @@ body:has(.detail-panel) .minimap-wrapper {
 
 .nc-genbadge-spin {
   font-size: calc(16px * var(--nc-text-scale, 1));
-  color: #00D2BE;
+  color: var(--nc-accent-text);
   animation: nc-genbadge-rotate 0.9s linear infinite;
 }
 
@@ -2738,7 +2728,7 @@ body:has(.detail-panel) .minimap-wrapper {
 
 .nc-genbadge-enter-active,
 .nc-genbadge-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 250ms var(--nc-ease), transform 250ms var(--nc-ease);
 }
 
 .nc-genbadge-enter-from,

@@ -134,15 +134,19 @@ const connectionCount = computed(() => {
   ).length
 })
 
-// Category chips for display
+// Category chips for display — colors live in scoped CSS as per-category
+// modifier classes bound to the --nc-* node tokens
 const categoryChips = computed(() => [
-  { id: 'main-fact', label: t('canvas.node_props_form.cat_concept'), color: '#00D2BE' },
-  { id: 'description', label: t('canvas.node_props_form.cat_desc'), color: '#60A5FA' },
-  { id: 'evidence', label: t('canvas.node_props_form.cat_evidence'), color: '#4ADE80' },
-  { id: 'question', label: t('canvas.node_props_form.cat_question'), color: '#FACC15' },
-  { id: 'idea', label: t('canvas.node_props_form.cat_idea'), color: '#FB923C' },
-  { id: 'reference', label: t('canvas.node_props_form.cat_ref'), color: '#A78BFA' },
+  { id: 'main-fact', label: t('canvas.node_props_form.cat_concept') },
+  { id: 'description', label: t('canvas.node_props_form.cat_desc') },
+  { id: 'evidence', label: t('canvas.node_props_form.cat_evidence') },
+  { id: 'question', label: t('canvas.node_props_form.cat_question') },
+  { id: 'idea', label: t('canvas.node_props_form.cat_idea') },
+  { id: 'reference', label: t('canvas.node_props_form.cat_ref') },
 ])
+
+// Selected-node avatar follows the user-chosen node color (data) via v-bind
+const avatarColor = computed(() => props.selectedNode?.style?.borderColor || 'var(--nc-accent)')
 </script>
 
 <template>
@@ -150,11 +154,8 @@ const categoryChips = computed(() => [
     <template v-if="selectedNode">
       <!-- Node header -->
       <div class="properties__header">
-        <div
-          class="properties__avatar"
-          :style="{ background: `${selectedNode.style?.borderColor || '#00D2BE'}1F` }"
-        >
-          <span :style="{ color: selectedNode.style?.borderColor || '#00D2BE' }">
+        <div class="properties__avatar">
+          <span class="properties__avatar-letter">
             {{ selectedNode.content.charAt(0).toUpperCase() }}
           </span>
         </div>
@@ -176,15 +177,14 @@ const categoryChips = computed(() => [
             <button
               v-for="chip in categoryChips"
               :key="chip.id"
-              :class="['properties__cat-chip', localCategory === chip.id && 'properties__cat-chip--active']"
-              :style="localCategory === chip.id ? {
-                background: `${chip.color}1A`,
-                borderColor: `${chip.color}40`,
-                color: chip.color,
-              } : {}"
+              :class="[
+                'properties__cat-chip',
+                `properties__cat-chip--${chip.id}`,
+                localCategory === chip.id && 'properties__cat-chip--active',
+              ]"
               @click="updateCategory(chip.id)"
             >
-              <span class="properties__cat-dot" :style="{ background: chip.color }" />
+              <span class="properties__cat-dot" />
               <span>{{ chip.label }}</span>
             </button>
           </div>
@@ -194,11 +194,13 @@ const categoryChips = computed(() => [
         <div class="properties__field">
           <label class="properties__label">{{ $t('canvas.node_props_form.color') }}</label>
           <div class="properties__colors">
+            <!-- Node palette colors are user data; single custom-property
+                 pattern (--swatch) — no arbitrary inline styles -->
             <button
               v-for="color in nodeColors"
               :key="color"
               :class="['properties__color-dot', localBorderColor === color && 'properties__color-dot--active']"
-              :style="{ backgroundColor: color }"
+              :style="{ '--swatch': color }"
               @click="updateBorderColor(color)"
             >
               <span
@@ -337,21 +339,27 @@ const categoryChips = computed(() => [
   align-items: center;
   gap: 12px;
   padding: 16px 16px 12px;
-  border-bottom: 1px solid #1A1A1E;
+  border-bottom: 1px solid var(--nc-border);
   flex-shrink: 0;
 }
 
+/* Avatar — user node color (data) via v-bind */
 .properties__avatar {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   flex-shrink: 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: color-mix(in srgb, v-bind(avatarColor) 12%, transparent);
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 700;
+}
+
+.properties__avatar-letter {
+  color: v-bind(avatarColor);
 }
 
 .properties__header-info {
@@ -363,19 +371,19 @@ const categoryChips = computed(() => [
 }
 
 .properties__header-name {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .properties__header-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
 }
 
 .properties__edit-btn {
@@ -384,19 +392,19 @@ const categoryChips = computed(() => [
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #111113;
-  border: 1px solid #1A1A1E;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
   border-radius: 6px;
-  color: #52525B;
+  color: var(--nc-text-muted);
   font-size: calc(13px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 150ms var(--nc-ease), border-color 150ms var(--nc-ease);
   flex-shrink: 0;
 }
 
 .properties__edit-btn:hover {
-  color: #A1A1AA;
-  border-color: #27272A;
+  color: var(--nc-text-secondary);
+  border-color: var(--nc-border-active);
 }
 
 /* Fields */
@@ -410,13 +418,15 @@ const categoryChips = computed(() => [
   margin-bottom: 16px;
 }
 
+/* Field label — mono uppercase micro-label (REDESIGN.md §5 inputs) */
 .properties__label {
   display: block;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #52525B;
-  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
+  letter-spacing: 0.14em;
   margin-bottom: 6px;
 }
 
@@ -432,12 +442,12 @@ const categoryChips = computed(() => [
 }
 
 .properties__char-count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: #27272A;
+  color: var(--nc-text-muted);
 }
 
-/* Category chips */
+/* Category chips — per-category colors from the --nc-* node tokens */
 .properties__categories {
   display: flex;
   flex-wrap: wrap;
@@ -445,38 +455,52 @@ const categoryChips = computed(() => [
 }
 
 .properties__cat-chip {
+  --chip-color: var(--nc-accent);
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 5px 10px;
   background: transparent;
-  border: 1px solid #27272A;
+  border: 1px solid var(--nc-border);
   border-radius: 6px;
-  color: #71717A;
-  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--nc-text-muted);
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 150ms var(--nc-ease),
+              background 150ms var(--nc-ease),
+              border-color 150ms var(--nc-ease);
 }
 
+.properties__cat-chip--main-fact { --chip-color: var(--nc-accent); }
+.properties__cat-chip--description { --chip-color: var(--nc-node-blue); }
+.properties__cat-chip--evidence { --chip-color: var(--nc-node-green); }
+.properties__cat-chip--question { --chip-color: var(--nc-node-yellow); }
+.properties__cat-chip--idea { --chip-color: var(--nc-node-orange); }
+.properties__cat-chip--reference { --chip-color: var(--nc-node-purple); }
+
 .properties__cat-chip:hover {
-  border-color: #3F3F46;
-  color: #A1A1AA;
+  border-color: var(--nc-border-active);
+  color: var(--nc-text-secondary);
 }
 
 .properties__cat-chip--active {
   font-weight: 600;
+  background: color-mix(in srgb, var(--chip-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--chip-color) 25%, transparent);
+  color: var(--chip-color);
 }
 
 .properties__cat-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  background: var(--chip-color);
   flex-shrink: 0;
 }
 
-/* Colors */
+/* Colors — swatch value is user data via --swatch custom property */
 .properties__colors {
   display: flex;
   gap: 8px;
@@ -487,8 +511,9 @@ const categoryChips = computed(() => [
   height: 24px;
   border-radius: 50%;
   border: none;
+  background-color: var(--swatch);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 200ms var(--nc-ease), box-shadow 200ms var(--nc-ease);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -500,14 +525,14 @@ const categoryChips = computed(() => [
 }
 
 .properties__color-dot--active {
-  box-shadow: 0 0 0 2px #09090B, 0 0 0 4px currentColor;
+  box-shadow: 0 0 0 2px var(--nc-bg), 0 0 0 4px currentColor;
   transform: scale(1.05);
 }
 
 .properties__color-check {
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #09090B;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+  color: var(--nc-bg);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 /* Shapes grid */
@@ -524,108 +549,106 @@ const categoryChips = computed(() => [
   justify-content: center;
   gap: 4px;
   padding: 8px 4px;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 8px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--nc-ease), border-color 150ms var(--nc-ease);
 }
 
 .properties__shape-btn:hover {
-  border-color: #3F3F46;
-  background: #18181B;
+  border-color: var(--nc-border-active);
+  background: var(--nc-surface-3);
 }
 
+/* Active shape = accent border + tint marker (never color alone) */
 .properties__shape-btn--active {
-  border-color: var(--nc-accent, #00D2BE);
-  background: rgba(0, 210, 190, 0.06);
-  box-shadow: 0 0 0 1px rgba(0, 210, 190, 0.15);
+  border-color: var(--nc-accent);
+  background: rgba(var(--nc-accent-rgb), 0.06);
 }
 
 .properties__shape-btn--active:hover {
-  border-color: var(--nc-accent, #00D2BE);
-  background: rgba(0, 210, 190, 0.1);
+  border-color: var(--nc-accent);
+  background: rgba(var(--nc-accent-rgb), 0.1);
 }
 
 .properties__shape-icon {
   font-size: calc(16px * var(--nc-text-scale, 1));
-  color: #71717A;
-  transition: color 0.15s;
+  color: var(--nc-text-muted);
+  transition: color 150ms var(--nc-ease);
 }
 
 .properties__shape-btn:hover .properties__shape-icon {
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
 }
 
 .properties__shape-btn--active .properties__shape-icon {
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent-text);
 }
 
 .properties__shape-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #3F3F46;
+  color: var(--nc-text-muted);
   letter-spacing: 0.02em;
-  transition: color 0.15s;
+  transition: color 150ms var(--nc-ease);
 }
 
 .properties__shape-btn:hover .properties__shape-label {
-  color: #71717A;
+  color: var(--nc-text-secondary);
 }
 
 .properties__shape-btn--active .properties__shape-label {
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent-text);
   font-weight: 600;
 }
 
-/* Input */
+/* Input — chip-bg fill, hairline, accent focus border only (no ring) */
 .properties__input {
   width: 100%;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 8px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   padding: 8px 12px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 500;
-  color: #FAFAFA;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  color: var(--nc-text);
+  transition: border-color 200ms var(--nc-ease);
 }
 
 .properties__input::placeholder {
-  color: #3F3F46;
+  color: var(--nc-text-dim);
 }
 
 .properties__input:focus {
   outline: none;
   border-color: var(--nc-accent);
-  box-shadow: 0 0 0 3px var(--nc-accent-glow);
 }
 
 /* Textarea */
 .properties__textarea {
   width: 100%;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 8px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   padding: 10px 12px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   color: var(--nc-ink);
   resize: none;
   min-height: 80px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 200ms var(--nc-ease);
 }
 
 .properties__textarea::placeholder {
-  color: #3F3F46;
+  color: var(--nc-text-dim);
 }
 
 .properties__textarea:focus {
   outline: none;
   border-color: var(--nc-accent);
-  box-shadow: 0 0 0 3px var(--nc-accent-glow);
 }
 
 /* Cross-map link (AER-69) */
@@ -648,13 +671,15 @@ const categoryChips = computed(() => [
   justify-content: center;
   width: 34px;
   flex-shrink: 0;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 8px;
-  color: var(--nc-accent);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  color: var(--nc-accent-text);
   font-size: calc(14px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: border-color 150ms var(--nc-ease),
+              background 150ms var(--nc-ease),
+              color 150ms var(--nc-ease);
 }
 
 .properties__link-open:hover:not(:disabled) {
@@ -663,7 +688,7 @@ const categoryChips = computed(() => [
 }
 
 .properties__link-open:disabled {
-  color: #3F3F46;
+  color: var(--nc-text-dim);
   cursor: not-allowed;
 }
 
@@ -671,16 +696,12 @@ const categoryChips = computed(() => [
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--nc-accent);
-  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--nc-accent-text);
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-:root.light .properties__link-open {
-  background: #F4F4F5;
-  border-color: #E4E4E7;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 /* Footer actions */
@@ -688,7 +709,7 @@ const categoryChips = computed(() => [
   display: flex;
   gap: 8px;
   padding: 12px 14px;
-  border-top: 1px solid #1A1A1E;
+  border-top: 1px solid var(--nc-border);
   flex-shrink: 0;
 }
 
@@ -699,31 +720,40 @@ const categoryChips = computed(() => [
   justify-content: center;
   gap: 6px;
   padding: 8px;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 8px;
-  color: #71717A;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  color: var(--nc-text-muted);
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 150ms var(--nc-ease),
+              background 150ms var(--nc-ease),
+              border-color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .properties__footer-btn:hover {
-  border-color: #27272A;
-  color: #A1A1AA;
+  border-color: var(--nc-border-active);
+  color: var(--nc-text-secondary);
 }
 
+.properties__footer-btn:active {
+  transform: scale(0.97);
+}
+
+/* Destructive action — coral accent (REDESIGN.md §1) */
 .properties__footer-btn--danger {
-  background: rgba(239, 68, 68, 0.06);
-  border-color: rgba(239, 68, 68, 0.15);
-  color: #EF4444;
+  background: rgba(var(--nc-coral-rgb), 0.06);
+  border-color: rgba(var(--nc-coral-rgb), 0.15);
+  color: var(--nc-coral);
 }
 
 .properties__footer-btn--danger:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border-color: rgba(var(--nc-coral-rgb), 0.25);
+  color: var(--nc-coral);
 }
 
 .properties__footer-btn span:first-child {
@@ -744,75 +774,5 @@ const categoryChips = computed(() => [
 .properties__empty-icon {
   font-size: calc(18px * var(--nc-text-scale, 1));
   opacity: 0.4;
-}
-
-/* Light theme */
-:root.light .properties__header {
-  border-bottom-color: #E4E4E7;
-}
-
-:root.light .properties__header-name {
-  color: #18181B;
-}
-
-:root.light .properties__avatar {
-  background: rgba(0, 210, 190, 0.08);
-}
-
-:root.light .properties__edit-btn {
-  background: #F4F4F5;
-  border-color: #E4E4E7;
-}
-
-:root.light .properties__label {
-  color: #71717A;
-}
-
-:root.light .properties__cat-chip {
-  border-color: #E4E4E7;
-  color: #71717A;
-}
-
-:root.light .properties__shape-btn {
-  background: #F4F4F5;
-  border-color: #E4E4E7;
-}
-
-:root.light .properties__shape-btn:hover {
-  border-color: #D4D4D8;
-  background: #EBEBED;
-}
-
-:root.light .properties__shape-icon {
-  color: #A1A1AA;
-}
-
-:root.light .properties__shape-btn:hover .properties__shape-icon {
-  color: #52525B;
-}
-
-:root.light .properties__shape-label {
-  color: #A1A1AA;
-}
-
-:root.light .properties__shape-btn:hover .properties__shape-label {
-  color: #52525B;
-}
-
-:root.light .properties__input,
-:root.light .properties__textarea {
-  background: #F4F4F5;
-  border-color: #E4E4E7;
-  color: #18181B;
-}
-
-:root.light .properties__footer {
-  border-top-color: #E4E4E7;
-}
-
-:root.light .properties__footer-btn {
-  background: #F4F4F5;
-  border-color: #E4E4E7;
-  color: #71717A;
 }
 </style>

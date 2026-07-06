@@ -17,45 +17,21 @@ const emit = defineEmits<{
 const content = ref(props.node.content)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-// Calculate position based on camera transform
-const style = computed(() => {
-  const { x, y } = props.node.position
-  const { width, height } = props.node.size
-  const { zoom } = props.camera
-
-  // Apply camera transform to get screen position
-  const screenX = x * zoom + props.camera.x
-  const screenY = y * zoom + props.camera.y
-  const screenWidth = width * zoom
-  const screenHeight = height * zoom
-
-  return {
-    position: 'absolute' as const,
-    left: `${screenX}px`,
-    top: `${screenY}px`,
-    width: `${screenWidth}px`,
-    height: `${screenHeight}px`,
-    fontSize: `${props.node.style.fontSize * zoom}px`,
-    fontWeight: props.node.style.fontWeight,
-    color: props.node.style.textColor,
-    backgroundColor: props.node.style.fillColor,
-    borderColor: props.node.style.borderColor,
-    borderWidth: `${props.node.style.borderWidth}px`,
-    borderStyle: 'solid' as const,
-    borderRadius: props.node.style.shape === 'circle' ? '50%' : '12px',
-    padding: `${8 * zoom}px`,
-    boxSizing: 'border-box' as const,
-    resize: 'none' as const,
-    outline: 'none' as const,
-    overflow: 'hidden' as const,
-    textAlign: 'center' as const,
-    display: 'flex' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    zIndex: 1000,
-    boxShadow: '0 0 0 3px rgba(0, 210, 190, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4)'
-  }
-})
+// Position/size/typography derive from the camera transform and the node's
+// user-chosen style (data). Consumed via v-bind() in the scoped style block —
+// no inline :style (REDESIGN.md §9).
+const screenLeft = computed(() => `${props.node.position.x * props.camera.zoom + props.camera.x}px`)
+const screenTop = computed(() => `${props.node.position.y * props.camera.zoom + props.camera.y}px`)
+const screenWidth = computed(() => `${props.node.size.width * props.camera.zoom}px`)
+const screenHeight = computed(() => `${props.node.size.height * props.camera.zoom}px`)
+const editorFontSize = computed(() => `${props.node.style.fontSize * props.camera.zoom}px`)
+const editorPadding = computed(() => `${8 * props.camera.zoom}px`)
+const editorFontWeight = computed(() => String(props.node.style.fontWeight))
+const editorTextColor = computed(() => props.node.style.textColor)
+const editorFillColor = computed(() => props.node.style.fillColor)
+const editorBorderColor = computed(() => props.node.style.borderColor)
+const editorBorderWidth = computed(() => `${props.node.style.borderWidth}px`)
+const editorRadius = computed(() => (props.node.style.shape === 'circle' ? '50%' : '0.5rem'))
 
 // Focus on mount
 onMounted(() => {
@@ -96,7 +72,6 @@ function handleBlur() {
   <textarea
     ref="textareaRef"
     v-model="content"
-    :style="style"
     class="node-editor font-sans pointer-events-auto"
     @keydown="handleKeydown"
     @blur="handleBlur"
@@ -105,8 +80,33 @@ function handleBlur() {
 
 <style scoped>
 .node-editor {
-  font-family: 'Inter', system-ui, sans-serif;
+  position: absolute;
+  left: v-bind(screenLeft);
+  top: v-bind(screenTop);
+  width: v-bind(screenWidth);
+  height: v-bind(screenHeight);
+  z-index: 1000;
+  font-family: var(--nc-font-body);
+  font-size: v-bind(editorFontSize);
+  font-weight: v-bind(editorFontWeight);
   line-height: 1.4;
+  text-align: center;
+  color: v-bind(editorTextColor);
+  background-color: v-bind(editorFillColor);
+  border: v-bind(editorBorderWidth) solid v-bind(editorBorderColor);
+  border-radius: v-bind(editorRadius);
+  padding: v-bind(editorPadding);
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Edit-mode marker: accent outline (REDESIGN.md §1 focus rule) + flat
+     shadow — no accent glow ring in chrome (§6). */
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+  box-shadow: var(--nc-shadow-md);
 }
 
 .node-editor::placeholder {

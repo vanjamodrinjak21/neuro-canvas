@@ -43,7 +43,7 @@ onUnmounted(() => { if (pulseTimer) clearTimeout(pulseTimer) })
         :key="r.sessionId"
         class="avatar"
         :class="{ 'is-selecting': r.selection.length > 0 }"
-        :style="{ background: r.color, '--peer-color': r.color }"
+        :style="{ '--peer-color': r.color }"
         :title="r.selection.length ? `${r.displayName} — editing ${r.selection.length} node${r.selection.length > 1 ? 's' : ''}` : r.displayName"
       >{{ r.displayName.charAt(0).toUpperCase() }}</div>
       <div
@@ -69,18 +69,23 @@ onUnmounted(() => { if (pulseTimer) clearTimeout(pulseTimer) })
   display: flex;
   align-items: center;
 }
+/* Peer identity color is DATA — preserved via the single-custom-property
+   pattern (REDESIGN.md §9); ink-on-color follows the selection grammar. */
 .avatar {
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: 50%;
   border: 1.5px solid var(--nc-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 600 11px Inter, system-ui, sans-serif;
-  color: #09090B;
+  font-family: var(--nc-font-body);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--peer-color, var(--nc-surface-3));
+  color: var(--nc-bg);
   position: relative;
-  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 160ms var(--nc-ease);
 }
 .avatar + .avatar {
   margin-left: -8px;
@@ -112,30 +117,33 @@ onUnmounted(() => { if (pulseTimer) clearTimeout(pulseTimer) })
   color: var(--nc-text-secondary);
   font-weight: 500;
 }
+/* Live presence = live marker → coral (REDESIGN.md §1 accent discipline) */
 .live-pill {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  border-radius: 6px;
+  border-radius: 2rem;
   border: 1px solid var(--nc-border);
   background: var(--nc-surface);
-  font: 500 12px Inter, system-ui, sans-serif;
-  transition: border-color 200ms ease, background 200ms ease;
+  font-family: var(--nc-font-body);
+  font-size: 12px;
+  font-weight: 500;
+  transition: border-color 200ms var(--nc-ease), background 200ms var(--nc-ease);
 }
 .live-pill.is-pulsing {
-  border-color: var(--nc-accent);
+  border-color: var(--nc-coral);
 }
 .live-pill .dot {
   width: 6px;
   height: 6px;
-  border-radius: 999px;
-  background: var(--nc-accent);
-  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 200ms ease;
+  border-radius: 50%;
+  background: var(--nc-coral);
+  transition: transform 200ms var(--nc-ease), box-shadow 200ms var(--nc-ease);
 }
 .live-pill.is-pulsing .dot {
   transform: scale(1.4);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--nc-accent) 22%, transparent);
+  box-shadow: 0 0 0 4px rgba(var(--nc-coral-rgb), 0.22);
 }
 .live-pill .count {
   color: var(--nc-text-secondary);
