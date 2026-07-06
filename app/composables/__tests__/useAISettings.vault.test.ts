@@ -409,3 +409,90 @@ describe('web flow is untouched by the native vault paths', () => {
     expect(remoteFetch).not.toHaveBeenCalled()
   })
 })
+
+// ─── 6. WEB pull — cross-device wiring without key material (AER-78) ────────
+// The server resolves keys from the vault by credentialId at generation time,
+// so a second browser only needs the provider→credential WIRING. The pull is
+// additive, never reveals key material, and stays unspent for guests so it
+// runs right after sign-in.
+describe('initialize — WEB pull wires vault credentials cross-device (AER-78)', () => {
+  const webFetch = vi.fn()
+
+  beforeEach(() => {
+    setPlatform('web')
+    webFetch.mockReset()
+    vi.stubGlobal('$fetch', webFetch)
+  })
+
+  it('lights up a fresh browser: provider created from the vault row, credentialId set, default usable', async () => {
+    dbSettings = defaultSettings([])
+    webFetch.mockResolvedValue({ credentials: [{ id: 'cred-1', provider: 'anthropic', label: null }] })
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    const provider = ai.providers.value.find((p: any) => p.type === 'anthropic')
+    expect(provider).toBeTruthy()
+    expect(provider!.credentialId).toBe('cred-1')
+    expect(provider!.isEnabled).toBe(true)
+    // Web never pulls key material — server-side resolution only.
+    expect(provider!.localApiKey).toBeUndefined()
+    // Default promoted so generation works immediately on the fresh device.
+    expect(ai.defaultProvider.value?.id).toBe(provider!.id)
+    // ONLY the list endpoint is hit — never /reveal on web.
+    expect(webFetch.mock.calls.every(([url]: [string]) => url === '/api/vault/credentials')).toBe(true)
+    // And the NATIVE transport is never touched.
+    expect(remoteFetch).not.toHaveBeenCalled()
+  })
+
+  it('leaves the one-shot unspent on 401 (guest / signed-out) so the pull runs after sign-in', async () => {
+    dbSettings = defaultSettings([])
+    const unauthorized: any = new Error('Unauthorized')
+    unauthorized.statusCode = 401
+    webFetch.mockRejectedValue(unauthorized)
+
+    const ai = await freshComposable()
+    await ai.initialize()
+    expect(ai.providers.value).toHaveLength(0)
+
+    // Sign-in happened — the next reconcile attempt must actually run.
+    webFetch.mockResolvedValue({ credentials: [{ id: 'cred-9', provider: 'openai', label: null }] })
+    await ai.syncVaultOnInit()
+
+    expect(ai.providers.value.find((p: any) => p.type === 'openai')?.credentialId).toBe('cred-9')
+  })
+
+  it('does not duplicate or touch a provider whose credentialId already resolves to a vault row', async () => {
+    dbSettings = defaultSettings([makeProvider({ credentialId: 'cred-1' })])
+    webFetch.mockResolvedValue({ credentials: [{ id: 'cred-1', provider: 'anthropic', label: null }] })
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    const anthropics = ai.providers.value.filter((p: any) => p.type === 'anthropic')
+    expect(anthropics).toHaveLength(1)
+    expect(anthropics[0]!.credentialId).toBe('cred-1')
+  })
+
+  it('re-points a stale credentialId (key deleted + re-added on another device) at the live vault row', async () => {
+    dbSettings = defaultSettings([makeProvider({ credentialId: 'cred-dead' })])
+    webFetch.mockResolvedValue({ credentials: [{ id: 'cred-2', provider: 'anthropic', label: null }] })
+
+    const ai = await freshComposable()
+    await ai.initialize()
+
+    expect(ai.providers.value.find((p: any) => p.type === 'anthropic')?.credentialId).toBe('cred-2')
+  })
+
+  it('spends the one-shot after a successful pull (no repeat list fetch on re-init)', async () => {
+    dbSettings = defaultSettings([])
+    webFetch.mockResolvedValue({ credentials: [] })
+
+    const ai = await freshComposable()
+    await ai.initialize()
+    const callsAfterFirst = webFetch.mock.calls.length
+    await ai.syncVaultOnInit()
+
+    expect(webFetch.mock.calls.length).toBe(callsAfterFirst)
+  })
+})
