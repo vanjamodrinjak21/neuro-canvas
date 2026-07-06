@@ -74,6 +74,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo('/')
   }
 
+  // No session and not yet a guest: /map/new bootstraps a guest session
+  // directly, so any visitor landing on it gets a blank canvas instead of
+  // a sign-in bounce (the landing CTA is no longer the only guest entrance).
+  if (to.path === '/map/new') {
+    if (import.meta.client) {
+      guest.enterGuestMode()
+    }
+    return
+  }
+
   if (!to.path.startsWith('/auth/')) {
     return navigateTo('/auth/signin')
   }
