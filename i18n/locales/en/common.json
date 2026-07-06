@@ -178,8 +178,18 @@
     "count_label_other": "{n} maps",
     "nodes_count": "{n} nodes",
     "edited_prefix": "Edited",
+    "empty_state": {
+      "title": "No maps yet",
+      "description": "Create your first map to get started.",
+      "action": "Create a map"
+    },
+    "no_results": {
+      "title": "No maps match your search",
+      "description": "Try a different term, or clear the search to see all maps.",
+      "clear": "Clear search"
+    },
     "header": {
-      "eyebrow": "02 — all maps",
+      "eyebrow": "all maps",
       "title_a": "Everything",
       "title_b": "you've thought about."
     }

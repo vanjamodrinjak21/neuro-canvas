@@ -384,24 +384,24 @@ function formatDate(timestamp: number): string {
         <div class="spinner" />
       </div>
 
-      <!-- Empty state -->
+      <!-- Empty state — one line + one concrete action (AER-76) -->
       <div v-else-if="filteredMaps.length === 0 && !searchQuery" class="empty-state">
         <span class="i-lucide-map empty-icon" />
-        <h3 class="empty-title">{{ $t('common.errors.not_found') }}</h3>
-        <p class="empty-desc">{{ $t('common.onboarding.step_create_desc') }}</p>
+        <h3 class="empty-title">{{ $t('maps.empty_state.title') }}</h3>
+        <p class="empty-desc">{{ $t('maps.empty_state.description') }}</p>
         <button class="btn-primary" @click="createNewMap">
           <span class="i-lucide-plus" />
-          {{ $t('common.buttons.create') }}
+          {{ $t('maps.empty_state.action') }}
         </button>
       </div>
 
-      <!-- No results -->
+      <!-- No results — name the miss, offer the way out -->
       <div v-else-if="filteredMaps.length === 0 && searchQuery" class="empty-state">
         <span class="i-lucide-search-x empty-icon" />
-        <h3 class="empty-title">{{ $t('common.errors.not_found') }}</h3>
-        <p class="empty-desc">{{ $t('common.errors.generic') }}</p>
+        <h3 class="empty-title">{{ $t('maps.no_results.title') }}</h3>
+        <p class="empty-desc">{{ $t('maps.no_results.description') }}</p>
         <button class="btn-ghost" @click="searchQuery = ''">
-          {{ $t('common.buttons.cancel') }}
+          {{ $t('maps.no_results.clear') }}
         </button>
       </div>
 
@@ -435,9 +435,11 @@ function formatDate(timestamp: number): string {
               <button
                 v-if="!selectMode"
                 class="card-menu"
+                :title="$t('common.buttons.delete')"
+                :aria-label="$t('common.buttons.delete')"
                 @click="deleteMap(map.id, $event)"
               >
-                <span class="i-lucide-ellipsis" />
+                <span class="i-lucide-trash-2" />
               </button>
             </div>
             <div class="card-meta">
@@ -887,8 +889,9 @@ function formatDate(timestamp: number): string {
     opacity: 1;
   }
 
+  /* Destructive intent — attention red on hover (REDESIGN.md §1) */
   .card-menu:hover {
-    color: var(--nc-text);
+    color: var(--nc-coral);
     background: var(--nc-surface-3);
   }
 }

@@ -123,7 +123,7 @@ function saveAvatar() {
   <div class="tab-content">
     <!-- PROFILE Section -->
     <div class="settings-section">
-      <span class="section-label">01 — {{ t('settings.personal.profile').toLowerCase() }}</span>
+      <span class="section-label">{{ t('settings.personal.profile').toLowerCase() }}</span>
 
       <!-- Avatar + Name + Email row -->
       <div class="setting-row profile-row">
@@ -214,7 +214,7 @@ function saveAvatar() {
 
     <!-- PREFERENCES Section -->
     <div class="settings-section">
-      <span class="section-label">02 — {{ t('settings.personal.preferences').toLowerCase() }}</span>
+      <span class="section-label">{{ t('settings.personal.preferences').toLowerCase() }}</span>
 
       <!-- Language / Jezik -->
       <div class="setting-row">

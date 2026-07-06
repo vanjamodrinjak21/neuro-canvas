@@ -61,7 +61,7 @@ watch(() => props.visible, (v) => {
         <button class="mms-handle" type="button" :aria-label="t('mobile.more.close')" @click="emit('close')">
           <span class="mms-handle-bar" />
         </button>
-        <span class="mms-eyebrow">{{ t('mobile.more.eyebrow', { n: 9 }) }}</span>
+        <span class="mms-eyebrow">{{ t('mobile.more.eyebrow') }}</span>
 
         <div class="mms-group">
           <button class="mms-row" type="button" @click="dispatch('generate-map')">

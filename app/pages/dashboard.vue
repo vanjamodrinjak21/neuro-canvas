@@ -781,11 +781,13 @@ async function createFromTemplate(template: typeof templates.value[0]) {
                     <span>{{ $t('maps.edited_prefix') }} {{ formatDate(map.updatedAt) }}</span>
                   </p>
                 </div>
-                <button type="button" class="dcard-menu" :title="$t('dashboard.delete_confirm.delete')" @click="deleteMap(map.id, $event)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <circle cx="12" cy="5" r="1" />
-                    <circle cx="12" cy="12" r="1" />
-                    <circle cx="12" cy="19" r="1" />
+                <button type="button" class="dcard-menu" :title="$t('dashboard.delete_confirm.delete')" :aria-label="$t('dashboard.delete_confirm.delete')" @click="deleteMap(map.id, $event)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" x2="10" y1="11" y2="17" />
+                    <line x1="14" x2="14" y1="11" y2="17" />
                   </svg>
                 </button>
               </div>
@@ -797,7 +799,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
             class="dshow-more"
             @click="showAllMaps = !showAllMaps"
           >
-            <span>{{ showAllMaps ? 'Show less' : `Show more (${sortedMaps.length - visibleLimit} more)` }}</span>
+            <span>{{ showAllMaps ? $t('dashboard.sections.show_less') : $t('dashboard.sections.show_more', { n: sortedMaps.length - visibleLimit }) }}</span>
             <svg :class="{ flipped: showAllMaps }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -1294,7 +1296,8 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .dcard-menu:hover { background: var(--nc-surface-3); color: var(--nc-text); }
+  /* Destructive intent — attention red on hover (REDESIGN.md §1) */
+  .dcard-menu:hover { background: var(--nc-surface-3); color: var(--nc-coral); }
 }
 
 /* Show more */
@@ -2214,18 +2217,14 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     color: var(--nc-text-secondary);
     display: flex; gap: 4px;
   }
-  /* Chevron glyph — alpha mask painted with the dim-ink token */
+  /* Delete action stays a delete glyph — no navigation-chevron disguise
+     (the old mask implied "open" on a destructive button, AER-76). */
   .dcard-menu {
-    flex-shrink: 0; width: 16px; height: 16px;
-    border: none; padding: 0;
-    color: var(--nc-text-dim); cursor: pointer;
-    background-color: var(--nc-text-dim);
-    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
-    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
-    -webkit-mask-size: contain; mask-size: contain;
-    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    flex-shrink: 0; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; padding: 0;
+    color: var(--nc-text-secondary); cursor: pointer;
   }
-  .dcard-menu svg { display: none; }
 
   /* Hide AI banner / drow-2 on mobile, KEEP overview */
   .dai-banner, .drow-2 { display: none; }

@@ -7,7 +7,7 @@
         },
         "header": {
             "your_maps": "Va\u0161e mape",
-            "eyebrow": "01 \u2014 radni prostor"
+            "eyebrow": "radni prostor"
         },
         "buttons": {
             "ai_generate": "AI generiranje",
@@ -18,6 +18,8 @@
         "sections": {
             "recent_maps": "Nedavne mape",
             "recent_count": "NEDAVNO \u00b7 {current} OD {total}",
+            "show_more": "Prika\u017ei jo\u0161 {n}",
+            "show_less": "Prika\u017ei manje",
             "sort_by": "Sortiraj po",
             "recent": "Nedavno",
             "a_z": "A-\u017d"
@@ -32,7 +34,7 @@
         },
         "overview": {
             "title": "Pregled",
-            "eyebrow": "02 \u2014 pregled",
+            "eyebrow": "pregled",
             "period": "zadnjih 30 dana",
             "last_30_days": "Zadnjih 30 dana",
             "total_maps": "Ukupno mapa",

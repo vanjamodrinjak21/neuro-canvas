@@ -11,12 +11,12 @@
             "account": "Ra\u010dun"
         },
         "section_labels": {
-            "appearance": "01 \u2014 izgled",
-            "canvas": "02 \u2014 platno",
-            "updates": "03 \u2014 nadogradnje",
-            "default_provider": "01 \u2014 zadani davatelj",
-            "api_keys": "02 \u2014 API klju\u010devi",
-            "local_models": "03 \u2014 lokalni modeli"
+            "appearance": "izgled",
+            "canvas": "platno",
+            "updates": "nadogradnje",
+            "default_provider": "zadani davatelj",
+            "api_keys": "API klju\u010devi",
+            "local_models": "lokalni modeli"
         },
         "general": {
             "appearance": "Izgled",
@@ -118,9 +118,9 @@
             "delete_confirmation_placeholder": "OBRIŠI MOJ RAČUN",
             "current_password": "Trenutna lozinka",
             "new_password": "Nova lozinka",
-            "section_account": "01 — račun",
-            "section_security": "02 — sigurnost",
-            "section_danger": "03 — opasna zona",
+            "section_account": "račun",
+            "section_security": "sigurnost",
+            "section_danger": "opasna zona",
             "email_label": "E-adresa",
             "email_desc": "E-adresa tvog računa",
             "not_set": "Nije postavljeno",

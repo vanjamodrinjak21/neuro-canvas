@@ -178,8 +178,18 @@
     "count_label_other": "{n} mapa",
     "nodes_count": "{n} čvorova",
     "edited_prefix": "Uređeno",
+    "empty_state": {
+      "title": "Još nema mapa",
+      "description": "Stvorite svoju prvu mapu za početak.",
+      "action": "Stvori mapu"
+    },
+    "no_results": {
+      "title": "Nijedna mapa ne odgovara pretrazi",
+      "description": "Pokušajte s drugim pojmom ili očistite pretragu da vidite sve mape.",
+      "clear": "Očisti pretragu"
+    },
     "header": {
-      "eyebrow": "02 — sve mape",
+      "eyebrow": "sve mape",
       "title_a": "Sve",
       "title_b": "o čemu si razmišljao."
     }

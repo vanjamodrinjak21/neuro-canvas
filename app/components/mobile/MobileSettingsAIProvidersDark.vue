@@ -161,7 +161,7 @@ function maskKey(type: string): string {
 
     <!-- Hero -->
     <div class="map-hero">
-      <span class="map-eyebrow">02 — {{ t('mobile.settingsAiProviders.eyebrow') }}</span>
+      <span class="map-eyebrow">{{ t('mobile.settingsAiProviders.eyebrow') }}</span>
       <h1 class="map-hero-line">
         <span class="map-hero-sans">{{ t('mobile.settingsAiProviders.heroLead') }}</span>
         <span class="map-hero-serif">{{ t('mobile.settingsAiProviders.heroAccent') }}</span>

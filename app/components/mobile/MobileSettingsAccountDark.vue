@@ -160,7 +160,7 @@ async function submitPassword() {
     </header>
 
     <div class="macc-hero">
-      <span class="macc-eyebrow">04 — {{ t('mobile.settingsAccount.eyebrowLabel') }}</span>
+      <span class="macc-eyebrow">{{ t('mobile.settingsAccount.eyebrowLabel') }}</span>
       <h1 class="macc-hero-line">
         <span class="macc-hero-sans">{{ t('mobile.settingsAccount.heroLineSans') }}</span>
         <span class="macc-hero-serif">{{ t('mobile.settingsAccount.heroLineSerif') }}</span>

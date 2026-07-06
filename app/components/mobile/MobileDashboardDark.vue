@@ -135,7 +135,7 @@ function onCapture() {
 
     <!-- 02. Editorial hero — mono breadcrumb + Welcome / Vanja. + inline stats -->
     <div class="mdash-hero">
-      <div class="mdash-eyebrow">01 — {{ t('common.nav.maps').toUpperCase() }}</div>
+      <div class="mdash-eyebrow">{{ t('common.nav.maps').toUpperCase() }}</div>
       <h1 class="mdash-hero-line">
         <span class="mdash-hero-sans">{{ t('mobile.dashboard.welcomeBack') }}</span>
         <span class="mdash-hero-serif">{{ resolveDisplayName(user, t('mobile.dashboard.fallbackName')).split(' ')[0] }}.</span>

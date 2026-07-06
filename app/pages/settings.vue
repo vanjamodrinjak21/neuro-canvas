@@ -762,7 +762,7 @@ function handleAccountClose() {
 
       <main class="settings-main">
         <div class="settings-header">
-          <span class="settings-eyebrow">04 — settings</span>
+          <span class="settings-eyebrow">{{ $t('settings.page.title') }}</span>
           <div class="settings-title-row">
             <h1 class="settings-title">
               {{ $t('settings.page.title') }}<span class="settings-title-italic">.</span>

@@ -57,7 +57,7 @@ const isApplePlatform = computed(() =>
 
     <!-- Editorial hero -->
     <div class="mset-hero">
-      <span class="mset-eyebrow">04 — {{ t('mobile.settings.eyebrow') }}</span>
+      <span class="mset-eyebrow">{{ t('mobile.settings.eyebrow') }}</span>
       <h1 class="mset-hero-line">
         <span class="mset-hero-sans">{{ t('mobile.settings.heroLineSans') }}</span>
         <span class="mset-hero-serif">{{ t('mobile.settings.heroLineSerif') }}</span>

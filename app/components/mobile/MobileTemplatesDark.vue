@@ -84,7 +84,7 @@ function categoryLabel(c: TemplateCategory): string {
 
     <!-- Editorial hero -->
     <div class="mtpl-hero">
-      <span class="mtpl-eyebrow">03 — {{ t('mobile.templates.eyebrow') }}</span>
+      <span class="mtpl-eyebrow">{{ t('mobile.templates.eyebrow') }}</span>
       <h1 class="mtpl-hero-line">
         <span class="mtpl-hero-sans">{{ t('mobile.templates.heroSans') }}</span>
         <span class="mtpl-hero-serif">{{ t('mobile.templates.heroSerif') }}</span>

@@ -102,7 +102,7 @@ async function manualUpdateCheck() {
 
     <!-- Editorial hero -->
     <div class="mgen-hero">
-      <span class="mgen-eyebrow">01 — {{ t('mobile.settingsGeneral.eyebrowGeneral') }}</span>
+      <span class="mgen-eyebrow">{{ t('mobile.settingsGeneral.eyebrowGeneral') }}</span>
       <h1 class="mgen-hero-line">
         <span class="mgen-hero-sans">{{ t('mobile.settingsGeneral.heroSans') }}</span>
         <span class="mgen-hero-serif">{{ t('mobile.settingsGeneral.heroSerif') }}</span>

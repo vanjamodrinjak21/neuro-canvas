@@ -62,7 +62,7 @@ const localeLabel = computed(() => {
     </header>
 
     <div class="mper-hero">
-      <span class="mper-eyebrow">03 — {{ t('mobile.settingsPersonal.eyebrow') }}</span>
+      <span class="mper-eyebrow">{{ t('mobile.settingsPersonal.eyebrow') }}</span>
       <h1 class="mper-hero-line">
         <span class="mper-hero-sans">{{ t('mobile.settingsPersonal.heroLineSans') }}</span>
         <span class="mper-hero-serif">{{ t('mobile.settingsPersonal.heroLineSerif') }}</span>
