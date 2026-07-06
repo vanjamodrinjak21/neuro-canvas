@@ -205,7 +205,7 @@ function getNodeColor(node: Node): string {
         <!-- AI Insights -->
         <section v-if="aiMeta?.inferredDomain || aiMeta?.prerequisites?.length" class="detail-panel__section">
           <div class="detail-panel__section-header">
-            <span class="i-lucide-brain detail-panel__section-icon" />
+            <span class="i-nc-ai-mark detail-panel__section-icon" />
             <span class="detail-panel__section-label">{{ $t('canvas.node_properties.ai_insights') }}</span>
           </div>
           <div v-if="aiMeta?.inferredDomain" class="detail-panel__insight-row">

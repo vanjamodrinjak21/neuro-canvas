@@ -1172,7 +1172,7 @@ const contextMenuItems = computed<ContextMenuItem[]>(() => {
           { label: t('canvas.context_menu.color_green'), icon: 'i-lucide-circle', action: () => changeNodeColor('#4ADE80') }
         ]
       },
-      { label: t('canvas.context_menu.smart_expand'), icon: 'i-lucide-waypoints', action: () => handleSmartExpand() },
+      { label: t('canvas.context_menu.smart_expand'), icon: 'i-nc-ai-mark', action: () => handleSmartExpand() },
       { label: t('canvas.context_menu.view_backlinks'), icon: 'i-lucide-link', shortcut: '⌘B', action: () => handleViewBacklinks() },
       { label: t('canvas.context_menu.open_local_graph'), icon: 'i-lucide-git-branch', action: () => handleOpenLocalGraph() },
       { type: 'separator' },

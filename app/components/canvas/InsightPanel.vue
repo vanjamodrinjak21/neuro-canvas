@@ -218,7 +218,7 @@ function getActionText(insight: Insight): string {
           <span
             :class="[
               'text-sm',
-              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-pulse' : 'i-lucide-scan-eye'
+              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-pulse' : 'i-nc-ai-mark'
             ]"
           />
           <span>{{ $t('canvas.insight_panel.ai_analyze') }}</span>
@@ -227,7 +227,7 @@ function getActionText(insight: Insight): string {
 
       <!-- Empty state -->
       <div v-if="insights.length === 0 && !insightEngine.isAnalyzing.value" class="nc-insight-empty">
-        <span class="i-lucide-brain text-2xl mb-2 text-nc-ink-muted" />
+        <span class="i-nc-ai-mark text-2xl mb-2 text-nc-ink-muted" />
         <p v-if="semanticStore.nodesWithEmbeddings.length < 3">
           {{ $t('canvas.insight_panel.add_more_nodes') }}
         </p>

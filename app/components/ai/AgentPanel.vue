@@ -70,7 +70,7 @@ function handleEnd() {
     <!-- Header -->
     <div class="nc-agent-header">
       <span class="flex items-center gap-2">
-        <span class="i-lucide-bot text-sm text-[#A78BFA]" />
+        <span class="i-nc-ai-mark text-sm text-nc-accent" />
         <span class="font-semibold text-xs text-[#FAFAFA]">AI Agent</span>
       </span>
       <div class="flex items-center gap-2">
@@ -89,7 +89,7 @@ function handleEnd() {
 
     <!-- Not started state -->
     <div v-if="!agent.isActive.value" class="nc-agent-start">
-      <span class="i-lucide-bot text-3xl text-[#444448] mb-3" />
+      <span class="i-nc-ai-mark text-3xl text-nc-ink-muted mb-3" />
       <p class="text-xs text-[#666670] mb-3 text-center">
         Start a conversation about your map. The AI agent can suggest additions, connections, and restructuring.
       </p>

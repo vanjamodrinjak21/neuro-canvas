@@ -5,6 +5,7 @@
  * Renders top bar + editorial header card + Editor/Graph mode pill + AI FAB.
  * The body (MarkdownEditorView or graph canvas) renders separately below.
  */
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 interface Props {
   title: string
@@ -199,10 +200,7 @@ onBeforeUnmount(() => {
       @click="emit('generate-map')"
     >
       <span class="medc-genbar-icon" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
-          <path d="M19 17L19.7 19L21.5 19.5L19.7 20L19 22L18.3 20L16.5 19.5L18.3 19L19 17Z" />
-        </svg>
+        <NcAiMark :size="14" />
       </span>
       <span class="medc-genbar-label">{{ t('mobile.editor.generateLabel') }}</span>
       <span class="medc-genbar-meta">{{ t('mobile.editor.generateMeta') }}</span>

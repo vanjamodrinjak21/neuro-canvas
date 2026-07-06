@@ -78,7 +78,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
       <!-- Empty state -->
       <template v-else>
         <div class="ai-panel__empty">
-          <span class="i-lucide-list-tree ai-panel__empty-icon" />
+          <span class="i-nc-ai-mark ai-panel__empty-icon" />
           <p class="ai-panel__empty-text">
             {{ selectedNode ? $t('canvas.ai_suggestions.no_suggestions') : $t('canvas.ai_suggestions.select_node_first') }}
           </p>
@@ -87,7 +87,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
             class="ai-panel__generate-btn"
             @click="dispatch({ type: 'ai:smart-expand' })"
           >
-            <span class="i-lucide-waypoints" />
+            <span class="i-nc-ai-mark" />
             {{ $t('canvas.ai_suggestions.generate_ideas') }}
           </button>
           <button
@@ -95,7 +95,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
             class="ai-panel__generate-btn"
             @click="dispatch({ type: 'ai:generate-map' })"
           >
-            <span class="i-lucide-map" />
+            <span class="i-nc-ai-mark" />
             {{ $t('canvas.ai_suggestions.generate_map_from_topic') }}
           </button>
         </div>

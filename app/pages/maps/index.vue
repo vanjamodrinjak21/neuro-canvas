@@ -931,7 +931,8 @@ function formatDate(timestamp: number): string {
   justify-content: center;
   background: none;
   border: none;
-  color: var(--nc-text-dim);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
   cursor: pointer;
   border-radius: 0.35rem;
   flex-shrink: 0;
@@ -1308,7 +1309,7 @@ function formatDate(timestamp: number): string {
     flex-shrink: 0; width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
     background: none; border: none; padding: 0;
-    color: var(--nc-text-dim); cursor: pointer; opacity: 1;
+    color: var(--nc-text-secondary); cursor: pointer; opacity: 1;
     border-radius: var(--nc-radius-sm);
   }
 

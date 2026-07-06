@@ -2,6 +2,7 @@
 import { useUserStore } from '~/stores/userStore'
 import { useGuestMode } from '~/composables/useGuestMode'
 import { resolveDisplayName, resolveInitials } from '~/utils/userDisplay'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 const { t } = useI18n()
 
@@ -263,9 +264,7 @@ const palette = useCommandPalette()
           <ul class="ladder-list">
             <li class="ladder-item is-next">
               <span class="ladder-icon ladder-icon--ai">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M6 1 L7.5 4.5 L11 6 L7.5 7.5 L6 11 L4.5 7.5 L1 6 L4.5 4.5 Z" />
-                </svg>
+                <NcAiMark :size="12" />
               </span>
               <span class="ladder-label">{{ $t('common.sidebar.upgrade_ladder.item_ai_node') }}</span>
               <span class="ladder-arrow">→</span>
@@ -466,7 +465,8 @@ const palette = useCommandPalette()
   border: none;
   background: none;
   border-radius: var(--nc-radius-sm);
-  color: var(--nc-text-muted);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
   cursor: pointer;
   flex-shrink: 0;
   transition: color var(--nc-duration-fast) var(--nc-ease),
@@ -531,7 +531,7 @@ const palette = useCommandPalette()
   background: var(--nc-chip-bg);
   border: 1px solid var(--nc-border);
   border-radius: var(--nc-radius-md);
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
   font-size: calc(14px * var(--nc-text-scale, 1));
   cursor: pointer;
   transition: color var(--nc-duration-fast) var(--nc-ease),
@@ -547,7 +547,7 @@ const palette = useCommandPalette()
 
 .search-icon {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 
@@ -694,7 +694,7 @@ const palette = useCommandPalette()
   border-radius: 0.35rem;
   border: none;
   background: none;
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
   cursor: pointer;
   transition: background-color var(--nc-duration-fast) var(--nc-ease),
               color var(--nc-duration-fast) var(--nc-ease);
@@ -1070,7 +1070,7 @@ const palette = useCommandPalette()
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
   transition: color var(--nc-duration-fast) var(--nc-ease),
               background-color var(--nc-duration-fast) var(--nc-ease),

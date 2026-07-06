@@ -177,7 +177,8 @@ function isActive(path: string): boolean {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--nc-text-dim);
+  /* Mono micro-label grammar (REDESIGN.md §4) — secondary, not dim */
+  color: var(--nc-text-secondary);
   user-select: none;
 }
 
@@ -211,14 +212,15 @@ function isActive(path: string): boolean {
   font-family: 'Inter', var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-text-muted);
+  /* Interactive nav rest ≥ the 0.62 tier (AER-76 chrome visibility) */
+  color: var(--nc-text-secondary);
   text-decoration: none;
   border-left: 2px solid transparent;
   transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .docs-sidebar__link:hover {
-  color: var(--nc-text-secondary);
+  color: var(--nc-text);
   background: rgba(255, 255, 255, 0.03);
 }
 

@@ -6,6 +6,7 @@ import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useMapStore } from '~/stores/mapStore'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { userFriendlyError } from '~/utils/userFriendlyError'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 definePageMeta({
   layout: false,
@@ -361,9 +362,7 @@ onMounted(() => {
               {{ $t('templates.detail.use_template') }}
             </button>
             <button class="action-btn secondary" @click="showAdaptModal = true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-              </svg>
+              <NcAiMark :size="16" />
               {{ $t('templates.detail.ai_adapt') }}
             </button>
           </div>

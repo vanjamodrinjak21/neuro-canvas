@@ -92,7 +92,7 @@ const showPhysics = ref(false)
             'flex-1 py-2 px-3 rounded-nc-md text-sm font-medium nc-anim cursor-pointer active:scale-97',
             options.mode === 'global'
               ? 'bg-nc-accent/10 text-nc-accent-text border border-nc-accent/25'
-              : 'bg-nc-chip text-nc-ink-muted border border-nc-border hover:bg-nc-surface-3 hover:text-nc-ink'
+              : 'bg-nc-chip text-nc-ink-soft border border-nc-border hover:bg-nc-surface-3 hover:text-nc-ink'
           ]"
           @click="setMode('global')"
         >
@@ -104,7 +104,7 @@ const showPhysics = ref(false)
             'flex-1 py-2 px-3 rounded-nc-md text-sm font-medium nc-anim cursor-pointer active:scale-97',
             options.mode === 'local'
               ? 'bg-nc-accent/10 text-nc-accent-text border border-nc-accent/25'
-              : 'bg-nc-chip text-nc-ink-muted border border-nc-border hover:bg-nc-surface-3 hover:text-nc-ink'
+              : 'bg-nc-chip text-nc-ink-soft border border-nc-border hover:bg-nc-surface-3 hover:text-nc-ink'
           ]"
           @click="setMode('local')"
         >
@@ -139,7 +139,7 @@ const showPhysics = ref(false)
     <div class="p-4 border-b border-nc-border">
       <div class="nc-label mb-2">{{ $t('canvas.graph_controls_panel.search_label') }}</div>
       <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search text-nc-ink-muted" />
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search text-nc-ink-soft" />
         <input
           v-model="searchQuery"
           type="text"
@@ -157,7 +157,7 @@ const showPhysics = ref(false)
       >
         <span class="nc-label">{{ $t('canvas.graph_controls_panel.physics') }}</span>
         <span
-          :class="['i-lucide-chevron-down text-nc-ink-muted transition-transform duration-200 ease-[var(--nc-ease)]', showPhysics && 'rotate-180']"
+          :class="['i-lucide-chevron-down text-nc-ink-soft transition-transform duration-200 ease-[var(--nc-ease)]', showPhysics && 'rotate-180']"
         />
       </button>
 

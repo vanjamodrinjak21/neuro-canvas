@@ -122,7 +122,7 @@ watch(() => props.visible, (isVisible) => {
             <div class="nc-dialog-header">
               <div class="flex items-center gap-3">
                 <div class="nc-dialog-icon">
-                  <span class="i-lucide-map text-lg" />
+                  <span class="i-nc-ai-mark text-lg" />
                 </div>
                 <div>
                   <h2 class="nc-dialog-title">{{ $t('canvas.generate_map.title') }}</h2>
@@ -268,7 +268,7 @@ watch(() => props.visible, (isVisible) => {
                 @click="handleGenerate"
               >
                 <span v-if="isLoading" class="i-lucide-loader-2 animate-pulse" />
-                <span v-else class="i-lucide-grid-2x2-plus" />
+                <span v-else class="i-nc-ai-mark" />
                 <span>{{ isLoading ? $t('canvas.generate_map.generating') : $t('canvas.generate_map.generate') }}</span>
               </button>
             </div>

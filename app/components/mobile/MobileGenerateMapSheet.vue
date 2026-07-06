@@ -8,6 +8,8 @@
  *   "streaming" — live AI output scrolls in a soft surface block,
  *                 with shimmer progress bar based on tokens received.
  */
+import NcAiMark from '~/components/ui/NcAiMark.vue'
+
 interface Props {
   visible: boolean
   isGenerating: boolean
@@ -128,9 +130,7 @@ watch(() => props.streamingText, () => {
             :disabled="!topic.trim() || isGenerating"
             @click="onSubmit"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
-            </svg>
+            <NcAiMark :size="14" />
             <span>{{ t('mobile.generate.generateButton') }}</span>
           </button>
         </template>

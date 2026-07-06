@@ -192,7 +192,7 @@ const navItems = computed<PaletteItem[]>(() => [
 
 const actionItems = computed<PaletteItem[]>(() => [
   { id: 'act-new-map', group: 'actions', label: t('command_palette.actions.new_map'), icon: 'i-lucide-plus', keywords: 'create blank new map', run: createNewMap },
-  { id: 'act-generate', group: 'actions', label: t('command_palette.actions.generate_map'), icon: 'i-lucide-waypoints', keywords: 'ai generate create', run: () => go('/dashboard') },
+  { id: 'act-generate', group: 'actions', label: t('command_palette.actions.generate_map'), icon: 'i-nc-ai-mark', keywords: 'ai generate create', run: () => go('/dashboard') },
   { id: 'act-upload', group: 'actions', label: t('command_palette.actions.upload_document'), icon: 'i-lucide-upload', keywords: 'document pdf upload import file', run: () => go('/documents') },
 ])
 
@@ -285,7 +285,7 @@ const view = computed<{ groups: ResultGroup[]; flat: ScoredItem[] }>(() => {
         id: 'act-generate-query',
         group: 'generate',
         label: t('command_palette.actions.generate_query', { query: q }),
-        icon: 'i-lucide-waypoints',
+        icon: 'i-nc-ai-mark',
         run: generateFromQuery,
       },
       ranges: [],
@@ -504,7 +504,8 @@ defineExpose({ open, close })
 
 .nc-cmdk-search-icon {
   font-size: calc(18px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 
@@ -586,7 +587,8 @@ defineExpose({ open, close })
   font-size: calc(16px * var(--nc-text-scale, 1));
   border-radius: var(--nc-radius-sm);
   background: var(--nc-chip-bg);
-  color: var(--nc-text-muted);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
 }
 
 /* Per-group accent tint (predefined classes — no inline styles).

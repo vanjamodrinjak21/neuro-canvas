@@ -41,7 +41,7 @@ onMounted(() => {
 
         <!-- Hero icon -->
         <div class="nc-empty-icon">
-          <span class="i-lucide-brain text-2xl" />
+          <span class="i-nc-ai-mark text-2xl" />
         </div>
 
         <h3 class="nc-empty-title">{{ $t('canvas.empty_guide.title') }}</h3>
@@ -58,7 +58,7 @@ onMounted(() => {
           </button>
 
           <button class="nc-empty-action ai" @click="emit('generate-map'); dismiss()">
-            <span class="i-lucide-grid-2x2-plus text-sm" />
+            <span class="i-nc-ai-mark text-sm" />
             <span>{{ $t('canvas.empty_guide.generate_with_ai') }}</span>
           </button>
         </div>

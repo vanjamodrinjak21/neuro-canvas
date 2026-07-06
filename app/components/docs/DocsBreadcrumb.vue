@@ -173,7 +173,8 @@ function formatSegment(segment: string): string {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--nc-text-muted);
+  /* Interactive rest ≥ the 0.62 tier (AER-76 chrome visibility) */
+  color: var(--nc-text-secondary);
   text-decoration: none;
   transition: color var(--nc-duration-fast) ease;
   line-height: 1;

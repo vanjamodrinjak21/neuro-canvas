@@ -8,6 +8,7 @@ import { useGenerationQueue } from '~/composables/useGenerationQueue'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { safeImageUrl } from '~/utils/safeUrl'
 import { resolveDisplayName, resolveAvatarInitials } from '~/utils/userDisplay'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 import type { GenerationTone } from '~/types'
 
 const { t, locale: currentLocale } = useI18n()
@@ -680,11 +681,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
           </div>
           <div class="dheader-actions">
             <button type="button" class="dbtn dbtn-outline" @click="showAIModal = true">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a4.5 4.5 0 0 0 0 9 4.5 4.5 0 0 0 0-9z" />
-                <path d="M16 15H8l-4 6h16l-4-6z" />
-                <path d="M12 11v4" />
-              </svg>
+              <NcAiMark :size="15" />
               {{ $t('dashboard.buttons.ai_generate') }}
             </button>
             <button type="button" class="dbtn dbtn-primary" :disabled="isCreatingMap" @click="createNewMap">
@@ -714,9 +711,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
             {{ $t('dashboard.buttons.new_map') }}
           </button>
           <button class="m-action" @click="showAIModal = true">
-            <svg class="m-action-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 3v4M3 5h4M19 17v4M17 19h4M14 4l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" />
-            </svg>
+            <NcAiMark :size="18" />
             {{ $t('dashboard.buttons.ai_generate') }}
           </button>
         </div>
@@ -874,10 +869,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
           <!-- AI Quick Start -->
           <button class="dai-banner" @click="showAIModal = true">
             <div class="dai-banner-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v2m0 14v2m-7-9H3m18 0h-2m-2.3-5.7l-1.4 1.4m-7.6 7.6l-1.4 1.4m0-10.4l1.4 1.4m7.6 7.6l1.4 1.4" />
-                <circle cx="12" cy="12" r="4" />
-              </svg>
+              <NcAiMark :size="18" />
             </div>
             <div class="dai-banner-body">
               <span class="dai-banner-title">{{ $t('dashboard.ai_banner.title') }}</span>
@@ -1343,7 +1335,8 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   border: none;
   padding: 4px;
   border-radius: 4px;
-  color: var(--nc-text-dim);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
   cursor: pointer;
   flex-shrink: 0;
   transition: background-color var(--nc-duration-press) var(--nc-ease),

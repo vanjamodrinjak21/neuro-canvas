@@ -187,7 +187,7 @@ defineExpose({ focusTitleInput })
           :title="hasSelection ? '' : $t('canvas.ai.expand_whole_map')"
           @click="emit('smart-expand')"
         >
-          <span class="i-lucide-waypoints" :class="isAILoading ? 'opacity-60' : ''" />
+          <span class="i-nc-ai-mark" :class="isAILoading ? 'opacity-60' : ''" />
           {{ $t('canvas.topbar.ai_expand') }}
         </button>
 
@@ -448,7 +448,8 @@ defineExpose({ focusTitleInput })
   background: none;
   border: 1px solid transparent;
   border-radius: 6px;
-  color: var(--nc-ink-muted);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-ink-soft);
   font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;

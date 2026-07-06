@@ -5,6 +5,7 @@
  */
 import { safeImageUrl } from '~/utils/safeUrl'
 import { resolveDisplayName, resolveDisplayEmail, isHiddenAppleUser } from '~/utils/userDisplay'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 const { t } = useI18n()
 
@@ -150,10 +151,7 @@ const isApplePlatform = computed(() =>
 
         <button class="mset-row" type="button" @click="emit('open-ai-providers')">
           <div class="mset-row-icon mset-row-icon--mint">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
-              <path d="M19 17L19.7 19L21.5 19.5L19.7 20L19 22L18.3 20L16.5 19.5L18.3 19L19 17Z" />
-            </svg>
+            <NcAiMark :size="18" />
           </div>
           <div class="mset-row-text mset-row-text--ai">
             <div class="mset-row-titlebar">

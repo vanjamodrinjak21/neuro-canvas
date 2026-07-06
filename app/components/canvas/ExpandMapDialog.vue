@@ -104,7 +104,7 @@ watch(() => props.visible, (isVisible) => {
             <div class="nc-dialog-header">
               <div class="flex items-center gap-3">
                 <div class="nc-dialog-icon">
-                  <span class="i-lucide-waypoints text-lg" />
+                  <span class="i-nc-ai-mark text-lg" />
                 </div>
                 <div>
                   <h2 class="nc-dialog-title">{{ $t('canvas.expand_map.title') }}</h2>
@@ -197,7 +197,7 @@ watch(() => props.visible, (isVisible) => {
                 @click="handleConfirm"
               >
                 <span v-if="isLoading" class="i-lucide-loader-2 animate-pulse" />
-                <span v-else class="i-lucide-waypoints" />
+                <span v-else class="i-nc-ai-mark" />
                 <span>{{ isLoading ? $t('canvas.expand_map.expanding') : $t('canvas.expand_map.expand') }}</span>
               </button>
             </div>

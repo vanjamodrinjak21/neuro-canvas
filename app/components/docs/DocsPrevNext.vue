@@ -105,12 +105,13 @@ defineProps<Props>()
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--nc-text-muted);
+  /* Mono micro-label grammar (§4) + interactive-card icon at the 0.62 tier */
+  color: var(--nc-text-secondary);
   line-height: 1;
 }
 
 .docs-prev-next__label svg {
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 

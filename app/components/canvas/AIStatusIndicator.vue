@@ -16,7 +16,7 @@ const statusConfig = computed<Record<AIStatus, {
   idle: {
     color: 'var(--nc-text-muted)',
     bgColor: 'var(--nc-chip-bg)',
-    icon: 'i-lucide-brain',
+    icon: 'i-nc-ai-mark',
     label: t('canvas.ai_status.idle')
   },
   'loading-model': {
@@ -34,7 +34,7 @@ const statusConfig = computed<Record<AIStatus, {
   ready: {
     color: 'var(--nc-accent-text)',
     bgColor: 'rgba(var(--nc-accent-rgb), 0.08)',
-    icon: 'i-lucide-brain',
+    icon: 'i-nc-ai-mark',
     label: t('canvas.ai_status.ready')
   },
   error: {

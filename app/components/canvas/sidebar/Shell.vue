@@ -38,7 +38,7 @@ watch(() => props.selectedNode, (node) => {
 const tabs = computed<{ id: SidebarTab; label: string; icon: string }[]>(() => [
   { id: 'explorer', label: t('canvas.sidebar.tab_explorer'), icon: 'i-lucide-search' },
   { id: 'properties', label: t('canvas.sidebar.tab_properties'), icon: 'i-lucide-layout-dashboard' },
-  { id: 'ai', label: t('canvas.sidebar.tab_ai'), icon: 'i-lucide-waypoints' },
+  { id: 'ai', label: t('canvas.sidebar.tab_ai'), icon: 'i-nc-ai-mark' },
 ])
 
 // Sidebar width resize

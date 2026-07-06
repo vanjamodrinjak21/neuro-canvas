@@ -173,7 +173,7 @@ function onChipClick(mapId: string, event: Event) {
         class="chip chip--generated"
         @click="onChipClick(generatedMap.id, $event)"
       >
-        <span class="i-lucide-waypoints chip-icon" />
+        <span class="i-nc-ai-mark chip-icon" />
         <span class="chip-text">{{ t('documents.chips.generated_map', { title: generatedMap.title }) }}</span>
       </button>
       <button

@@ -40,7 +40,7 @@ const positionVars = computed(() => ({
       :aria-label="$t('canvas.multiselect.ai_expand_tooltip')"
       @click="emit('ai-expand')"
     >
-      <span class="i-lucide-waypoints text-sm" />
+      <span class="i-nc-ai-mark text-sm" />
     </button>
 
     <button

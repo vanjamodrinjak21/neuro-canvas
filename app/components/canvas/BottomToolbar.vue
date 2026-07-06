@@ -211,18 +211,15 @@ function selectTool(tool: CanvasTool) {
   cursor: not-allowed;
 }
 
-/* ── Semantic settings gear ── */
+/* ── Semantic settings gear ──
+   No opacity dimming: interactive icons rest at the 0.62 tier
+   (WCAG 1.4.11 — AER-76 icon visibility); hover comes from
+   .nc-bottom-tool-btn's color/background shift. */
 .nc-settings-gear {
   width: 24px !important;
   height: 24px !important;
   min-width: 24px !important;
   padding: 0 !important;
-  opacity: 0.5;
-  transition: opacity var(--nc-duration-fast) var(--nc-ease);
-}
-
-.nc-settings-gear:hover {
-  opacity: 1;
 }
 
 /* ── Semantic status indicator ── */

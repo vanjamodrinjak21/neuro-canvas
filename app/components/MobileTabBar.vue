@@ -104,7 +104,8 @@ function onTabTap() {
     justify-content: center;
     width: 44px;
     height: 44px;
-    color: var(--nc-text-muted);
+    /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+    color: var(--nc-text-secondary);
     text-decoration: none;
     cursor: pointer;
     flex-shrink: 0;

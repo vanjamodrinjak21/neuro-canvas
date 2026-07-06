@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { GenerationDepth, GenerationStyle } from '~/types'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 const props = withDefaults(defineProps<{
   open: boolean
@@ -60,9 +61,7 @@ watch(() => props.open, (val) => {
           <!-- Header -->
           <div class="modal-header">
             <div class="header-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-              </svg>
+              <NcAiMark :size="18" />
             </div>
             <div class="header-text">
               <h2 class="header-title">{{ $t('templates.ai_adapt_modal.title') }}</h2>
@@ -153,9 +152,7 @@ watch(() => props.open, (val) => {
           <div class="modal-footer">
             <button class="btn-ghost" :disabled="loading" @click="emit('close')">{{ $t('templates.ai_adapt_modal.cancel') }}</button>
             <button v-if="!loading" class="btn-primary" :disabled="!canGenerate" @click="handleGenerate">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-              </svg>
+              <NcAiMark :size="16" />
               {{ $t('templates.ai_adapt_modal.generate') }}
             </button>
           </div>

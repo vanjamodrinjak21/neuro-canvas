@@ -39,7 +39,7 @@ const actionLabels: Record<string, string> = {
   <div class="nc-action-card" :style="{ borderLeftColor: actionColors[action.type] || '#888890' }">
     <div class="nc-action-header">
       <span
-        :class="[actionIcons[action.type] || 'i-lucide-zap', 'text-sm']"
+        :class="[actionIcons[action.type] || 'i-nc-ai-mark', 'text-sm']"
         :style="{ color: actionColors[action.type] || '#888890' }"
       />
       <span class="nc-action-label">{{ actionLabels[action.type] || action.type }}</span>

@@ -302,7 +302,8 @@ function applyThemeChange() {
 }
 
 .docs-header__search-icon {
-  color: var(--nc-text-muted);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 
