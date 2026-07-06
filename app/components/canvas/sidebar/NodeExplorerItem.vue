@@ -28,6 +28,9 @@ const descriptionPreview = computed(() => {
   return notePreview.value
 })
 
+// Node dot follows the user-chosen node color (data, not chrome) via v-bind
+const dotColor = computed(() => props.node.style?.borderColor || 'var(--nc-border-active)')
+
 function handleDragStart(event: DragEvent) {
   if (!event.dataTransfer) return
   event.dataTransfer.setData('application/json', JSON.stringify({
@@ -46,10 +49,7 @@ function handleDragStart(event: DragEvent) {
     @click="emit('select', node.id)"
     @dragstart="handleDragStart"
   >
-    <span
-      class="explorer-item__dot"
-      :style="{ backgroundColor: node.style?.borderColor || 'var(--nc-border-active)' }"
-    />
+    <span class="explorer-item__dot" />
     <span class="explorer-item__content">
       <span class="explorer-item__label">{{ nodeLabel }}</span>
       <span v-if="descriptionPreview" class="explorer-item__notes">{{ descriptionPreview }}</span>
@@ -69,22 +69,25 @@ function handleDragStart(event: DragEvent) {
   background: transparent;
   border: none;
   cursor: grab;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--nc-ease), color 150ms var(--nc-ease);
   text-align: left;
 }
 
-.explorer-item:hover {
-  background: rgba(250, 250, 250, 0.03);
+@media (hover: hover) and (pointer: fine) {
+  .explorer-item:hover {
+    background: var(--nc-chip-bg);
+  }
 }
 
+/* Active row = accent tint + left marker (never color alone) */
 .explorer-item--active {
-  background: rgba(0, 210, 190, 0.06);
-  border-left: 2px solid #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.06);
+  border-left: 2px solid var(--nc-accent);
   padding-left: 22px;
 }
 
 .explorer-item--active .explorer-item__label {
-  color: #FAFAFA;
+  color: var(--nc-text);
 }
 
 .explorer-item:active {
@@ -96,8 +99,9 @@ function handleDragStart(event: DragEvent) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  background-color: v-bind(dotColor);
   flex-shrink: 0;
-  transition: transform 0.15s ease;
+  transition: transform 150ms var(--nc-ease);
 }
 
 .explorer-item:hover .explorer-item__dot {
@@ -113,25 +117,25 @@ function handleDragStart(event: DragEvent) {
 }
 
 .explorer-item__label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #D4D4D8;
+  color: var(--nc-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
-  transition: color 0.15s ease;
+  transition: color 150ms var(--nc-ease);
 }
 
 .explorer-item:hover .explorer-item__label {
-  color: #FAFAFA;
+  color: var(--nc-text);
 }
 
 .explorer-item__notes {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: #3F3F46;
+  color: var(--nc-text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -139,42 +143,13 @@ function handleDragStart(event: DragEvent) {
 }
 
 .explorer-item__count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: #3F3F46;
-  background: #18181B;
+  color: var(--nc-text-muted);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 0.4rem;
   flex-shrink: 0;
-}
-
-/* Light theme */
-:root.light .explorer-item:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-:root.light .explorer-item__label {
-  color: #3F3F46;
-}
-
-:root.light .explorer-item:hover .explorer-item__label {
-  color: #18181B;
-}
-
-:root.light .explorer-item__notes {
-  color: #A1A1AA;
-}
-
-:root.light .explorer-item__count {
-  background: #F4F4F5;
-  color: #A1A1AA;
-}
-
-:root.light .explorer-item--active {
-  background: rgba(0, 210, 190, 0.06);
-}
-
-:root.light .explorer-item--active .explorer-item__label {
-  color: #18181B;
 }
 </style>

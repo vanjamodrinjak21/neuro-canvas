@@ -75,8 +75,8 @@ const aiEnabled = ref(false)
   bottom: 0;
   padding: 8px 12px;
   padding-bottom: max(8px, env(safe-area-inset-bottom));
-  background: var(--nc-bg, #09090B);
-  border-top: 1px solid var(--nc-border, #1A1A1E);
+  background: var(--nc-bg, #050508);
+  border-top: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
   z-index: 100;
 }
 
@@ -85,9 +85,9 @@ const aiEnabled = ref(false)
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: var(--nc-surface, #111113);
+  background: var(--nc-surface, #0d0d11);
   border-radius: var(--nc-radius-xl, 16px);
-  border: 1px solid var(--nc-border, #1A1A1E);
+  border: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
 }
 
 .nc-outline-tool {
@@ -102,13 +102,15 @@ const aiEnabled = ref(false)
   color: var(--nc-text-soft, #A1A1AA);
   font-size: calc(18px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: all var(--nc-duration-fast) var(--nc-ease);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .nc-outline-tool:active:not(:disabled) {
-  background: var(--nc-surface-3, #18181B);
-  transform: scale(0.92);
+  background: var(--nc-surface-3, #1a1a20);
+  transform: scale(0.97);
 }
 
 .nc-outline-tool:disabled {
@@ -117,8 +119,8 @@ const aiEnabled = ref(false)
 }
 
 .nc-outline-tool.is-active {
-  color: var(--nc-accent, #00D2BE);
-  background: rgba(0, 210, 190, 0.08);
+  color: var(--nc-accent, #5EF2E8);
+  background: rgba(94, 242, 232, 0.08);
 }
 
 .nc-outline-tool--export {
@@ -128,7 +130,7 @@ const aiEnabled = ref(false)
 .nc-outline-tool-divider {
   width: 1px;
   height: 20px;
-  background: var(--nc-border, #1A1A1E);
+  background: var(--nc-border, rgba(244, 244, 248, 0.14));
   flex-shrink: 0;
 }
 </style>

@@ -7,7 +7,7 @@
         },
         "header": {
             "your_maps": "Your Maps",
-            "eyebrow": "01 — workspace"
+            "eyebrow": "workspace"
         },
         "buttons": {
             "ai_generate": "AI Generate",
@@ -18,6 +18,8 @@
         "sections": {
             "recent_maps": "Recent Maps",
             "recent_count": "RECENT · {current} OF {total}",
+            "show_more": "Show {n} more",
+            "show_less": "Show less",
             "sort_by": "Sort by",
             "recent": "Recent",
             "a_z": "A-Z"
@@ -32,7 +34,7 @@
         },
         "overview": {
             "title": "Overview",
-            "eyebrow": "02 — overview",
+            "eyebrow": "overview",
             "period": "last 30 days",
             "last_30_days": "Last 30 days",
             "total_maps": "Total maps",

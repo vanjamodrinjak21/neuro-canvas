@@ -107,7 +107,7 @@ function onCapture() {
 
 <template>
   <section class="mdash" :aria-label="t('mobile.dashboard.dashboardAria')">
-    <!-- 01. Top bar — brand mark + LIVE chip + avatar -->
+    <!-- 01. Top bar — brand mark + quick capture + avatar -->
     <header class="mdash-top">
       <div class="mdash-brand" aria-label="NeuroCanvas">
         <NcLogo :size="14" :container-size="26" :radius="6" />
@@ -135,7 +135,7 @@ function onCapture() {
 
     <!-- 02. Editorial hero — mono breadcrumb + Welcome / Vanja. + inline stats -->
     <div class="mdash-hero">
-      <div class="mdash-eyebrow">01 — {{ t('common.nav.maps').toUpperCase() }}</div>
+      <div class="mdash-eyebrow">{{ t('common.nav.maps').toUpperCase() }}</div>
       <h1 class="mdash-hero-line">
         <span class="mdash-hero-sans">{{ t('mobile.dashboard.welcomeBack') }}</span>
         <span class="mdash-hero-serif">{{ resolveDisplayName(user, t('mobile.dashboard.fallbackName')).split(' ')[0] }}.</span>
@@ -163,9 +163,9 @@ function onCapture() {
       <div class="mdash-skel mdash-skel-continue" aria-hidden="true">
         <div class="mdash-skel-thumb mdash-skel-shimmer" />
         <div class="mdash-skel-meta">
-          <div class="mdash-skel-line mdash-skel-shimmer" style="width: 35%;" />
-          <div class="mdash-skel-line mdash-skel-shimmer" style="width: 70%; height: 16px;" />
-          <div class="mdash-skel-line mdash-skel-shimmer" style="width: 45%;" />
+          <div class="mdash-skel-line mdash-skel-shimmer mdash-skel-line-a" />
+          <div class="mdash-skel-line mdash-skel-shimmer mdash-skel-line-b" />
+          <div class="mdash-skel-line mdash-skel-shimmer mdash-skel-line-c" />
         </div>
       </div>
       <div class="mdash-section">
@@ -176,16 +176,16 @@ function onCapture() {
       </div>
       <div class="mdash-list">
         <div v-for="n in 3" :key="`sk-${n}`" class="mdash-skel-row">
-          <div class="mdash-skel-thumb mdash-skel-shimmer" style="width: 44px; height: 44px;" />
+          <div class="mdash-skel-thumb mdash-skel-thumb-sm mdash-skel-shimmer" />
           <div class="mdash-skel-meta">
-            <div class="mdash-skel-line mdash-skel-shimmer" style="width: 60%;" />
-            <div class="mdash-skel-line mdash-skel-shimmer" style="width: 30%; height: 9px;" />
+            <div class="mdash-skel-line mdash-skel-shimmer mdash-skel-line-d" />
+            <div class="mdash-skel-line mdash-skel-shimmer mdash-skel-line-e" />
           </div>
         </div>
       </div>
     </template>
 
-    <!-- 03. Mint "Currently editing" card -->
+    <!-- 03. Accent "Currently editing" card -->
     <button
       v-if="!isLoading && continueMap"
       type="button"
@@ -194,15 +194,15 @@ function onCapture() {
     >
       <div class="mdash-continue-thumb">
         <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
-          <line x1="9" y1="11" x2="16" y2="16" stroke="rgba(9,9,11,0.55)" stroke-width="1.2" />
-          <line x1="23" y1="9" x2="16" y2="16" stroke="rgba(9,9,11,0.55)" stroke-width="1.2" />
-          <line x1="16" y1="16" x2="11" y2="23" stroke="rgba(9,9,11,0.55)" stroke-width="1.2" />
-          <line x1="16" y1="16" x2="22" y2="22" stroke="rgba(9,9,11,0.55)" stroke-width="1.2" />
-          <circle cx="9" cy="11" r="2" fill="#09090B" />
-          <circle cx="23" cy="9" r="2" fill="#09090B" />
-          <circle cx="16" cy="16" r="2.5" fill="#09090B" />
-          <circle cx="11" cy="23" r="2" fill="#09090B" />
-          <circle cx="22" cy="22" r="2" fill="#09090B" />
+          <line x1="9" y1="11" x2="16" y2="16" stroke-width="1.2" />
+          <line x1="23" y1="9" x2="16" y2="16" stroke-width="1.2" />
+          <line x1="16" y1="16" x2="11" y2="23" stroke-width="1.2" />
+          <line x1="16" y1="16" x2="22" y2="22" stroke-width="1.2" />
+          <circle cx="9" cy="11" r="2" />
+          <circle cx="23" cy="9" r="2" />
+          <circle cx="16" cy="16" r="2.5" />
+          <circle cx="11" cy="23" r="2" />
+          <circle cx="22" cy="22" r="2" />
         </svg>
       </div>
       <div class="mdash-continue-body">
@@ -214,7 +214,7 @@ function onCapture() {
       </div>
       <div class="mdash-continue-resume" aria-hidden="true">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5 3L9 7L5 11" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </div>
     </button>
@@ -228,7 +228,7 @@ function onCapture() {
       <button type="button" class="mdash-see-all" @click="emit('seeAll')">{{ t('mobile.dashboard.seeAll') }}</button>
     </div>
 
-    <!-- 05. Recent list — soft surface cards -->
+    <!-- 05. Recent list — flat surface rows + hairline -->
     <div v-if="!isLoading" class="mdash-list">
       <button
         v-for="m in recentRows"
@@ -239,15 +239,15 @@ function onCapture() {
       >
         <div class="mdash-row-thumb">
           <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-            <line x1="9" y1="11" x2="16" y2="16" stroke="#52525B" />
-            <line x1="23" y1="9" x2="16" y2="16" stroke="#52525B" />
-            <line x1="16" y1="16" x2="11" y2="23" stroke="#52525B" />
-            <line x1="16" y1="16" x2="22" y2="22" stroke="#52525B" />
-            <circle cx="9" cy="11" r="2" fill="#00D2BE" />
-            <circle cx="23" cy="9" r="2" fill="#A1A1AA" />
-            <circle cx="16" cy="16" r="2.5" fill="#FAFAFA" />
-            <circle cx="11" cy="23" r="2" fill="#A1A1AA" />
-            <circle cx="22" cy="22" r="2" fill="#A1A1AA" />
+            <line x1="9" y1="11" x2="16" y2="16" />
+            <line x1="23" y1="9" x2="16" y2="16" />
+            <line x1="16" y1="16" x2="11" y2="23" />
+            <line x1="16" y1="16" x2="22" y2="22" />
+            <circle cx="9" cy="11" r="2" />
+            <circle cx="23" cy="9" r="2" />
+            <circle cx="16" cy="16" r="2.5" />
+            <circle cx="11" cy="23" r="2" />
+            <circle cx="22" cy="22" r="2" />
           </svg>
         </div>
         <div class="mdash-row-meta">
@@ -255,7 +255,7 @@ function onCapture() {
           <span class="mdash-row-sub">{{ t('mobile.dashboard.nodesCount', { n: countOf(m.nodes) }) }} · {{ relTime(m.updatedAt) }}</span>
         </div>
         <svg class="mdash-row-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
 
@@ -265,7 +265,7 @@ function onCapture() {
       </div>
     </div>
 
-    <!-- 06. Floating mint FAB ( + new map ) -->
+    <!-- 06. Floating accent FAB ( + new map ) -->
     <button
       type="button"
       class="mdash-fab"
@@ -274,7 +274,7 @@ function onCapture() {
       @click="onNew"
     >
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M10 4V16M4 10H16" stroke="#09090B" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
       </svg>
     </button>
   </section>
@@ -282,18 +282,18 @@ function onCapture() {
 
 <style scoped>
 /* ──────────────────────────────────────────────────────────────────────
- * Tokens (mirrors Paper Try-Free / G13-0 / GJJ-0)
+ * Tokens — all values flow from tokens.css (REDESIGN.md §1/§2), so the
+ * component is theme-aware without per-mode override blocks.
  * ────────────────────────────────────────────────────────────────────── */
 .mdash {
   --mdash-bg: var(--nc-bg);
   --mdash-ink: var(--nc-ink);
   --mdash-body: var(--nc-ink-soft);
   --mdash-mute: var(--nc-ink-faint);
-  --mdash-mint: #00D2BE;
-  --mdash-surface: rgba(250, 250, 250, 0.04);
-  --mdash-surface-2: rgba(250, 250, 250, 0.06);
-  --mdash-stroke: rgba(250, 250, 250, 0.10);
-  --mdash-stroke-soft: rgba(250, 250, 250, 0.06);
+  --mdash-mint: var(--nc-accent);
+  --mdash-surface: var(--nc-chip-bg);
+  --mdash-stroke: var(--nc-border);
+  --mdash-stroke-soft: var(--nc-border-subtle);
 
   /* Pin the screen — header sticks, only the recent list scrolls, dock fixed */
   position: fixed;
@@ -304,7 +304,7 @@ function onCapture() {
   height: 100dvh;
   background: var(--mdash-bg);
   color: var(--mdash-ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -323,14 +323,8 @@ function onCapture() {
   box-sizing: border-box;
 }
 .mdash-brand { display: flex; align-items: center; gap: 10px; }
-.mdash-mark {
-  width: 26px; height: 26px;
-  border-radius: 7px;
-  display: block;
-  flex-shrink: 0;
-}
 .mdash-wordmark {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-weight: 400;
   font-size: calc(19px * var(--nc-text-scale, 1));
   line-height: 1;
@@ -344,55 +338,44 @@ function onCapture() {
 .mdash-top-right { display: flex; align-items: center; gap: 10px; }
 
 .mdash-capture {
+  position: relative;
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: 32px;
   border-radius: 999px;
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.30);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
   color: var(--mdash-mint);
   cursor: pointer;
-  transition: background 150ms ease, transform 120ms ease;
+  transition: background-color 150ms var(--nc-ease), border-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.mdash-capture:active { transform: scale(0.94); background: rgba(0, 210, 190, 0.18); }
-
-.mdash-live-chip {
-  display: flex; align-items: center; gap: 6px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.30);
+/* Expand hit area to the 44px minimum without growing the visual */
+.mdash-capture::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
-.mdash-live-dot {
-  width: 6px; height: 6px;
-  border-radius: 999px;
-  background: var(--mdash-mint);
-  animation: mdash-pulse 2.4s ease-in-out infinite;
-}
-@keyframes mdash-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-.mdash-live-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
-  letter-spacing: 0.08em;
-  color: var(--mdash-mint);
-}
+.mdash-capture:active { transform: scale(0.97); background: var(--nc-surface-3); }
 
 .mdash-avatar {
+  position: relative;
   width: 32px; height: 32px;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.06);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--mdash-stroke);
   display: flex; align-items: center; justify-content: center;
   color: var(--mdash-ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
   text-decoration: none;
-  overflow: hidden;
   flex-shrink: 0;
 }
-.mdash-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+/* Expand hit area to the 44px minimum (clipping lives on the img, not the link) */
+.mdash-avatar::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.mdash-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 999px; }
 
 /* ── 02. Editorial hero ──────────────────────────────────────────────── */
 .mdash-hero {
@@ -402,10 +385,11 @@ function onCapture() {
   box-sizing: border-box;
 }
 .mdash-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.12em;
-  color: var(--mdash-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .mdash-hero-line {
   display: flex; align-items: baseline; flex-wrap: wrap;
@@ -415,17 +399,17 @@ function onCapture() {
   font-weight: 500;
 }
 .mdash-hero-sans {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(34px * var(--nc-text-scale, 1)); line-height: 38px;
-  letter-spacing: -0.025em;
+  font-family: var(--nc-font-display);
+  font-weight: 700; font-size: calc(34px * var(--nc-text-scale, 1)); line-height: 38px;
+  letter-spacing: -0.02em;
   color: var(--mdash-ink);
 }
 .mdash-hero-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic; font-weight: 400;
   font-size: calc(44px * var(--nc-text-scale, 1)); line-height: 38px;
   letter-spacing: -0.02em;
-  color: var(--mdash-mint);
+  color: var(--nc-accent-text);
 }
 
 .mdash-stats {
@@ -434,12 +418,12 @@ function onCapture() {
 }
 .mdash-stat { display: flex; align-items: baseline; gap: 6px; }
 .mdash-stat-num {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mdash-ink);
 }
 .mdash-stat-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.08em;
   color: var(--mdash-mute);
@@ -450,30 +434,32 @@ function onCapture() {
   flex-shrink: 0;
 }
 
-/* ── 03. Mint "Currently editing" card ───────────────────────────────── */
+/* ── 03. Accent "Currently editing" card ─────────────────────────────── */
 .mdash-continue {
   display: flex; align-items: center; gap: 14px;
   margin: 28px 20px 0 20px;
   padding: 14px 16px;
   background: var(--mdash-mint);
   border: none;
-  border-radius: 18px;
+  border-radius: 0.5rem;
   cursor: pointer;
   text-align: left;
   width: auto;
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 120ms ease;
+  transition: transform 120ms var(--nc-ease);
 }
-.mdash-continue:active { transform: scale(0.98); }
+.mdash-continue:active { transform: scale(0.97); }
 
 .mdash-continue-thumb {
   width: 52px; height: 52px;
-  border-radius: 12px;
-  background: rgba(9, 9, 11, 0.12);
+  border-radius: 0.4rem;
+  background: rgba(var(--nc-bg-rgb), 0.12);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+.mdash-continue-thumb line { stroke: rgba(var(--nc-bg-rgb), 0.55); }
+.mdash-continue-thumb circle { fill: var(--nc-bg); }
 .mdash-continue-body {
   display: flex; flex-direction: column;
   flex: 1 1 0;
@@ -481,29 +467,31 @@ function onCapture() {
   min-width: 0;
 }
 .mdash-continue-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
-  letter-spacing: 0.12em;
-  color: rgba(9, 9, 11, 0.65);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(var(--nc-bg-rgb), 0.65);
 }
 .mdash-continue-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 600; font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
   letter-spacing: -0.015em;
-  color: #09090B;
+  color: var(--nc-bg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .mdash-continue-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 16px;
-  color: rgba(9, 9, 11, 0.65);
+  color: rgba(var(--nc-bg-rgb), 0.65);
 }
 .mdash-continue-resume {
   width: 36px; height: 36px;
   border-radius: 999px;
-  background: #09090B;
+  background: var(--nc-bg);
+  color: var(--nc-accent-text);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -517,24 +505,33 @@ function onCapture() {
 }
 .mdash-section-eyebrow { display: flex; align-items: baseline; gap: 8px; }
 .mdash-eyebrow-strong {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.12em;
-  color: var(--mdash-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .mdash-eyebrow-faint {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   color: var(--mdash-mute);
 }
 .mdash-see-all {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
-  color: var(--mdash-mint);
+  position: relative;
+  font-family: var(--nc-font-mono);
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 18px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nc-accent-text);
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
+}
+.mdash-see-all::before {
+  content: '';
+  position: absolute;
+  inset: -13px -8px;
 }
 
 /* ── 05. Recent list — only scrollable area ─────────────────────────── */
@@ -557,24 +554,28 @@ function onCapture() {
   padding: 12px 14px;
   background: var(--mdash-surface);
   border: 1px solid var(--mdash-stroke-soft);
-  border-radius: 16px;
+  border-radius: 0.5rem;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
   color: inherit;
   width: 100%;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 120ms ease, transform 120ms ease;
+  transition: background-color 120ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.mdash-row:active { transform: scale(0.99); background: rgba(250, 250, 250, 0.06); }
+.mdash-row:active { transform: scale(0.97); background: var(--nc-surface-3); }
 .mdash-row-thumb {
   width: 44px; height: 44px;
-  border-radius: 10px;
+  border-radius: 0.4rem;
   background: var(--mdash-surface);
-  border: 1px solid rgba(250, 250, 250, 0.08);
+  border: 1px solid var(--mdash-stroke-soft);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+.mdash-row-thumb line { stroke: var(--nc-text-dim); }
+.mdash-row-thumb circle { fill: var(--nc-text-muted); }
+.mdash-row-thumb circle:first-of-type { fill: var(--nc-accent); }
+.mdash-row-thumb circle:nth-of-type(3) { fill: var(--nc-text); }
 .mdash-row-meta {
   display: flex; flex-direction: column;
   flex: 1 1 0;
@@ -582,7 +583,7 @@ function onCapture() {
   min-width: 0;
 }
 .mdash-row-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em;
   color: var(--mdash-ink);
@@ -591,16 +592,16 @@ function onCapture() {
   text-overflow: ellipsis;
 }
 .mdash-row-sub {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 13px;
   letter-spacing: 0.04em;
   color: var(--mdash-mute);
 }
-.mdash-row-chevron { flex-shrink: 0; }
+.mdash-row-chevron { flex-shrink: 0; color: var(--nc-text-dim); }
 
 .mdash-empty {
   padding: 24px 0;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   letter-spacing: 0.06em;
   color: var(--mdash-mute);
@@ -614,20 +615,21 @@ function onCapture() {
   padding: 14px 16px;
   background: var(--mdash-surface);
   border: 1px solid var(--mdash-stroke-soft);
-  border-radius: 18px;
+  border-radius: 0.5rem;
 }
 .mdash-skel-row {
   display: flex; align-items: center; gap: 14px;
   padding: 12px 14px;
   background: var(--mdash-surface);
   border: 1px solid var(--mdash-stroke-soft);
-  border-radius: 16px;
+  border-radius: 0.5rem;
 }
 .mdash-skel-thumb {
   width: 52px; height: 52px;
-  border-radius: 12px;
+  border-radius: 0.4rem;
   flex-shrink: 0;
 }
+.mdash-skel-thumb-sm { width: 44px; height: 44px; }
 .mdash-skel-meta {
   display: flex; flex-direction: column;
   flex: 1 1 0;
@@ -638,13 +640,18 @@ function onCapture() {
   height: 11px;
   border-radius: 4px;
 }
+.mdash-skel-line-a { width: 35%; }
+.mdash-skel-line-b { width: 70%; height: 16px; }
+.mdash-skel-line-c { width: 45%; }
+.mdash-skel-line-d { width: 60%; }
+.mdash-skel-line-e { width: 30%; height: 9px; }
 .mdash-skel-shimmer {
   background:
     linear-gradient(
       90deg,
-      rgba(250, 250, 250, 0.04) 0%,
-      rgba(250, 250, 250, 0.10) 50%,
-      rgba(250, 250, 250, 0.04) 100%
+      var(--nc-chip-bg) 0%,
+      var(--nc-border-subtle) 50%,
+      var(--nc-chip-bg) 100%
     );
   background-size: 200% 100%;
   animation: mdash-shimmer 1.4s linear infinite;
@@ -652,6 +659,9 @@ function onCapture() {
 @keyframes mdash-shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mdash-skel-shimmer { animation: none; }
 }
 
 /* ── 06. Floating FAB ────────────────────────────────────────────────── */
@@ -662,53 +672,14 @@ function onCapture() {
   width: 52px; height: 52px;
   border-radius: 999px;
   background: var(--mdash-mint);
+  color: var(--nc-bg);
   border: none;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  box-shadow:
-    0 12px 32px rgba(0, 210, 190, 0.35),
-    0 4px 12px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--nc-shadow-lg);
   z-index: 150;
-  transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 150ms var(--nc-ease);
 }
-.mdash-fab:active { transform: scale(0.92); }
-.mdash-fab:disabled { opacity: 0.6; cursor: not-allowed; }
-
-/* ── Light theme ─────────────────────────────────────────────────────── */
-/* Dark-specific white-tint overlays (surfaces, strokes, shimmer) read as
- * invisible on a light background — flip them to dark-tint equivalents and
- * pull surface/stroke values from the light token palette. */
-:root.light .mdash {
-  --mdash-surface: rgba(17, 17, 17, 0.04);
-  --mdash-surface-2: rgba(17, 17, 17, 0.06);
-  --mdash-stroke: rgba(17, 17, 17, 0.10);
-  --mdash-stroke-soft: rgba(17, 17, 17, 0.08);
-}
-:root.light .mdash-avatar {
-  background: rgba(17, 17, 17, 0.05);
-}
-:root.light .mdash-row:active {
-  background: rgba(17, 17, 17, 0.06);
-}
-:root.light .mdash-row-thumb {
-  border-color: rgba(17, 17, 17, 0.08);
-}
-/* The thumbnail's centre node is filled near-white (#FAFAFA) and disappears on
-   the light surface — repaint to ink so the glyph stays readable. */
-:root.light .mdash-row-thumb svg circle[fill="#FAFAFA"] { fill: #18181B; }
-:root.light .mdash-skel-shimmer {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(17, 17, 17, 0.04) 0%,
-      rgba(17, 17, 17, 0.08) 50%,
-      rgba(17, 17, 17, 0.04) 100%
-    );
-  background-size: 200% 100%;
-}
-:root.light .mdash-fab {
-  box-shadow:
-    0 12px 32px rgba(0, 210, 190, 0.30),
-    0 4px 12px rgba(0, 0, 0, 0.12);
-}
+.mdash-fab:active { transform: scale(0.97); }
+.mdash-fab:disabled { opacity: 0.45; cursor: not-allowed; }
 </style>

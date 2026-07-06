@@ -105,7 +105,7 @@ const sheetStyle = computed(() => ({
           <div class="w-10 h-1 bg-nc-border-active rounded-full mb-2" />
           <div class="flex items-center justify-between w-full px-4">
             <div class="flex items-center gap-2">
-              <span class="i-lucide-list-tree text-lg text-nc-accent" />
+              <span class="i-nc-ai-mark text-lg text-nc-accent" />
               <span class="text-sm font-semibold text-nc-ink">{{ $t('canvas.ai_suggestions.title') }}</span>
               <span
                 v-if="isAILoading"

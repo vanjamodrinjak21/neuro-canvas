@@ -59,7 +59,8 @@ function handleAddFile(error: any, file: any) {
 </template>
 
 <style scoped>
-/* FilePond Dark Theme Overrides */
+/* FilePond — token-driven dropzone grammar (REDESIGN.md §5):
+   dashed 1px hairline + flat chip fill, accent border on dragover. */
 .filepond-uploader {
   font-family: inherit;
 }
@@ -70,14 +71,15 @@ function handleAddFile(error: any, file: any) {
 }
 
 .filepond-uploader :deep(.filepond--panel-root) {
-  background-color: var(--surface-2, #121216);
-  border: 2px dashed var(--border, #252529);
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  background-color: var(--nc-chip-bg);
+  border: 1px dashed var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .filepond-uploader :deep(.filepond--drop-label) {
-  color: var(--text-secondary, #A1A1AA);
+  color: var(--nc-text-secondary);
   font-size: 1rem;
   padding: 3rem 1rem;
 }
@@ -87,40 +89,44 @@ function handleAddFile(error: any, file: any) {
 }
 
 .filepond-uploader :deep(.filepond--label-action) {
-  color: var(--accent, #00D2BE);
+  color: var(--nc-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
-  transition: color 0.2s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.filepond-uploader :deep(.filepond--label-action:hover) {
-  color: var(--accent-light, #00FFE5);
+@media (hover: hover) and (pointer: fine) {
+  .filepond-uploader :deep(.filepond--label-action:hover) {
+    color: var(--nc-accent-light);
+  }
 }
 
-/* Hover state */
+/* Dragover state — accent border cue, faint accent fill (no glow). */
 .filepond-uploader :deep(.filepond--root[data-hopper-hover="true"] .filepond--panel-root) {
-  border-color: var(--accent, #00D2BE);
-  background-color: rgba(0, 210, 190, 0.05);
+  border-color: var(--nc-accent);
+  background-color: rgba(var(--nc-accent-rgb), 0.08);
 }
 
 /* File item styling */
 .filepond-uploader :deep(.filepond--item-panel) {
-  background-color: var(--surface-3, #18181D);
-  border-radius: 12px;
+  background-color: var(--nc-surface-3);
+  border-radius: var(--nc-radius-md);
 }
 
 .filepond-uploader :deep(.filepond--file-action-button) {
-  background-color: rgba(0, 0, 0, 0.5);
-  color: var(--text, #FAFAFA);
+  background-color: rgba(var(--nc-bg-rgb), 0.55);
+  color: var(--nc-text);
   cursor: pointer;
 }
 
-.filepond-uploader :deep(.filepond--file-action-button:hover) {
-  background-color: rgba(0, 0, 0, 0.7);
+@media (hover: hover) and (pointer: fine) {
+  .filepond-uploader :deep(.filepond--file-action-button:hover) {
+    background-color: rgba(var(--nc-bg-rgb), 0.75);
+  }
 }
 
 .filepond-uploader :deep(.filepond--file) {
-  color: var(--text, #FAFAFA);
+  color: var(--nc-text);
 }
 
 .filepond-uploader :deep(.filepond--file-info-main) {
@@ -129,17 +135,17 @@ function handleAddFile(error: any, file: any) {
 
 .filepond-uploader :deep(.filepond--file-info-sub) {
   font-size: 0.8rem;
-  color: var(--text-muted, #71717A);
+  color: var(--nc-text-muted);
 }
 
-/* Progress indicator */
+/* Progress indicator — accent fill */
 .filepond-uploader :deep(.filepond--progress-indicator) {
-  background-color: var(--accent, #00D2BE);
+  background-color: var(--nc-accent);
 }
 
-/* Error state */
+/* Error state — coral, the destructive/validation accent (REDESIGN.md §1) */
 .filepond-uploader :deep([data-filepond-item-state*="error"] .filepond--item-panel) {
-  background-color: rgba(239, 68, 68, 0.2);
+  background-color: rgba(var(--nc-coral-rgb), 0.12);
 }
 
 /* Accepted file hint */
@@ -147,13 +153,13 @@ function handleAddFile(error: any, file: any) {
   display: none;
 }
 
-/* Fallback loading state */
+/* Fallback loading state — same dropzone grammar */
 .filepond-fallback {
   padding: 3rem 1rem;
   text-align: center;
-  background-color: var(--surface-2, #121216);
-  border: 2px dashed var(--border, #252529);
-  border-radius: 16px;
-  color: var(--text-muted, #71717A);
+  background-color: var(--nc-chip-bg);
+  border: 1px dashed var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  color: var(--nc-text-muted);
 }
 </style>

@@ -188,7 +188,7 @@ export function drawResizeHandles(
   ctx.save()
   ctx.lineWidth = 1.5 / camera.zoom
   ctx.strokeStyle = color
-  ctx.fillStyle = isLight ? '#FFFFFF' : '#0A0A0C'
+  ctx.fillStyle = isLight ? '#FFFFFF' : '#050508'
 
   for (const handle of RESIZE_HANDLES) {
     const p = pts[handle]
@@ -285,8 +285,8 @@ export function drawBoxSelectionRect(
   const { x, y, width, height } = boxRect
   const radius = 4 / camera.zoom
 
-  // Fill with semi-transparent teal (rounded corners)
-  ctx.fillStyle = 'rgba(0, 210, 190, 0.08)'
+  // Fill with semi-transparent accent (rounded corners)
+  ctx.fillStyle = 'rgba(94, 242, 232, 0.08)'
   ctx.beginPath()
   ctx.roundRect(x, y, width, height, radius)
   ctx.fill()
@@ -319,7 +319,7 @@ export function drawBoxSelectionRect(
     ctx.roundRect(badgeX - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, badgeH / 2)
     ctx.fill()
 
-    ctx.fillStyle = '#0A0A0C'
+    ctx.fillStyle = '#050508'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(text, badgeX, badgeY)

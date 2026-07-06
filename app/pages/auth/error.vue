@@ -52,18 +52,18 @@ const errorInfo = computed(() => {
           <!-- Broken cable -->
           <path
             d="M150 60 L155 90 L145 110 L155 140 L148 170"
-            stroke="#EF4444"
+            class="broken-cable"
             stroke-width="2"
             stroke-linecap="round"
             opacity="0.6"
           />
           <!-- X mark -->
-          <line x1="130" y1="100" x2="170" y2="140" stroke="#EF4444" stroke-width="3" stroke-linecap="round" opacity="0.7" />
-          <line x1="170" y1="100" x2="130" y2="140" stroke="#EF4444" stroke-width="3" stroke-linecap="round" opacity="0.7" />
+          <line x1="130" y1="100" x2="170" y2="140" class="x-mark" stroke-width="3" stroke-linecap="round" opacity="0.7" />
+          <line x1="170" y1="100" x2="130" y2="140" class="x-mark" stroke-width="3" stroke-linecap="round" opacity="0.7" />
           <!-- Lock -->
-          <rect x="138" y="155" width="24" height="18" rx="3" fill="#27272A" stroke="#3F3F46" stroke-width="1.5" />
-          <path d="M143 155 L143 148 Q143 140 150 140 Q157 140 157 148 L157 155" stroke="#3F3F46" stroke-width="1.5" fill="none" stroke-linecap="round" />
-          <circle cx="150" cy="164" r="2" fill="#EF4444" opacity="0.7" />
+          <rect x="138" y="155" width="24" height="18" rx="3" class="lock-body" stroke-width="1.5" />
+          <path d="M143 155 L143 148 Q143 140 150 140 Q157 140 157 148 L157 155" class="lock-shackle" stroke-width="1.5" fill="none" stroke-linecap="round" />
+          <circle cx="150" cy="164" r="2" class="lock-dot" opacity="0.7" />
         </svg>
       </div>
 
@@ -105,7 +105,7 @@ const errorInfo = computed(() => {
   align-items: center;
   justify-content: center;
   padding: 32px;
-  background: #09090B;
+  background: var(--nc-bg);
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -120,7 +120,7 @@ const errorInfo = computed(() => {
 .brand-name {
   font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: #FAFAFA;
+  color: var(--nc-text);
   letter-spacing: -0.03em;
 }
 
@@ -138,35 +138,56 @@ const errorInfo = computed(() => {
 }
 
 .shield-body {
-  stroke: #27272A;
+  stroke: var(--nc-border);
   stroke-width: 2;
-  fill: #111113;
+  fill: var(--nc-surface);
 }
 
-/* Copy */
+/* Error accents — coral, never a second interactive color (REDESIGN.md §1) */
+.broken-cable,
+.x-mark {
+  stroke: var(--nc-coral);
+}
+
+.lock-body {
+  fill: var(--nc-surface-3);
+  stroke: var(--nc-border-active);
+}
+
+.lock-shackle {
+  stroke: var(--nc-border-active);
+}
+
+.lock-dot {
+  fill: var(--nc-coral);
+}
+
+/* Copy — mono micro-label eyebrow, 0.14em tracking (REDESIGN.md §4) */
 .error-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: #52525B;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-muted);
   margin-bottom: 12px;
 }
 
+/* Status-page headline keeps the serif empty-state grammar; face comes
+   from the token, never re-hardcoded (REDESIGN.md §9) */
 .heading {
-  font-family: 'Instrument Serif', serif;
+  font-family: var(--nc-font-serif);
   font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;
   line-height: 1.1;
   letter-spacing: -0.01em;
-  color: #FAFAFA;
+  color: var(--nc-text);
   margin: 0 0 10px;
 }
 
 .desc {
   font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 1.55;
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   margin: 0 0 16px;
   max-width: 420px;
 }
@@ -174,7 +195,7 @@ const errorInfo = computed(() => {
 .error-receipt {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
   margin: 0 0 28px;
 }
 
@@ -191,8 +212,8 @@ const errorInfo = computed(() => {
   gap: 6px;
   padding: 12px 20px;
   min-height: 44px;
-  background: #00D2BE;
-  color: #09090B;
+  background: var(--nc-accent);
+  color: var(--nc-bg);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: none;
@@ -214,8 +235,8 @@ const errorInfo = computed(() => {
   padding: 12px 20px;
   min-height: 44px;
   background: transparent;
-  border: 1px solid #27272A;
-  color: #A1A1AA;
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   border-radius: 6px;
@@ -226,8 +247,8 @@ const errorInfo = computed(() => {
 }
 
 .btn-ghost:hover {
-  border-color: #3F3F46;
-  color: #FAFAFA;
+  border-color: var(--nc-border-active);
+  color: var(--nc-text);
 }
 
 /* Error footer */
@@ -243,10 +264,10 @@ const errorInfo = computed(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
-  color: #EF4444;
+  color: var(--nc-coral);
   opacity: 0.85;
   padding: 3px 8px;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.3);
   border-radius: 4px;
 }
 
@@ -254,51 +275,15 @@ const errorInfo = computed(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 14px;
-  color: #71717A;
+  color: var(--nc-text-muted);
 }
 
-/* Light theme */
-:root.light .brand-name {
-  color: #111111;
-}
-
-:root.light .error-page {
-  background: #FAFAF9;
-}
-
-:root.light .shield-body {
-  stroke: #D4D4D8;
-  fill: #F5F5F3;
-}
-
-:root.light .heading {
-  color: #111111;
-}
-
-:root.light .desc {
-  color: #71717A;
-}
-
-:root.light .btn-primary {
-  color: #FFFFFF;
-}
-
-:root.light .btn-ghost {
-  border-color: #E8E8E6;
-  color: #52525B;
-}
-
-:root.light .btn-ghost:hover {
-  border-color: #D4D4D8;
-  color: #111111;
-}
-
+/* Light theme — surfaces/text now follow the :root.light token rebase;
+   only the softer badge hairline remains a real override. (The former
+   dim-tier override on .error-details was removed: dim is 3.23:1 in
+   light — decorative only — and the details are readable text.) */
 :root.light .error-badge {
-  border-color: rgba(239, 68, 68, 0.15);
-}
-
-:root.light .error-details {
-  color: #D4D4D8;
+  border-color: rgba(var(--nc-coral-rgb), 0.15);
 }
 
 /* Responsive */

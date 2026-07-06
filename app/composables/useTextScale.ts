@@ -20,7 +20,12 @@ const SCALE_BY_KEY: Record<string, number> = {
   xl: 1.25,
 }
 
-function readCurrentScale(): number {
+/**
+ * One-shot, non-reactive read of the current text scale. Also exported for
+ * consumers that render outside a component lifecycle (raster image export)
+ * and need the same multiplier the live canvas is using right now.
+ */
+export function readCurrentTextScale(): number {
   if (typeof document === 'undefined') return 1
   const key = document.documentElement.dataset.fontSize
   if (!key) return 1
@@ -28,10 +33,10 @@ function readCurrentScale(): number {
 }
 
 export function useTextScale() {
-  const scale = ref(readCurrentScale())
+  const scale = ref(readCurrentTextScale())
 
   function sync() {
-    scale.value = readCurrentScale()
+    scale.value = readCurrentTextScale()
   }
 
   if (typeof window !== 'undefined') {

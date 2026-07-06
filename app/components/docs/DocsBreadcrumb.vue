@@ -173,7 +173,8 @@ function formatSegment(segment: string): string {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--nc-text-muted);
+  /* Interactive rest ≥ the 0.62 tier (AER-76 chrome visibility) */
+  color: var(--nc-text-secondary);
   text-decoration: none;
   transition: color var(--nc-duration-fast) ease;
   line-height: 1;
@@ -193,20 +194,13 @@ function formatSegment(segment: string): string {
   line-height: 1;
 }
 
-/* Light theme */
-:root.light .docs-breadcrumb__separator {
-  color: var(--nc-text-dim);
-}
-
-:root.light .docs-breadcrumb__link {
-  color: var(--nc-text-muted);
-}
-
+/* Light theme — tokens carry the tiers; accent-colored 11px text
+   drops to the text-tier accent (#0b9e93 is 3.18:1, fails AA). */
 :root.light .docs-breadcrumb__link:hover {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 
 :root.light .docs-breadcrumb__current {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 </style>

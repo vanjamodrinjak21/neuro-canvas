@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 
 interface VersionRow {
   id: string
@@ -24,12 +25,12 @@ const { t, locale } = useI18n()
 const { isOnline } = useSyncEngine()
 const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
 
+const { confirm, ConfirmDialog } = useConfirmDialog()
+
 const versions = ref<VersionRow[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const restoringId = ref<string | null>(null)
-/** Row currently showing the inline "are you sure?" confirm. */
-const pendingId = ref<string | null>(null)
 
 async function load() {
   loading.value = true
@@ -47,17 +48,18 @@ async function load() {
   }
 }
 
-function askRestore(versionId: string) {
+async function askRestore(versionId: string) {
   if (restoringId.value || !isOnline.value) return
-  pendingId.value = versionId
-}
-function cancelRestore() {
-  pendingId.value = null
-}
-
-async function confirmRestore(versionId: string) {
+  const confirmed = await confirm({
+    title: t('canvas.version_history.title'),
+    description: t('canvas.version_history.restore_confirm'),
+    confirmText: t('canvas.version_history.restore'),
+    cancelText: t('canvas.version_history.cancel'),
+    variant: 'danger',
+    icon: 'i-lucide-history'
+  })
+  if (!confirmed) return
   restoringId.value = versionId
-  pendingId.value = null
   error.value = null
   try {
     await $fetch(`/api/maps/${props.mapId}/versions/${versionId}/restore`, {
@@ -111,7 +113,6 @@ function onBackdrop() {
 
 onMounted(load)
 onKeyStroke('Escape', () => {
-  if (pendingId.value) { pendingId.value = null; return }
   if (!restoringId.value) emit('close')
 })
 </script>
@@ -149,7 +150,6 @@ onKeyStroke('Escape', () => {
             v-for="v in versions"
             :key="v.id"
             class="vh-row"
-            :class="{ 'is-pending': pendingId === v.id }"
           >
             <div class="vh-row-main">
               <div class="vh-row-time">{{ formatDate(v.createdAt) }}</div>
@@ -162,19 +162,7 @@ onKeyStroke('Escape', () => {
               </div>
             </div>
 
-            <div v-if="pendingId === v.id" class="vh-confirm">
-              <span class="vh-confirm-q">{{ t('canvas.version_history.restore_confirm') }}</span>
-              <div class="vh-confirm-actions">
-                <button class="vh-btn vh-btn-ghost" @click="cancelRestore">
-                  {{ t('canvas.version_history.cancel') }}
-                </button>
-                <button class="vh-btn vh-btn-primary" @click="confirmRestore(v.id)">
-                  {{ t('canvas.version_history.restore') }}
-                </button>
-              </div>
-            </div>
             <button
-              v-else
               class="vh-btn vh-restore"
               :disabled="!!restoringId || !isOnline"
               :title="offlineHint"
@@ -189,9 +177,11 @@ onKeyStroke('Escape', () => {
       </section>
     </div>
   </Teleport>
+  <component :is="ConfirmDialog" />
 </template>
 
 <style scoped>
+/* Scrim — flat, no backdrop blur (REDESIGN.md §5) */
 .vh-backdrop {
   position: fixed;
   inset: 0;
@@ -200,32 +190,33 @@ onKeyStroke('Escape', () => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(4, 4, 6, 0.62);
-  backdrop-filter: blur(4px);
-  animation: vh-fade 140ms ease;
+  background: rgba(var(--nc-bg-rgb), 0.66);
+  animation: vh-fade 140ms var(--nc-ease);
 }
 @keyframes vh-fade {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
+/* Modal — flat surface-2 + hairline, enter scale(0.97)+opacity, no slide-in */
 .vh-modal {
   width: 100%;
   max-width: 520px;
   max-height: min(80vh, 720px);
   display: flex;
   flex-direction: column;
-  background: var(--nc-surface, #111113);
-  border: 1px solid var(--nc-border, #27272A);
-  border-radius: 14px;
-  color: var(--nc-ink, #FAFAFA);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  color: var(--nc-text);
+  box-shadow: var(--nc-shadow-md);
   overflow: hidden;
-  animation: vh-rise 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+  animation: vh-rise 200ms var(--nc-ease);
 }
 @keyframes vh-rise {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .vh-header {
@@ -234,19 +225,21 @@ onKeyStroke('Escape', () => {
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--nc-border, #27272A);
+  border-bottom: 1px solid var(--nc-border);
 }
+/* Modal header — display face (REDESIGN.md §4) */
 .vh-heading h2 {
+  font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   margin: 0;
 }
 .vh-subtitle {
   margin: 4px 0 0;
   font-size: calc(12.5px * var(--nc-text-scale, 1));
   line-height: 1.4;
-  color: var(--nc-ink-soft, #A1A1AA);
+  color: var(--nc-text-secondary);
 }
 .vh-close {
   flex-shrink: 0;
@@ -254,35 +247,42 @@ onKeyStroke('Escape', () => {
   display: inline-flex; align-items: center; justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
-  color: var(--nc-ink-soft, #A1A1AA);
+  border-radius: 0.5rem;
+  color: var(--nc-text-secondary);
   font-size: calc(16px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition: background 120ms var(--nc-ease),
+              color 120ms var(--nc-ease),
+              border-color 120ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
-.vh-close:hover:not(:disabled) {
-  color: var(--nc-ink, #FAFAFA);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--nc-border, #27272A);
+@media (hover: hover) and (pointer: fine) {
+  .vh-close:hover:not(:disabled) {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border);
+  }
 }
+.vh-close:active:not(:disabled) { transform: scale(0.97); }
 .vh-close:focus-visible {
   outline: none;
-  border-color: var(--nc-accent, #00D2BE);
+  border-color: var(--nc-accent);
 }
 .vh-close:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Validation/error surface — coral (REDESIGN.md §1 accent discipline) */
 .vh-error {
   margin: 14px 22px 0;
   padding: 10px 12px;
-  background: rgba(220, 38, 38, 0.12);
-  border: 1px solid rgba(220, 38, 38, 0.4);
-  border-radius: 8px;
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.4);
+  border-radius: 0.5rem;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #FCA5A5;
+  color: var(--nc-coral);
 }
 .vh-state {
   padding: 40px 22px;
-  color: var(--nc-ink-soft, #71717A);
+  color: var(--nc-text-secondary);
   font-size: calc(13px * var(--nc-text-scale, 1));
   text-align: center;
 }
@@ -300,12 +300,13 @@ onKeyStroke('Escape', () => {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border-bottom: 1px solid var(--nc-border-soft, #1A1A1D);
-  transition: background 120ms ease;
+  border-bottom: 1px solid var(--nc-border-subtle);
+  transition: background 120ms var(--nc-ease), box-shadow 120ms var(--nc-ease);
 }
 .vh-row:last-child { border-bottom: none; }
-.vh-row:hover { background: rgba(255, 255, 255, 0.025); }
-.vh-row.is-pending { background: rgba(0, 210, 190, 0.06); }
+@media (hover: hover) and (pointer: fine) {
+  .vh-row:hover { background: var(--nc-chip-bg); }
+}
 .vh-row-main { min-width: 0; }
 .vh-row-time { font-size: calc(13.5px * var(--nc-text-scale, 1)); font-weight: 550; }
 .vh-row-meta {
@@ -313,62 +314,36 @@ onKeyStroke('Escape', () => {
   flex-wrap: wrap;
   gap: 6px;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #71717A);
+  color: var(--nc-text-muted);
   margin-top: 3px;
 }
-.vh-author { color: var(--nc-ink-soft, #A1A1AA); }
+.vh-author { color: var(--nc-text-secondary); }
 
 .vh-btn {
-  border-radius: 7px;
+  border-radius: 0.4rem;
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 550;
   padding: 7px 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition: background 120ms var(--nc-ease),
+              color 120ms var(--nc-ease),
+              border-color 120ms var(--nc-ease),
+              opacity 120ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
+.vh-btn:active:not(:disabled) { transform: scale(0.97); }
 .vh-restore {
   flex-shrink: 0;
-  border: 1px solid var(--nc-border, #27272A);
+  border: 1px solid var(--nc-border);
   background: transparent;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
 }
-.vh-restore:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: #3F3F46;
+@media (hover: hover) and (pointer: fine) {
+  .vh-restore:hover:not(:disabled) {
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border-active);
+  }
 }
 .vh-restore:disabled { opacity: 0.45; cursor: not-allowed; }
-
-.vh-confirm {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.vh-confirm-q {
-  font-size: calc(11.5px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #A1A1AA);
-  max-width: 180px;
-  text-align: right;
-  line-height: 1.35;
-}
-.vh-confirm-actions { display: flex; gap: 8px; }
-.vh-btn-ghost {
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--nc-ink-soft, #A1A1AA);
-}
-.vh-btn-ghost:hover { color: var(--nc-ink, #FAFAFA); background: rgba(255, 255, 255, 0.05); }
-.vh-btn-primary {
-  border: 1px solid transparent;
-  background: var(--nc-accent, #00D2BE);
-  color: #04201D;
-  font-weight: 650;
-}
-.vh-btn-primary:hover { filter: brightness(1.06); }
-
-@media (max-width: 560px) {
-  .vh-confirm { flex-direction: column; align-items: flex-end; gap: 8px; }
-  .vh-confirm-q { max-width: none; }
-}
 </style>

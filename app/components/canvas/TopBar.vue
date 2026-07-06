@@ -27,6 +27,7 @@ const emit = defineEmits<{
   'version-history': []
   'comments': []
   'export-png': []
+  'export-pdf': []
   'export-json': []
   'export-markdown': []
   'settings': []
@@ -169,6 +170,7 @@ defineExpose({ focusTitleInput })
             <span>{{ relativeSaveTime || $t('canvas.topbar.save_status.saved') }}</span>
           </template>
           <template v-else>
+            <span class="topbar-unsaved-dot" />
             <span class="text-nc-ink-soft">{{ $t('canvas.topbar.save_status.unsaved') }}</span>
           </template>
         </span>
@@ -186,7 +188,7 @@ defineExpose({ focusTitleInput })
           :title="hasSelection ? '' : $t('canvas.ai.expand_whole_map')"
           @click="emit('smart-expand')"
         >
-          <span class="i-lucide-waypoints" :class="isAILoading ? 'opacity-60' : ''" />
+          <span class="i-nc-ai-mark" :class="isAILoading ? 'opacity-60' : ''" />
           {{ $t('canvas.topbar.ai_expand') }}
         </button>
 
@@ -231,6 +233,7 @@ defineExpose({ focusTitleInput })
           @version-history="emit('version-history')"
           @comments="emit('comments')"
           @export-png="emit('export-png')"
+          @export-pdf="emit('export-pdf')"
           @export-json="emit('export-json')"
           @export-markdown="emit('export-markdown')"
           @help="emit('open-shortcuts')"
@@ -243,13 +246,13 @@ defineExpose({ focusTitleInput })
 
 <style scoped>
 .topbar-root {
-  transition: right 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: right 220ms var(--nc-ease);
 }
 
 .topbar-container {
-  background: var(--nc-surface, #111114);
-  border: 1px solid var(--nc-border, #1A1A1E);
-  border-radius: 8px;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   padding: 10px 16px;
   pointer-events: auto;
 }
@@ -262,40 +265,34 @@ defineExpose({ focusTitleInput })
   align-items: center;
   justify-content: center;
   color: var(--nc-ink-soft);
-  transition: color var(--nc-duration-fast) var(--nc-ease-out);
+  cursor: pointer;
+  transition:
+    color var(--nc-duration-fast) var(--nc-ease),
+    background-color var(--nc-duration-fast) var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .topbar-icon-btn:hover {
     color: var(--nc-ink);
+    background: var(--nc-surface-3);
   }
 }
 
-.topbar-logo-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  opacity: 0.85;
-  transition: opacity var(--nc-duration-fast) var(--nc-ease-out);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .topbar-logo-btn:hover {
-    opacity: 1;
-  }
+.topbar-icon-btn:active {
+  transform: scale(0.97);
 }
 
 .topbar-title-edit {
   width: 160px;
   max-width: 200px;
-  background: var(--nc-surface-3);
+  background: var(--nc-chip-bg);
   color: var(--nc-ink);
   font-family: var(--nc-font-body);
   font-weight: 500;
   font-size: calc(14px * var(--nc-text-scale, 1));
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 0.4rem;
   border: 1px solid var(--nc-accent);
   outline: none;
   caret-color: var(--nc-accent);
@@ -303,7 +300,7 @@ defineExpose({ focusTitleInput })
 
 .topbar-title-btn {
   color: var(--nc-ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 600;
   font-size: calc(14px * var(--nc-text-scale, 1));
   letter-spacing: -0.01em;
@@ -315,7 +312,7 @@ defineExpose({ focusTitleInput })
   text-overflow: ellipsis;
   max-width: 220px;
   text-align: left;
-  transition: color var(--nc-duration-fast) var(--nc-ease-out);
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -331,17 +328,19 @@ defineExpose({ focusTitleInput })
 }
 
 .topbar-crumb {
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
+  letter-spacing: 0.04em;
   color: var(--nc-ink-soft);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: 0.4rem;
   padding: 2px 8px;
   cursor: pointer;
-  transition: color var(--nc-duration-fast) var(--nc-ease-out),
-              border-color var(--nc-duration-fast) var(--nc-ease-out),
-              background var(--nc-duration-fast) var(--nc-ease-out);
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              background var(--nc-duration-fast) var(--nc-ease);
   max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -350,15 +349,15 @@ defineExpose({ focusTitleInput })
 
 @media (hover: hover) and (pointer: fine) {
   .topbar-crumb:hover {
-    color: var(--nc-accent, #00D2BE);
-    border-color: rgba(0, 210, 190, 0.3);
-    background: rgba(0, 210, 190, 0.06);
+    color: var(--nc-accent);
+    border-color: rgba(var(--nc-accent-rgb), 0.3);
+    background: rgba(var(--nc-accent-rgb), 0.06);
   }
 }
 
 .topbar-crumb-current {
   color: var(--nc-ink-soft);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--nc-border);
 }
 
 .topbar-save-status {
@@ -376,30 +375,19 @@ defineExpose({ focusTitleInput })
   background: var(--nc-accent);
 }
 
+/* Unsaved = live marker → coral (REDESIGN.md §1 accent discipline) */
+.topbar-unsaved-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--nc-coral);
+}
+
 .topbar-divider {
   width: 1px;
   height: 20px;
-  background: var(--nc-border, #1A1A1E);
+  background: var(--nc-border);
   flex-shrink: 0;
-}
-
-/* Light theme */
-:root.light .topbar-container {
-  background: rgba(250, 250, 249, 0.85);
-  border-color: #E8E8E6;
-}
-
-:root.light .topbar-crumb {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.06);
-}
-
-:root.light .topbar-crumb-current {
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-:root.light .topbar-divider {
-  background: #E8E8E6;
 }
 
 @media (max-width: 768px) {
@@ -413,11 +401,7 @@ defineExpose({ focusTitleInput })
   .topbar-container {
     border-radius: 0;
     padding: 48px 16px 10px;
-    background: rgba(10, 10, 12, 0.9);
-  }
-
-  :root.light .topbar-container {
-    background: rgba(250, 250, 249, 0.92);
+    background: var(--nc-surface);
   }
 
   .topbar-title-btn {
@@ -446,24 +430,15 @@ defineExpose({ focusTitleInput })
   }
 }
 
-/* View tabs (Canvas / Graph / Editor) */
+/* View tabs (Canvas / Graph / Editor) — flat chip strip, theme-aware tokens */
 .topbar-view-tabs {
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 2px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 8px;
-}
-
-/* Light mode: the dark-theme defaults (3% white fill + #1E1E22 border)
-   produce a dark-outlined pill against the warm-paper toolbar. Switch
-   to a flat off-paper fill + the canvas-neutral border so the segmented
-   control reads as a single quiet shape. */
-:root.light .topbar-view-tabs {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: #D4D4D0;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
 }
 
 .topbar-view-tab {
@@ -475,41 +450,32 @@ defineExpose({ focusTitleInput })
   background: none;
   border: 1px solid transparent;
   border-radius: 6px;
-  color: var(--nc-ink-faint, #52525B);
-  font-family: 'Inter', system-ui, sans-serif;
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-ink-soft);
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition:
-    color 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-    background 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-    padding 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-    gap 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-    transform 160ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    padding 220ms var(--nc-ease),
+    gap 220ms var(--nc-ease),
+    transform 160ms var(--nc-ease);
 }
 
-.topbar-view-tab:hover {
-  color: var(--nc-ink-muted, #A1A1AA);
+@media (hover: hover) and (pointer: fine) {
+  .topbar-view-tab:hover {
+    color: var(--nc-ink);
+    background: var(--nc-surface-3);
+  }
 }
 
-/* Light mode hover used to inherit the dark-theme rule (#52525B → #A1A1AA)
-   which makes the text fade toward the bg instead of darkening — backwards
-   feedback. Override so hover moves toward the higher-contrast ink. */
-:root.light .topbar-view-tab:hover {
-  color: #18181B;
-  background: rgba(0, 0, 0, 0.04);
-}
-
+/* Active view = accent text + filled marker (never color alone) */
 .topbar-view-tab.active {
-  background: rgba(0, 210, 190, 0.08);
-  border-color: rgba(0, 210, 190, 0.2);
-  color: var(--nc-accent, #00D2BE);
-}
-
-:root.light .topbar-view-tab.active {
-  background: rgba(0, 168, 154, 0.10);
-  border-color: rgba(0, 168, 154, 0.30);
-  color: #00A89A;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border-color: rgba(var(--nc-accent-rgb), 0.25);
+  color: var(--nc-accent-text);
 }
 
 .topbar-view-tab:active {
@@ -524,9 +490,9 @@ defineExpose({ focusTitleInput })
   opacity: 1;
   transform: translateX(0);
   transition:
-    max-width 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-    opacity 160ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-    transform 220ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+    max-width 220ms var(--nc-ease),
+    opacity 160ms var(--nc-ease),
+    transform 220ms var(--nc-ease);
   will-change: max-width, opacity, transform;
 }
 

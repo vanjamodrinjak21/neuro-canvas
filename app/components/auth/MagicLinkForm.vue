@@ -129,10 +129,10 @@ function resetForm() {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.2);
   border-radius: 10px;
-  color: #EF4444;
+  color: var(--nc-coral);
   font-size: 0.9rem;
   margin-bottom: 1.25rem;
 }
@@ -157,22 +157,22 @@ function resetForm() {
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.2);
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.2);
   border-radius: 16px;
   margin-bottom: 1.5rem;
 }
 
 .success-icon {
   font-size: 2rem;
-  color: var(--nc-teal, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .success-title {
   font-size: 1.375rem;
   font-weight: 700;
   margin: 0 0 0.75rem;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
 }
 
 .success-message {
@@ -182,7 +182,7 @@ function resetForm() {
 }
 
 .success-message strong {
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
 }
 
 .success-hint {
@@ -203,11 +203,11 @@ function resetForm() {
   font-size: 0.9rem;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .resend-btn:hover {
   border-color: rgba(255, 255, 255, 0.2);
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
 }
 </style>

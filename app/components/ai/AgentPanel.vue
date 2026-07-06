@@ -70,7 +70,7 @@ function handleEnd() {
     <!-- Header -->
     <div class="nc-agent-header">
       <span class="flex items-center gap-2">
-        <span class="i-lucide-bot text-sm text-[#A78BFA]" />
+        <span class="i-nc-ai-mark text-sm text-nc-accent" />
         <span class="font-semibold text-xs text-[#FAFAFA]">AI Agent</span>
       </span>
       <div class="flex items-center gap-2">
@@ -89,7 +89,7 @@ function handleEnd() {
 
     <!-- Not started state -->
     <div v-if="!agent.isActive.value" class="nc-agent-start">
-      <span class="i-lucide-bot text-3xl text-[#444448] mb-3" />
+      <span class="i-nc-ai-mark text-3xl text-nc-ink-muted mb-3" />
       <p class="text-xs text-[#666670] mb-3 text-center">
         Start a conversation about your map. The AI agent can suggest additions, connections, and restructuring.
       </p>
@@ -183,7 +183,7 @@ function handleEnd() {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid #1A1A1E;
+  border-bottom: 1px solid var(--nc-border);
 }
 
 .nc-agent-end-btn {
@@ -212,7 +212,7 @@ function handleEnd() {
 }
 
 .nc-agent-close-btn:hover {
-  color: #FAFAFA;
+  color: var(--nc-text);
   background: #2A2A30;
 }
 
@@ -237,12 +237,18 @@ function handleEnd() {
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-agent-start-btn:hover {
   background: rgba(167, 139, 250, 0.15);
   border-color: #A78BFA;
+}
+
+.nc-agent-start-btn:active {
+  transform: scale(0.97);
 }
 
 .nc-agent-chat {
@@ -278,8 +284,8 @@ function handleEnd() {
 }
 
 .nc-agent-msg-user .nc-agent-msg-bubble {
-  background: rgba(0, 210, 190, 0.15);
-  color: #FAFAFA;
+  background: rgba(94, 242, 232, 0.15);
+  color: var(--nc-text);
   border-bottom-right-radius: 4px;
 }
 
@@ -318,7 +324,7 @@ function handleEnd() {
 
 .nc-agent-pending {
   padding: 8px 12px;
-  border-top: 1px solid #1A1A1E;
+  border-top: 1px solid var(--nc-border);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -337,7 +343,7 @@ function handleEnd() {
   align-items: flex-end;
   gap: 8px;
   padding: 10px 12px;
-  border-top: 1px solid #1A1A1E;
+  border-top: 1px solid var(--nc-border);
 }
 
 .nc-agent-input {
@@ -346,7 +352,7 @@ function handleEnd() {
   border: 1px solid #2A2A30;
   border-radius: 8px;
   padding: 8px 12px;
-  color: #FAFAFA;
+  color: var(--nc-text);
   font-size: calc(12px * var(--nc-text-scale, 1));
   resize: none;
   outline: none;
@@ -373,12 +379,19 @@ function handleEnd() {
   border-radius: 8px;
   color: #A78BFA;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-agent-send-btn:hover:not(:disabled) {
   background: rgba(167, 139, 250, 0.25);
   border-color: #A78BFA;
+}
+
+.nc-agent-send-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .nc-agent-send-btn:disabled {

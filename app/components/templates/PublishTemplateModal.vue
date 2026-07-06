@@ -278,6 +278,8 @@ if (typeof document !== 'undefined') {
 </template>
 
 <style scoped>
+/* Modal grammar (REDESIGN.md §5): flat surface-2 + hairline, centered;
+   scrim = flat bg alpha only — no blur effects anywhere in chrome. */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -285,8 +287,7 @@ if (typeof document !== 'undefined') {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(var(--nc-bg-rgb), 0.6);
 }
 
 .modal-panel {
@@ -294,11 +295,13 @@ if (typeof document !== 'undefined') {
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 64px);
   overflow-y: auto;
-  background: var(--m-bg, #111113);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 16px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  box-shadow: var(--nc-shadow-md);
   display: flex;
   flex-direction: column;
+  transform-origin: center;
 }
 
 .modal-header {
@@ -311,9 +314,9 @@ if (typeof document !== 'undefined') {
 .header-icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: rgba(0, 210, 190, 0.12);
-  color: #00D2BE;
+  border-radius: var(--nc-radius-md);
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  color: var(--nc-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -322,19 +325,21 @@ if (typeof document !== 'undefined') {
 
 .header-text { flex: 1; min-width: 0; }
 
+/* Modal header = display 700 (REDESIGN.md §4) */
 .header-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--m-text, #E8E8EC);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   margin: 0;
-  line-height: 22px;
+  line-height: 1.05;
 }
 
 .header-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-secondary);
   margin: 2px 0 0;
 }
 
@@ -342,14 +347,22 @@ if (typeof document !== 'undefined') {
   width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;
   border: none; background: none;
-  color: var(--m-muted, #71717A);
-  border-radius: 6px; cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  color: var(--nc-text-muted);
+  border-radius: var(--nc-radius-sm); cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.close-btn:hover {
-  color: var(--m-text, #E8E8EC);
-  background: var(--m-hover, #1A1A1E);
+.close-btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .close-btn:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
 }
 
 .modal-body {
@@ -361,41 +374,43 @@ if (typeof document !== 'undefined') {
 
 .field { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 
+/* Input labels = mono uppercase micro-labels (REDESIGN.md §4/§5) */
 .field-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500;
-  color: var(--m-text, #E8E8EC);
+  font-family: var(--nc-font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
 }
 
 .field-row { display: flex; gap: 16px; }
 
+/* Input grammar: chip fill, 1px hairline, focus = accent border ONLY */
 .field-input, .field-textarea, .field-select {
   padding: 10px 14px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: var(--nc-radius-md);
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--m-text, #E8E8EC);
+  color: var(--nc-text);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.field-input:focus, .field-textarea:focus, .field-select:focus { border-color: #00D2BE; }
-.field-input::placeholder, .field-textarea::placeholder { color: var(--m-placeholder, #3F3F46); }
+.field-input:focus, .field-textarea:focus, .field-select:focus { border-color: var(--nc-accent); }
+.field-input::placeholder, .field-textarea::placeholder { color: var(--nc-text-dim); }
 
 .field-textarea { resize: vertical; min-height: 60px; }
 
+/* Native arrow (theme-aware via color-scheme) — a data-URI glyph can't
+   consume tokens, so the hardcoded chevron is gone. */
 .field-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
   cursor: pointer;
 }
 
-.field-select option { background: #111113; color: #E8E8EC; }
+.field-select option { background: var(--nc-surface-2); color: var(--nc-text); }
 
 /* Source Map picker */
 .source-map-wrap { position: relative; }
@@ -406,26 +421,31 @@ if (typeof document !== 'undefined') {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  transition: border-color 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.source-map-display:hover,
-.source-map-display.active { border-color: #00D2BE; }
+@media (hover: hover) and (pointer: fine) {
+  .source-map-display:hover { border-color: var(--nc-border-active); }
+}
+
+.source-map-display.active { border-color: var(--nc-accent); }
 
 .source-chev {
   margin-left: auto;
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-muted);
   flex-shrink: 0;
 }
 
-.source-title.placeholder { color: var(--m-placeholder, #71717A); }
+.source-title.placeholder { color: var(--nc-text-dim); }
 
+/* Popover grammar (REDESIGN.md §5): flat surface-2 + hairline, origin at
+   trigger, enter scale(0.97)+opacity 150ms; exit is instant (v-if). */
 .source-map-menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -435,24 +455,29 @@ if (typeof document !== 'undefined') {
   max-height: 220px;
   overflow-y: auto;
   padding: 4px;
-  background: var(--m-bg, #111113);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.32);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  box-shadow: var(--nc-shadow-md);
   display: flex;
   flex-direction: column;
   gap: 2px;
+  transform-origin: top;
+  animation: source-menu-in var(--nc-duration-fast) var(--nc-ease);
 }
 
-:root.light .source-map-menu {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+@keyframes source-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
 
 .source-map-empty {
   margin: 0;
   padding: 12px;
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-secondary);
   text-align: center;
 }
 
@@ -463,46 +488,52 @@ if (typeof document !== 'undefined') {
   padding: 8px 10px;
   background: none;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  color: var(--m-text, #E8E8EC);
+  color: var(--nc-text);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.source-map-item:hover { background: var(--m-hover, #1A1A1E); }
-.source-map-item.active { background: rgba(0, 210, 190, 0.08); }
+@media (hover: hover) and (pointer: fine) {
+  .source-map-item:hover { background: var(--nc-surface-3); }
+}
+
+.source-map-item.active { background: rgba(var(--nc-accent-rgb), 0.08); }
 
 .source-map-item-title {
   flex: 1;
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--m-text, #E8E8EC);
+  color: var(--nc-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .source-map-item-meta {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-muted);
 }
 
+/* Validation errors are coral (REDESIGN.md §1) */
 .modal-error {
   margin: 0;
   padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 6px;
-  color: #ef4444;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.25);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-coral);
   font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
+/* Spinner ink = bg color (sits on the accent pill) */
 .btn-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(9, 9, 11, 0.3);
-  border-top-color: #09090B;
+  border: 2px solid rgba(var(--nc-bg-rgb), 0.3);
+  border-top-color: var(--nc-bg);
   border-radius: 50%;
   animation: pubspin 0.6s linear infinite;
 }
@@ -511,16 +542,16 @@ if (typeof document !== 'undefined') {
 
 .source-avatar {
   width: 24px; height: 24px;
-  border-radius: 6px;
-  background: #00D2BE;
+  border-radius: var(--nc-radius-sm);
+  background: var(--nc-accent);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 700; color: #09090B;
+  font-family: var(--nc-font-body);
+  font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 700; color: var(--nc-bg);
 }
 
 .source-title {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--m-text, #E8E8EC);
+  font-family: var(--nc-font-body);
+  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--nc-text);
 }
 
 /* Toggle Switch */
@@ -529,51 +560,61 @@ if (typeof document !== 'undefined') {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
 }
 
 .toggle-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--m-text, #E8E8EC);
+  font-family: var(--nc-font-body);
+  font-size: calc(14px * var(--nc-text-scale, 1)); color: var(--nc-text);
   flex: 1;
 }
 
 .toggle-switch {
   width: 32px; height: 18px;
-  border-radius: 9px;
-  background: var(--m-border, #2A2A30);
+  border-radius: 999px;
+  background: var(--nc-border);
   border: none; cursor: pointer;
   position: relative;
-  transition: background 0.2s;
+  transition: background-color var(--nc-duration-normal) var(--nc-ease);
   padding: 0;
 }
 
-.toggle-switch.active { background: #00D2BE; }
+.toggle-switch.active { background: var(--nc-accent); }
 
 .toggle-knob {
   position: absolute;
   top: 2px; left: 2px;
   width: 14px; height: 14px;
   border-radius: 50%;
-  background: white;
-  transition: transform 0.2s;
+  background: var(--nc-text);
+  transition: transform var(--nc-duration-normal) var(--nc-ease);
 }
 
-.toggle-switch.active .toggle-knob { transform: translateX(14px); }
+.toggle-switch.active .toggle-knob {
+  transform: translateX(14px);
+  background: var(--nc-bg);
+}
 
-/* Tags */
+/* Tags — chip grammar: mono on chip fill, hairline, radius 0.4rem */
 .tags-container {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   padding: 8px 10px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   min-height: 38px;
   align-items: center;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+/* The inner tag input is borderless — the container carries the focus
+   grammar (accent border only, REDESIGN.md §5). */
+.tags-container:focus-within {
+  border-color: var(--nc-accent);
 }
 
 .tag-chip {
@@ -581,35 +622,39 @@ if (typeof document !== 'undefined') {
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  background: var(--m-hover, #1A1A1E);
-  border-radius: 4px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: 0.4rem;
+  font-family: var(--nc-font-mono);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--m-text, #E8E8EC);
+  color: var(--nc-text);
 }
 
 .tag-remove {
   display: flex; align-items: center; justify-content: center;
   width: 14px; height: 14px;
   border: none; background: none;
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-muted);
   cursor: pointer;
   padding: 0;
-  border-radius: 2px;
+  border-radius: 0.35rem;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.tag-remove:hover { color: var(--m-text, #E8E8EC); }
+@media (hover: hover) and (pointer: fine) {
+  .tag-remove:hover { color: var(--nc-text); }
+}
 
 .tag-input {
   border: none; background: none; outline: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--m-text, #E8E8EC);
+  color: var(--nc-text);
   min-width: 60px;
   flex: 1;
 }
 
-.tag-input::placeholder { color: var(--m-muted, #71717A); }
+.tag-input::placeholder { color: var(--nc-text-dim); }
 
 /* Footer */
 .modal-footer {
@@ -619,57 +664,102 @@ if (typeof document !== 'undefined') {
   padding: 16px 24px 24px;
 }
 
+/* Ghost button — mono uppercase text link with underline-grow (NcButton) */
 .btn-ghost {
-  padding: 10px 24px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500;
-  color: var(--m-text, #E8E8EC);
+  position: relative;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid transparent;
+  font-family: var(--nc-font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.btn-ghost:hover { background: var(--m-hover, #1A1A1E); }
+.btn-ghost::after {
+  content: '';
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 0.4em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 0.45s var(--nc-ease);
+}
 
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover { color: var(--nc-accent); }
+  .btn-ghost:hover::after { transform: scaleX(1); }
+}
+
+/* Primary CTA — accent pill (publish feeds the AI template library) */
 .btn-primary {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 24px;
-  background: #00D2BE;
-  border: none; border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600;
-  color: #09090B;
+  background: var(--nc-accent);
+  border: none;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
+  font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 700;
+  color: var(--nc-bg);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.btn-primary:hover { opacity: 0.9; }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary:active {
+  transform: scale(0.97);
+}
 
-/* Transitions */
-.modal-enter-active { transition: opacity 0.2s ease; }
-.modal-enter-active .modal-panel { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease; }
-.modal-leave-active { transition: opacity 0.15s ease; }
-.modal-leave-active .modal-panel { transition: transform 0.15s ease, opacity 0.15s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background: var(--nc-accent-light);
+    transform: translateY(-1px);
+  }
+}
+
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.close-btn:focus-visible,
+.source-map-display:focus-visible,
+.source-map-item:focus-visible,
+.toggle-switch:focus-visible,
+.tag-remove:focus-visible,
+.btn-ghost:focus-visible,
+.btn-primary:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Transitions — enter scale(0.97)+opacity 200ms, exit faster (REDESIGN.md §5/§6) */
+.modal-enter-active { transition: opacity var(--nc-duration-normal) var(--nc-ease); }
+.modal-enter-active .modal-panel {
+  transition: transform var(--nc-duration-normal) var(--nc-ease),
+              opacity var(--nc-duration-normal) var(--nc-ease);
+}
+.modal-leave-active { transition: opacity var(--nc-duration-fast) var(--nc-ease); }
+.modal-leave-active .modal-panel {
+  transition: transform var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease);
+}
 .modal-enter-from { opacity: 0; }
-.modal-enter-from .modal-panel { transform: scale(0.95); opacity: 0; }
+.modal-enter-from .modal-panel { transform: scale(0.97); opacity: 0; }
 .modal-leave-to { opacity: 0; }
-.modal-leave-to .modal-panel { transform: scale(0.95); opacity: 0; }
+.modal-leave-to .modal-panel { transform: scale(0.97); opacity: 0; }
 
-/* Light theme */
-:root.light .modal-panel {
-  --m-bg: #FFFFFF;
-  --m-border: #E8E8E6;
-  --m-text: #111111;
-  --m-muted: #71717A;
-  --m-placeholder: #A1A1AA;
-  --m-input-bg: #F5F5F3;
-  --m-hover: #E8E8E6;
-}
-
-:root.light .field-select option { background: #FFFFFF; color: #111111; }
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 
 /* Mobile */
 @media (max-width: 640px) {

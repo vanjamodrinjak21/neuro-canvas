@@ -117,24 +117,36 @@ function goToProfile() {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
 }
 
-.user-menu-trigger:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .user-menu-trigger:hover {
+    opacity: 0.9;
+  }
+}
+
+.user-menu-trigger:active {
+  transform: scale(0.97);
+}
+
+.user-menu-trigger:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .user-menu-trigger:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
+/* Avatar — flat accent tint + hairline, no gradient (REDESIGN.md §5) */
 .avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 210, 190, 0.2), rgba(0, 210, 190, 0.1));
-  border: 1px solid rgba(0, 210, 190, 0.3);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -150,42 +162,47 @@ function goToProfile() {
 .avatar-initials {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--nc-teal, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .chevron {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.4);
-  transition: transform 0.2s ease;
+  color: var(--nc-text-dim);
+  transition: transform var(--nc-duration-normal) var(--nc-ease);
 }
 
 .user-menu-trigger[data-state="open"] .chevron {
   transform: rotate(180deg);
 }
 
-/* Dropdown Content */
+/* Dropdown — flat surface-2 + hairline, radius 8px, no blur, no glow
+   (REDESIGN.md §5). Origin at the trigger, scale(0.97)+opacity. */
 .user-menu-content {
   min-width: 220px;
-  background: rgba(18, 18, 22, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   padding: 0.5rem;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    0 0 40px rgba(0, 210, 190, 0.08);
+  box-shadow: var(--nc-shadow-md);
   z-index: 1000;
-  animation: slideDown 0.15s ease-out;
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin, top right);
+  animation: nc-menu-in var(--nc-duration-fast) var(--nc-ease);
 }
 
-@keyframes slideDown {
+@keyframes nc-menu-in {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-menu-content {
+    animation: none;
   }
 }
 
@@ -201,8 +218,8 @@ function goToProfile() {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 210, 190, 0.2), rgba(0, 210, 190, 0.1));
-  border: 1px solid rgba(0, 210, 190, 0.3);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,7 +236,7 @@ function goToProfile() {
 .user-avatar-initials {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--nc-teal, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .user-details {
@@ -229,7 +246,7 @@ function goToProfile() {
 .user-name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -238,7 +255,7 @@ function goToProfile() {
 
 .user-email {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--nc-text-muted);
   margin: 0.125rem 0 0;
   white-space: nowrap;
   overflow: hidden;
@@ -248,43 +265,57 @@ function goToProfile() {
 /* Separator */
 .menu-separator {
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--nc-border-subtle);
   margin: 0.375rem 0;
 }
 
-/* Menu items */
+/* Menu items — hover surface-3, ink text (REDESIGN.md §5) */
 .menu-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--nc-radius-sm);
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
   outline: none;
 }
 
-.menu-item:hover,
 .menu-item:focus {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--nc-ink, #FAFAFA);
+  background: var(--nc-surface-3);
+  color: var(--nc-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .menu-item:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-text);
+  }
 }
 
 .menu-item[data-disabled] {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
+/* Destructive — coral text, calm coral-tint hover (accent discipline §1) */
 .menu-item-danger {
-  color: rgba(239, 68, 68, 0.9);
+  color: var(--nc-coral);
 }
 
-.menu-item-danger:hover,
 .menu-item-danger:focus {
-  background: rgba(239, 68, 68, 0.1);
-  color: #EF4444;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  color: var(--nc-coral);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .menu-item-danger:hover {
+    background: rgba(var(--nc-coral-rgb), 0.08);
+    color: var(--nc-coral);
+  }
 }
 
 .menu-icon {

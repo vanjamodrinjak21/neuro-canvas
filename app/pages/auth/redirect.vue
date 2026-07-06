@@ -8,6 +8,7 @@ const target = computed(() => (route.query.to as string) || '/dashboard')
 
 const statusText = ref('Authenticating...')
 const progressWidth = ref(0)
+const progressCss = computed(() => `${progressWidth.value}%`)
 
 onMounted(() => {
   // Animate progress bar
@@ -48,25 +49,25 @@ onMounted(() => {
 
           <!-- Source node (content) -->
           <rect x="30" y="82" width="60" height="36" rx="6" class="node-rect" />
-          <circle cx="44" cy="100" r="4" fill="#27272A" />
-          <line x1="52" y1="96" x2="76" y2="96" stroke="#3F3F46" stroke-width="1.5" stroke-linecap="round" />
-          <line x1="52" y1="104" x2="68" y2="104" stroke="#3F3F46" stroke-width="1.5" stroke-linecap="round" />
+          <circle cx="44" cy="100" r="4" class="node-detail-fill" />
+          <line x1="52" y1="96" x2="76" y2="96" class="node-detail-line" stroke-width="1.5" stroke-linecap="round" />
+          <line x1="52" y1="104" x2="68" y2="104" class="node-detail-line" stroke-width="1.5" stroke-linecap="round" />
 
           <!-- Glowing center dot -->
-          <circle cx="200" cy="100" r="12" fill="#00D2BE" opacity="0.15" class="glow-outer" />
-          <circle cx="200" cy="100" r="8" fill="#00D2BE" opacity="0.3" class="glow-mid" />
-          <circle cx="200" cy="100" r="5" fill="#00D2BE" class="glow-core" />
+          <circle cx="200" cy="100" r="12" opacity="0.15" class="accent-dot glow-outer" />
+          <circle cx="200" cy="100" r="8" opacity="0.3" class="accent-dot glow-mid" />
+          <circle cx="200" cy="100" r="5" class="accent-dot glow-core" />
 
           <!-- Trail particles -->
-          <circle cx="175" cy="82" r="3" fill="#00D2BE" opacity="0.15" />
-          <circle cx="155" cy="68" r="2" fill="#00D2BE" opacity="0.08" />
+          <circle cx="175" cy="82" r="3" opacity="0.15" class="accent-dot" />
+          <circle cx="155" cy="68" r="2" opacity="0.08" class="accent-dot" />
 
           <!-- Destination node (grid) -->
           <rect x="310" y="82" width="60" height="36" rx="6" class="dest-rect" />
-          <rect x="328" y="92" width="7" height="7" rx="1" fill="#27272A" />
-          <rect x="338" y="92" width="7" height="7" rx="1" fill="#27272A" />
-          <rect x="328" y="102" width="7" height="7" rx="1" fill="#27272A" />
-          <rect x="338" y="102" width="7" height="7" rx="1" fill="#27272A" />
+          <rect x="328" y="92" width="7" height="7" rx="1" class="node-detail-fill" />
+          <rect x="338" y="92" width="7" height="7" rx="1" class="node-detail-fill" />
+          <rect x="328" y="102" width="7" height="7" rx="1" class="node-detail-fill" />
+          <rect x="338" y="102" width="7" height="7" rx="1" class="node-detail-fill" />
         </svg>
       </div>
 
@@ -80,7 +81,7 @@ onMounted(() => {
       <!-- Progress bar -->
       <div class="progress-wrapper">
         <div class="progress-track">
-          <div class="progress-fill" :style="{ width: progressWidth + '%' }" />
+          <div class="progress-fill" />
         </div>
         <span class="status-text">{{ statusText }}</span>
       </div>
@@ -95,7 +96,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 32px;
-  background: #09090B;
+  background: var(--nc-bg);
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -109,7 +110,7 @@ onMounted(() => {
 .brand-name {
   font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: #FAFAFA;
+  color: var(--nc-text);
   letter-spacing: -0.03em;
 }
 
@@ -127,22 +128,35 @@ onMounted(() => {
 }
 
 .curve-path {
-  stroke: #1A1A1E;
+  stroke: var(--nc-border);
   stroke-width: 2;
   stroke-dasharray: 6 4;
 }
 
 .node-rect {
-  fill: #111113;
-  stroke: #27272A;
+  fill: var(--nc-surface);
+  stroke: var(--nc-border);
   stroke-width: 1.5;
 }
 
 .dest-rect {
-  fill: #111113;
-  stroke: #00D2BE;
+  fill: var(--nc-surface);
+  stroke: var(--nc-accent);
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
+}
+
+/* Decorative node innards + accent particles (was hardcoded hex) */
+.node-detail-fill {
+  fill: var(--nc-surface-4);
+}
+
+.node-detail-line {
+  stroke: var(--nc-border-active);
+}
+
+.accent-dot {
+  fill: var(--nc-accent);
 }
 
 /* Glow animation */
@@ -180,21 +194,22 @@ onMounted(() => {
   }
 }
 
-/* Copy */
+/* Copy — status-page headline keeps the serif empty-state grammar;
+   face comes from the token, never re-hardcoded (REDESIGN.md §9) */
 .heading {
-  font-family: 'Instrument Serif', serif;
+  font-family: var(--nc-font-serif);
   font-size: calc(28px * var(--nc-text-scale, 1));
   font-weight: 400;
   font-style: italic;
   line-height: 36px;
-  color: #FAFAFA;
+  color: var(--nc-text);
   margin: 0 0 8px;
 }
 
 .desc {
   font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 22px;
-  color: #71717A;
+  color: var(--nc-text-muted);
   margin: 0 0 28px;
 }
 
@@ -210,16 +225,16 @@ onMounted(() => {
 .progress-track {
   width: 100%;
   height: 3px;
-  background: #1A1A1E;
+  background: var(--nc-surface-3);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #00D2BE;
+  background: var(--nc-accent);
   border-radius: 2px;
-  width: 0%;
+  width: v-bind(progressCss);
   transition: width 3s linear;
 }
 
@@ -227,46 +242,10 @@ onMounted(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 16px;
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   transition: opacity 0.3s ease;
 }
 
-/* Light theme */
-:root.light .brand-name {
-  color: #111111;
-}
-
-:root.light .redirect-page {
-  background: #FAFAF9;
-}
-
-:root.light .curve-path {
-  stroke: #D4D4D8;
-}
-
-:root.light .node-rect {
-  fill: #FFFFFF;
-  stroke: #D4D4D8;
-}
-
-:root.light .dest-rect {
-  fill: #FFFFFF;
-  stroke: #00D2BE;
-}
-
-:root.light .heading {
-  color: #111111;
-}
-
-:root.light .desc {
-  color: #71717A;
-}
-
-:root.light .progress-track {
-  background: #E8E8E6;
-}
-
-:root.light .status-text {
-  color: #52525B;
-}
+/* Light theme is carried entirely by the :root.light token rebase in
+   tokens.css — the former hardcoded overrides became no-ops. */
 </style>

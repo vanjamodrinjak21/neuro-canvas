@@ -145,7 +145,8 @@ onBeforeUnmount(() => {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--nc-text-muted);
+  /* Mono micro-label grammar (REDESIGN.md §4) */
+  color: var(--nc-text-secondary);
   margin-bottom: 12px;
   padding-left: 12px;
 }
@@ -176,7 +177,8 @@ onBeforeUnmount(() => {
   font-family: 'Inter', var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-text-muted);
+  /* Interactive nav rest ≥ the 0.62 tier (AER-76 chrome visibility) */
+  color: var(--nc-text-secondary);
   text-decoration: none;
   padding: 5px 12px;
   transition: color var(--nc-duration-fast) ease;
@@ -188,31 +190,16 @@ onBeforeUnmount(() => {
 }
 
 .docs-toc__link:hover {
-  color: var(--nc-text-secondary);
+  color: var(--nc-text);
 }
 
 .docs-toc__link--active {
   color: var(--nc-accent);
 }
 
-/* Light theme */
-:root.light .docs-toc__label {
-  color: var(--nc-text-muted);
-}
-
-:root.light .docs-toc__list {
-  border-left-color: var(--nc-border);
-}
-
-:root.light .docs-toc__link {
-  color: var(--nc-text-muted);
-}
-
-:root.light .docs-toc__link:hover {
-  color: var(--nc-text-secondary);
-}
-
+/* Light theme — tokens carry everything except the active link:
+   12px accent text needs the text-tier accent (#0b9e93 is 3.18:1). */
 :root.light .docs-toc__link--active {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 </style>

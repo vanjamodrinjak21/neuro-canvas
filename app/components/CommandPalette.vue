@@ -192,7 +192,7 @@ const navItems = computed<PaletteItem[]>(() => [
 
 const actionItems = computed<PaletteItem[]>(() => [
   { id: 'act-new-map', group: 'actions', label: t('command_palette.actions.new_map'), icon: 'i-lucide-plus', keywords: 'create blank new map', run: createNewMap },
-  { id: 'act-generate', group: 'actions', label: t('command_palette.actions.generate_map'), icon: 'i-lucide-waypoints', keywords: 'ai generate create', run: () => go('/dashboard') },
+  { id: 'act-generate', group: 'actions', label: t('command_palette.actions.generate_map'), icon: 'i-nc-ai-mark', keywords: 'ai generate create', run: () => go('/dashboard') },
   { id: 'act-upload', group: 'actions', label: t('command_palette.actions.upload_document'), icon: 'i-lucide-upload', keywords: 'document pdf upload import file', run: () => go('/documents') },
 ])
 
@@ -285,7 +285,7 @@ const view = computed<{ groups: ResultGroup[]; flat: ScoredItem[] }>(() => {
         id: 'act-generate-query',
         group: 'generate',
         label: t('command_palette.actions.generate_query', { query: q }),
-        icon: 'i-lucide-waypoints',
+        icon: 'i-nc-ai-mark',
         run: generateFromQuery,
       },
       ranges: [],
@@ -369,107 +369,101 @@ defineExpose({ open, close })
 
 <template>
   <Teleport to="body">
-    <Transition
-      enter-active-class="nc-cmdk-enter"
-      leave-active-class="nc-cmdk-leave"
-      enter-from-class="opacity-0 nc-cmdk-scaled"
-      leave-to-class="opacity-0 nc-cmdk-scaled"
+    <!-- Keyboard-initiated: opens/closes INSTANTLY, no transition (REDESIGN.md §6) -->
+    <div
+      v-if="isOpen"
+      class="nc-cmdk-overlay"
+      @click.self="close"
+      @keydown="handleKeyDown"
     >
       <div
-        v-if="isOpen"
-        class="nc-cmdk-overlay"
-        @click.self="close"
-        @keydown="handleKeyDown"
+        class="nc-cmdk-palette"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="$t('command_palette.placeholder')"
       >
-        <div
-          class="nc-cmdk-palette"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="$t('command_palette.placeholder')"
-        >
-          <!-- Input -->
-          <div class="nc-cmdk-input-row">
-            <span class="i-lucide-search nc-cmdk-search-icon" />
-            <input
-              ref="inputRef"
-              v-model="query"
-              type="text"
-              class="nc-cmdk-input"
-              role="combobox"
-              aria-expanded="true"
-              aria-controls="nc-cmdk-list"
-              :aria-activedescendant="view.flat[selectedIndex] ? `nc-cmdk-opt-${selectedIndex}` : undefined"
-              :aria-label="$t('command_palette.placeholder')"
-              :placeholder="$t('command_palette.placeholder')"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
+        <!-- Input -->
+        <div class="nc-cmdk-input-row">
+          <span class="i-lucide-search nc-cmdk-search-icon" />
+          <input
+            ref="inputRef"
+            v-model="query"
+            type="text"
+            class="nc-cmdk-input"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="nc-cmdk-list"
+            :aria-activedescendant="view.flat[selectedIndex] ? `nc-cmdk-opt-${selectedIndex}` : undefined"
+            :aria-label="$t('command_palette.placeholder')"
+            :placeholder="$t('command_palette.placeholder')"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          >
+          <span v-if="loading" class="nc-cmdk-spinner" />
+          <kbd class="nc-cmdk-kbd">{{ $t('command_palette.escape_key') }}</kbd>
+        </div>
+
+        <!-- Results -->
+        <div v-if="view.flat.length" id="nc-cmdk-list" class="nc-cmdk-results" role="listbox">
+          <template v-for="group in view.groups" :key="group.key">
+            <div class="nc-cmdk-group-heading" role="presentation">{{ group.label }}</div>
+            <button
+              v-for="entry in group.items"
+              :id="`nc-cmdk-opt-${entry.flatIndex}`"
+              :key="entry.item.id"
+              type="button"
+              role="option"
+              tabindex="-1"
+              :aria-selected="entry.flatIndex === selectedIndex"
+              :class="['nc-cmdk-item', entry.flatIndex === selectedIndex && 'selected']"
+              @click="runItem(entry.item)"
+              @mouseenter="selectedIndex = entry.flatIndex"
             >
-            <span v-if="loading" class="nc-cmdk-spinner" />
-            <kbd class="nc-cmdk-kbd">{{ $t('command_palette.escape_key') }}</kbd>
-          </div>
-
-          <!-- Results -->
-          <div v-if="view.flat.length" id="nc-cmdk-list" class="nc-cmdk-results" role="listbox">
-            <template v-for="group in view.groups" :key="group.key">
-              <div class="nc-cmdk-group-heading" role="presentation">{{ group.label }}</div>
-              <button
-                v-for="entry in group.items"
-                :id="`nc-cmdk-opt-${entry.flatIndex}`"
-                :key="entry.item.id"
-                type="button"
-                role="option"
-                tabindex="-1"
-                :aria-selected="entry.flatIndex === selectedIndex"
-                :class="['nc-cmdk-item', entry.flatIndex === selectedIndex && 'selected']"
-                @click="runItem(entry.item)"
-                @mouseenter="selectedIndex = entry.flatIndex"
-              >
-                <span :class="['nc-cmdk-item-icon', `g-${entry.item.group}`, entry.item.icon]" />
-                <span class="nc-cmdk-item-body">
-                  <span class="nc-cmdk-item-label">
-                    <template v-for="(seg, i) in entry.segments" :key="i">
-                      <mark v-if="seg.match" class="nc-cmdk-mark">{{ seg.text }}</mark>
-                      <template v-else>{{ seg.text }}</template>
-                    </template>
-                  </span>
-                  <span v-if="entry.item.sublabel" class="nc-cmdk-item-sub">{{ entry.item.sublabel }}</span>
+              <span :class="['nc-cmdk-item-icon', `g-${entry.item.group}`, entry.item.icon]" />
+              <span class="nc-cmdk-item-body">
+                <span class="nc-cmdk-item-label">
+                  <template v-for="(seg, i) in entry.segments" :key="i">
+                    <mark v-if="seg.match" class="nc-cmdk-mark">{{ seg.text }}</mark>
+                    <template v-else>{{ seg.text }}</template>
+                  </template>
                 </span>
-                <span class="i-lucide-corner-down-left nc-cmdk-item-enter" />
-              </button>
-            </template>
-          </div>
+                <span v-if="entry.item.sublabel" class="nc-cmdk-item-sub">{{ entry.item.sublabel }}</span>
+              </span>
+              <span class="i-lucide-corner-down-left nc-cmdk-item-enter" />
+            </button>
+          </template>
+        </div>
 
-          <!-- States -->
-          <div v-else-if="loading" class="nc-cmdk-state">
-            <span class="nc-cmdk-spinner" />
-            <span>{{ $t('command_palette.searching') }}</span>
-          </div>
-          <div v-else-if="query.trim()" class="nc-cmdk-state nc-cmdk-state--empty">
-            <span class="i-lucide-search-x nc-cmdk-state-icon" />
-            <span>{{ $t('command_palette.no_results', { query: query.trim() }) }}</span>
-          </div>
-          <div v-else class="nc-cmdk-state nc-cmdk-state--empty">
-            <span class="i-lucide-command nc-cmdk-state-icon" />
-            <span>{{ $t('command_palette.empty.subtitle') }}</span>
-          </div>
+        <!-- States -->
+        <div v-else-if="loading" class="nc-cmdk-state">
+          <span class="nc-cmdk-spinner" />
+          <span>{{ $t('command_palette.searching') }}</span>
+        </div>
+        <div v-else-if="query.trim()" class="nc-cmdk-state nc-cmdk-state--empty">
+          <span class="i-lucide-search-x nc-cmdk-state-icon" />
+          <span>{{ $t('command_palette.no_results', { query: query.trim() }) }}</span>
+        </div>
+        <div v-else class="nc-cmdk-state nc-cmdk-state--empty">
+          <span class="i-lucide-command nc-cmdk-state-icon" />
+          <span>{{ $t('command_palette.empty.subtitle') }}</span>
+        </div>
 
-          <!-- Branded footer -->
-          <div class="nc-cmdk-footer">
-            <span class="nc-cmdk-brand">
-              <NcLogo :size="13" :radius="5" :container-size="22" />
-              <span class="nc-cmdk-brand-name">NeuroCanvas</span>
-            </span>
-            <span class="nc-cmdk-hints">
-              <kbd>↑</kbd><kbd>↓</kbd><span>{{ $t('command_palette.footer.navigate') }}</span>
-              <kbd>↵</kbd><span>{{ $t('command_palette.footer.select') }}</span>
-              <kbd>esc</kbd><span>{{ $t('command_palette.footer.dismiss') }}</span>
-            </span>
-          </div>
+        <!-- Branded footer -->
+        <div class="nc-cmdk-footer">
+          <span class="nc-cmdk-brand">
+            <NcLogo :size="13" :radius="5" :container-size="22" />
+            <span class="nc-cmdk-brand-name">NeuroCanvas</span>
+          </span>
+          <span class="nc-cmdk-hints">
+            <kbd>↑</kbd><kbd>↓</kbd><span>{{ $t('command_palette.footer.navigate') }}</span>
+            <kbd>↵</kbd><span>{{ $t('command_palette.footer.select') }}</span>
+            <kbd>esc</kbd><span>{{ $t('command_palette.footer.dismiss') }}</span>
+          </span>
         </div>
       </div>
-    </Transition>
+    </div>
   </Teleport>
 </template>
 
@@ -482,21 +476,20 @@ defineExpose({ open, close })
   align-items: flex-start;
   justify-content: center;
   padding: 14vh 16px 16px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(6px);
+  background: rgba(var(--nc-bg-rgb), 0.6);
 }
 
+/* Flat surface-2 + hairline — no glass (REDESIGN.md §5) */
 .nc-cmdk-palette {
   width: 100%;
   max-width: 600px;
   max-height: 64vh;
   display: flex;
   flex-direction: column;
-  background: var(--nc-glass-bg-elevated, rgba(9, 9, 11, 0.92));
-  backdrop-filter: blur(var(--nc-glass-blur, 24px));
-  border: 1px solid var(--nc-border, #1A1A1E);
-  border-radius: var(--nc-radius-lg, 12px);
-  box-shadow: var(--nc-shadow-xl, 0 16px 48px rgba(0, 0, 0, 0.6));
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-lg);
+  box-shadow: var(--nc-shadow-md);
   overflow: hidden;
 }
 
@@ -506,12 +499,13 @@ defineExpose({ open, close })
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid var(--nc-border, #1A1A1E);
+  border-bottom: 1px solid var(--nc-border-subtle);
 }
 
 .nc-cmdk-search-icon {
   font-size: calc(18px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #A1A1AA);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 
@@ -521,24 +515,25 @@ defineExpose({ open, close })
   background: transparent;
   border: none;
   outline: none;
-  font-family: inherit;
+  font-family: var(--nc-font-body);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
 }
 
 .nc-cmdk-input::placeholder {
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-dim);
 }
 
+/* kbd hint — mono chip (REDESIGN.md §4) */
 .nc-cmdk-kbd {
   flex-shrink: 0;
   padding: 2px 7px;
-  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #A1A1AA);
-  background: var(--nc-surface-3, #18181B);
-  border: 1px solid var(--nc-border, #1A1A1E);
-  border-radius: var(--nc-radius-sm, 6px);
+  color: var(--nc-text-muted);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: 0.35rem;
 }
 
 /* ── Results ── */
@@ -548,13 +543,15 @@ defineExpose({ open, close })
   padding: 8px;
 }
 
+/* Group heading — mono uppercase micro-label (REDESIGN.md §4) */
 .nc-cmdk-group-heading {
   padding: 10px 10px 4px;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--nc-ink-muted, #71717A);
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
 }
 
 .nc-cmdk-item {
@@ -564,16 +561,20 @@ defineExpose({ open, close })
   gap: 12px;
   padding: 9px 10px;
   border: none;
-  border-radius: var(--nc-radius-md, 8px);
+  border-radius: var(--nc-radius-md);
   background: transparent;
   text-align: left;
   cursor: pointer;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
 }
 
+/* Selected — surface-3 hover plane + accent label (REDESIGN.md §5) */
 .nc-cmdk-item.selected {
-  /* Theme-aware: rgba(255,255,255,…) is invisible in light mode. */
-  background: var(--nc-surface-hover, rgba(255, 255, 255, 0.07));
+  background: var(--nc-surface-3);
+}
+
+.nc-cmdk-item.selected .nc-cmdk-item-label {
+  color: var(--nc-accent);
 }
 
 .nc-cmdk-item-icon {
@@ -584,24 +585,24 @@ defineExpose({ open, close })
   align-items: center;
   justify-content: center;
   font-size: calc(16px * var(--nc-text-scale, 1));
-  border-radius: var(--nc-radius-sm, 6px);
-  background: var(--nc-surface-3, #18181B);
-  color: var(--nc-ink-soft, #A1A1AA);
+  border-radius: var(--nc-radius-sm);
+  background: var(--nc-chip-bg);
+  /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+  color: var(--nc-text-secondary);
 }
 
-/* Per-group accent tint (predefined classes — no inline styles) */
+/* Per-group accent tint (predefined classes — no inline styles).
+   Accent discipline: cyan for the interactive/AI groups, neutral ink
+   elsewhere — no per-group color rainbow (REDESIGN.md §1). */
 .nc-cmdk-item-icon.g-generate,
 .nc-cmdk-item-icon.g-actions {
-  color: var(--nc-accent, #00D2BE);
-  background: var(--nc-accent-glow, rgba(0, 210, 190, 0.1));
+  color: var(--nc-accent);
+  background: var(--nc-accent-glow);
 }
-.nc-cmdk-item-icon.g-maps { color: var(--nc-node-blue, #60A5FA); }
-.nc-cmdk-item-icon.g-documents { color: var(--nc-node-orange, #FB923C); }
-.nc-cmdk-item-icon.g-templates { color: var(--nc-node-purple, #A78BFA); }
 
 .nc-cmdk-item.selected .nc-cmdk-item-icon {
-  background: var(--nc-accent-glow, rgba(0, 210, 190, 0.12));
-  color: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent-glow);
+  color: var(--nc-accent);
 }
 
 .nc-cmdk-item-body {
@@ -621,13 +622,13 @@ defineExpose({ open, close })
 
 .nc-cmdk-mark {
   background: transparent;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent);
   font-weight: 600;
 }
 
 .nc-cmdk-item-sub {
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -636,7 +637,7 @@ defineExpose({ open, close })
 .nc-cmdk-item-enter {
   flex-shrink: 0;
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-muted);
   opacity: 0;
 }
 
@@ -652,7 +653,7 @@ defineExpose({ open, close })
   gap: 10px;
   padding: 40px 20px;
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-muted);
 }
 
 .nc-cmdk-state-icon {
@@ -663,8 +664,8 @@ defineExpose({ open, close })
 .nc-cmdk-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid var(--nc-border-active, #27272A);
-  border-top-color: var(--nc-accent, #00D2BE);
+  border: 2px solid var(--nc-border-active);
+  border-top-color: var(--nc-accent);
   border-radius: 50%;
   animation: nc-cmdk-spin 0.7s linear infinite;
 }
@@ -676,8 +677,7 @@ defineExpose({ open, close })
   justify-content: space-between;
   gap: 12px;
   padding: 8px 14px;
-  border-top: 1px solid var(--nc-border, #1A1A1E);
-  background: var(--nc-surface-3, #131316);
+  border-top: 1px solid var(--nc-border-subtle);
 }
 
 .nc-cmdk-brand {
@@ -690,7 +690,7 @@ defineExpose({ open, close })
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: var(--nc-ink-soft, #A1A1AA);
+  color: var(--nc-text-secondary);
 }
 
 .nc-cmdk-hints {
@@ -698,54 +698,31 @@ defineExpose({ open, close })
   align-items: center;
   gap: 6px;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-muted);
 }
 
 .nc-cmdk-hints kbd {
   padding: 1px 5px;
-  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #A1A1AA);
-  background: var(--nc-surface-4, #1C1C1F);
-  border: 1px solid var(--nc-border, #1A1A1E);
-  border-radius: 4px;
+  color: var(--nc-text-secondary);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: 0.35rem;
 }
 
 .nc-cmdk-hints span {
   margin-right: 4px;
 }
 
-/* ── Transitions ── */
-.nc-cmdk-enter {
-  transition: opacity 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
-}
-.nc-cmdk-enter .nc-cmdk-palette {
-  transition: transform 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
-}
-.nc-cmdk-leave {
-  transition: opacity 90ms cubic-bezier(0.4, 0, 1, 1);
-}
-.nc-cmdk-leave .nc-cmdk-palette {
-  transition: transform 90ms cubic-bezier(0.4, 0, 1, 1);
-}
-.nc-cmdk-scaled .nc-cmdk-palette {
-  transform: scale(0.975) translateY(-6px);
-}
+/* No open/close transition — keyboard-initiated actions render instantly
+   (REDESIGN.md §6). */
 
 @keyframes nc-cmdk-spin {
   to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nc-cmdk-enter,
-  .nc-cmdk-enter .nc-cmdk-palette,
-  .nc-cmdk-leave,
-  .nc-cmdk-leave .nc-cmdk-palette {
-    transition: none;
-  }
-  .nc-cmdk-scaled .nc-cmdk-palette {
-    transform: none;
-  }
   .nc-cmdk-spinner {
     animation: none;
   }

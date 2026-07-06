@@ -49,26 +49,27 @@ const canvasHeight = computed(() => {
   return props.height - 34
 })
 
-// Category color map for color-coding
+// Category color map for color-coding. No `default` entry: uncategorized
+// nodes fall through to the theme palette's node color — a hardcoded
+// #5EF2E8 default would be invisible (1.6:1) on the light minimap.
 const categoryColors: Record<string, string> = {
-  default: '#00D2BE',
   idea: '#A78BFA',
   task: '#60A5FA',
   note: '#4ADE80',
   question: '#F472B6'
 }
 
-// Theme-aware minimap palettes
+// Theme-aware minimap palettes (canvas-drawn: values track the design tokens)
 const darkPalette = {
-  bg: '#0D0D0F',
-  node: '#00D2BE',
-  nodeSelected: '#00FFE0',
-  root: '#FAFAFA',
+  bg: '#0d0d11',
+  node: '#5EF2E8',
+  nodeSelected: '#8FF7EF',
+  root: '#f4f4f8',
   edge: 'rgba(37, 37, 48, 0.6)',
-  viewport: 'rgba(0, 210, 190, 0.95)',
-  viewportFill: 'rgba(0, 210, 190, 0.12)',
+  viewport: 'rgba(94, 242, 232, 0.95)',
+  viewportFill: 'rgba(94, 242, 232, 0.12)',
   regionLabel: 'rgba(250, 250, 250, 0.4)',
-  breadcrumb: 'rgba(0, 210, 190, 0.3)',
+  breadcrumb: 'rgba(94, 242, 232, 0.3)',
 }
 
 const lightPalette = {
@@ -77,14 +78,14 @@ const lightPalette = {
   // bumped to a real neutral so node dots have something to sit against
   // without relying on the now-near-white bg.
   bg: '#FAFAF9',
-  node: '#00A89A',
-  nodeSelected: '#00D2BE',
+  node: '#0b9e93',
+  nodeSelected: '#087f76', /* #5EF2E8 is 1.6:1 on paper — never light-mode ink */
   root: '#111111',
   edge: 'rgba(0, 0, 0, 0.18)',
-  viewport: 'rgba(0, 168, 154, 0.65)',
-  viewportFill: 'rgba(0, 168, 154, 0.08)',
+  viewport: 'rgba(11, 158, 147, 0.65)',
+  viewportFill: 'rgba(11, 158, 147, 0.08)',
   regionLabel: 'rgba(17, 17, 17, 0.4)',
-  breadcrumb: 'rgba(0, 168, 154, 0.45)',
+  breadcrumb: 'rgba(11, 158, 147, 0.45)',
 }
 
 const isLight = ref(false)
@@ -228,7 +229,7 @@ function render() {
           const density = densityGrid[r]![c]!
           if (density > 0) {
             const intensity = density / maxDensity
-            ctx.fillStyle = `rgba(0, 210, 190, ${0.02 + intensity * 0.08})`
+            ctx.fillStyle = `rgba(94, 242, 232, ${0.02 + intensity * 0.08})`
             ctx.fillRect(c * gridSize, r * gridSize, gridSize, gridSize)
           }
         }
@@ -372,7 +373,7 @@ function render() {
   if (isHovered.value) {
     const vcx = vr.x + vr.width / 2
     const vcy = vr.y + vr.height / 2
-    ctx.strokeStyle = 'rgba(0, 210, 190, 0.3)'
+    ctx.strokeStyle = 'rgba(94, 242, 232, 0.3)'
     ctx.lineWidth = 0.5
     ctx.beginPath()
     ctx.moveTo(vcx - 4, vcy)
@@ -518,28 +519,23 @@ const { t } = useI18n()
   align-items: flex-end;
 }
 
+/* Floating widget — flat surface + hairline, tokens flip per theme */
 .nc-minimap-body {
   display: flex;
   flex-direction: column;
   width: 220px;
   height: 156px;
-  background: var(--nc-surface, #111114);
-  border: 1px solid #2A2A2E;
-  border-radius: 10px;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  animation: minimap-appear 0.2s ease-out;
-}
-
-:root.light .nc-minimap-body {
-  background: var(--nc-surface, #F5F5F3);
-  border-color: #E4E4E7;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nc-shadow-sm);
+  animation: minimap-appear 200ms var(--nc-ease);
 }
 
 @keyframes minimap-appear {
-  from { opacity: 0; transform: translateY(4px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -556,11 +552,14 @@ const { t } = useI18n()
   flex-shrink: 0;
 }
 
+/* Panel title — mono uppercase micro-label (REDESIGN.md §4) */
 .nc-minimap-title {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .nc-minimap-collapse-btn {
@@ -570,20 +569,27 @@ const { t } = useI18n()
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   background: none;
   border: none;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-minimap-collapse-btn:focus-visible {
   outline: 2px solid var(--nc-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-.nc-minimap-collapse-btn:hover {
-  color: #A1A1AA;
+@media (hover: hover) and (pointer: fine) {
+  .nc-minimap-collapse-btn:hover {
+    color: var(--nc-text);
+  }
+}
+
+.nc-minimap-collapse-btn:active {
+  transform: scale(0.97);
 }
 
 .nc-minimap-canvas {
@@ -601,62 +607,37 @@ const { t } = useI18n()
   height: 100%;
 }
 
-/* Collapsed toggle */
+/* Collapsed toggle — theme-aware via tokens, no per-theme overrides needed */
 .nc-minimap-toggle {
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  background: var(--nc-surface, #111114);
-  border: 1px solid #2A2A2E;
-  color: var(--nc-ink-muted, #A1A1AA);
+  border-radius: 0.5rem;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  transition: color var(--nc-duration-fast) var(--nc-ease-out),
-              border-color var(--nc-duration-fast) var(--nc-ease-out);
+  box-shadow: var(--nc-shadow-sm);
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-minimap-toggle:hover {
-  color: var(--nc-accent, #00D2BE);
-  border-color: rgba(0, 210, 190, 0.3);
+@media (hover: hover) and (pointer: fine) {
+  .nc-minimap-toggle:hover {
+    color: var(--nc-accent-text);
+    border-color: rgba(var(--nc-accent-rgb), 0.3);
+  }
+}
+
+.nc-minimap-toggle:active {
+  transform: scale(0.97);
 }
 
 .nc-minimap-toggle:focus-visible {
   outline: 2px solid var(--nc-accent);
-  outline-offset: 2px;
-}
-
-/* Light theme */
-:root.light .nc-minimap-body {
-  background: var(--nc-surface, #F5F5F3);
-  border-color: #E8E8E6;
-}
-
-:root.light .nc-minimap-canvas {
-  background: #F5F5F3;
-}
-
-:root.light .nc-minimap-title {
-  color: #A1A1AA;
-}
-
-:root.light .nc-minimap-collapse-btn {
-  color: #A1A1AA;
-}
-
-:root.light .nc-minimap-collapse-btn:hover {
-  color: #71717A;
-}
-
-:root.light .nc-minimap-toggle {
-  background: var(--nc-surface, #F5F5F3);
-  border-color: #E8E8E6;
-  color: #A1A1AA;
-}
-
-:root.light .nc-minimap-toggle:hover {
-  border-color: rgba(0, 210, 190, 0.3);
+  outline-offset: 3px;
 }
 </style>

@@ -306,5 +306,110 @@
       "verify_body_pre": "Svaki artefakt izdanja dolazi s odgovarajućom",
       "verify_body_post": "datotekom u istom R2 direktoriju. Usporedi svoj lokalni hash s njom da potvrdiš neizmijenjeno preuzimanje."
     }
+  },
+  "topo": {
+    "meta": {
+      "title": "NeuroCanvas — AI mentalne mape",
+      "description": "Postavi pitanje i gledaj kako živa mentalna mapa raste — čvorove, veze i izvore generira AI, a ti ih oblikuješ."
+    },
+    "hero": {
+      "eyebrow": "NeuroCanvas · AI mentalne mape",
+      "title": "Razmišljanje, napokon *vidljivo*.",
+      "sub": "Postavi pitanje i gledaj kako živa mapa raste — čvorove, veze i izvore generira AI, a ti ih oblikuješ.",
+      "ctaPrimary": "Otvori kanvas",
+      "ctaSecondary": "Zaroni",
+      "scroll": "Zaroni scrollom"
+    },
+    "s1": {
+      "eyebrow": "Generiraj",
+      "title": "Pitaj jednom. Mapa *raste*.",
+      "body": "Upiši pitanje i NeuroCanvas posadi prvi čvor. Ideje se granaju u klastere — svaki pojam smješten, povezan i označen u sekundama."
+    },
+    "s2": {
+      "eyebrow": "Poveži",
+      "title": "Veze s *dokazima*.",
+      "body": "Veze nisu ukras — iza svake stoji retrieval. pgvector embeddinzi i HNSW pretraga podupiru svaku poveznicu, pa mapa ne izgleda samo povezano. Ona to jest."
+    },
+    "s3": {
+      "eyebrow": "Surađuj",
+      "title": "Razmišljajte zajedno, *uživo*.",
+      "body": "Kursori, izmjene i nove grane sinkroniziraju se u stvarnom vremenu. Mapa je zajednički mozak, a ne statična datoteka."
+    },
+    "s4": {
+      "eyebrow": "Svugdje",
+      "title": "Web danas. I *desktop*.",
+      "body": "Radi u pregledniku, a dolazi i kao nativna desktop aplikacija. Mape te prate — i izvoze se kad ih zatrebaš."
+    },
+    "finale": {
+      "eyebrow": "Cijela mapa",
+      "title": "Mapiraj svoju sljedeću *veliku ideju*.",
+      "sub": "Od prvog kanvasa dijeli te jedno pitanje.",
+      "cta": "Počni mapirati"
+    },
+    "nav": {
+      "menu": "Izbornik",
+      "close": "Zatvori",
+      "open": "Otvori aplikaciju",
+      "templates": "Predlošci",
+      "docs": "Dokumentacija",
+      "download": "Preuzimanje",
+      "signin": "Prijava"
+    },
+    "footer": {
+      "ready": "Spreman za mapiranje?",
+      "cta": "Otvori svoj prvi kanvas",
+      "colExplore": "Istraži",
+      "colApp": "Aplikacija",
+      "colElse": "Drugdje",
+      "roadmap": "Roadmap",
+      "top": "Natrag na vrh",
+      "line": "© 2026. NeuroCanvas — izradio Vanja Modrinjak",
+      "privacy": "Privatnost",
+      "terms": "Uvjeti"
+    },
+    "a11y": {
+      "newTab": "(otvara se u novoj kartici)",
+      "skip": "Preskoči na sadržaj"
+    },
+    "auth": {
+      "eyebrowIn": "Prijava",
+      "eyebrowUp": "Registracija",
+      "signinTitle": "Natrag na *mapu*.",
+      "signupTitle": "Posadi svoj prvi *čvor*.",
+      "signinSub": "Nastavi tamo gdje je razmišljanje stalo.",
+      "signupSub": "Od prvog kanvasa dijeli te jedno pitanje.",
+      "continueWith": "Nastavi s {provider}",
+      "or": "ili",
+      "emailLabel": "E-pošta",
+      "emailPlaceholder": "ti{'@'}primjer.com",
+      "passwordLabel": "Lozinka",
+      "confirmLabel": "Potvrdi lozinku",
+      "passwordHint": "Najmanje 8 znakova, jedno veliko slovo i jedna znamenka",
+      "passwordMismatch": "Lozinke se ne podudaraju",
+      "continue": "Nastavi e-poštom",
+      "noAccount": "Nemaš račun?",
+      "haveAccount": "Već imaš račun?",
+      "switchUp": "Registriraj se",
+      "switchIn": "Prijavi se",
+      "legalNote": "Nastavkom prihvaćaš",
+      "nameLabel": "Ime (neobavezno)",
+      "namePlaceholder": "Ada Lovelace",
+      "twofaLabel": "2FA kod"
+    },
+    "download": {
+      "eyebrow": "Desktop aplikacija",
+      "title": "Ponesi mapu *offline*.",
+      "sub": "Nativna desktop aplikacija na Tauriju — lagana, brza i tvoja.",
+      "detected": "Prepoznato za tebe",
+      "note": "Svi buildovi i checksumi žive na",
+      "notesTitle": "Upute za instalaciju",
+      "notesIntro": "Buildovi su potpisani od nezavisnog developera pa sustav može tražiti potvrdu pri prvom pokretanju.",
+      "instMacos": "Otvori .dmg i povuci NeuroCanvas u Applications. Ako se Gatekeeper buni, desni klik na aplikaciju → Open → Open. Samo pri prvom pokretanju.",
+      "instWindows": "Pokreni installer. Ako se pojavi SmartScreen, odaberi “More info” → “Run anyway”.",
+      "instAndroid": "Dozvoli instalaciju iz preglednika kad te pita, pa otvori preuzeti .apk.",
+      "instLinux": "Učini AppImage izvršnim (chmod +x) i pokreni ga, ili instaliraj .deb kroz package manager.",
+      "viaReleases": "putem GitHub Releases",
+      "downloadFor": "Preuzmi za {platform}"
+    }
   }
 }

@@ -39,7 +39,7 @@ const actionLabels: Record<string, string> = {
   <div class="nc-action-card" :style="{ borderLeftColor: actionColors[action.type] || '#888890' }">
     <div class="nc-action-header">
       <span
-        :class="[actionIcons[action.type] || 'i-lucide-zap', 'text-sm']"
+        :class="[actionIcons[action.type] || 'i-nc-ai-mark', 'text-sm']"
         :style="{ color: actionColors[action.type] || '#888890' }"
       />
       <span class="nc-action-label">{{ actionLabels[action.type] || action.type }}</span>
@@ -61,7 +61,7 @@ const actionLabels: Record<string, string> = {
 <style scoped>
 .nc-action-card {
   background: #141418;
-  border: 1px solid #1A1A1E;
+  border: 1px solid var(--nc-border);
   border-left: 3px solid;
   border-radius: 6px;
   padding: 10px 12px;
@@ -77,7 +77,7 @@ const actionLabels: Record<string, string> = {
 .nc-action-label {
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -106,18 +106,26 @@ const actionLabels: Record<string, string> = {
   font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.nc-action-accept:active,
+.nc-action-dismiss:active {
+  transform: scale(0.97);
 }
 
 .nc-action-accept {
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.3);
-  color: #00D2BE;
+  background: rgba(94, 242, 232, 0.1);
+  border: 1px solid rgba(94, 242, 232, 0.3);
+  color: var(--nc-accent);
 }
 
 .nc-action-accept:hover {
-  background: rgba(0, 210, 190, 0.2);
-  border-color: #00D2BE;
+  background: rgba(94, 242, 232, 0.2);
+  border-color: var(--nc-accent);
 }
 
 .nc-action-dismiss {
@@ -128,6 +136,6 @@ const actionLabels: Record<string, string> = {
 
 .nc-action-dismiss:hover {
   border-color: #3A3A42;
-  color: #FAFAFA;
+  color: var(--nc-text);
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { GenerationDepth, GenerationStyle } from '~/types'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 const props = withDefaults(defineProps<{
   open: boolean
@@ -60,9 +61,7 @@ watch(() => props.open, (val) => {
           <!-- Header -->
           <div class="modal-header">
             <div class="header-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-              </svg>
+              <NcAiMark :size="18" />
             </div>
             <div class="header-text">
               <h2 class="header-title">{{ $t('templates.ai_adapt_modal.title') }}</h2>
@@ -153,9 +152,7 @@ watch(() => props.open, (val) => {
           <div class="modal-footer">
             <button class="btn-ghost" :disabled="loading" @click="emit('close')">{{ $t('templates.ai_adapt_modal.cancel') }}</button>
             <button v-if="!loading" class="btn-primary" :disabled="!canGenerate" @click="handleGenerate">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-              </svg>
+              <NcAiMark :size="16" />
               {{ $t('templates.ai_adapt_modal.generate') }}
             </button>
           </div>
@@ -166,6 +163,8 @@ watch(() => props.open, (val) => {
 </template>
 
 <style scoped>
+/* Modal grammar (REDESIGN.md §5): flat surface-2 + hairline, centered;
+   scrim = flat bg alpha only — no blur effects anywhere in chrome. */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -173,8 +172,7 @@ watch(() => props.open, (val) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(var(--nc-bg-rgb), 0.6);
 }
 
 .modal-panel {
@@ -182,11 +180,13 @@ watch(() => props.open, (val) => {
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 64px);
   overflow-y: auto;
-  background: var(--m-bg, #111113);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 16px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  box-shadow: var(--nc-shadow-md);
   display: flex;
   flex-direction: column;
+  transform-origin: center;
 }
 
 /* Header */
@@ -200,9 +200,9 @@ watch(() => props.open, (val) => {
 .header-icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: rgba(0, 210, 190, 0.12);
-  color: #00D2BE;
+  border-radius: var(--nc-radius-md);
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  color: var(--nc-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -214,20 +214,22 @@ watch(() => props.open, (val) => {
   min-width: 0;
 }
 
+/* Modal header = display 700 (REDESIGN.md §4) */
 .header-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--m-text, #E8E8EC);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   margin: 0;
-  line-height: 22px;
+  line-height: 1.05;
 }
 
 .header-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-secondary);
   margin: 2px 0 0;
   line-height: 18px;
 }
@@ -240,16 +242,24 @@ watch(() => props.open, (val) => {
   justify-content: center;
   border: none;
   background: none;
-  color: var(--m-muted, #71717A);
-  border-radius: 6px;
+  color: var(--nc-text-muted);
+  border-radius: var(--nc-radius-sm);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.close-btn:hover {
-  color: var(--m-text, #E8E8EC);
-  background: var(--m-hover, #1A1A1E);
+.close-btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .close-btn:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
 }
 
 /* Body */
@@ -267,11 +277,14 @@ watch(() => props.open, (val) => {
   flex: 1;
 }
 
+/* Input labels = mono uppercase micro-labels (REDESIGN.md §4/§5) */
 .field-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: 0.68rem;
   font-weight: 500;
-  color: var(--m-text, #E8E8EC);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
 }
 
 .field-label-row {
@@ -281,30 +294,33 @@ watch(() => props.open, (val) => {
 }
 
 .field-optional {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: 0.66rem;
   font-weight: 400;
-  color: var(--m-muted, #71717A);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-muted);
 }
 
+/* Input grammar: chip fill, 1px hairline, focus = accent border ONLY */
 .field-input {
   padding: 10px 14px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: var(--nc-radius-md);
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--m-text, #E8E8EC);
+  color: var(--nc-text);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .field-input::placeholder {
-  color: var(--m-placeholder, #3F3F46);
+  color: var(--nc-text-dim);
 }
 
 .field-input:focus {
-  border-color: #00D2BE;
+  border-color: var(--nc-accent);
 }
 
 .field-row {
@@ -312,7 +328,7 @@ watch(() => props.open, (val) => {
   gap: 16px;
 }
 
-/* Toggle buttons */
+/* Toggle buttons — small controls, radius 6px */
 .toggle-group {
   display: flex;
   gap: 4px;
@@ -321,27 +337,37 @@ watch(() => props.open, (val) => {
 .toggle-btn {
   flex: 1;
   padding: 10px 8px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-secondary);
   cursor: pointer;
   text-align: center;
-  transition: all 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.toggle-btn:hover {
-  color: var(--m-text, #E8E8EC);
-  border-color: var(--m-border-hover, #2A2A30);
+.toggle-btn:active {
+  transform: scale(0.97);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .toggle-btn:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
+}
+
+/* Active = accent text + accent edge + fill — never color alone */
 .toggle-btn.active {
-  background: rgba(0, 210, 190, 0.1);
-  border-color: #00D2BE;
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border-color: var(--nc-accent);
+  color: var(--nc-accent);
 }
 
 /* Footer */
@@ -352,51 +378,97 @@ watch(() => props.open, (val) => {
   padding: 16px 24px 24px;
 }
 
+/* Ghost button — mono uppercase text link with underline-grow (NcButton) */
 .btn-ghost {
-  padding: 10px 24px;
-  background: var(--m-input-bg, #0D0D0F);
-  border: 1px solid var(--m-border, #1A1A1E);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1));
+  position: relative;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid transparent;
+  font-family: var(--nc-font-mono);
+  font-size: 0.78rem;
   font-weight: 500;
-  color: var(--m-text, #E8E8EC);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.btn-ghost:hover {
-  background: var(--m-hover, #1A1A1E);
+.btn-ghost::after {
+  content: '';
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 0.4em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 0.45s var(--nc-ease);
 }
 
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover {
+    color: var(--nc-accent);
+  }
+
+  .btn-ghost:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+/* AI-flavored CTA — accent pill (NcButton "ai" variant) */
 .btn-primary {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 24px;
-  background: #00D2BE;
+  background: var(--nc-accent);
   border: none;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #09090B;
+  font-weight: 700;
+  color: var(--nc-bg);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background: var(--nc-accent-light);
+    transform: translateY(-1px);
+  }
 }
 
 .btn-primary:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-ghost:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
+}
+
+.close-btn:focus-visible,
+.toggle-btn:focus-visible,
+.btn-ghost:focus-visible,
+.btn-primary:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 /* Loading state */
@@ -412,8 +484,8 @@ watch(() => props.open, (val) => {
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 2px solid var(--m-border, #1A1A1E);
-  border-top-color: #00D2BE;
+  border: 2px solid var(--nc-border);
+  border-top-color: var(--nc-accent);
   border-radius: 50%;
   animation: ai-adapt-spin 0.7s linear infinite;
 }
@@ -423,66 +495,59 @@ watch(() => props.open, (val) => {
 }
 
 .loading-text {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--m-muted, #71717A);
+  color: var(--nc-text-secondary);
   margin: 0;
   text-align: center;
 }
 
-/* Inline error */
+/* Inline error — validation errors are coral (REDESIGN.md §1) */
 .modal-error {
   margin: 0;
   padding: 10px 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.25);
+  border-radius: var(--nc-radius-md);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 18px;
-  color: #EF4444;
+  color: var(--nc-coral);
 }
 
-/* Transitions */
+/* Transitions — enter scale(0.97)+opacity 200ms, exit faster (REDESIGN.md §5/§6) */
 .modal-enter-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--nc-duration-normal) var(--nc-ease);
 }
 .modal-enter-active .modal-panel {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  transition: transform var(--nc-duration-normal) var(--nc-ease),
+              opacity var(--nc-duration-normal) var(--nc-ease);
 }
 .modal-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
 }
 .modal-leave-active .modal-panel {
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: transform var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease);
 }
 .modal-enter-from {
   opacity: 0;
 }
 .modal-enter-from .modal-panel {
-  transform: scale(0.95);
+  transform: scale(0.97);
   opacity: 0;
 }
 .modal-leave-to {
   opacity: 0;
 }
 .modal-leave-to .modal-panel {
-  transform: scale(0.95);
+  transform: scale(0.97);
   opacity: 0;
 }
 
-/* Light theme */
-:root.light .modal-panel {
-  --m-bg: #FFFFFF;
-  --m-border: #E8E8E6;
-  --m-border-hover: #D4D4D2;
-  --m-text: #111111;
-  --m-muted: #71717A;
-  --m-placeholder: #A1A1AA;
-  --m-input-bg: #F5F5F3;
-  --m-hover: #E8E8E6;
-}
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 
 /* Mobile */
 @media (max-width: 640px) {

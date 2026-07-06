@@ -1,5 +1,7 @@
 import type { Node, Edge } from '~/types/canvas'
-import { radialTreeLayout, type LayoutPosition } from '~/utils/radialTreeLayout'
+import { radialTreeLayout } from '~/utils/radialTreeLayout'
+import { computeExportFit, type ContentBounds } from '~/utils/exportFit'
+import { getCanvasColors } from '~/composables/useCanvasTheme'
 
 /**
  * Client-side PNG rendering of a mind map.
@@ -35,30 +37,48 @@ export function useMapRender() {
     // Compute radial layout
     const positions = radialTreeLayout(nodes, edges, rootNodeId)
 
-    // Calculate canvas dimensions
-    let maxX = 0
-    let maxY = 0
-    for (const pos of positions.values()) {
-      maxX = Math.max(maxX, pos.x + 200) // account for node width
-      maxY = Math.max(maxY, pos.y + 60)   // account for node height
+    // Bounding box of the laid-out map using each node's REAL size — the old
+    // code assumed 200×60 for every node, clipping wider nodes at the right/
+    // bottom edge. Fitted through the shared export math so this render stays
+    // in lockstep with the canvas raster export (48px padding, ≥2x
+    // supersampling, graceful pixel cap for huge maps).
+    let bounds: ContentBounds | null = null
+    for (const [id, pos] of positions) {
+      const node = nodes.get(id)
+      const w = node?.size.width || 200
+      const h = node?.size.height || 60
+      if (!bounds) {
+        bounds = { minX: pos.x, minY: pos.y, maxX: pos.x + w, maxY: pos.y + h }
+      } else {
+        bounds.minX = Math.min(bounds.minX, pos.x)
+        bounds.minY = Math.min(bounds.minY, pos.y)
+        bounds.maxX = Math.max(bounds.maxX, pos.x + w)
+        bounds.maxY = Math.max(bounds.maxY, pos.y + h)
+      }
     }
+    const fit = computeExportFit(bounds ?? { minX: 0, minY: 0, maxX: 800, maxY: 600 }, {
+      devicePixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio : 1,
+    })
 
-    const width = Math.max(maxX + 100, 800)
-    const height = Math.max(maxY + 100, 600)
-    const dpr = 2 // hi-dpi
+    const isLight = typeof document !== 'undefined'
+      && document.documentElement.classList.contains('light')
+    const colors = getCanvasColors(isLight)
 
     const canvas = document.createElement('canvas')
-    canvas.width = width * dpr
-    canvas.height = height * dpr
+    canvas.width = fit.width
+    canvas.height = fit.height
     const ctx = canvas.getContext('2d')!
-    ctx.scale(dpr, dpr)
 
-    // Background
-    ctx.fillStyle = '#09090B'
-    ctx.fillRect(0, 0, width, height)
+    // Theme-correct background token (dark #050508 / light #FAFAF9), painted
+    // before any content so alpha-less encoders (JPEG) never see black.
+    ctx.fillStyle = colors.canvasBg
+    ctx.fillRect(0, 0, fit.width, fit.height)
+
+    // Layout space → supersampled pixels
+    ctx.setTransform(fit.scale, 0, 0, fit.scale, fit.translateX, fit.translateY)
 
     // Draw edges (bezier curves)
-    ctx.strokeStyle = '#2A2A30'
+    ctx.strokeStyle = colors.edgeDefault
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
 
@@ -98,13 +118,13 @@ export function useMapRender() {
       const r = 8 // border radius
 
       // Node background
-      ctx.fillStyle = node.style.fillColor || '#111113'
+      ctx.fillStyle = node.style.fillColor || colors.nodeBg
       ctx.beginPath()
       ctx.roundRect(pos.x, pos.y, w, h, r)
       ctx.fill()
 
       // Node border
-      ctx.strokeStyle = node.style.borderColor || '#27272A'
+      ctx.strokeStyle = node.style.borderColor || colors.nodeBorder
       ctx.lineWidth = node.style.borderWidth || 1.5
       ctx.beginPath()
       ctx.roundRect(pos.x, pos.y, w, h, r)
@@ -112,7 +132,7 @@ export function useMapRender() {
 
       // Root node accent glow
       if (node.isRoot) {
-        ctx.strokeStyle = '#00D2BE'
+        ctx.strokeStyle = colors.accent
         ctx.lineWidth = 2
         ctx.beginPath()
         ctx.roundRect(pos.x, pos.y, w, h, r)
@@ -122,7 +142,7 @@ export function useMapRender() {
       // Node text
       const fontSize = node.style.fontSize || 14
       ctx.font = `${node.style.fontWeight || 500} ${fontSize}px 'Cabinet Grotesk', system-ui, sans-serif`
-      ctx.fillStyle = node.style.textColor || '#FAFAFA'
+      ctx.fillStyle = node.style.textColor || colors.nodeText
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
 

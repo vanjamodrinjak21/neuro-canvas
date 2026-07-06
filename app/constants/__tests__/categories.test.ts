@@ -44,12 +44,12 @@ describe('NODE_CATEGORIES', () => {
 
 describe('getCategoryColor', () => {
   it('returns color for known category', () => {
-    expect(getCategoryColor('root')).toBe('#00D2BE')
+    expect(getCategoryColor('root')).toBe('#5EF2E8')
     expect(getCategoryColor('concept')).toBe('#60A5FA')
   })
 
-  it('returns default teal for unknown category', () => {
-    expect(getCategoryColor('unknown')).toBe('#00D2BE')
+  it('returns default accent for unknown category', () => {
+    expect(getCategoryColor('unknown')).toBe('#5EF2E8')
   })
 })
 

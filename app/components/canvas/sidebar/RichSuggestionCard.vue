@@ -16,6 +16,8 @@ const emit = defineEmits<{
 }>()
 
 const catColor = computed(() => getCategoryColor(props.suggestion.category))
+// 10% alpha tint for the letter avatar (8-digit hex on the category data color)
+const catColorTint = computed(() => `${catColor.value}1A`)
 const firstLetter = computed(() => props.suggestion.title.charAt(0).toUpperCase())
 
 // Stagger animation delay
@@ -23,21 +25,15 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
 </script>
 
 <template>
-  <div
-    class="suggestion-card"
-    :style="{
-      '--accent': catColor,
-      '--anim-delay': animDelay,
-    }"
-  >
+  <div class="suggestion-card">
     <!-- Left accent bar -->
     <span class="suggestion-card__accent" />
 
     <!-- Content -->
     <div class="suggestion-card__body">
       <!-- Letter avatar -->
-      <div class="suggestion-card__avatar" :style="{ background: `${catColor}1A` }">
-        <span :style="{ color: catColor }">{{ firstLetter }}</span>
+      <div class="suggestion-card__avatar">
+        <span class="suggestion-card__avatar-letter">{{ firstLetter }}</span>
       </div>
 
       <!-- Text content -->
@@ -69,17 +65,18 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
 </template>
 
 <style scoped>
+/* Category color + stagger delay come in via v-bind (no inline :style) */
 .suggestion-card {
   display: flex;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 10px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   overflow: hidden;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 200ms var(--nc-ease);
   opacity: 0;
   transform: translateY(6px);
-  animation: card-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: var(--anim-delay);
+  animation: card-appear 0.3s var(--nc-ease) forwards;
+  animation-delay: v-bind(animDelay);
 }
 
 @keyframes card-appear {
@@ -89,19 +86,18 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
   }
 }
 
+/* Interactive card hover = border shift only (REDESIGN.md §5) */
 .suggestion-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border-color: v-bind(catColor);
 }
 
 /* Left accent bar */
 .suggestion-card__accent {
   width: 3px;
   flex-shrink: 0;
-  background: var(--accent);
+  background: v-bind(catColor);
   opacity: 0.6;
-  transition: opacity 0.2s ease;
+  transition: opacity 200ms var(--nc-ease);
 }
 
 .suggestion-card:hover .suggestion-card__accent {
@@ -126,9 +122,14 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
   justify-content: center;
   border-radius: 7px;
   flex-shrink: 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: v-bind(catColorTint);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
+}
+
+.suggestion-card__avatar-letter {
+  color: v-bind(catColor);
 }
 
 /* Text */
@@ -141,17 +142,17 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
 }
 
 .suggestion-card__title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #E4E4E7;
+  color: var(--nc-text);
   line-height: 1.35;
 }
 
 .suggestion-card__summary {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
   line-height: 1.4;
   margin: 0;
   display: -webkit-box;
@@ -169,12 +170,13 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
 }
 
 .suggestion-card__keyword {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
   padding: 1px 6px;
-  background: #18181B;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
   border-radius: 3px;
-  color: #3F3F46;
+  color: var(--nc-text-muted);
   font-weight: 500;
 }
 
@@ -185,43 +187,27 @@ const animDelay = computed(() => `${(props.index || 0) * 60}ms`)
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.15);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.15);
   border-radius: 6px;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
   font-size: calc(12px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 150ms var(--nc-ease),
+              border-color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   flex-shrink: 0;
   align-self: flex-start;
 }
 
-.suggestion-card__add:hover {
-  background: rgba(0, 210, 190, 0.15);
-  border-color: rgba(0, 210, 190, 0.3);
-  transform: scale(1.05);
+@media (hover: hover) and (pointer: fine) {
+  .suggestion-card__add:hover {
+    background: rgba(var(--nc-accent-rgb), 0.15);
+    border-color: rgba(var(--nc-accent-rgb), 0.3);
+  }
 }
 
-/* Light theme */
-:root.light .suggestion-card {
-  background: #FAFAFA;
-  border-color: #E4E4E7;
-}
-
-:root.light .suggestion-card:hover {
-  border-color: var(--accent);
-}
-
-:root.light .suggestion-card__title {
-  color: #18181B;
-}
-
-:root.light .suggestion-card__summary {
-  color: #71717A;
-}
-
-:root.light .suggestion-card__keyword {
-  background: #F4F4F5;
-  color: #71717A;
+.suggestion-card__add:active {
+  transform: scale(0.97);
 }
 </style>

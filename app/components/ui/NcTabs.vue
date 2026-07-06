@@ -46,10 +46,13 @@ const activeTab = computed({
       orientation === 'horizontal' ? 'flex-col' : 'flex-row gap-4'
     ]"
   >
+    <!-- Rail of text tabs on a hairline — no pill backgrounds (REDESIGN.md §5) -->
     <TabsList
       :class="[
-        'relative flex nc-glass rounded-nc-lg p-1 gap-1',
-        orientation === 'horizontal' ? 'flex-row' : 'flex-col'
+        'relative flex gap-1',
+        orientation === 'horizontal'
+          ? 'nc-tabs-h flex-row border-b border-nc-border'
+          : 'nc-tabs-v flex-col border-r border-nc-border'
       ]"
     >
       <TabsTrigger
@@ -58,12 +61,12 @@ const activeTab = computed({
         :value="tab.value"
         :disabled="tab.disabled"
         :class="[
-          'relative flex items-center justify-center gap-2 px-4 py-2 rounded-nc-md',
-          'text-sm font-medium transition-[color,background-color,box-shadow] duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
-          'data-[state=active]:bg-nc-teal data-[state=active]:text-nc-charcoal data-[state=active]:shadow-nc-glow',
-          'data-[state=inactive]:text-nc-ink-soft data-[state=inactive]:hover:text-nc-ink data-[state=inactive]:hover:bg-nc-graphite',
-          tab.disabled && 'opacity-50 cursor-not-allowed'
+          'nc-tab relative flex items-center justify-center gap-2 px-3.5 py-2.5',
+          'font-mono text-[0.78rem] uppercase tracking-[0.1em] font-medium',
+          'bg-transparent cursor-pointer nc-anim',
+          'data-[state=active]:text-nc-accent',
+          'data-[state=inactive]:text-nc-text-secondary data-[state=inactive]:hover:text-nc-text',
+          tab.disabled && 'opacity-45 cursor-not-allowed'
         ]"
       >
         <span v-if="tab.icon" :class="[tab.icon, 'text-lg']" />
@@ -83,3 +86,27 @@ const activeTab = computed({
     </div>
   </TabsRoot>
 </template>
+
+<style scoped>
+/* Active indicator — a 1px accent line on the rail hairline. Never color
+   alone: the active tab is accent text + the underline (REDESIGN.md §5). */
+.nc-tab[data-state='active']::after {
+  content: '';
+  position: absolute;
+  background: var(--nc-accent);
+}
+
+.nc-tabs-h .nc-tab[data-state='active']::after {
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+}
+
+.nc-tabs-v .nc-tab[data-state='active']::after {
+  top: 0;
+  bottom: 0;
+  right: -1px;
+  width: 1px;
+}
+</style>

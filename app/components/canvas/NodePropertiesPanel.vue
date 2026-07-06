@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Node, NodeShape } from '~/types'
 import { useMapStore } from '~/stores/mapStore'
+// Node palette is user data — single source of truth in the sidebar state
+import { nodeColors } from '~/composables/useSidebarState'
 
 const props = defineProps<{
   node: Node | null
@@ -55,24 +57,6 @@ const fontWeights = [
   { value: '500', label: 'Medium' },
   { value: '600', label: 'Semibold' },
   { value: '700', label: 'Bold' }
-]
-
-// Color presets
-const colorPresets = [
-  '#1A1A1E', '#2A2A30', '#3A3A42',
-  '#00D2BE', '#00A89A', '#22C55E',
-  '#EAB308', '#EF4444', '#3B82F6'
-]
-
-// Node colors for minimal panel (border colors)
-const nodeColors = [
-  '#00D2BE', // Teal
-  '#A78BFA', // Purple
-  '#F472B6', // Pink
-  '#60A5FA', // Blue
-  '#4ADE80', // Green
-  '#FB923C', // Orange
-  '#FACC15'  // Yellow
 ]
 
 // Update handlers with debounce
@@ -159,18 +143,17 @@ onKeyStroke('Escape', () => {
   >
     <aside
       v-if="node"
-      class="absolute right-4 top-20 w-60 z-toolbar bg-[#111114] border border-[#1E1E22] rounded-xl p-4"
+      class="props-panel absolute right-4 top-20 w-60 z-toolbar"
     >
-      <h3 class="text-xs font-semibold text-[#888890] mb-4">{{ $t('canvas.node_properties.panel_title') }}</h3>
+      <h3 class="props-panel__title">{{ $t('canvas.node_properties.panel_title') }}</h3>
 
-      <!-- Color dots - 20px, no labels -->
+      <!-- Color dots - 20px, no labels; swatch is user node data (--swatch) -->
       <div class="flex gap-2 mb-4">
         <button
           v-for="color in nodeColors"
           :key="color"
-          class="nc-color-dot"
-          :class="localBorderColor === color ? 'ring-2 ring-[#FAFAFA] ring-offset-2 ring-offset-[#111114]' : ''"
-          :style="{ backgroundColor: color }"
+          :class="['nc-color-dot', localBorderColor === color && 'nc-color-dot--active']"
+          :style="{ '--swatch': color }"
           @click="updateBorderColor(color)"
         />
       </div>
@@ -181,10 +164,7 @@ onKeyStroke('Escape', () => {
           v-for="shape in shapes"
           :key="shape.value"
           :title="shape.label"
-          class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-          :class="localShape === shape.value
-            ? 'bg-teal-500/20 ring-1 ring-teal-500'
-            : 'hover:bg-white/5'"
+          :class="['props-shape-btn', localShape === shape.value && 'props-shape-btn--active']"
           @click="updateShape(shape.value)"
         >
           <UIcon :name="shape.icon" class="w-4 h-4 opacity-70" />
@@ -195,7 +175,7 @@ onKeyStroke('Escape', () => {
       <input
         v-model="localContent"
         type="text"
-        class="w-full bg-[#1A1A1E] border border-[#1E1E22] rounded-lg px-3 py-2 text-sm text-[#FAFAFA] placeholder-[#555558] focus:border-[#00D2BE] focus:outline-none mb-3"
+        class="props-field mb-3"
         :placeholder="$t('canvas.node_panel.label_placeholder')"
         @blur="updateContent"
         @keydown.enter="updateContent"
@@ -205,7 +185,7 @@ onKeyStroke('Escape', () => {
       <textarea
         v-model="localNotes"
         :placeholder="$t('canvas.node_panel.notes_placeholder')"
-        class="w-full bg-[#1A1A1E] border border-[#1E1E22] rounded-lg px-3 py-2 text-sm text-[#FAFAFA] placeholder-[#555558] focus:border-[#00D2BE] focus:outline-none resize-none"
+        class="props-field props-field--area"
         rows="2"
         @blur="updateNotes"
       />
@@ -214,28 +194,121 @@ onKeyStroke('Escape', () => {
 </template>
 
 <style scoped>
-/* Panel slide: 200ms ease-out enter, 120ms exit */
+/* Panel slide: 200ms enter, 120ms exit — single ease (REDESIGN.md §6) */
 .nc-panel-enter {
-  transition: transform 200ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: transform 200ms var(--nc-ease);
 }
 
 .nc-panel-leave {
-  transition: transform 120ms cubic-bezier(0.4, 0, 1, 1);
+  transition: transform 120ms var(--nc-ease);
 }
 
-/* Color dots */
+/* Floating editor panel — flat surface + hairline, no glass (REDESIGN.md §5) */
+.props-panel {
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  padding: 16px;
+  box-shadow: var(--nc-shadow-md);
+}
+
+/* Mono uppercase micro-label (REDESIGN.md §4) */
+.props-panel__title {
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
+  margin: 0 0 16px;
+}
+
+/* Color dots — swatch value is user node data via --swatch */
 .nc-color-dot {
   width: 20px;
   height: 20px;
   border-radius: 50%;
   border: none;
+  background: var(--swatch);
   cursor: pointer;
-  transition: transform var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition:
+    transform var(--nc-duration-fast) var(--nc-ease),
+    box-shadow var(--nc-duration-fast) var(--nc-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .nc-color-dot:hover {
     transform: scale(1.15);
   }
+}
+
+.nc-color-dot:active {
+  transform: scale(0.97);
+}
+
+/* Active swatch = offset ring (never color alone) */
+.nc-color-dot--active {
+  box-shadow: 0 0 0 2px var(--nc-surface-2), 0 0 0 4px var(--nc-text);
+}
+
+/* Shape buttons — active = accent tint + accent border (never color alone) */
+.props-shape-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--nc-text-secondary);
+  cursor: pointer;
+  transition:
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .props-shape-btn:hover {
+    background: var(--nc-surface-3);
+  }
+}
+
+.props-shape-btn:active {
+  transform: scale(0.97);
+}
+
+.props-shape-btn--active {
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border-color: var(--nc-accent);
+  color: var(--nc-accent-text);
+}
+
+/* Inputs — chip fill, hairline, accent focus border only (REDESIGN.md §5) */
+.props-field {
+  width: 100%;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: 0.5rem;
+  padding: 8px 12px;
+  font-family: var(--nc-font-body);
+  font-size: calc(14px * var(--nc-text-scale, 1));
+  color: var(--nc-text);
+  transition: border-color 150ms var(--nc-ease);
+}
+
+.props-field::placeholder {
+  color: var(--nc-text-dim);
+}
+
+.props-field:focus {
+  outline: none;
+  border-color: var(--nc-accent);
+}
+
+.props-field--area {
+  resize: none;
 }
 </style>

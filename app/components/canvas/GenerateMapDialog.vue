@@ -97,21 +97,21 @@ watch(() => props.visible, (isVisible) => {
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="transition-all duration-300"
-      leave-active-class="transition-all duration-200"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
+      enter-active-class="nc-fade-enter-active"
+      leave-active-class="nc-fade-leave-active"
+      enter-from-class="nc-fade-hidden"
+      leave-to-class="nc-fade-hidden"
     >
       <div
         v-if="visible"
-        class="fixed inset-0 z-modal bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
+        class="nc-dialog-backdrop fixed inset-0 z-modal flex items-center justify-center p-4"
         @click.self="handleClose"
       >
         <Transition
-          enter-active-class="transition-all duration-300 delay-100"
-          leave-active-class="transition-all duration-200"
-          enter-from-class="opacity-0 scale-95 translate-y-4"
-          leave-to-class="opacity-0 scale-95 translate-y-4"
+          enter-active-class="nc-zoom-enter-active"
+          leave-active-class="nc-zoom-leave-active"
+          enter-from-class="nc-zoom-hidden"
+          leave-to-class="nc-zoom-hidden"
         >
           <div
             v-if="visible"
@@ -122,7 +122,7 @@ watch(() => props.visible, (isVisible) => {
             <div class="nc-dialog-header">
               <div class="flex items-center gap-3">
                 <div class="nc-dialog-icon">
-                  <span class="i-lucide-map text-lg" />
+                  <span class="i-nc-ai-mark text-lg" />
                 </div>
                 <div>
                   <h2 class="nc-dialog-title">{{ $t('canvas.generate_map.title') }}</h2>
@@ -268,7 +268,7 @@ watch(() => props.visible, (isVisible) => {
                 @click="handleGenerate"
               >
                 <span v-if="isLoading" class="i-lucide-loader-2 animate-pulse" />
-                <span v-else class="i-lucide-grid-2x2-plus" />
+                <span v-else class="i-nc-ai-mark" />
                 <span>{{ isLoading ? $t('canvas.generate_map.generating') : $t('canvas.generate_map.generate') }}</span>
               </button>
             </div>
@@ -280,6 +280,42 @@ watch(() => props.visible, (isVisible) => {
 </template>
 
 <style scoped>
+/* Scrim — flat, no backdrop blur (REDESIGN.md §5) */
+.nc-dialog-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Modal motion (REDESIGN.md §5/§6): enter scale(0.97)+opacity 200ms,
+   exit 150ms, single ease, transform-origin center. */
+.nc-fade-enter-active {
+  transition: opacity 200ms var(--nc-ease);
+}
+
+.nc-fade-leave-active {
+  transition: opacity 150ms var(--nc-ease);
+}
+
+.nc-fade-hidden {
+  opacity: 0;
+}
+
+.nc-zoom-enter-active {
+  transition:
+    opacity 200ms var(--nc-ease),
+    transform 200ms var(--nc-ease);
+}
+
+.nc-zoom-leave-active {
+  transition:
+    opacity 150ms var(--nc-ease),
+    transform 150ms var(--nc-ease);
+}
+
+.nc-zoom-hidden {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
 .nc-dialog {
   width: 100%;
   max-width: 480px;
@@ -289,11 +325,12 @@ watch(() => props.visible, (isVisible) => {
   max-height: calc(100dvh - 32px);
   display: flex;
   flex-direction: column;
-  background: var(--nc-surface, #111114);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 16px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--nc-shadow-md);
+  transform-origin: center;
 }
 
 .nc-dialog-header {
@@ -301,52 +338,63 @@ watch(() => props.visible, (isVisible) => {
   align-items: flex-start;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid var(--nc-border, #1E1E22);
+  border-bottom: 1px solid var(--nc-border);
   flex-shrink: 0;
 }
 
 .nc-dialog-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  background: rgba(0, 210, 190, 0.1);
+  border-radius: 0.5rem;
+  background: rgba(var(--nc-accent-rgb), 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
 }
 
+/* Modal title — display face (REDESIGN.md §4) */
 .nc-dialog-title {
+  font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  /* Tokenized: was hardcoded #FAFAFA (white) -> invisible on the light modal. */
-  color: var(--nc-ink);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   margin: 0;
 }
 
 .nc-dialog-subtitle {
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   margin: 2px 0 0;
 }
 
 .nc-close-btn {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-close-btn:hover {
-  color: var(--nc-ink, #FAFAFA);
-  background: var(--nc-surface-3, #1A1A1E);
+@media (hover: hover) and (pointer: fine) {
+  .nc-close-btn:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
+}
+
+.nc-close-btn:active {
+  transform: scale(0.97);
 }
 
 .nc-dialog-content {
@@ -367,38 +415,41 @@ watch(() => props.visible, (isVisible) => {
   gap: 8px;
 }
 
+/* Field label — mono uppercase micro-label (REDESIGN.md §4/§5) */
 .nc-label {
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--nc-ink-soft);
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  color: var(--nc-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.14em;
 }
 
 .nc-optional {
   font-weight: 400;
   text-transform: none;
-  color: var(--nc-ink-muted);
+  letter-spacing: normal;
+  color: var(--nc-text-muted);
 }
 
 .nc-input {
   width: 100%;
   padding: 12px 14px;
-  background: var(--nc-surface-3, #0D0D10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: 0.5rem;
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--nc-ink, #FAFAFA);
-  transition: border-color 0.15s ease;
+  color: var(--nc-text);
+  transition: border-color 150ms var(--nc-ease);
 }
 
 .nc-input::placeholder {
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-dim);
 }
 
 .nc-input:focus {
   outline: none;
-  border-color: #00D2BE;
+  border-color: var(--nc-accent);
 }
 
 .nc-input:disabled {
@@ -408,7 +459,7 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-hint {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   margin: 0;
 }
 
@@ -424,22 +475,31 @@ watch(() => props.visible, (isVisible) => {
   align-items: flex-start;
   gap: 4px;
   padding: 12px;
-  background: var(--nc-surface-3, #0D0D10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-option-btn:hover:not(:disabled) {
-  border-color: #2A2A30;
-  background: var(--nc-surface, #141418);
+@media (hover: hover) and (pointer: fine) {
+  .nc-option-btn:hover:not(:disabled) {
+    border-color: var(--nc-border-active);
+    background: var(--nc-surface-3);
+  }
+}
+
+.nc-option-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .nc-option-btn.active {
-  border-color: #00D2BE;
-  background: rgba(0, 210, 190, 0.05);
+  border-color: var(--nc-accent);
+  background: rgba(var(--nc-accent-rgb), 0.06);
 }
 
 .nc-option-btn:disabled {
@@ -450,12 +510,12 @@ watch(() => props.visible, (isVisible) => {
 .nc-option-label {
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
 }
 
 .nc-option-desc {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   line-height: 1.3;
 }
 
@@ -470,18 +530,19 @@ watch(() => props.visible, (isVisible) => {
   padding: 2px 6px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--nc-border, #1E1E22);
-  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  border-bottom: 1px solid var(--nc-border);
+  font-family: var(--nc-font-mono);
   font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 1;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
   -moz-appearance: textfield;
+  transition: border-color 150ms var(--nc-ease);
 }
 
 .nc-count-input:focus {
   outline: none;
-  border-bottom-color: #00D2BE;
+  border-bottom-color: var(--nc-accent);
 }
 
 .nc-count-input:disabled {
@@ -497,12 +558,12 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-count-suffix {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
 }
 
 .nc-slider {
   width: 100%;
-  accent-color: var(--nc-accent, #00D2BE);
+  accent-color: var(--nc-accent);
   cursor: pointer;
 }
 
@@ -519,26 +580,36 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-preset-btn {
   padding: 8px 0;
-  background: var(--nc-surface-3, #0D0D10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
-  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  font-family: var(--nc-font-mono);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-soft);
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-preset-btn:hover:not(:disabled) {
-  border-color: #2A2A30;
-  background: var(--nc-surface, #141418);
+@media (hover: hover) and (pointer: fine) {
+  .nc-preset-btn:hover:not(:disabled) {
+    border-color: var(--nc-border-active);
+    background: var(--nc-surface-3);
+  }
+}
+
+.nc-preset-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .nc-preset-btn.active {
-  border-color: #00D2BE;
-  background: rgba(0, 210, 190, 0.05);
-  color: var(--nc-ink, #FAFAFA);
+  border-color: var(--nc-accent);
+  background: rgba(var(--nc-accent-rgb), 0.06);
+  color: var(--nc-text);
 }
 
 .nc-preset-btn:disabled {
@@ -551,8 +622,8 @@ watch(() => props.visible, (isVisible) => {
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 24px;
-  background: var(--nc-surface-3, #0D0D10);
-  border-top: 1px solid var(--nc-border, #1E1E22);
+  background: var(--nc-surface);
+  border-top: 1px solid var(--nc-border);
   flex-shrink: 0;
 }
 
@@ -562,11 +633,19 @@ watch(() => props.visible, (isVisible) => {
   justify-content: center;
   gap: 8px;
   padding: 10px 18px;
-  border-radius: 10px;
+  border-radius: 0.5rem;
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.nc-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .nc-btn:disabled {
@@ -576,26 +655,34 @@ watch(() => props.visible, (isVisible) => {
 
 .nc-btn-secondary {
   background: transparent;
-  border: 1px solid #2A2A30;
-  color: var(--nc-ink-soft);
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
 }
 
-.nc-btn-secondary:hover:not(:disabled) {
-  border-color: #3A3A40;
-  color: #FAFAFA;
+@media (hover: hover) and (pointer: fine) {
+  .nc-btn-secondary:hover:not(:disabled) {
+    border-color: var(--nc-border-active);
+    color: var(--nc-text);
+  }
 }
 
 .nc-btn-primary {
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent);
   border: none;
-  color: #0A0A0C;
+  color: var(--nc-bg);
 }
 
-.nc-btn-primary:hover:not(:disabled) {
-  background: #00E5CF;
+@media (hover: hover) and (pointer: fine) {
+  .nc-btn-primary:hover:not(:disabled) {
+    background: var(--nc-accent-light);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .nc-fade-enter-active,
+  .nc-fade-leave-active,
+  .nc-zoom-enter-active,
+  .nc-zoom-leave-active,
   .nc-dialog {
     transition: none;
   }

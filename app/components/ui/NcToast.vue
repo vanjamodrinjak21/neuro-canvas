@@ -38,31 +38,33 @@ const isOpen = computed({
   set: (value) => emit('update:open', value)
 })
 
-const variantStyles: Record<ToastVariant, { icon: string; iconClass: string; borderClass: string }> = {
+// Accent discipline (REDESIGN.md §1): cyan for info/success, coral for
+// warning/error — no status rainbow in chrome. Semantic 2px left edge only.
+const variantStyles: Record<ToastVariant, { icon: string; iconClass: string; edgeClass: string }> = {
   default: {
     icon: 'i-lucide-info',
-    iconClass: 'text-nc-teal',
-    borderClass: 'border-nc-teal/30'
+    iconClass: 'text-nc-accent',
+    edgeClass: 'border-l-nc-accent'
   },
   success: {
     icon: 'i-lucide-check-circle',
-    iconClass: 'text-nc-success',
-    borderClass: 'border-nc-success/30'
+    iconClass: 'text-nc-accent',
+    edgeClass: 'border-l-nc-accent'
   },
   warning: {
     icon: 'i-lucide-alert-triangle',
-    iconClass: 'text-nc-warning',
-    borderClass: 'border-nc-warning/30'
+    iconClass: 'text-nc-coral',
+    edgeClass: 'border-l-nc-coral'
   },
   error: {
     icon: 'i-lucide-x-circle',
-    iconClass: 'text-nc-error',
-    borderClass: 'border-nc-error/30'
+    iconClass: 'text-nc-coral',
+    edgeClass: 'border-l-nc-coral'
   },
   info: {
     icon: 'i-lucide-info',
-    iconClass: 'text-nc-info',
-    borderClass: 'border-nc-info/30'
+    iconClass: 'text-nc-accent',
+    edgeClass: 'border-l-nc-accent'
   }
 }
 
@@ -74,19 +76,13 @@ const currentVariant = computed(() => variantStyles[props.variant])
     v-model:open="isOpen"
     :duration="duration"
     :class="[
-      'group nc-glass-elevated rounded-nc-xl p-4 shadow-nc-xl',
+      'group nc-toast-root bg-nc-surface-2 border border-nc-border rounded-nc-md p-4 shadow-nc-md',
       'flex items-start gap-3',
-      'border-l-4',
-      currentVariant.borderClass,
-      // Enter 300ms snappy from right, exit 200ms faster — asymmetric
-      'data-[state=open]:animate-in data-[state=closed]:animate-out',
-      'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-      'data-[state=open]:slide-in-from-right-full data-[state=closed]:slide-out-to-right-full',
-      'data-[state=open]:duration-[300ms] data-[state=closed]:duration-[200ms]',
+      'border-l-2',
+      currentVariant.edgeClass,
       'data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)]',
       'data-[swipe=cancel]:translate-x-0',
-      'data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)]',
-      'data-[swipe=end]:animate-out data-[swipe=end]:fade-out-80'
+      'data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)]'
     ]"
   >
     <!-- Icon -->
@@ -94,10 +90,11 @@ const currentVariant = computed(() => variantStyles[props.variant])
 
     <!-- Content -->
     <div class="flex-1 min-w-0">
-      <ToastTitle v-if="title" class="text-sm font-semibold text-nc-text">
+      <!-- Title — mono micro-label (REDESIGN.md §4) -->
+      <ToastTitle v-if="title" class="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-nc-text">
         {{ title }}
       </ToastTitle>
-      <ToastDescription v-if="description" class="mt-1 text-sm text-nc-text-muted">
+      <ToastDescription v-if="description" class="mt-1 text-sm text-nc-text-secondary">
         {{ description }}
       </ToastDescription>
 
@@ -105,11 +102,11 @@ const currentVariant = computed(() => variantStyles[props.variant])
       <ToastAction
         v-if="action"
         :alt-text="action.label"
-        class="mt-2 inline-flex items-center px-3 py-1.5 rounded-nc-md text-sm font-medium
-               bg-nc-graphite text-nc-ink hover:bg-nc-pencil
-               transition-[color,background-color] duration-100
-               active:scale-97
-               focus:outline-none focus:ring-2 focus:ring-nc-teal"
+        class="mt-2 inline-flex items-center px-3 py-1.5 rounded-[0.4rem]
+               font-mono text-[0.72rem] uppercase tracking-[0.1em]
+               bg-nc-chip border border-nc-border text-nc-text-secondary
+               hover:text-nc-text hover:border-nc-border-active
+               nc-anim active:scale-97 cursor-pointer"
         @click="action.onClick"
       >
         {{ action.label }}
@@ -118,13 +115,38 @@ const currentVariant = computed(() => variantStyles[props.variant])
 
     <!-- Close button -->
     <ToastClose
-      class="p-1 rounded-nc-md text-nc-ink-muted hover:text-nc-ink
-             hover:bg-nc-graphite transition-[color,background-color] duration-100
-             active:scale-97
-             opacity-0 group-hover:opacity-100
-             focus:outline-none focus:ring-2 focus:ring-nc-teal"
+      class="p-1 rounded-[0.35rem] text-nc-ink-muted hover:text-nc-ink
+             hover:bg-nc-surface-3 nc-anim active:scale-97 cursor-pointer
+             opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
     >
       <span class="i-lucide-x text-lg" />
     </ToastClose>
   </ToastRoot>
 </template>
+
+<style scoped>
+/* Toast motion — transform/opacity only, single ease, enter 250ms / exit
+   150ms. Global reduced-motion rules zero these out. */
+.nc-toast-root[data-state='open'] {
+  animation: nc-toast-in 250ms var(--nc-ease);
+}
+.nc-toast-root[data-state='closed'] {
+  animation: nc-toast-out 150ms var(--nc-ease) forwards;
+}
+.nc-toast-root[data-swipe='end'] {
+  animation: nc-toast-out 150ms var(--nc-ease) forwards;
+}
+
+@keyframes nc-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+@keyframes nc-toast-out {
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+</style>

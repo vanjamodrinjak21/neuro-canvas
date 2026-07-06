@@ -103,7 +103,7 @@ function draw() {
 
     // Cursor body
     ctx.fillStyle = r.color
-    ctx.strokeStyle = '#09090B'
+    ctx.strokeStyle = '#050508'
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(x, y)
@@ -130,7 +130,7 @@ function draw() {
       const tw = ctx.measureText(r.displayName).width + 14
       ctx.fillStyle = r.color
       ctx.fillRect(x + 4, y + 18, tw, 16)
-      ctx.fillStyle = '#09090B'
+      ctx.fillStyle = '#050508'
       ctx.fillText(r.displayName, x + 11, y + 30)
       ctx.globalAlpha = 1
     }

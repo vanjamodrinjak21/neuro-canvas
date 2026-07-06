@@ -110,6 +110,13 @@ function applyThemeChange() {
     <!-- Content -->
     <main class="legal-main">
       <div class="legal-content">
+        <p class="legal-eyebrow" aria-hidden="true">
+          <span class="legal-eyebrow__mark">[</span>
+          <span class="legal-eyebrow__key">LEGAL</span>
+          <span class="legal-eyebrow__mark">]</span>
+          <span class="legal-eyebrow__dot">·</span>
+          <span class="legal-eyebrow__doc">DOCUMENT</span>
+        </p>
         <h1 class="legal-title">{{ title }}</h1>
         <p class="legal-updated">Last updated: {{ lastUpdated }}</p>
         <div class="legal-prose">
@@ -139,6 +146,11 @@ function applyThemeChange() {
 
 <style scoped>
 .legal-root {
+  /* Palette comes from the global tokens (tokens.css) — the landing
+     values used to be re-declared here; they ARE the global tokens
+     now (AER-76). Only the docs-local coral alias remains. */
+  --docs-coral: var(--nc-coral);
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -199,7 +211,10 @@ function applyThemeChange() {
   text-decoration: none;
   border: 1px solid var(--nc-border);
   border-radius: 6px;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .legal-header__back:hover {
@@ -208,8 +223,13 @@ function applyThemeChange() {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.legal-header__back:active {
+  transform: scale(0.97);
+}
+
+/* Light: ink-alpha hover wash (base is white-alpha, invisible on paper) */
 :root.light .legal-header__back:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--nc-chip-bg);
 }
 
 .legal-header__theme {
@@ -233,7 +253,7 @@ function applyThemeChange() {
 }
 
 :root.light .legal-header__theme:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface-3);
 }
 
 .legal-header__theme .icon-sun,
@@ -260,26 +280,59 @@ function applyThemeChange() {
   max-width: 720px;
 }
 
+/* ─── Eyebrow — mono uppercase, coral LEGAL segment ─── */
+.legal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--nc-text-muted);
+  line-height: 1;
+  margin-bottom: 18px;
+  user-select: none;
+}
+
+.legal-eyebrow__mark,
+.legal-eyebrow__key {
+  color: var(--docs-coral);
+}
+
+.legal-eyebrow__dot {
+  color: var(--nc-text-dim);
+  margin: 0 2px;
+}
+
+.legal-eyebrow__doc {
+  color: var(--nc-text-muted);
+}
+
 .legal-title {
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(32px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-display);
+  font-size: calc(38px * var(--nc-text-scale, 1));
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.2;
+  line-height: 1.1;
   color: var(--nc-text);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .legal-updated {
-  font-family: 'Inter', var(--nc-font-body);
-  font-size: calc(14px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(12px * var(--nc-text-scale, 1));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--nc-text-muted);
   margin-bottom: 40px;
 }
 
 /* ─── Prose ─── */
 .legal-prose :deep(h2) {
-  font-family: 'Inter', var(--nc-font-body);
+  position: relative;
+  font-family: var(--nc-font-display);
   font-size: calc(22px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -290,8 +343,20 @@ function applyThemeChange() {
   margin-bottom: 16px;
 }
 
+/* Mono coral survey mark — pairs with the inline section number in the copy
+   without duplicating it. */
+.legal-prose :deep(h2)::before {
+  content: '§';
+  font-family: var(--nc-font-mono);
+  font-weight: 500;
+  font-size: 0.72em;
+  color: var(--docs-coral);
+  margin-right: 8px;
+  vertical-align: 1px;
+}
+
 .legal-prose :deep(h3) {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-display);
   font-size: calc(17px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--nc-text);
@@ -300,7 +365,7 @@ function applyThemeChange() {
 }
 
 .legal-prose :deep(p) {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.75;
   color: var(--nc-text-secondary);
@@ -314,7 +379,7 @@ function applyThemeChange() {
 }
 
 .legal-prose :deep(li) {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   line-height: 1.75;
   color: var(--nc-text-secondary);
@@ -331,7 +396,7 @@ function applyThemeChange() {
 }
 
 .legal-prose :deep(a) {
-  color: #00D2BE;
+  color: var(--nc-accent);
   font-weight: 500;
   text-decoration: none;
 }
@@ -341,10 +406,10 @@ function applyThemeChange() {
 }
 
 .legal-prose :deep(code) {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  background: rgba(0, 210, 190, 0.08);
-  color: #00D2BE;
+  background: var(--nc-accent-glow);
+  color: var(--nc-accent);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -376,11 +441,14 @@ function applyThemeChange() {
   color: var(--nc-text-muted);
   text-decoration: none;
   font-weight: 500;
+  font-family: var(--nc-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   transition: color 0.15s;
 }
 
 .legal-footer__links a:hover {
-  color: #00D2BE;
+  color: var(--nc-accent);
 }
 
 .legal-footer__sep {
@@ -399,7 +467,7 @@ function applyThemeChange() {
   top: 0; left: 0; right: 0; bottom: 0;
   width: 100vw;
   height: 100vh;
-  background: #00D2BE;
+  background: var(--nc-accent);
   z-index: 9999;
   pointer-events: none;
 }
@@ -408,7 +476,8 @@ function applyThemeChange() {
 @media (max-width: 768px) {
   .legal-header { padding: 0 16px; }
   .legal-main { padding: 32px 16px 60px; }
-  .legal-title { font-size: calc(26px * var(--nc-text-scale, 1)); }
+  .legal-title { font-size: calc(30px * var(--nc-text-scale, 1)); }
+  .legal-eyebrow { font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.16em; }
   .legal-header__brand-name { display: none; }
 }
 </style>

@@ -81,12 +81,12 @@ async function signInWithGitHub() {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
   font-size: 0.95rem;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .oauth-btn:hover:not(:disabled) {

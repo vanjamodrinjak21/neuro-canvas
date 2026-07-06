@@ -129,22 +129,19 @@ onMounted(() => {
   pointer-events: auto;
 }
 
+/* Onboarding coach-mark card — flat surface-2 + hairline (REDESIGN.md §5),
+   radius capped at 8px, calm shadow only. Theme-aware via tokens. */
 .cm-card {
   width: 340px;
   padding: 20px;
-  background: var(--nc-surface, #0C0C10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 14px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
-}
-
-:root.light .cm-card {
-  background: #FFFFFF;
-  border-color: #DDD9CF;
-  box-shadow: 0 18px 60px rgba(26, 26, 26, 0.12);
+  box-shadow: var(--nc-shadow-md);
+  font-family: var(--nc-font-body);
 }
 
 /* Header row: progress + close */
@@ -171,28 +168,22 @@ onMounted(() => {
   width: 18px;
   height: 3px;
   border-radius: 2px;
-  background: var(--nc-border, #1E1E22);
-  transition: background 250ms var(--nc-ease, cubic-bezier(0.16, 1, 0.3, 1));
-}
-
-:root.light .cm-seg {
-  background: #DDD9CF;
+  background: var(--nc-border);
+  transition: background-color var(--nc-duration-normal) var(--nc-ease);
 }
 
 .cm-seg.is-active,
 .cm-seg.is-done {
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent);
 }
 
+/* Mono micro-label eyebrow / step counter (REDESIGN.md §4) */
 .cm-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--nc-ink-faint, #52525B);
-}
-
-:root.light .cm-eyebrow {
-  color: #8A8780;
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .cm-close {
@@ -203,20 +194,27 @@ onMounted(() => {
   height: 24px;
   background: none;
   border: none;
-  color: var(--nc-ink-faint, #52525B);
+  color: var(--nc-text-muted);
   cursor: pointer;
-  border-radius: 6px;
-  transition: background 150ms ease, color 150ms ease;
+  border-radius: var(--nc-radius-sm);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.cm-close:hover {
-  background: var(--nc-surface-3, #1E1E22);
-  color: var(--nc-ink-muted, #A1A1AA);
+@media (hover: hover) and (pointer: fine) {
+  .cm-close:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-text);
+  }
 }
 
-:root.light .cm-close:hover {
-  background: #F4F2EC;
-  color: #5A5A5A;
+.cm-close:active {
+  transform: scale(0.97);
+}
+
+.cm-close:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 /* Body */
@@ -226,54 +224,37 @@ onMounted(() => {
   gap: 6px;
 }
 
+/* Modal header voice — display 700, tight tracking */
 .cm-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(18px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--nc-ink, #FAFAFA);
-}
-
-:root.light .cm-title {
-  color: #1A1A1A;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
 }
 
 .cm-desc {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   line-height: 1.55;
 }
 
-:root.light .cm-desc {
-  color: #5A5A5A;
-}
-
-/* Status */
+/* Status — flat chip fill + hairline, accent icon */
 .cm-status {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: var(--nc-surface-2, #121216);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 8px;
-  color: var(--nc-accent, #00D2BE);
-}
-
-:root.light .cm-status {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
-  color: var(--nc-accent-dark, #00B5A4);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-accent);
 }
 
 .cm-status-text {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
-}
-
-:root.light .cm-status-text {
-  color: #5A5A5A;
+  color: var(--nc-text-secondary);
 }
 
 /* Actions */
@@ -284,80 +265,90 @@ onMounted(() => {
   padding-top: 4px;
 }
 
+/* Dismiss — mono uppercase text link (REDESIGN.md §5 ghost grammar) */
 .cm-skip {
   background: none;
   border: none;
   padding: 0;
-  font-family: inherit;
+  font-family: var(--nc-font-mono);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
   cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.cm-skip:hover {
-  color: var(--nc-ink-muted, #A1A1AA);
+@media (hover: hover) and (pointer: fine) {
+  .cm-skip:hover {
+    color: var(--nc-accent);
+  }
 }
 
-:root.light .cm-skip {
-  color: #8A8780;
+.cm-skip:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
-:root.light .cm-skip:hover {
-  color: #5A5A5A;
-}
-
+/* Primary action — ink pill (REDESIGN.md §5) */
 .cm-next {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  background: none;
+  padding: 8px 16px;
+  background: var(--nc-text);
   border: none;
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
+  font-size: calc(12px * var(--nc-text-scale, 1));
+  font-weight: 700;
+  color: var(--nc-bg);
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease, transform 80ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.cm-next:hover {
-  background: var(--nc-surface-3, #1E1E22);
-  color: var(--nc-ink, #FAFAFA);
-}
-
-:root.light .cm-next:hover {
-  background: #F4F2EC;
-  color: #1A1A1A;
+@media (hover: hover) and (pointer: fine) {
+  .cm-next:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
 }
 
 .cm-next:active {
   transform: scale(0.97);
 }
 
-/* Card transition */
+.cm-next:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Card transition — enter scale(0.97)+opacity 200ms, exit faster (§5/§6) */
 .cm-enter-active {
-  transition: opacity 250ms var(--nc-ease, cubic-bezier(0.23, 1, 0.32, 1)),
-              transform 250ms var(--nc-ease, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: opacity var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-normal) var(--nc-ease);
 }
 .cm-leave-active {
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease);
 }
 .cm-enter-from {
   opacity: 0;
-  transform: translateY(12px) scale(0.97);
+  transform: translateY(8px) scale(0.97);
 }
 .cm-leave-to {
   opacity: 0;
-  transform: translateY(8px) scale(0.98);
+  transform: translateY(8px) scale(0.97);
 }
 
 /* Step transition */
 .cm-step-enter-active {
-  transition: opacity 200ms ease, transform 200ms var(--nc-ease, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: opacity var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-normal) var(--nc-ease);
 }
 .cm-step-leave-active {
-  transition: opacity 140ms ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
 }
 .cm-step-enter-from {
   opacity: 0;
@@ -384,7 +375,7 @@ onMounted(() => {
   .cm-leave-active,
   .cm-step-enter-active,
   .cm-step-leave-active {
-    transition: opacity 150ms ease;
+    transition: opacity 120ms linear;
   }
   .cm-enter-from,
   .cm-leave-to,

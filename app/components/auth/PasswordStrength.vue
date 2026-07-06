@@ -24,30 +24,27 @@ const passedChecks = computed(() =>
 const strength = computed(() => {
   const passed = passedChecks.value.length
   if (passed === 0) return { level: 0, label: '', color: '' }
-  if (passed === 1) return { level: 1, label: 'Weak', color: '#EF4444' }
-  if (passed === 2) return { level: 2, label: 'Fair', color: '#F59E0B' }
-  if (passed === 3) return { level: 3, label: 'Good', color: '#22C55E' }
-  return { level: 4, label: 'Strong', color: '#00D2BE' }
+  if (passed === 1) return { level: 1, label: 'Weak', color: 'var(--nc-coral)' }
+  if (passed === 2) return { level: 2, label: 'Fair', color: 'var(--nc-warning)' }
+  if (passed === 3) return { level: 3, label: 'Good', color: 'var(--nc-success)' }
+  return { level: 4, label: 'Strong', color: 'var(--nc-accent)' }
 })
 
 const allChecksPassed = computed(() => passedChecks.value.length === checks.length)
+
+const barWidth = computed(() => `${(strength.value.level / 4) * 100}%`)
+const barColor = computed(() => strength.value.color || 'transparent')
 </script>
 
 <template>
   <div v-if="password.length > 0" class="password-strength">
     <!-- Strength bar -->
     <div class="strength-bar-container">
-      <div
-        class="strength-bar"
-        :style="{
-          width: `${(strength.level / 4) * 100}%`,
-          backgroundColor: strength.color
-        }"
-      />
+      <div class="strength-bar" />
     </div>
 
     <!-- Strength label -->
-    <div v-if="strength.label" class="strength-label" :style="{ color: strength.color }">
+    <div v-if="strength.label" class="strength-label">
       {{ strength.label }}
     </div>
 
@@ -73,7 +70,7 @@ const allChecksPassed = computed(() => passedChecks.value.length === checks.leng
 
 .strength-bar-container {
   height: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--nc-border-subtle);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -81,7 +78,9 @@ const allChecksPassed = computed(() => passedChecks.value.length === checks.leng
 .strength-bar {
   height: 100%;
   border-radius: 2px;
-  transition: width 200ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), background-color 200ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  width: v-bind(barWidth);
+  background-color: v-bind(barColor);
+  transition: width 200ms var(--nc-ease), background-color 200ms var(--nc-ease);
 }
 
 .strength-label {
@@ -90,6 +89,7 @@ const allChecksPassed = computed(() => passedChecks.value.length === checks.leng
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: v-bind(barColor);
 }
 
 .requirements {
@@ -104,12 +104,12 @@ const allChecksPassed = computed(() => passedChecks.value.length === checks.leng
   align-items: center;
   gap: 0.375rem;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
-  transition: color 120ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  color: var(--nc-text-muted);
+  transition: color 120ms var(--nc-ease);
 }
 
 .requirement.passed {
-  color: var(--nc-teal, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .req-icon {

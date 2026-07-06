@@ -51,6 +51,18 @@ function handleSelect(item: DropdownItem) {
 }
 
 const hasItems = computed(() => props.items.length > 0 || props.groups.length > 0)
+
+// Items: hover = surface-3 bg + text brighten; danger = coral (REDESIGN.md §5)
+function itemClass(item: DropdownItem) {
+  return [
+    'relative flex items-center gap-2 px-2.5 py-2 rounded-[0.4rem] cursor-pointer select-none outline-none nc-anim active:scale-98',
+    item.disabled
+      ? 'opacity-45 cursor-not-allowed'
+      : item.danger
+        ? 'text-nc-coral focus:bg-nc-coral/10 data-[highlighted]:bg-nc-coral/10'
+        : 'text-nc-text-secondary focus:bg-nc-surface-3 focus:text-nc-text data-[highlighted]:bg-nc-surface-3 data-[highlighted]:text-nc-text'
+  ]
+}
 </script>
 
 <template>
@@ -60,19 +72,13 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
     </DropdownMenuTrigger>
 
     <DropdownMenuPortal>
-      <!-- Enter 150ms ease-out, exit 100ms — asymmetric timing. Scale min 0.97. -->
+      <!-- Flat surface-2 + hairline; origin at trigger, enter 150ms / exit 100ms -->
       <DropdownMenuContent
         v-if="hasItems"
         :side="side"
         :align="align"
         :side-offset="sideOffset"
-        class="z-dropdown min-w-[180px] nc-glass-elevated rounded-nc-lg p-1.5 shadow-nc-xl
-               animate-in fade-in-0 zoom-in-97 duration-[150ms]
-               data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-97 data-[state=closed]:duration-[100ms]
-               data-[side=bottom]:slide-in-from-top-2
-               data-[side=left]:slide-in-from-right-2
-               data-[side=right]:slide-in-from-left-2
-               data-[side=top]:slide-in-from-bottom-2"
+        class="nc-menu-pop z-dropdown min-w-[180px] nc-glass-elevated rounded-nc-md p-1.5"
       >
         <!-- Simple items list -->
         <template v-if="items.length > 0">
@@ -80,19 +86,12 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
             v-for="(item, index) in items"
             :key="index"
             :disabled="item.disabled"
-            :class="[
-              'relative flex items-center gap-2 px-2.5 py-2 rounded-nc-md cursor-pointer select-none outline-none transition-[color,background-color] duration-100 active:scale-98',
-              item.disabled
-                ? 'opacity-50 cursor-not-allowed'
-                : item.danger
-                  ? 'text-nc-error focus:bg-nc-error/20 data-[highlighted]:bg-nc-error/20'
-                  : 'text-nc-text focus:bg-nc-surface-hover data-[highlighted]:bg-nc-surface-hover'
-            ]"
+            :class="itemClass(item)"
             @select="handleSelect(item)"
           >
             <span v-if="item.icon" :class="[item.icon, 'text-lg']" />
             <span class="flex-1">{{ item.label }}</span>
-            <span v-if="item.shortcut" class="text-xs text-nc-text-muted">
+            <span v-if="item.shortcut" class="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-nc-text-muted">
               {{ item.shortcut }}
             </span>
           </DropdownMenuItem>
@@ -109,7 +108,7 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
             <DropdownMenuGroup>
               <DropdownMenuLabel
                 v-if="group.label"
-                class="px-2.5 py-1.5 text-xs font-medium text-nc-text-muted"
+                class="px-2.5 py-1.5 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-nc-text-muted"
               >
                 {{ group.label }}
               </DropdownMenuLabel>
@@ -118,19 +117,12 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
                 v-for="(item, itemIndex) in group.items"
                 :key="itemIndex"
                 :disabled="item.disabled"
-                :class="[
-                  'relative flex items-center gap-2 px-2.5 py-2 rounded-nc-md cursor-pointer select-none outline-none transition-[color,background-color] duration-100 active:scale-98',
-                  item.disabled
-                    ? 'opacity-50 cursor-not-allowed'
-                    : item.danger
-                      ? 'text-nc-error focus:bg-nc-error/20 data-[highlighted]:bg-nc-error/20'
-                      : 'text-nc-text focus:bg-nc-surface-hover data-[highlighted]:bg-nc-surface-hover'
-                ]"
+                :class="itemClass(item)"
                 @select="handleSelect(item)"
               >
                 <span v-if="item.icon" :class="[item.icon, 'text-lg']" />
                 <span class="flex-1">{{ item.label }}</span>
-                <span v-if="item.shortcut" class="text-xs text-nc-text-muted">
+                <span v-if="item.shortcut" class="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-nc-text-muted">
                   {{ item.shortcut }}
                 </span>
               </DropdownMenuItem>
@@ -144,3 +136,30 @@ const hasItems = computed(() => props.items.length > 0 || props.groups.length > 
     </DropdownMenuPortal>
   </DropdownMenuRoot>
 </template>
+
+<style scoped>
+/* Popover motion (REDESIGN.md §5/§6): transform-origin at the trigger,
+   scale(0.97)+opacity, enter 150ms / exit 100ms, single ease. */
+.nc-menu-pop {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+}
+.nc-menu-pop[data-state='open'] {
+  animation: nc-menu-in 150ms var(--nc-ease);
+}
+.nc-menu-pop[data-state='closed'] {
+  animation: nc-menu-out 100ms var(--nc-ease) forwards;
+}
+
+@keyframes nc-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes nc-menu-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+</style>

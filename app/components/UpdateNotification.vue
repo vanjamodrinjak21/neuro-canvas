@@ -11,6 +11,10 @@
  */
 const updates = useAppUpdates()
 const { t } = useI18n()
+
+// Progress width consumed by v-bind() in the scoped CSS — the sanctioned
+// escape hatch for dynamic values (no inline :style bindings).
+const progressWidth = computed(() => `${Math.min(updates.progress.value, 100)}%`)
 </script>
 
 <template>
@@ -62,10 +66,7 @@ const { t } = useI18n()
           class="update-progress-wrap"
         >
           <div class="update-progress-track">
-            <div
-              class="update-progress-bar"
-              :style="{ width: `${Math.min(updates.progress.value, 100)}%` }"
-            />
+            <div class="update-progress-bar" />
           </div>
           <p class="update-progress-label">
             {{ t('common.update.downloading') }}
@@ -97,6 +98,7 @@ const { t } = useI18n()
 </template>
 
 <style scoped>
+/* Toast-adjacent grammar: flat surface-2 + hairline, calm shadow only. */
 .update-banner {
   position: fixed;
   top: 1rem;
@@ -104,10 +106,10 @@ const { t } = useI18n()
   z-index: 9999;
   width: 20rem;
   max-width: calc(100vw - 2rem);
-  border-radius: 0.5rem;
-  border: 1px solid #1a1a2e;
-  background-color: #0a0a0f;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  border-radius: var(--nc-radius-md);
+  border: 1px solid var(--nc-border);
+  background-color: var(--nc-surface-2);
+  box-shadow: var(--nc-shadow-md);
 }
 
 .update-banner-inner {
@@ -126,31 +128,46 @@ const { t } = useI18n()
   flex: 1;
 }
 
+/* Title — mono micro-label (REDESIGN.md §4). */
 .update-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #e8e4d9;
+  font-family: var(--nc-font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text);
   margin: 0;
 }
 
 .update-message {
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: rgba(232, 228, 217, 0.6);
+  color: var(--nc-text-secondary);
 }
 
+/* Icon button — transparent, hover brightens on surface-3. */
 .update-dismiss {
   flex-shrink: 0;
   padding: 0.125rem;
-  color: rgba(232, 228, 217, 0.4);
+  border-radius: 0.35rem;
+  color: var(--nc-text-muted);
   background: transparent;
   border: 0;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.update-dismiss:hover {
-  color: rgba(232, 228, 217, 0.7);
+.update-dismiss:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .update-dismiss:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
 }
 
 .update-dismiss-icon {
@@ -158,10 +175,11 @@ const { t } = useI18n()
   height: 1rem;
 }
 
+/* Error — coral, the attention accent. */
 .update-error {
   margin-top: 0.5rem;
   font-size: 0.75rem;
-  color: #f87171;
+  color: var(--nc-coral);
 }
 
 .update-progress-wrap {
@@ -172,21 +190,27 @@ const { t } = useI18n()
   height: 0.375rem;
   width: 100%;
   overflow: hidden;
-  border-radius: 9999px;
-  background-color: #1a1a2e;
+  border-radius: 3px;
+  background-color: var(--nc-surface-3);
 }
 
+/* Progress fill — accent; width driven via v-bind (no inline styles). */
 .update-progress-bar {
   height: 100%;
-  border-radius: 9999px;
-  background-color: rgba(232, 228, 217, 0.6);
-  transition: width 0.3s ease;
+  border-radius: 3px;
+  background-color: var(--nc-accent);
+  width: v-bind(progressWidth);
+  transition: width var(--nc-duration-slow) var(--nc-ease);
 }
 
+/* Status readout — mono micro-label. */
 .update-progress-label {
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  color: rgba(232, 228, 217, 0.4);
+  margin-top: 0.375rem;
+  font-family: var(--nc-font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .update-actions {
@@ -195,49 +219,81 @@ const { t } = useI18n()
   gap: 0.5rem;
 }
 
+/* Action — accent chip (accent = interactive/hot, REDESIGN.md §1). */
 .update-cta {
-  border-radius: 0.375rem;
-  background-color: #e8e4d9;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.4);
+  background-color: rgba(var(--nc-accent-rgb), 0.08);
   padding: 0.375rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #0a0a0f;
-  border: 0;
+  font-family: var(--nc-font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-accent);
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.update-cta:hover {
-  opacity: 0.9;
+.update-cta:active {
+  transform: scale(0.97);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .update-cta:hover {
+    background-color: rgba(var(--nc-accent-rgb), 0.14);
+    border-color: var(--nc-accent);
+  }
+}
+
+/* Secondary — mono uppercase ghost chip. */
 .update-secondary {
-  border-radius: 0.375rem;
-  border: 1px solid #1a1a2e;
+  border-radius: 0.4rem;
+  border: 1px solid var(--nc-border);
   background: transparent;
   padding: 0.375rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: rgba(232, 228, 217, 0.6);
+  font-family: var(--nc-font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.update-secondary:hover {
-  color: rgba(232, 228, 217, 0.8);
-  border-color: rgba(232, 228, 217, 0.2);
+.update-secondary:active {
+  transform: scale(0.97);
 }
 
-.slide-down-enter-active,
+@media (hover: hover) and (pointer: fine) {
+  .update-secondary:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
+}
+
+.update-cta:focus-visible,
+.update-secondary:focus-visible,
+.update-dismiss:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Enter/leave — transform/opacity only, single ease; exit faster. */
+.slide-down-enter-active {
+  transition: opacity var(--nc-duration-slow) var(--nc-ease),
+              transform var(--nc-duration-slow) var(--nc-ease);
+}
+
 .slide-down-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease);
 }
 
-.slide-down-enter-from {
-  opacity: 0;
-  transform: translateY(-12px);
-}
-
+.slide-down-enter-from,
 .slide-down-leave-to {
   opacity: 0;
   transform: translateY(-12px);

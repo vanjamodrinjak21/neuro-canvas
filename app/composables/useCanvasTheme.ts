@@ -27,62 +27,124 @@ export interface CanvasColors {
   rootIndicatorText: string
 }
 
-const darkColors: CanvasColors = {
-  canvasBg: '#0A0A0C',
-  nodeBg: '#111113',
-  nodeBorder: '#27272A',
-  nodeTier2Bg: '#0D0D0F',
-  nodeTier1Border: 'rgba(0, 210, 190, 0.45)',
-  nodeTier2Border: 'rgba(255, 255, 255, 0.06)',
-  nodeText: '#FAFAFA',
-  nodeSelected: '#00D2BE',
-  nodeGlow: 'rgba(0, 210, 190, 0.08)',
-  nodeHoverBorder: '#00D2BE',
-  nodeAiGlow: 'rgba(0, 210, 190, 0.15)',
-  nodeHighlightGlow: 'rgba(0, 210, 190, 0.1)',
-  edgeDefault: '#3A3A42',
-  edgeSelected: '#00D2BE',
-  gridDot: '#3F3F46',
-  gridLine: 'rgba(255, 255, 255, 0.02)',
-  accent: '#00D2BE',
-  boxSelectFill: 'rgba(0, 210, 190, 0.06)',
-  boxSelectBorder: 'rgba(0, 210, 190, 0.4)',
-  connectionPreview: '#00D2BE',
-  anchorFill: '#0A0A0C',
-  anchorBorder: '#00D2BE',
-  rootIndicatorBg: '#00D2BE',
-  rootIndicatorText: '#0A0A0C',
+/**
+ * Canvas 2D contexts can't resolve `var(--nc-*)`, so palette values are read
+ * from the live CSS custom properties at theme-change time and fall back to
+ * the canonical token values from tokens.css (REDESIGN.md §1/§2). This keeps
+ * tokens.css as the single source of truth while feeding the renderers the
+ * same resolved strings they always received — no renderer API change.
+ */
+type TokenReader = (name: string, fallback: string) => string
+
+function readToken(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return value || fallback
 }
 
-// Light-mode tokens are tuned for visibility against the warm-paper canvas
-// (#FAFAF9). Brand teal #00D2BE is preserved as the accent — only neutral
-// borders, edges, grid and accent glows were strengthened so Tier-2 nodes
-// don't disappear into the paper.
-const lightColors: CanvasColors = {
-  canvasBg: '#FAFAF9',
-  nodeBg: '#FFFFFF',
-  nodeBorder: '#D4D4D0',
-  nodeTier2Bg: '#FFFFFF',
-  nodeTier1Border: 'rgba(0, 168, 154, 0.85)',
-  nodeTier2Border: 'rgba(0, 0, 0, 0.16)',
-  nodeText: '#111111',
-  nodeSelected: '#00D2BE',
-  nodeGlow: 'rgba(0, 210, 190, 0.12)',
-  nodeHoverBorder: '#00D2BE',
-  nodeAiGlow: 'rgba(0, 210, 190, 0.18)',
-  nodeHighlightGlow: 'rgba(0, 210, 190, 0.14)',
-  edgeDefault: '#A1A1AA',
-  edgeSelected: '#00D2BE',
-  gridDot: '#B8B8B3',
-  gridLine: 'rgba(0, 0, 0, 0.04)',
-  accent: '#00D2BE',
-  boxSelectFill: 'rgba(0, 210, 190, 0.10)',
-  boxSelectBorder: 'rgba(0, 210, 190, 0.55)',
-  connectionPreview: '#00D2BE',
-  anchorFill: '#FAFAF9',
-  anchorBorder: '#00D2BE',
-  rootIndicatorBg: '#00D2BE',
-  rootIndicatorText: '#FAFAF9',
+/**
+ * Token reader that ignores the live DOM and returns the canonical fallback
+ * values. Used by print/PDF export: when the dark theme is active the
+ * document's custom properties hold DARK values, so reading them would
+ * produce a mixed palette — the fallbacks ARE the tokens.css light values.
+ */
+const readFallbackToken: TokenReader = (_name, fallback) => fallback
+
+function makeAccentAlpha(read: TokenReader) {
+  return (alpha: number, fallbackRgb: string): string => {
+    const rgb = read('--nc-accent-rgb', fallbackRgb)
+    return `rgba(${rgb}, ${alpha})`
+  }
+}
+
+const DARK_ACCENT_RGB = '94, 242, 232'
+const LIGHT_ACCENT_RGB = '11, 158, 147'
+
+function buildDarkColors(read: TokenReader = readToken): CanvasColors {
+  const accentAlpha = makeAccentAlpha(read)
+  const accent = read('--nc-accent', '#5EF2E8')
+  return {
+    canvasBg: read('--nc-canvas', '#050508'),
+    nodeBg: read('--nc-surface-2', '#131318'),
+    nodeBorder: read('--nc-border', 'rgba(244, 244, 248, 0.14)'),
+    nodeTier2Bg: read('--nc-surface', '#0d0d11'),
+    nodeTier1Border: accentAlpha(0.45, DARK_ACCENT_RGB),
+    nodeTier2Border: read('--nc-border-subtle', 'rgba(244, 244, 248, 0.08)'),
+    nodeText: read('--nc-text', '#f4f4f8'),
+    nodeSelected: accent,
+    nodeGlow: accentAlpha(0.08, DARK_ACCENT_RGB),
+    nodeHoverBorder: accent,
+    nodeAiGlow: accentAlpha(0.15, DARK_ACCENT_RGB),
+    nodeHighlightGlow: accentAlpha(0.1, DARK_ACCENT_RGB),
+    edgeDefault: '#3A3A42',
+    edgeSelected: accent,
+    gridDot: '#3F3F46',
+    gridLine: 'rgba(255, 255, 255, 0.02)',
+    accent,
+    boxSelectFill: accentAlpha(0.06, DARK_ACCENT_RGB),
+    boxSelectBorder: accentAlpha(0.4, DARK_ACCENT_RGB),
+    connectionPreview: accent,
+    anchorFill: read('--nc-canvas', '#050508'),
+    anchorBorder: accent,
+    rootIndicatorBg: accent,
+    rootIndicatorText: read('--nc-bg', '#050508'),
+  }
+}
+
+// Light-mode neutrals stay tuned for visibility against the warm-paper canvas
+// (#FAFAF9) — only the accent family follows the token (light accent is the
+// darker #0b9e93 per REDESIGN.md §2; #5EF2E8 is never used on paper).
+function buildLightColors(read: TokenReader = readToken): CanvasColors {
+  const accentAlpha = makeAccentAlpha(read)
+  const accent = read('--nc-accent', '#0b9e93')
+  return {
+    canvasBg: read('--nc-canvas', '#FAFAF9'),
+    nodeBg: '#FFFFFF',
+    nodeBorder: '#D4D4D0',
+    nodeTier2Bg: '#FFFFFF',
+    nodeTier1Border: accentAlpha(0.85, LIGHT_ACCENT_RGB),
+    nodeTier2Border: 'rgba(0, 0, 0, 0.16)',
+    nodeText: read('--nc-text', '#111111'),
+    nodeSelected: accent,
+    nodeGlow: accentAlpha(0.12, LIGHT_ACCENT_RGB),
+    nodeHoverBorder: accent,
+    nodeAiGlow: accentAlpha(0.18, LIGHT_ACCENT_RGB),
+    nodeHighlightGlow: accentAlpha(0.14, LIGHT_ACCENT_RGB),
+    edgeDefault: '#A1A1AA',
+    edgeSelected: accent,
+    gridDot: '#B8B8B3',
+    gridLine: 'rgba(0, 0, 0, 0.04)',
+    accent,
+    boxSelectFill: accentAlpha(0.1, LIGHT_ACCENT_RGB),
+    boxSelectBorder: accentAlpha(0.55, LIGHT_ACCENT_RGB),
+    connectionPreview: accent,
+    anchorFill: read('--nc-canvas', '#FAFAF9'),
+    anchorBorder: accent,
+    rootIndicatorBg: accent,
+    // Ink on the light accent (5.69:1) — bg-colored text on #0b9e93 is
+    // only 3.18:1 and fails AA for the root badge label.
+    rootIndicatorText: read('--nc-accent-contrast', '#111111'),
+  }
+}
+
+/**
+ * Resolve the full canvas palette for a theme without any Vue reactivity.
+ * Used by offscreen renderers (raster image export) that run outside a
+ * component lifecycle but must match the live canvas exactly — including
+ * the theme's canvas background token (dark #050508 / light #FAFAF9).
+ */
+export function getCanvasColors(isLight: boolean): CanvasColors {
+  return isLight ? buildLightColors() : buildDarkColors()
+}
+
+/**
+ * The LIGHT palette resolved from canonical token values, ignoring the live
+ * DOM entirely. PDF/print export renders paper-friendly light regardless of
+ * the active theme; `getCanvasColors(true)` can't do that because a dark
+ * document's custom properties hold dark values.
+ */
+export function getPrintCanvasColors(): CanvasColors {
+  return buildLightColors(readFallbackToken)
 }
 
 export function useCanvasTheme() {
@@ -94,7 +156,7 @@ export function useCanvasTheme() {
     }
   }
 
-  const colors = computed<CanvasColors>(() => isLight.value ? lightColors : darkColors)
+  const colors = computed<CanvasColors>(() => isLight.value ? buildLightColors() : buildDarkColors())
 
   if (typeof window !== 'undefined') {
     onMounted(() => {

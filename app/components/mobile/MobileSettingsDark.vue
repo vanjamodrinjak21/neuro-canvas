@@ -5,6 +5,7 @@
  */
 import { safeImageUrl } from '~/utils/safeUrl'
 import { resolveDisplayName, resolveDisplayEmail, isHiddenAppleUser } from '~/utils/userDisplay'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 const { t } = useI18n()
 
@@ -56,7 +57,7 @@ const isApplePlatform = computed(() =>
 
     <!-- Editorial hero -->
     <div class="mset-hero">
-      <span class="mset-eyebrow">04 — {{ t('mobile.settings.eyebrow') }}</span>
+      <span class="mset-eyebrow">{{ t('mobile.settings.eyebrow') }}</span>
       <h1 class="mset-hero-line">
         <span class="mset-hero-sans">{{ t('mobile.settings.heroLineSans') }}</span>
         <span class="mset-hero-serif">{{ t('mobile.settings.heroLineSerif') }}</span>
@@ -116,7 +117,7 @@ const isApplePlatform = computed(() =>
           <span class="mset-profile-email">{{ displayEmail }}</span>
         </div>
         <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
 
@@ -132,7 +133,7 @@ const isApplePlatform = computed(() =>
       <div class="mset-group">
         <button class="mset-row" type="button" @click="emit('open-general')">
           <div class="mset-row-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="4" />
               <path d="M12 2V4M12 20V22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M2 12H4M20 12H22M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93" />
             </svg>
@@ -142,7 +143,7 @@ const isApplePlatform = computed(() =>
             <span class="mset-row-hint">{{ t('mobile.settings.rowGeneralHint') }}</span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
 
@@ -150,10 +151,7 @@ const isApplePlatform = computed(() =>
 
         <button class="mset-row" type="button" @click="emit('open-ai-providers')">
           <div class="mset-row-icon mset-row-icon--mint">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
-              <path d="M19 17L19.7 19L21.5 19.5L19.7 20L19 22L18.3 20L16.5 19.5L18.3 19L19 17Z" />
-            </svg>
+            <NcAiMark :size="18" />
           </div>
           <div class="mset-row-text mset-row-text--ai">
             <div class="mset-row-titlebar">
@@ -166,7 +164,7 @@ const isApplePlatform = computed(() =>
             </span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
 
@@ -174,7 +172,7 @@ const isApplePlatform = computed(() =>
 
         <button class="mset-row" type="button" @click="emit('open-personal')">
           <div class="mset-row-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 21C4 16.5817 7.58172 13 12 13C16.4183 13 20 16.5817 20 21" />
             </svg>
@@ -184,7 +182,7 @@ const isApplePlatform = computed(() =>
             <span class="mset-row-hint">{{ t('mobile.settings.rowPersonalHint') }}</span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
 
@@ -192,7 +190,7 @@ const isApplePlatform = computed(() =>
 
         <button class="mset-row" type="button" @click="emit('open-account')">
           <div class="mset-row-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3L4 6V11C4 15.97 7.5 20.61 12 22C16.5 20.61 20 15.97 20 11V6L12 3Z" />
               <path d="M9 12L11 14L15 10" />
             </svg>
@@ -202,7 +200,7 @@ const isApplePlatform = computed(() =>
             <span class="mset-row-hint">{{ t('mobile.settings.rowAccountHint') }}</span>
           </div>
           <svg class="mset-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
       </div>
@@ -215,7 +213,7 @@ const isApplePlatform = computed(() =>
         :disabled="signOutLoading"
         @click="emit('sign-out')"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H9" />
           <path d="M16 17L21 12L16 7" />
           <path d="M21 12H9" />
@@ -241,11 +239,10 @@ const isApplePlatform = computed(() =>
   --mset-ink: var(--nc-ink);
   --mset-body: var(--nc-ink-soft);
   --mset-mute: var(--nc-ink-faint);
-  --mset-mint: #00D2BE;
-  --mset-surface: rgba(250, 250, 250, 0.04);
-  --mset-stroke: rgba(250, 250, 250, 0.10);
-  --mset-stroke-soft: rgba(250, 250, 250, 0.06);
-  --mset-red: #EF4444;
+  --mset-mint: var(--nc-accent);
+  --mset-surface: var(--nc-chip-bg);
+  --mset-stroke: var(--nc-border);
+  --mset-stroke-soft: var(--nc-border-subtle);
 
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
@@ -253,7 +250,7 @@ const isApplePlatform = computed(() =>
   height: 100dvh;
   background: var(--mset-bg);
   color: var(--mset-ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -270,42 +267,16 @@ const isApplePlatform = computed(() =>
   flex-shrink: 0;
 }
 .mset-brand { display: flex; align-items: center; gap: 10px; }
-.mset-mark {
-  width: 26px; height: 26px;
-  border-radius: 7px;
-  display: block;
-  flex-shrink: 0;
-}
 .mset-wordmark {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-weight: 400;
   font-size: calc(19px * var(--nc-text-scale, 1));
   line-height: 1;
   letter-spacing: -0.01em;
-  color: var(--mset-ink, var(--nc-ink));
+  color: var(--mset-ink);
 }
 .mset-wordmark-em {
   font-style: italic;
-  color: var(--mset-mint, #00D2BE);
-}
-.mset-live {
-  display: flex; align-items: center; gap: 6px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.30);
-}
-.mset-live-dot {
-  width: 6px; height: 6px;
-  border-radius: 999px;
-  background: var(--mset-mint);
-  animation: mset-pulse 2.4s ease-in-out infinite;
-}
-@keyframes mset-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.mset-live-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
-  letter-spacing: 0.08em;
   color: var(--mset-mint);
 }
 
@@ -317,27 +288,29 @@ const isApplePlatform = computed(() =>
   flex-shrink: 0;
 }
 .mset-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.12em; color: var(--mset-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .mset-hero-line {
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px;
   margin: 14px 0 0 0; padding: 0; font-weight: 500;
 }
 .mset-hero-sans {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
-  letter-spacing: -0.025em; color: var(--mset-ink);
+  font-family: var(--nc-font-display);
+  font-weight: 700; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
+  letter-spacing: -0.02em; color: var(--mset-ink);
 }
 .mset-hero-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic; font-weight: 400;
   font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
-  letter-spacing: -0.02em; color: var(--mset-mint);
+  letter-spacing: -0.02em; color: var(--nc-accent-text);
 }
 .mset-hero-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--mset-body);
   margin-top: 10px;
@@ -361,26 +334,27 @@ const isApplePlatform = computed(() =>
   padding: 22px 20px;
   background: var(--mset-surface);
   border: 1px solid var(--mset-stroke);
-  border-radius: 16px;
+  border-radius: 0.5rem;
 }
 .mset-signin-head {
   display: flex; flex-direction: column; gap: 6px;
 }
 .mset-signin-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.14em;
-  color: var(--mset-mint);
+  text-transform: uppercase;
+  color: var(--nc-accent-text);
 }
 .mset-signin-title {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic; font-weight: 400;
   font-size: calc(24px * var(--nc-text-scale, 1)); line-height: 28px;
   letter-spacing: -0.01em;
   color: var(--mset-ink);
 }
 .mset-signin-sub {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mset-body);
 }
@@ -391,31 +365,25 @@ const isApplePlatform = computed(() =>
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%;
   padding: 12px 16px;
-  background: rgba(250, 250, 250, 0.04);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--mset-stroke);
-  border-radius: 12px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 0.5rem;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   color: var(--mset-ink);
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms var(--nc-ease), border-color 150ms var(--nc-ease), transform 120ms var(--nc-ease), opacity 120ms var(--nc-ease);
 }
-.mset-signin-btn:active { background: rgba(250, 250, 250, 0.08); }
-.mset-signin-btn--primary {
-  background: var(--mset-mint);
-  border-color: var(--mset-mint);
-  color: #09090B;
-  font-weight: 600;
-}
-.mset-signin-btn--primary:active { background: #00b8a6; }
-/* Sign in with Apple — required (Guideline 4.8) and at least as prominent. */
+.mset-signin-btn:active { background: var(--nc-surface-3); transform: scale(0.97); }
+/* Sign in with Apple — required (Guideline 4.8) and at least as prominent.
+   Ink pill treatment doubles as the HIG variant: white-on-dark, black-on-light. */
 .mset-signin-btn--apple {
-  background: #FFFFFF;
-  border-color: #FFFFFF;
-  color: #000000;
+  background: var(--nc-text);
+  border-color: var(--nc-text);
+  color: var(--nc-bg);
   font-weight: 600;
 }
-.mset-signin-btn--apple:active { background: #E8E8E8; }
+.mset-signin-btn--apple:active { background: var(--nc-text); opacity: 0.92; }
 
 /* Profile card */
 .mset-profile {
@@ -424,21 +392,21 @@ const isApplePlatform = computed(() =>
   padding: 14px 16px;
   background: var(--mset-surface);
   border: 1px solid var(--mset-stroke);
-  border-radius: 14px;
+  border-radius: 0.5rem;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
   color: inherit;
-  transition: background 150ms ease;
+  transition: background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.mset-profile:active { background: rgba(250, 250, 250, 0.06); }
+.mset-profile:active { background: var(--nc-surface-3); transform: scale(0.97); }
 .mset-profile-avatar {
   width: 48px; height: 48px;
   border-radius: 999px;
-  background: rgba(0, 210, 190, 0.16);
-  border: 1px solid rgba(0, 210, 190, 0.40);
+  background: rgba(var(--nc-accent-rgb), 0.16);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.40);
   display: flex; align-items: center; justify-content: center;
-  color: var(--mset-mint);
+  color: var(--nc-accent-text);
   font-weight: 500; font-size: calc(18px * var(--nc-text-scale, 1)); line-height: 20px;
   overflow: hidden;
   flex-shrink: 0;
@@ -450,7 +418,7 @@ const isApplePlatform = computed(() =>
   min-width: 0;
 }
 .mset-profile-name {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
   letter-spacing: -0.01em;
   color: var(--mset-ink);
@@ -459,7 +427,7 @@ const isApplePlatform = computed(() =>
   white-space: nowrap;
 }
 .mset-profile-email {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 400; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.04em;
   color: var(--mset-body);
@@ -467,16 +435,17 @@ const isApplePlatform = computed(() =>
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Attention note — coral is the sanctioned attention color (REDESIGN.md §1) */
 .mset-hidden-note {
   margin: 12px 4px 0;
   padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(224, 160, 77, 0.08);
-  border: 1px solid rgba(224, 160, 77, 0.22);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  border-radius: 0.5rem;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.22);
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 16px;
   letter-spacing: 0.02em;
-  color: #E0A04D;
+  color: var(--nc-coral);
 }
 
 /* Section header */
@@ -486,10 +455,11 @@ const isApplePlatform = computed(() =>
   padding: 0 4px;
 }
 .mset-section-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.14em;
-  color: var(--mset-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 
 /* Settings group */
@@ -497,7 +467,7 @@ const isApplePlatform = computed(() =>
   margin-top: 12px;
   background: var(--mset-surface);
   border: 1px solid var(--mset-stroke);
-  border-radius: 14px;
+  border-radius: 0.5rem;
   overflow: hidden;
 }
 .mset-row {
@@ -510,20 +480,22 @@ const isApplePlatform = computed(() =>
   text-align: left;
   font-family: inherit;
   color: inherit;
-  transition: background 150ms ease;
+  transition: background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.mset-row:active { background: rgba(250, 250, 250, 0.04); }
+.mset-row:active { background: var(--nc-surface-3); transform: scale(0.97); }
 .mset-row-icon {
   width: 32px; height: 32px;
-  border-radius: 9px;
-  background: rgba(250, 250, 250, 0.05);
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
   border: 1px solid var(--mset-stroke-soft);
+  color: var(--nc-text);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .mset-row-icon--mint {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.28);
+  background: rgba(var(--nc-accent-rgb), 0.10);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.28);
+  color: var(--nc-accent-text);
 }
 .mset-row-text {
   display: flex; flex-direction: column; gap: 4px;
@@ -534,52 +506,53 @@ const isApplePlatform = computed(() =>
   display: flex; align-items: center; gap: 8px;
 }
 .mset-row-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.005em;
   color: var(--mset-ink);
 }
 .mset-row-hint {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.12em;
   color: var(--mset-mute);
 }
+/* Chip grammar (REDESIGN.md §5): mono accent on chip fill + hairline */
 .mset-badge {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 16px; height: 16px;
   padding: 0 5px;
-  border-radius: 4px;
-  background: rgba(0, 210, 190, 0.14);
-  border: 1px solid rgba(0, 210, 190, 0.30);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--mset-stroke);
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
-  color: var(--mset-mint);
+  color: var(--nc-accent-text);
 }
-.mset-chev { flex-shrink: 0; }
+.mset-chev { flex-shrink: 0; color: var(--nc-text-dim); }
 .mset-divider {
   height: 1px;
   background: var(--mset-stroke-soft);
   margin: 0 16px;
 }
 
-/* Sign out */
+/* Sign out — destructive action in calm coral (REDESIGN.md §1) */
 .mset-signout {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%;
   margin-top: 22px;
   padding: 14px 16px;
-  background: rgba(239, 68, 68, 0.06);
-  border: 1px solid rgba(239, 68, 68, 0.30);
-  border-radius: 14px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: rgba(var(--nc-coral-rgb), 0.06);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.30);
+  border-radius: 0.5rem;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
-  color: var(--mset-red);
+  color: var(--nc-coral);
   cursor: pointer;
-  transition: background 150ms ease;
+  transition: background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.mset-signout:active { background: rgba(239, 68, 68, 0.10); }
-.mset-signout:disabled { opacity: 0.6; cursor: not-allowed; }
+.mset-signout:active { background: rgba(var(--nc-coral-rgb), 0.10); transform: scale(0.97); }
+.mset-signout:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Footer */
 .mset-footer {
@@ -588,46 +561,16 @@ const isApplePlatform = computed(() =>
   padding: 0 4px;
 }
 .mset-footer-line {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.10em;
   color: var(--mset-mute);
 }
-.mset-footer-mute { color: rgba(82, 82, 91, 0.7); }
+.mset-footer-mute { color: var(--nc-text-dim); }
 
 /* Spacer to clear dock (~88px dock + safe area) */
 .mset-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
-}
-
-/* Light theme — the white-tint surfaces/strokes vanish on warm paper, so remap
-   the local vars to dark-on-light overlays and patch the hardcoded values and
-   white icon glyphs that don't read against the light background. */
-:root.light .mset {
-  --mset-surface: rgba(17, 17, 17, 0.03);
-  --mset-stroke: rgba(17, 17, 17, 0.08);
-  --mset-stroke-soft: rgba(17, 17, 17, 0.06);
-}
-/* Generic OAuth/email sign-in buttons only — the Apple (white) and any mint
-   primary buttons keep their intentional brand fills. */
-:root.light .mset-signin-btn:not(.mset-signin-btn--apple):not(.mset-signin-btn--primary) {
-  background: rgba(17, 17, 17, 0.03);
-}
-:root.light .mset-signin-btn:not(.mset-signin-btn--apple):not(.mset-signin-btn--primary):active {
-  background: rgba(17, 17, 17, 0.06);
-}
-:root.light .mset-profile:active { background: rgba(17, 17, 17, 0.05); }
-:root.light .mset-row:active { background: rgba(17, 17, 17, 0.04); }
-:root.light .mset-row-icon {
-  background: rgba(17, 17, 17, 0.03);
-  border-color: rgba(17, 17, 17, 0.08);
-}
-/* Row glyphs are drawn white (#FAFAFA); repaint to ink. Mint icons keep accent. */
-:root.light .mset-row-icon:not(.mset-row-icon--mint) svg { stroke: #18181B; }
-/* Chevrons render in faint slate (#52525B) — soften to muted ink for light. */
-:root.light .mset-chev path { stroke: #71717A; }
-:root.light .mset-footer-mute {
-  color: rgba(161, 161, 170, 0.7); /* --nc-ink-faint (#A1A1AA) @ 70% */
 }
 </style>

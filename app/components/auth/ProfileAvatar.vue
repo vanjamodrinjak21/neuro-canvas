@@ -50,8 +50,8 @@ const avatarImage = computed(() => user.value?.image || null)
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--nc-surface-2, #121216);
-  border: 1px solid var(--nc-border, #252529);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -61,14 +61,12 @@ const avatarImage = computed(() => user.value?.image || null)
 }
 
 .profile-avatar:hover {
-  border-color: var(--nc-teal, #00D2BE);
+  border-color: var(--nc-accent);
 }
 
 .profile-avatar:focus-visible {
-  outline: none;
-  ring: 2px solid var(--nc-teal, #00D2BE);
-  ring-offset: 2px;
-  ring-offset-color: var(--nc-charcoal, #06060A);
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .avatar-image {
@@ -81,7 +79,7 @@ const avatarImage = computed(() => user.value?.image || null)
 .avatar-initials {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
   font-family: inherit;
 }
 

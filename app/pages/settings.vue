@@ -4,8 +4,10 @@ import { useAISettings } from '~/composables/useAISettings'
 import { PROVIDER_TEMPLATES } from '~/types/ai-settings'
 import { resolveAvatarInitials } from '~/utils/userDisplay'
 import { useMobileBack } from '~/composables/useMobileBack'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 
 const { t, locale, setLocale, locales: i18nLocales } = useI18n()
+const { confirm, ConfirmDialog } = useConfirmDialog()
 
 definePageMeta({
   layout: false,
@@ -51,13 +53,13 @@ function settingsThemeReveal(btn: HTMLElement, callback: () => void) {
 
   overlay.offsetHeight
 
-  overlay.style.transition = 'clip-path 500ms cubic-bezier(0.16, 1, 0.3, 1)'
+  overlay.style.transition = 'clip-path 500ms var(--nc-ease)'
   overlay.style.clipPath = `circle(${maxRadius}px at ${cx}px ${cy}px)`
 
   setTimeout(() => {
     callback()
     setTimeout(() => {
-      overlay.style.transition = 'opacity 300ms ease'
+      overlay.style.transition = 'opacity 300ms var(--nc-ease)'
       overlay.style.opacity = '0'
       setTimeout(() => {
         overlay.style.display = 'none'
@@ -601,7 +603,15 @@ function handleMobileSettingsSignIn(provider: 'apple' | 'google' | 'github' | 'e
 async function handleMobileDeleteAccount() {
   // Irreversible — confirm before hitting the destructive endpoint. The server
   // also requires the exact confirmation string, so accidental calls are safe.
-  if (typeof window !== 'undefined' && !window.confirm(t('mobile.settingsAccount.deleteTitle'))) return
+  const confirmed = await confirm({
+    title: t('mobile.settingsAccount.deleteTitle'),
+    description: t('mobile.settingsAccount.deleteItalic', { n: 30 }),
+    confirmText: t('mobile.settingsAccount.deleteTitle'),
+    cancelText: t('common.buttons.cancel'),
+    variant: 'danger',
+    icon: 'i-lucide-trash-2'
+  })
+  if (!confirmed) return
   try {
     await $fetch('/api/user/account', {
       method: 'DELETE',
@@ -752,7 +762,7 @@ function handleAccountClose() {
 
       <main class="settings-main">
         <div class="settings-header">
-          <span class="settings-eyebrow">04 — settings</span>
+          <span class="settings-eyebrow">{{ $t('settings.page.title') }}</span>
           <div class="settings-title-row">
             <h1 class="settings-title">
               {{ $t('settings.page.title') }}<span class="settings-title-italic">.</span>
@@ -1067,6 +1077,8 @@ function handleAccountClose() {
     <Teleport to="body">
       <div ref="settingsOverlayRef" class="settings-swipe-overlay" />
     </Teleport>
+
+    <component :is="ConfirmDialog" />
   </div>
 </template>
 
@@ -1080,7 +1092,7 @@ function handleAccountClose() {
   bottom: 0;
   width: 100vw;
   height: 100vh;
-  background: #00D2BE;
+  background: var(--nc-accent);
   z-index: 9999;
   pointer-events: none;
 }
@@ -1111,27 +1123,20 @@ function handleAccountClose() {
   }
 }
 
+/* Mobile palette — aliased to the canonical tokens (single source of truth).
+   tokens.css rebases every --nc-* var under :root.light, so no per-component
+   light overrides are needed. Coral carries destructive intent (REDESIGN §1). */
 .m-settings {
-  --ms-bg: #0A0A0C;
-  --ms-card: #111114;
-  --ms-border: #1E1E22;
-  --ms-text: #FAFAFA;
-  --ms-muted: #888890;
-  --ms-accent: #00D2BE;
-  --ms-green: #4ADE80;
-  --ms-red: #EF4444;
-  --ms-toggle-off: #1E1E22;
-  --ms-knob-off: #555560;
-}
-
-:root.light .m-settings {
-  --ms-bg: #FAFAF9;
-  --ms-card: #FFFFFF;
-  --ms-border: #E8E8E6;
-  --ms-text: #1A1A1A;
-  --ms-muted: #666666;
-  --ms-toggle-off: #D4D4D8;
-  --ms-knob-off: #888890;
+  --ms-bg: var(--nc-bg);
+  --ms-card: var(--nc-surface);
+  --ms-border: var(--nc-border);
+  --ms-text: var(--nc-text);
+  --ms-muted: var(--nc-text-muted);
+  --ms-accent: var(--nc-accent);
+  --ms-green: var(--nc-success);
+  --ms-red: var(--nc-coral);
+  --ms-toggle-off: var(--nc-surface-3);
+  --ms-knob-off: var(--nc-text-dim);
 }
 
 .m-scroll {
@@ -1148,28 +1153,24 @@ function handleAccountClose() {
   height: 44px;
 }
 .m-brand {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 22px;
   letter-spacing: -0.01em; color: var(--ms-text); margin: 0;
 }
 .m-topbar-avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: #1A1A1E; border: 1px solid var(--ms-border);
+  background: var(--nc-surface-3); border: 1px solid var(--ms-border);
   color: var(--ms-accent);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
-}
-:root.light .m-topbar-avatar {
-  background: #F5F5F4;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .m-header { padding: 12px 20px 20px; }
 
 .m-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(28px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1184,30 +1185,28 @@ function handleAccountClose() {
   margin: 0 20px 20px;
   padding: 16px;
   gap: 14px;
-  border-radius: 10px;
+  border-radius: var(--nc-radius-md);
   background: var(--ms-card);
   border: 1px solid var(--ms-border);
 }
-:root.platform-ios .m-account { border-radius: 10px; }
-:root.platform-android .m-account { border-radius: 16px; }
 
 .m-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(0, 210, 190, 0.15);
+  background: rgba(var(--nc-accent-rgb), 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(var(--nc-bg-rgb), 0.08);
 }
 
 .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
 .m-avatar-letter {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 700;
   line-height: 24px;
@@ -1223,7 +1222,7 @@ function handleAccountClose() {
 }
 
 .m-account-name {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 20px;
@@ -1234,7 +1233,7 @@ function handleAccountClose() {
 }
 
 .m-account-email {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
@@ -1253,7 +1252,7 @@ function handleAccountClose() {
   margin: 0 24px 24px;
   padding: 16px;
   gap: 14px;
-  border-radius: 10px;
+  border-radius: var(--nc-radius-md);
   background: var(--ms-card);
   border: 1px solid var(--ms-border);
 }
@@ -1261,8 +1260,8 @@ function handleAccountClose() {
 .m-signin-icon-wrap {
   width: 48px;
   height: 48px;
-  border-radius: 24px;
-  background: rgba(0, 210, 190, 0.1);
+  border-radius: 50%;
+  background: rgba(var(--nc-accent-rgb), 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1284,7 +1283,7 @@ function handleAccountClose() {
 }
 
 .m-signin-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 20px;
@@ -1292,33 +1291,36 @@ function handleAccountClose() {
 }
 
 .m-signin-desc {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
   color: var(--ms-muted);
 }
 
+/* Selection grammar: accent fill carries bg-colored ink (REDESIGN.md §1) */
 .m-signin-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 10px 24px;
-  border-radius: 10px;
+  border-radius: 2.4rem;
   background: var(--ms-accent);
-  color: #FFFFFF;
-  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--nc-bg);
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   text-decoration: none;
   flex-shrink: 0;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s ease;
+  transition: transform var(--nc-duration-press) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease);
 }
 
 .m-signin-btn:active {
-  opacity: 0.85;
+  transform: scale(0.97);
 }
 
 /* Sign-in section with OAuth + email */
@@ -1332,7 +1334,7 @@ function handleAccountClose() {
 .m-signin-section .m-signin-card {
   margin: 0;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--nc-radius-md);
   background: var(--ms-card);
   border: 1px solid var(--ms-border);
   display: flex;
@@ -1346,37 +1348,38 @@ function handleAccountClose() {
   justify-content: center;
   gap: 10px;
   height: 50px;
-  border-radius: 12px;
+  border-radius: var(--nc-radius-md);
   border: 1px solid var(--ms-border);
   background: var(--ms-card);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   color: var(--ms-text);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.m-oauth-btn:active { background: var(--ms-border); }
-.m-oauth-btn:disabled { opacity: 0.5; }
+.m-oauth-btn:active { background: var(--nc-surface-3); }
+.m-oauth-btn:disabled { opacity: 0.45; }
 
 .m-oauth-icon { width: 20px; height: 20px; flex-shrink: 0; }
 .m-oauth-email-icon { width: 18px; height: 18px; color: var(--ms-muted); flex-shrink: 0; }
 
-/* Email sign-in screen */
+/* Email sign-in screen — validation errors are coral (REDESIGN.md §1) */
 .m-signin-error {
   margin: 0 24px;
   padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: var(--nc-radius-md);
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.2);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #EF4444;
+  color: var(--nc-coral);
 }
 
+/* Primary CTA — ink pill grammar (REDESIGN.md §5) */
 .m-signin-submit {
   display: flex;
   align-items: center;
@@ -1385,42 +1388,43 @@ function handleAccountClose() {
   width: auto;
   height: 50px;
   margin: 8px 24px 0;
-  border-radius: 12px;
+  border-radius: 2.4rem;
   border: none;
-  background: var(--ms-accent);
-  color: #FFFFFF;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-text);
+  color: var(--nc-bg);
+  font-family: var(--nc-font-display);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease);
 }
 
-.m-signin-submit:active { opacity: 0.85; }
-.m-signin-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.m-signin-submit:active { transform: scale(0.97); }
+.m-signin-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
+/* Mono micro-label (REDESIGN.md §4) */
 .m-label {
   padding: 0 24px;
   margin-bottom: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.16em;
   line-height: 16px;
-  color: var(--ms-muted);
+  color: var(--nc-text-secondary);
 }
 
 .m-group {
   margin: 0 20px 20px;
-  border-radius: 10px;
+  border-radius: var(--nc-radius-md);
   overflow: hidden;
   background: var(--ms-card);
   border: 1px solid var(--ms-border);
 }
-:root.platform-ios .m-group { border-radius: 10px; }
-:root.platform-android .m-group { border-radius: 16px; }
 
 .m-row {
   display: flex;
@@ -1444,7 +1448,7 @@ button.m-row { text-align: left; }
 .m-row-icon { width: 18px; height: 18px; color: var(--ms-muted); flex-shrink: 0; }
 
 .m-row-text {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
@@ -1454,7 +1458,7 @@ button.m-row { text-align: left; }
 .m-row-right { display: flex; align-items: center; gap: 4px; }
 
 .m-row-value {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
@@ -1466,7 +1470,7 @@ button.m-row { text-align: left; }
 .m-toggle {
   width: 44px;
   height: 26px;
-  border-radius: 13px;
+  border-radius: 2.4rem;
   border: none;
   padding: 2px;
   display: flex;
@@ -1474,7 +1478,7 @@ button.m-row { text-align: left; }
   background: var(--ms-toggle-off);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s ease;
+  transition: background-color var(--nc-duration-normal) var(--nc-ease);
 }
 
 .m-toggle.on { background: var(--ms-accent); justify-content: flex-end; }
@@ -1482,19 +1486,19 @@ button.m-row { text-align: left; }
 .m-toggle-knob {
   width: 22px;
   height: 22px;
-  border-radius: 11px;
+  border-radius: 50%;
   background: var(--ms-knob-off);
   flex-shrink: 0;
-  transition: background 0.2s ease;
+  transition: background-color var(--nc-duration-normal) var(--nc-ease);
 }
 
-.m-toggle.on .m-toggle-knob { background: #FAFAFA; }
+.m-toggle.on .m-toggle-knob { background: var(--nc-bg); }
 
 .m-connected { gap: 6px; }
-.m-dot { width: 6px; height: 6px; border-radius: 3px; background: var(--ms-green); flex-shrink: 0; }
+.m-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ms-green); flex-shrink: 0; }
 
 .m-connected-text {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
@@ -1504,35 +1508,34 @@ button.m-row { text-align: left; }
 .m-empty-providers { justify-content: center; cursor: default; }
 
 .m-empty-text {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 400;
   color: var(--ms-muted);
 }
 
+/* Sign out — calm coral danger grammar, never solid red (REDESIGN.md §1) */
 .m-signout {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 50px;
   margin: 8px 20px 0;
-  border-radius: 10px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--nc-radius-md);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.45);
   background: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 600;
   line-height: 18px;
   color: var(--ms-red);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
 }
-:root.platform-ios .m-signout { border-radius: 10px; }
-:root.platform-android .m-signout { border-radius: 28px; }
 
-.m-signout:active { background: rgba(239, 68, 68, 0.08); }
-.m-signout:disabled { opacity: 0.5; cursor: not-allowed; }
+.m-signout:active { background: rgba(var(--nc-coral-rgb), 0.08); }
+.m-signout:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ─── Sub-screen header with back button ─── */
 .m-subheader {
@@ -1548,17 +1551,20 @@ button.m-row { text-align: left; }
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: var(--nc-radius-sm);
   border: none;
   background: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   color: var(--ms-text);
   font-size: calc(20px * var(--nc-text-scale, 1));
+  transition: transform var(--nc-duration-press) var(--nc-ease);
 }
 
+.m-back-btn:active { transform: scale(0.97); }
+
 .m-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1578,17 +1584,18 @@ button.m-row { text-align: left; }
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background: var(--ms-border);
+  border-radius: var(--nc-radius-md);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
   flex-shrink: 0;
 }
 
 .m-row-hint {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
-  color: rgba(136, 136, 144, 0.6);
+  color: var(--nc-text-dim);
   flex: 1;
   text-align: right;
 }
@@ -1601,12 +1608,12 @@ button.m-row { text-align: left; }
   justify-content: flex-end;
 }
 
-/* ─── Segmented control ─── */
+/* ─── Segmented control — chip-fill track + hairline (REDESIGN.md §5) ─── */
 .m-segmented-control {
   display: flex;
   margin: 0 24px 16px;
-  background: var(--ms-card);
-  border-radius: 10px;
+  background: var(--nc-chip-bg);
+  border-radius: var(--nc-radius-md);
   padding: 4px;
   border: 1px solid var(--ms-border);
   gap: 4px;
@@ -1618,27 +1625,28 @@ button.m-row { text-align: left; }
   justify-content: center;
   flex: 1;
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--nc-radius-sm);
   gap: 6px;
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: background 150ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .m-seg-icon { font-size: calc(16px * var(--nc-text-scale, 1)); color: var(--ms-muted); }
 .m-seg-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   color: var(--ms-muted);
 }
 
-.m-seg.active { background: var(--ms-border); }
-.m-seg.active .m-seg-icon { color: var(--ms-text); }
-.m-seg.active .m-seg-label { font-weight: 600; color: var(--ms-text); }
+/* Active = raised fill + accent marker, never color alone (REDESIGN.md §5) */
+.m-seg.active { background: var(--nc-surface-3); }
+.m-seg.active .m-seg-icon { color: var(--nc-accent); }
+.m-seg.active .m-seg-label { font-weight: 600; color: var(--nc-accent); }
 
 /* ─── Column layout in rows ─── */
 .m-row-col {
@@ -1650,7 +1658,7 @@ button.m-row { text-align: left; }
 }
 
 .m-row-sub {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
@@ -1658,7 +1666,7 @@ button.m-row { text-align: left; }
 }
 
 .m-row-action {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
@@ -1666,7 +1674,7 @@ button.m-row { text-align: left; }
 }
 
 .m-row-action-text {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
@@ -1689,7 +1697,7 @@ button.m-row { text-align: left; }
 .m-avatar--lg {
   width: 56px;
   height: 56px;
-  border-radius: 28px;
+  border-radius: 50%;
 }
 
 .m-avatar--lg .m-avatar-letter {
@@ -1705,28 +1713,37 @@ button.m-row { text-align: left; }
   padding: 14px 16px;
 }
 
+/* Input label — mono micro-label (REDESIGN.md §4/§5) */
 .m-field-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
   line-height: 16px;
-  color: var(--ms-muted);
+  color: var(--nc-text-secondary);
 }
 
+/* Input grammar — chip fill, hairline, focus = border-color only */
 .m-field-input {
   display: flex;
   align-items: center;
   height: 44px;
   padding: 0 14px;
-  border-radius: 10px;
-  background: var(--ms-bg);
+  border-radius: var(--nc-radius-md);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--ms-border);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 18px;
   color: var(--ms-text);
   outline: none;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+.m-field-input::placeholder {
+  color: var(--nc-text-dim);
 }
 
 .m-field-input:focus {
@@ -1740,17 +1757,19 @@ button.m-row { text-align: left; }
 }
 
 .m-row--danger .m-row-chevron {
-  color: rgba(239, 68, 68, 0.5);
+  color: rgba(var(--nc-coral-rgb), 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
    DESKTOP SETTINGS
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Flat --nc-bg plane — no local --s-* palette; tokens are the single
+   source of truth (REDESIGN.md §9). */
 .settings-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--s-bg, #09090B);
+  background: var(--nc-bg);
 }
 
 .settings-main {
@@ -1768,11 +1787,13 @@ button.m-row { text-align: left; }
   gap: 8px;
 }
 
+/* Mono micro-label eyebrow (REDESIGN.md §4) */
 .settings-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--s-muted, #555560);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
 }
 
 .settings-title-row {
@@ -1781,18 +1802,22 @@ button.m-row { text-align: left; }
   gap: 12px;
 }
 
+/* Saved badge — mono chip grammar; success carries accent, not a status
+   rainbow (REDESIGN.md §1/§5) */
 .save-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  border-radius: 6px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.25);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.72rem * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #22C55E;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-accent);
   line-height: 16px;
 }
 
@@ -1800,63 +1825,72 @@ button.m-row { text-align: left; }
   font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
-.nc-fade-enter-active { transition: opacity 0.15s ease; }
-.nc-fade-leave-active { transition: opacity 0.4s ease; }
+.nc-fade-enter-active { transition: opacity var(--nc-duration-fast) var(--nc-ease); }
+.nc-fade-leave-active { transition: opacity var(--nc-duration-slow) var(--nc-ease); }
 .nc-fade-enter-from,
 .nc-fade-leave-to { opacity: 0; }
 
+/* Page title — display face (REDESIGN.md §4); chrome sizes stay static */
 .settings-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(32px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1;
-  color: var(--s-text, #FAFAFA);
+  line-height: 1.05;
+  color: var(--nc-text);
   margin: 0;
 }
 
+/* Serif italic accent — max once per page title (REDESIGN.md §4) */
 .settings-title-italic {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic;
   font-weight: 400;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .settings-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 18px;
-  color: var(--s-muted, #555560);
+  color: var(--nc-text-secondary);
 }
 
-/* Tabs */
+/* Tabs — mono uppercase rail on THE hairline; active = accent text +
+   1px accent underline, never color alone (REDESIGN.md §5 / ui/NcTabs) */
 .settings-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--s-border, #1A1A1E);
+  border-bottom: 1px solid var(--nc-border);
 }
 
 .tab-item {
   padding: 12px 20px;
   min-height: 44px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 400;
+  margin-bottom: -1px;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.78rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   line-height: 20px;
-  color: var(--s-tab-text, #555560);
+  color: var(--nc-text-secondary);
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 1px solid transparent;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.tab-item:hover { color: var(--s-text, #FAFAFA); }
+@media (hover: hover) and (pointer: fine) {
+  .tab-item:hover { color: var(--nc-text); }
+}
 
 .tab-item.active {
-  color: var(--s-text, #FAFAFA);
-  border-bottom-color: var(--s-accent, #00D2BE);
+  color: var(--nc-accent);
+  border-bottom-color: var(--nc-accent);
 }
 
 /* Tab Content */
@@ -1873,26 +1907,27 @@ button.m-row { text-align: left; }
   gap: 12px;
 }
 
+/* Section eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
 .section-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0.06em;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
   line-height: 14px;
-  color: var(--s-muted, #52525B);
+  color: var(--nc-text-secondary);
   padding-bottom: 4px;
 }
 
-/* Setting Row */
+/* Setting Row — flat surface + THE hairline (REDESIGN.md §5) */
 .setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: var(--s-surface, #0D0D10);
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 8px;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
 }
 
 .setting-info {
@@ -1902,28 +1937,30 @@ button.m-row { text-align: left; }
 }
 
 .setting-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
-  color: var(--s-text, #FAFAFA);
+  color: var(--nc-text);
 }
 
 .setting-desc {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
-  color: var(--s-muted, #555560);
+  color: var(--nc-text-secondary);
 }
 
-/* Segmented Control */
+/* Segmented Control — chip-fill track + hairline; active = raised fill +
+   accent marker, never color alone (REDESIGN.md §5 / AppSidebar theme rail) */
 .segmented-control {
   display: flex;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   padding: 3px;
   gap: 4px;
-  background: var(--s-seg-bg, #151518);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
 }
 
 .segment {
@@ -1932,85 +1969,100 @@ button.m-row { text-align: left; }
   gap: 6px;
   padding: 8px 14px;
   min-height: 36px;
-  border-radius: 4px;
+  border-radius: 0.35rem;
   border: none;
   background: none;
   cursor: pointer;
-  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 220ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--nc-duration-normal) var(--nc-ease),
+              color var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.segment:active { transform: scale(0.96); }
+.segment:active { transform: scale(0.97); }
 
-.segment.active { background: var(--s-seg-active, #09090B); }
+.segment.active { background: var(--nc-surface-2); }
 
 .segment-icon {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--s-muted, #555560);
+  color: var(--nc-text-muted);
   flex-shrink: 0;
+  transition: color var(--nc-duration-normal) var(--nc-ease);
 }
 
-.segment.active .segment-icon { color: var(--s-text, #FAFAFA); }
+.segment.active .segment-icon { color: var(--nc-accent); }
 
 .segment-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
-  color: var(--s-muted, #555560);
+  color: var(--nc-text-muted);
+  transition: color var(--nc-duration-normal) var(--nc-ease);
 }
 
 .segment.active .segment-label {
   font-weight: 500;
-  color: var(--s-text, #FAFAFA);
+  color: var(--nc-accent);
 }
 
-/* Toggle Switch */
+@media (hover: hover) and (pointer: fine) {
+  .segment:not(.active):hover .segment-icon,
+  .segment:not(.active):hover .segment-label {
+    color: var(--nc-text);
+  }
+}
+
+/* Toggle Switch — hairline track, accent fill when on, ink thumb; no glow
+   (REDESIGN.md §5 / ui/NcSwitch) */
 .toggle-switch {
   position: relative;
   width: 44px;
   height: 24px;
   padding: 2px;
-  border-radius: 12px;
-  border: none;
-  background: var(--s-toggle-off, #1A1A1E);
+  border-radius: 2.4rem;
+  border: 1px solid var(--nc-border);
+  background: var(--nc-chip-bg);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--nc-duration-normal) var(--nc-ease),
+              border-color var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
+.toggle-switch:active { transform: scale(0.97); }
+
 .toggle-switch.on {
-  background: var(--s-accent, #00D2BE);
+  background: var(--nc-accent);
+  border-color: var(--nc-accent);
 }
 
 .toggle-knob {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 1px;
+  left: 1px;
   width: 20px;
   height: 20px;
-  border-radius: 10px;
-  background: var(--s-knob-off, #555560);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
-  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
-              background 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  background: var(--nc-text);
+  transition: transform var(--nc-duration-normal) var(--nc-ease),
+              background-color var(--nc-duration-normal) var(--nc-ease);
 }
 
 .toggle-switch.on .toggle-knob {
-  background: var(--s-knob-on, #FAFAFA);
+  background: var(--nc-bg);
   transform: translateX(20px);
 }
 
-/* Select (model dropdown) */
+/* Select (model dropdown) — input grammar: chip fill + hairline, focus =
+   border-color only (REDESIGN.md §5). Chevron is an encoded icon asset. */
 .setting-select {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
-  color: var(--s-text, #FAFAFA);
-  background: var(--s-surface, #0D0D10);
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 6px;
+  color: var(--nc-text);
+  background-color: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: var(--nc-radius-md);
   padding: 8px 32px 8px 12px;
   outline: none;
   cursor: pointer;
@@ -2018,62 +2070,73 @@ button.m-row { text-align: left; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23555560' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
-  transition: border-color 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.setting-select:focus { border-color: var(--s-accent, #00D2BE); }
+.setting-select:focus { border-color: var(--nc-accent); }
 
-/* Inline "Check now" button used by the Updates section (AER-14). */
+/* Inline "Check now" button (AER-14) — ghost action grammar: mono
+   uppercase chip, hover brightens to accent (REDESIGN.md §5). */
 .setting-action-btn {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.72rem * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--s-text, #FAFAFA);
-  background: var(--s-surface, #0D0D10);
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
   padding: 6px 12px;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, opacity 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.setting-action-btn:hover:not(:disabled) {
-  border-color: var(--s-accent, #00D2BE);
-  color: var(--s-accent, #00D2BE);
+.setting-action-btn:active:not(:disabled) { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .setting-action-btn:hover:not(:disabled) {
+    border-color: var(--nc-border-active);
+    color: var(--nc-accent);
+  }
 }
 
 .setting-action-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* API Key Input */
+/* API Key Input — one chip-filled field; focus = border-color only */
 .key-input-group {
   display: flex;
   align-items: center;
   gap: 0;
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 6px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: var(--nc-radius-md);
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .key-input-group:focus-within {
-  border-color: var(--s-accent, #00D2BE);
+  border-color: var(--nc-accent);
 }
 
 .key-input {
   width: 200px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--s-text, #FAFAFA);
-  background: var(--s-surface, #0D0D10);
+  color: var(--nc-text);
+  background: transparent;
   border: none;
   padding: 8px 12px;
   outline: none;
 }
 
-.key-input::placeholder { color: var(--s-muted, #555560); }
+.key-input::placeholder { color: var(--nc-text-dim); }
 
 .key-toggle {
   display: flex;
@@ -2083,51 +2146,35 @@ button.m-row { text-align: left; }
   height: 36px;
   background: none;
   border: none;
-  border-left: 1px solid var(--s-border, #1A1A1E);
-  color: var(--s-muted, #555560);
+  border-left: 1px solid var(--nc-border);
+  color: var(--nc-text-muted);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.key-toggle:hover { color: var(--s-text, #FAFAFA); }
+@media (hover: hover) and (pointer: fine) {
+  .key-toggle:hover { color: var(--nc-text); }
+}
 
-/* URL Input */
+/* URL Input — mono, chip fill + hairline */
 .setting-url-input {
   width: 220px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--s-text, #FAFAFA);
-  background: var(--s-surface, #0D0D10);
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 6px;
+  color: var(--nc-text);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: var(--nc-radius-md);
   padding: 8px 12px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.setting-url-input:focus { border-color: var(--s-accent, #00D2BE); }
+.setting-url-input::placeholder { color: var(--nc-text-dim); }
 
-/* Light theme */
-:root.light .settings-layout {
-  --s-bg: #FAFAF9;
-  --s-surface: #FFFFFF;
-  --s-border: #E8E8E6;
-  --s-text: #111111;
-  --s-muted: #777777;
-  --s-tab-text: #777777;
-  --s-accent: #00D2BE;
-  --s-seg-bg: #E8E8E6;
-  --s-seg-active: #FFFFFF;
-  --s-toggle-off: #D4D4D8;
-  --s-knob-off: #777777;
-  --s-knob-on: #FFFFFF;
-}
+.setting-url-input:focus { border-color: var(--nc-accent); }
 
-:root.light .key-input,
-:root.light .setting-url-input,
-:root.light .setting-select {
-  background: #FFFFFF;
-  color: #111111;
-}
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 </style>

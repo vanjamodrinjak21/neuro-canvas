@@ -1,330 +1,278 @@
 {
-    "common": {
-        "app_name": "NeuroCanvas",
-        "nav": {
-            "home": "Home",
-            "maps": "All Maps",
-            "documents": "Documents",
-            "templates": "Templates",
-            "settings": "Settings"
-        },
-        "buttons": {
-            "save": "Save",
-            "cancel": "Cancel",
-            "delete": "Delete",
-            "close": "Close",
-            "confirm": "Confirm",
-            "ok": "OK",
-            "back": "Back",
-            "next": "Next",
-            "create": "Create",
-            "edit": "Edit",
-            "search": "Search",
-            "retry": "Retry",
-            "copy": "Copy",
-            "share": "Share",
-            "export": "Export",
-            "import": "Import",
-            "collapse_sidebar": "Collapse sidebar",
-            "expand_sidebar": "Expand sidebar",
-            "search_shortcut": "Search (\u2318K)",
-            "sign_up_free": "Sign up free",
-            "unlock_all_features": "Unlock all features",
-            "sign_in": "Sign In",
-            "signing_in": "Signing in...",
-            "sign_out": "Sign Out"
-        },
-        "search": {
-            "placeholder": "Search maps..."
-        },
-        "theme": {
-            "to_dark": "Switch to dark mode",
-            "to_light": "Switch to light mode",
-            "light": "Light",
-            "dark": "Dark",
-            "system": "System"
-        },
-        "offline": {
-            "back_online": "Back online",
-            "message": "Offline \u2014 changes saved locally",
-            "dismiss": "Dismiss",
-            "action_unavailable": "Unavailable offline \u2014 reconnect to use this"
-        },
-        "update": {
-            "available": "Update available",
-            "version_ready": "Version {version} is ready to install.",
-            "version_available_web": "NeuroCanvas {version} is available — refresh to update.",
-            "version_available_mobile": "NeuroCanvas {version} is available in the store.",
-            "update_now": "Update now",
-            "refresh": "Refresh",
-            "open_store": "Open store",
-            "later": "Later",
-            "downloading": "Downloading update...",
-            "dismiss": "Dismiss"
-        },
-        "loading": {
-            "text": "Loading...",
-            "version": "v1.0.0"
-        },
-        "confirm_dialog": {
-            "are_you_sure": "Are you sure?",
-            "cancel": "Cancel",
-            "confirm": "Confirm"
-        },
-        "onboarding": {
-            "welcome_title": "Welcome to NeuroCanvas",
-            "welcome_desc": "AI-powered mind mapping that helps you think visually and learn faster.",
-            "step_create": "Create your first map",
-            "step_create_desc": "Start with a blank canvas or choose a template to get going quickly.",
-            "step_ai": "Let AI help you",
-            "step_ai_desc": "Select any node and press \u2318E to expand it with AI-suggested concepts.",
-            "step_connect": "Discover connections",
-            "step_connect_desc": "The semantic engine finds hidden links between your ideas.",
-            "get_started": "Get Started",
-            "skip": "Skip"
-        },
-        "guest": {
-            "template_picker_title": "Choose a template",
-            "template_picker_desc": "Pick a starting point for your first map",
-            "template_picker_ai_placeholder": "Plan a launch for our pgvector RAG search — engineering, content, rollout.",
-            "upgrade_title": "Unlock all features",
-            "upgrade_desc": "Sign up for free to sync across devices, use AI features, and more.",
-            "upgrade_button": "Sign up free",
-            "continue_guest": "Continue as guest",
-            "session_chip": "live session",
-            "picker": {
-                "step": "step 02 — pick your shape",
-                "title_lead": "A blank canvas",
-                "title_em": "is sometimes the wrong start.",
-                "subtitle": "Every map starts as a shape. Pick the one that fits how you're thinking.",
-                "pick_eyebrow": "PICK A SHAPE",
-                "pick_sub": "6 starts that fit most thinking",
-                "browse": "browse all 24 →",
-                "blank": "Start with a blank canvas instead",
-                "tip_label": "tip:",
-                "tip": "you can change template later — nothing is locked.",
-                "tpl": {
-                    "decision_tree": {
-                        "title": "Decision tree",
-                        "desc": "Compare options. Trace consequences. End with a call.",
-                        "receipt": "7 nodes · 12s",
-                        "root": "Decision",
-                        "m1": "Option A", "m2": "Risks", "m3": "Option B",
-                        "l1": "Pro", "l2": "Mixed", "l3": "Con"
-                    },
-                    "project_plan": {
-                        "title": "Project plan",
-                        "desc": "Goals → milestones → checkpoints. Time-bound thinking.",
-                        "receipt": "9 nodes · 18s",
-                        "root": "Goal",
-                        "m1": "Spec", "m2": "Build", "m3": "Ship",
-                        "l1": "Today", "l2": "Wk 2", "l3": "Wk 4"
-                    },
-                    "research_synthesis": {
-                        "title": "Research synthesis",
-                        "desc": "Sources cluster. AI summarizes the cluster for you.",
-                        "receipt": "5 nodes · 10s",
-                        "root": "Question",
-                        "m1": "Source 1", "m2": "Source 2", "m3": "Source 3",
-                        "l1": "Theme", "l2": "AI synth", "l3": "Gap"
-                    },
-                    "brainstorm": {
-                        "title": "Brainstorm",
-                        "desc": "Spray ideas first. Cluster them later.",
-                        "receipt": "12 nodes · 8s",
-                        "root": "Topic",
-                        "m1": "Idea 1", "m2": "Idea 2", "m3": "Idea 3",
-                        "l1": "Sub a", "l2": "Sub b", "l3": "Sub c"
-                    },
-                    "pros_cons": {
-                        "title": "Pros & cons",
-                        "desc": "Two columns. Forces honesty about both sides.",
-                        "receipt": "8 nodes · 14s",
-                        "root": "Question",
-                        "m1": "Pro 1", "m2": "Mixed", "m3": "Con 1",
-                        "l1": "Pro 2", "l2": "Tradeoff", "l3": "Con 2"
-                    },
-                    "mind_map": {
-                        "title": "Mind map",
-                        "desc": "Free-form web. When you don't know the structure yet.",
-                        "receipt": "11 nodes · 16s",
-                        "root": "Center",
-                        "m1": "Branch", "m2": "Branch", "m3": "Branch",
-                        "l1": "Sub", "l2": "Sub", "l3": "Sub"
-                    }
-                }
-            },
-            "walkthrough": {
-                "step1_eyebrow": "01 / 03 — NODE",
-                "step1_title": "Drop in an idea.",
-                "step1_desc": "Double-click anywhere on the canvas. Type a sentence. That's a node. The canvas grows from there.",
-                "step1_waiting": "waiting for your first node…",
-                "step2_eyebrow": "02 / 03 — EDGE",
-                "step2_title": "Connect it.",
-                "step2_desc": "Drag from one node to another. Connections are typed (causes, contradicts, depends on) — they become the reasoning, not just the visual.",
-                "step2_waiting": "draw your first connection…",
-                "step3_eyebrow": "03 / 03 — AI",
-                "step3_title": "Then save, and AI takes over.",
-                "step3_desc": "Once saved, press ⌘K on any node and the AI extends that branch. Counter-arguments, summaries, gap analysis — anchored to the node you selected.",
-                "step3_waiting": "unlocks instantly when you save",
-                "skip": "skip tour",
-                "skip_aria": "Skip tour",
-                "next": "NEXT",
-                "done": "GOT IT"
-            }
-        },
-        "errors": {
-            "generic": "Something went wrong. Please try again.",
-            "network": "Network error. Check your connection.",
-            "not_found": "Not found.",
-            "unauthorized": "You need to sign in to access this.",
-            "forbidden": "You don't have permission to do this.",
-            "server": "Server error. Please try again later.",
-            "timeout": "Request timed out. Please try again.",
-            "session_expired": "Your session has expired. Please sign in again.",
-            "no_permission": "You don't have permission to do that.",
-            "rate_limited": "Too many requests. Please slow down.",
-            "server_error": "Something went wrong on our side. Please try again.",
-            "offline": "You appear to be offline. Check your connection.",
-            "no_ai_credential": "No AI provider key found. Add an API key in Settings → AI Providers."
-        },
-        "time": {
-            "just_now": "Just now",
-            "seconds_ago": "{n}s ago",
-            "minutes_ago": "{n}m ago",
-            "hours_ago": "{n}h ago",
-            "days_ago": "{n}d ago",
-            "today": "Today",
-            "yesterday": "Yesterday"
-        },
-        "sidebar": {
-            "upgrade_ladder": {
-                "unlock_title": "Unlock by saving",
-                "item_5_things": "5 things",
-                "item_ai_node": "AI on this node",
-                "item_export": "Export PNG / JSON",
-                "item_multiple_maps": "Multiple maps",
-                "item_templates": "24 templates",
-                "item_sync": "Sync across devices",
-                "cta_meta": "closes tab → all gone",
-                "cta_title": "Save what you've built.",
-                "cta_desc": "8 seconds. No card.",
-                "cta_button": "Save my map →"
-            }
-        }
+  "common": {
+    "app_name": "NeuroCanvas",
+    "nav": {
+      "home": "Home",
+      "maps": "All Maps",
+      "documents": "Documents",
+      "templates": "Templates",
+      "settings": "Settings"
     },
-    "maps": {
-        "sort": {
-            "label": "Sort",
-            "recent": "Most recent",
-            "alphabetical": "A – Z",
-            "nodes": "Most nodes"
-        },
-        "select": {
-            "button": "Select",
-            "select_all": "Select all",
-            "deselect_all": "Deselect all",
-            "selected_count": "{n} selected"
-        },
-        "delete_confirm": {
-            "title_one": "Delete map",
-            "title_other": "Delete {n} maps",
-            "description_one": "This will permanently delete this map. This action cannot be undone.",
-            "description_other": "This will permanently delete {n} maps. This action cannot be undone."
-        },
-        "delete_single_confirm": {
-            "title": "Delete Map",
-            "description": "This action cannot be undone. Are you sure you want to delete this map?"
-        },
-        "count_label_one": "{n} map",
-        "count_label_other": "{n} maps",
-        "nodes_count": "{n} nodes",
-        "edited_prefix": "Edited",
-        "header": {
-            "eyebrow": "02 — all maps",
-            "title_a": "Everything",
-            "title_b": "you've thought about."
-        }
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "close": "Close",
+      "confirm": "Confirm",
+      "ok": "OK",
+      "back": "Back",
+      "next": "Next",
+      "create": "Create",
+      "edit": "Edit",
+      "search": "Search",
+      "retry": "Retry",
+      "copy": "Copy",
+      "share": "Share",
+      "export": "Export",
+      "import": "Import",
+      "collapse_sidebar": "Collapse sidebar",
+      "expand_sidebar": "Expand sidebar",
+      "search_shortcut": "Search (⌘K)",
+      "sign_up_free": "Sign up free",
+      "unlock_all_features": "Unlock all features",
+      "sign_in": "Sign In",
+      "signing_in": "Signing in...",
+      "sign_out": "Sign Out"
     },
-    "ui": {
-        "or": "or",
-        "settings_tooltip": "Settings",
-        "search": {
-            "maps_mobile_placeholder": "Search maps · ⌘ K",
-            "templates_mobile_placeholder": "Search templates · ⌘ K"
-        },
-        "generate_map": {
-            "topic_placeholder": "e.g. Renewable energy systems"
-        },
-        "file_uploader": {
-            "label_prefix": "Drag & drop your file or",
-            "browse_action": "Browse"
-        },
-        "code": {
-            "copy": "Copy code",
-            "copied": "Copied!"
-        }
+    "search": {
+      "placeholder": "Search maps..."
     },
-    "generation": {
-        "dock_title": "Map generation",
-        "in_progress": "Generating…",
-        "expanding": "Expanding… {count} / {target} nodes",
-        "building": "Building “{topic}”",
-        "ready": "Ready",
-        "ready_title": "“{topic}” is ready",
-        "failed": "Generation failed",
-        "open": "Open map",
-        "retry": "Retry",
-        "dismiss": "Dismiss",
-        "toast_started": "Generating “{topic}” in the background — you can keep working.",
-        "notify_title": "Your map is ready",
-        "notify_body": "“{topic}” has finished generating."
+    "theme": {
+      "to_dark": "Switch to dark mode",
+      "to_light": "Switch to light mode",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
     },
-    "command_palette": {
-        "placeholder": "Search everything…",
-        "escape_key": "Esc",
-        "searching": "Searching…",
-        "no_results": "No results for “{query}”",
-        "untitled": "Untitled map",
-        "nodes_count": "{n} nodes",
-        "empty": {
-            "subtitle": "Search maps, documents, templates — or run a command"
-        },
-        "groups": {
-            "generate": "Generate",
-            "actions": "Actions",
-            "maps": "Maps",
-            "documents": "Documents",
-            "templates": "Templates",
-            "navigation": "Go to"
-        },
-        "nav": {
-            "dashboard": "Dashboard",
-            "maps": "All maps",
-            "documents": "Documents",
-            "templates": "Templates",
-            "settings": "Settings",
-            "roadmap": "Roadmap"
-        },
-        "actions": {
-            "new_map": "New map",
-            "generate_map": "Generate map with AI",
-            "generate_query": "Generate map: “{query}”",
-            "upload_document": "Upload document"
-        },
-        "doc_status": {
-            "pending": "Pending",
-            "queued": "Queued",
-            "processing": "Processing",
-            "failed": "Failed"
-        },
-        "footer": {
-            "navigate": "Navigate",
-            "select": "Open",
-            "dismiss": "Close"
-        },
-        "errors": {
-            "action_failed": "Something went wrong"
-        }
+    "offline": {
+      "back_online": "Back online",
+      "message": "Offline — changes saved locally",
+      "dismiss": "Dismiss",
+      "action_unavailable": "Unavailable offline — reconnect to use this"
+    },
+    "update": {
+      "available": "Update available",
+      "version_ready": "Version {version} is ready to install.",
+      "version_available_web": "NeuroCanvas {version} is available — refresh to update.",
+      "version_available_mobile": "NeuroCanvas {version} is available in the store.",
+      "update_now": "Update now",
+      "refresh": "Refresh",
+      "open_store": "Open store",
+      "later": "Later",
+      "downloading": "Downloading update...",
+      "dismiss": "Dismiss"
+    },
+    "loading": {
+      "text": "Loading...",
+      "version": "v1.0.0"
+    },
+    "confirm_dialog": {
+      "are_you_sure": "Are you sure?",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "onboarding": {
+      "welcome_title": "Welcome to NeuroCanvas",
+      "welcome_desc": "AI-powered mind mapping that helps you think visually and learn faster.",
+      "step_create": "Create your first map",
+      "step_create_desc": "Start with a blank canvas or choose a template to get going quickly.",
+      "step_ai": "Let AI help you",
+      "step_ai_desc": "Select any node and press ⌘E to expand it with AI-suggested concepts.",
+      "step_connect": "Discover connections",
+      "step_connect_desc": "The semantic engine finds hidden links between your ideas.",
+      "get_started": "Get Started",
+      "skip": "Skip"
+    },
+    "guest": {
+      "template_picker_title": "Choose a template",
+      "template_picker_desc": "Pick a starting point for your first map",
+      "template_picker_ai_placeholder": "Plan a launch for our pgvector RAG search — engineering, content, rollout.",
+      "upgrade_title": "Unlock all features",
+      "upgrade_desc": "Sign up for free to sync across devices, use AI features, and more.",
+      "upgrade_button": "Sign up free",
+      "continue_guest": "Continue as guest",
+      "session_chip": "live session",
+      "walkthrough": {
+        "step1_eyebrow": "01 / 03 — NODE",
+        "step1_title": "Drop in an idea.",
+        "step1_desc": "Double-click anywhere on the canvas. Type a sentence. That's a node. The canvas grows from there.",
+        "step1_waiting": "waiting for your first node…",
+        "step2_eyebrow": "02 / 03 — EDGE",
+        "step2_title": "Connect it.",
+        "step2_desc": "Drag from one node to another. Connections are typed (causes, contradicts, depends on) — they become the reasoning, not just the visual.",
+        "step2_waiting": "draw your first connection…",
+        "step3_eyebrow": "03 / 03 — AI",
+        "step3_title": "Then save, and AI takes over.",
+        "step3_desc": "Once saved, press ⌘K on any node and the AI extends that branch. Counter-arguments, summaries, gap analysis — anchored to the node you selected.",
+        "step3_waiting": "unlocks instantly when you save",
+        "skip": "skip tour",
+        "skip_aria": "Skip tour",
+        "next": "NEXT",
+        "done": "GOT IT"
+      }
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "network": "Network error. Check your connection.",
+      "not_found": "Not found.",
+      "unauthorized": "You need to sign in to access this.",
+      "forbidden": "You don't have permission to do this.",
+      "server": "Server error. Please try again later.",
+      "timeout": "Request timed out. Please try again.",
+      "session_expired": "Your session has expired. Please sign in again.",
+      "no_permission": "You don't have permission to do that.",
+      "rate_limited": "Too many requests. Please slow down.",
+      "server_error": "Something went wrong on our side. Please try again.",
+      "offline": "You appear to be offline. Check your connection.",
+      "no_ai_credential": "No AI provider key found. Add an API key in Settings → AI Providers."
+    },
+    "time": {
+      "just_now": "Just now",
+      "seconds_ago": "{n}s ago",
+      "minutes_ago": "{n}m ago",
+      "hours_ago": "{n}h ago",
+      "days_ago": "{n}d ago",
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "sidebar": {
+      "upgrade_ladder": {
+        "unlock_title": "Unlock by saving",
+        "item_5_things": "5 things",
+        "item_ai_node": "AI on this node",
+        "item_export": "Export PNG / JSON",
+        "item_multiple_maps": "Multiple maps",
+        "item_templates": "24 templates",
+        "item_sync": "Sync across devices",
+        "cta_meta": "closes tab → all gone",
+        "cta_title": "Save what you've built.",
+        "cta_desc": "8 seconds. No card.",
+        "cta_button": "Save my map →"
+      }
     }
+  },
+  "maps": {
+    "sort": {
+      "label": "Sort",
+      "recent": "Most recent",
+      "alphabetical": "A – Z",
+      "nodes": "Most nodes"
+    },
+    "select": {
+      "button": "Select",
+      "select_all": "Select all",
+      "deselect_all": "Deselect all",
+      "selected_count": "{n} selected"
+    },
+    "delete_confirm": {
+      "title_one": "Delete map",
+      "title_other": "Delete {n} maps",
+      "description_one": "This will permanently delete this map. This action cannot be undone.",
+      "description_other": "This will permanently delete {n} maps. This action cannot be undone."
+    },
+    "delete_single_confirm": {
+      "title": "Delete Map",
+      "description": "This action cannot be undone. Are you sure you want to delete this map?"
+    },
+    "count_label_one": "{n} map",
+    "count_label_other": "{n} maps",
+    "nodes_count": "{n} nodes",
+    "edited_prefix": "Edited",
+    "empty_state": {
+      "title": "No maps yet",
+      "description": "Create your first map to get started.",
+      "action": "Create a map"
+    },
+    "no_results": {
+      "title": "No maps match your search",
+      "description": "Try a different term, or clear the search to see all maps.",
+      "clear": "Clear search"
+    },
+    "header": {
+      "eyebrow": "all maps",
+      "title_a": "Everything",
+      "title_b": "you've thought about."
+    }
+  },
+  "ui": {
+    "or": "or",
+    "settings_tooltip": "Settings",
+    "search": {
+      "maps_mobile_placeholder": "Search maps · ⌘ K",
+      "templates_mobile_placeholder": "Search templates · ⌘ K"
+    },
+    "generate_map": {
+      "topic_placeholder": "e.g. Renewable energy systems"
+    },
+    "file_uploader": {
+      "label_prefix": "Drag & drop your file or",
+      "browse_action": "Browse"
+    },
+    "code": {
+      "copy": "Copy code",
+      "copied": "Copied!"
+    }
+  },
+  "generation": {
+    "dock_title": "Map generation",
+    "in_progress": "Generating…",
+    "expanding": "Expanding… {count} / {target} nodes",
+    "building": "Building “{topic}”",
+    "ready": "Ready",
+    "ready_title": "“{topic}” is ready",
+    "failed": "Generation failed",
+    "open": "Open map",
+    "retry": "Retry",
+    "dismiss": "Dismiss",
+    "toast_started": "Generating “{topic}” in the background — you can keep working.",
+    "notify_title": "Your map is ready",
+    "notify_body": "“{topic}” has finished generating."
+  },
+  "command_palette": {
+    "placeholder": "Search everything…",
+    "escape_key": "Esc",
+    "searching": "Searching…",
+    "no_results": "No results for “{query}”",
+    "untitled": "Untitled map",
+    "nodes_count": "{n} nodes",
+    "empty": {
+      "subtitle": "Search maps, documents, templates — or run a command"
+    },
+    "groups": {
+      "generate": "Generate",
+      "actions": "Actions",
+      "maps": "Maps",
+      "documents": "Documents",
+      "templates": "Templates",
+      "navigation": "Go to"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "maps": "All maps",
+      "documents": "Documents",
+      "templates": "Templates",
+      "settings": "Settings",
+      "roadmap": "Roadmap"
+    },
+    "actions": {
+      "new_map": "New map",
+      "generate_map": "Generate map with AI",
+      "generate_query": "Generate map: “{query}”",
+      "upload_document": "Upload document"
+    },
+    "doc_status": {
+      "pending": "Pending",
+      "queued": "Queued",
+      "processing": "Processing",
+      "failed": "Failed"
+    },
+    "footer": {
+      "navigate": "Navigate",
+      "select": "Open",
+      "dismiss": "Close"
+    },
+    "errors": {
+      "action_failed": "Something went wrong"
+    }
+  }
 }

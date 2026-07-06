@@ -75,8 +75,8 @@ useHead({ title: 'Opening shared map · NeuroCanvas' })
 <style scoped>
 .nc-share-gate {
   min-height: 100dvh;
-  background: var(--nc-bg, #09090B);
-  color: var(--nc-text, #FAFAFA);
+  background: var(--nc-bg, #050508);
+  color: var(--nc-text, #f4f4f8);
   display: grid;
   place-items: center;
   font-family: var(--nc-font-body, 'Cabinet Grotesk', system-ui, sans-serif);
@@ -89,16 +89,16 @@ useHead({ title: 'Opening shared map · NeuroCanvas' })
   align-items: center;
   gap: 14px;
   padding: 32px 36px;
-  border: 1px solid var(--nc-border, #1A1A1E);
+  border: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
   border-radius: 14px;
-  background: var(--nc-surface, #111113);
+  background: var(--nc-surface, #0d0d11);
   max-width: 360px;
   text-align: center;
 }
 
 .nc-share-spin {
   font-size: calc(28px * var(--nc-text-scale, 1));
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent, #5EF2E8);
   animation: nc-share-spin 0.9s linear infinite;
 }
 
@@ -106,12 +106,12 @@ useHead({ title: 'Opening shared map · NeuroCanvas' })
 
 .nc-share-err-icon {
   font-size: calc(28px * var(--nc-text-scale, 1));
-  color: #EF4444;
+  color: var(--nc-error);
 }
 
 .nc-share-msg {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--nc-text-secondary, #A1A1AA);
+  color: var(--nc-text-secondary, rgba(244, 244, 248, 0.62));
   line-height: 1.5;
   margin: 0;
 }
@@ -120,8 +120,8 @@ useHead({ title: 'Opening shared map · NeuroCanvas' })
   margin-top: 4px;
   padding: 8px 18px;
   border-radius: 8px;
-  background: var(--nc-accent, #00D2BE);
-  color: #09090B;
+  background: var(--nc-accent, #5EF2E8);
+  color: var(--nc-bg);
   font-weight: 600;
   font-size: calc(13px * var(--nc-text-scale, 1));
   text-decoration: none;

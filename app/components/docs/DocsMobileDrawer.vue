@@ -94,31 +94,21 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .docs-drawer {
-  /* teleported to <body>, outside .docs-root — re-declare the docs-scoped
-     landing palette so the sidebar inside matches (see DocsLayout.vue) */
-  --nc-accent: #5EF2E8;
-  --nc-accent-glow: rgba(94, 242, 232, 0.08);
-  --nc-accent-glow-strong: rgba(94, 242, 232, 0.15);
-  --docs-coral: #FF8A5C;
+  /* teleported to <body>, outside .docs-root — the palette now comes
+     from the global tokens (AER-76); only the docs-local coral alias
+     needs re-declaring for the sidebar inside. */
+  --docs-coral: var(--nc-coral);
 
   position: fixed;
   inset: 0;
   z-index: 150;
 }
 
-:root.light .docs-drawer {
-  --nc-accent: #0b9e93;
-  --nc-accent-glow: rgba(11, 158, 147, 0.08);
-  --nc-accent-glow-strong: rgba(11, 158, 147, 0.15);
-  --docs-coral: #d95f2f;
-}
-
 .docs-drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* Flat scrim — no backdrop blur in chrome (REDESIGN.md §5) */
+  background: rgba(var(--nc-bg-rgb), 0.66);
 }
 
 .docs-drawer__panel {
@@ -233,21 +223,13 @@ onBeforeUnmount(() => {
   transform: translateX(0);
 }
 
-/* Light theme */
+/* Light theme — tokens carry the panel; only the scrim weight and the
+   hover wash (base is white-alpha, invisible on paper) stay light-specific. */
 :root.light .docs-drawer__backdrop {
   background: rgba(0, 0, 0, 0.3);
 }
 
-:root.light .docs-drawer__panel {
-  background: var(--nc-bg);
-  border-right-color: var(--nc-border);
-}
-
-:root.light .docs-drawer__header {
-  border-bottom-color: var(--nc-border);
-}
-
 :root.light .docs-drawer__close:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface-3);
 }
 </style>

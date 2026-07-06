@@ -192,10 +192,10 @@ watch([name, email, password, confirmPassword], () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.2);
   border-radius: 10px;
-  color: #EF4444;
+  color: var(--nc-coral);
   font-size: 0.9rem;
 }
 
@@ -217,7 +217,7 @@ watch([name, email, password, confirmPassword], () => {
 }
 
 .terms-link {
-  color: var(--nc-teal, #00D2BE);
+  color: var(--nc-accent);
   text-decoration: none;
 }
 

@@ -38,11 +38,13 @@ watch(() => props.selectedNode, (node) => {
 const tabs = computed<{ id: SidebarTab; label: string; icon: string }[]>(() => [
   { id: 'explorer', label: t('canvas.sidebar.tab_explorer'), icon: 'i-lucide-search' },
   { id: 'properties', label: t('canvas.sidebar.tab_properties'), icon: 'i-lucide-layout-dashboard' },
-  { id: 'ai', label: t('canvas.sidebar.tab_ai'), icon: 'i-lucide-waypoints' },
+  { id: 'ai', label: t('canvas.sidebar.tab_ai'), icon: 'i-nc-ai-mark' },
 ])
 
 // Sidebar width resize
 const sidebarWidth = ref(300)
+// Single CSS custom property via v-bind — no inline :style (REDESIGN.md §9)
+const sidebarWidthPx = computed(() => `${sidebarWidth.value}px`)
 const isResizingWidth = ref(false)
 const widthResizeStartX = ref(0)
 const widthResizeStartWidth = ref(0)
@@ -79,10 +81,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
 </script>
 
 <template>
-  <aside
-    class="shell"
-    :style="{ width: `${sidebarWidth}px`, minWidth: '280px', maxWidth: '400px' }"
-  >
+  <aside class="shell">
     <!-- Top spacer for TopBar clearance -->
     <div class="shell__spacer" />
 
@@ -155,7 +154,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
           {{ t('canvas.sidebar.action_expand') }}
         </button>
         <button
-          class="shell__action-btn shell__action-btn--purple"
+          class="shell__action-btn shell__action-btn--neutral"
           @click="setActiveTab('ai')"
         >
           <span class="i-lucide-info shell__action-icon" />
@@ -178,9 +177,12 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
 
 <style scoped>
 .shell {
+  width: v-bind(sidebarWidthPx);
+  min-width: 280px;
+  max-width: 400px;
   height: 100%;
   min-height: 100vh;
-  background: #0C0C0E;
+  background: var(--nc-surface);
   border-right: 1px solid var(--nc-border);
   display: flex;
   flex-direction: column;
@@ -195,39 +197,44 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   border-bottom: 1px solid var(--nc-border);
 }
 
-/* Tab bar */
+/* Tab bar — mono uppercase nav grammar (REDESIGN.md §5) */
 .shell__tabs {
   display: flex;
-  padding: 0 16px;
-  border-bottom: 1px solid #1A1A1E;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--nc-border);
   flex-shrink: 0;
 }
 
 .shell__tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: 5px;
+  padding: 10px 8px;
   min-height: 32px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  color: var(--nc-text-secondary);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 150ms var(--nc-ease), border-color 150ms var(--nc-ease);
 }
 
-.shell__tab:hover {
-  color: #A1A1AA;
+@media (hover: hover) and (pointer: fine) {
+  .shell__tab:hover {
+    color: var(--nc-text);
+  }
 }
 
+/* Active tab = accent text + underline marker (never color alone) */
 .shell__tab--active {
-  color: #00D2BE;
-  font-weight: 600;
-  border-bottom-color: #00D2BE;
+  color: var(--nc-accent-text);
+  border-bottom-color: var(--nc-accent);
 }
 
 .shell__tab-icon {
@@ -277,96 +284,92 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   justify-content: center;
   gap: 6px;
   padding: 8px;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 0.5rem;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   border: 1px solid;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 150ms var(--nc-ease),
+              background 150ms var(--nc-ease),
+              border-color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   background: none;
 }
 
+.shell__action-btn:active {
+  transform: scale(0.97);
+}
+
+/* Accent chip — the AI expand action (cyan = interactive/hot) */
 .shell__action-btn--teal {
-  background: rgba(0, 210, 190, 0.1);
-  border-color: rgba(0, 210, 190, 0.2);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border-color: rgba(var(--nc-accent-rgb), 0.2);
+  color: var(--nc-accent-text);
 }
 
-.shell__action-btn--teal:hover {
-  background: rgba(0, 210, 190, 0.15);
-  border-color: rgba(0, 210, 190, 0.3);
+@media (hover: hover) and (pointer: fine) {
+  .shell__action-btn--teal:hover {
+    background: rgba(var(--nc-accent-rgb), 0.15);
+    border-color: rgba(var(--nc-accent-rgb), 0.3);
+  }
 }
 
-.shell__action-btn--purple {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.2);
-  color: #A78BFA;
+/* Neutral chip — secondary action; no second interactive hue (REDESIGN.md §1) */
+.shell__action-btn--neutral {
+  background: var(--nc-chip-bg);
+  border-color: var(--nc-border);
+  color: var(--nc-text-secondary);
 }
 
-.shell__action-btn--purple:hover {
-  background: rgba(167, 139, 250, 0.12);
-  border-color: rgba(167, 139, 250, 0.3);
+@media (hover: hover) and (pointer: fine) {
+  .shell__action-btn--neutral:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-text);
+  }
 }
 
 .shell__action-icon {
   font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
-/* Solid teal pill — matches the "Start mapping — free forever" CTA on
-   the landing page. The previous muted-dark tile blended into the
-   sidebar in dark mode and was a black brick in light mode; a real
-   primary CTA reads as the action it is in both themes. */
+/* Primary CTA — ink pill grammar (REDESIGN.md §5): bg ink, text bg,
+   pill radius, hover flips to accent. Theme-aware via tokens. */
 .shell__generate-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   margin: 0 14px 12px;
-  padding: 11px 14px;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  padding: 11px 18px;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  background: #00D2BE;
+  font-weight: 700;
+  background: var(--nc-text);
   border: none;
-  color: #0A0A0C;
-  /* Subtle top bevel so the pill has a tiny bit of dimensionality on
-     the dark sidebar without veering into glassmorphism territory. */
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  color: var(--nc-bg);
   cursor: pointer;
-  transition: background 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              transform 120ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: background 150ms var(--nc-ease),
+              color 150ms var(--nc-ease),
+              transform 120ms var(--nc-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .shell__generate-btn:hover {
-    background: #1AE0CD;
+    background: var(--nc-accent);
+    color: var(--nc-bg);
+    transform: translateY(-1px);
   }
 }
 
 .shell__generate-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .shell__generate-btn:focus-visible {
-  outline: 2px solid #00D2BE;
-  outline-offset: 2px;
-}
-
-/* Light theme: switch to the darker teal-dark variant so the white text
-   has WCAG-passing contrast and the pill sits cleanly against the warm-
-   paper sidebar. No bevel — keeps the flat editorial look. */
-:root.light .shell__generate-btn {
-  background: #00A89A;
-  color: #FFFFFF;
-  box-shadow: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  :root.light .shell__generate-btn:hover {
-    background: #00BFAF;
-  }
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 /* Width resize handle */
@@ -378,7 +381,7 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
   height: 100%;
   cursor: ew-resize;
   z-index: 20;
-  transition: background 0.2s ease;
+  transition: background 200ms var(--nc-ease);
 }
 
 .shell__resize-handle:hover {
@@ -388,50 +391,5 @@ provide(SIDEBAR_DISPATCH_KEY, dispatch)
 .shell__resize-handle:active {
   background: var(--nc-accent);
   opacity: 0.3;
-}
-
-/* Light theme */
-:root.light .shell {
-  background: #FFFFFF;
-  border-right-color: #E8E8E6;
-}
-
-:root.light .shell__spacer {
-  border-bottom-color: #E8E8E6;
-}
-
-:root.light .shell__tabs {
-  border-bottom-color: #E8E8E6;
-}
-
-:root.light .shell__tab {
-  color: #A1A1AA;
-}
-
-:root.light .shell__tab:hover {
-  color: #71717A;
-}
-
-:root.light .shell__tab--active {
-  color: #00D2BE;
-  border-bottom-color: #00D2BE;
-}
-
-:root.light .shell__divider {
-  background: #E8E8E6;
-}
-
-:root.light .shell__bottom-actions {
-  border-top-color: #E8E8E6;
-}
-
-:root.light .shell__generate-btn {
-  border-color: #E8E8E6;
-  color: #71717A;
-}
-
-:root.light .shell__generate-btn:hover {
-  border-color: #D4D4D8;
-  color: #111111;
 }
 </style>

@@ -38,9 +38,11 @@ body.canvas-page {
   outline-offset: 2px;
 }
 
+/* Theme-pair tokens: dark = accent bg + bg text (14.87:1); light
+   rebases to accent-dark + white because #FAFAF9 on #0b9e93 fails AA. */
 ::selection {
-  background-color: var(--nc-accent);
-  color: var(--nc-bg);
+  background-color: var(--nc-selection-bg);
+  color: var(--nc-selection-text);
 }
 
 /* Scrollbar */

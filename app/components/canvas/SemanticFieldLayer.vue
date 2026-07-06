@@ -41,13 +41,13 @@ const reducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false
 
-// Colors (teal theme)
+// Colors (accent theme — canvas-drawn: values track the --nc-accent token)
 const colors = {
-  fieldLine: '#00D2BE',
-  fieldLineGlow: 'rgba(0, 210, 190, 0.3)',
-  particle: '#00D2BE',
-  particleGlow: 'rgba(0, 210, 190, 0.6)',
-  pulse: 'rgba(0, 210, 190, 0.4)'
+  fieldLine: '#5EF2E8',
+  fieldLineGlow: 'rgba(94, 242, 232, 0.3)',
+  particle: '#5EF2E8',
+  particleGlow: 'rgba(94, 242, 232, 0.6)',
+  pulse: 'rgba(94, 242, 232, 0.4)'
 }
 
 // Hard cap (world px) on the cluster-glow radial gradient. A cluster's raw
@@ -59,7 +59,7 @@ const MAX_GLOW_RADIUS = 600
 
 // Category color map for cluster glow
 const categoryColors: Record<string, string> = {
-  concept: '#00D2BE',
+  concept: '#5EF2E8',
   task: '#60A5FA',
   question: '#F472B6',
   resource: '#4ADE80',
@@ -267,7 +267,7 @@ function drawFieldLine(
   // the gradient stroke still reads as a glow, minus the soft outer halo.
   if (!reducedMotion && !isDimmed && !isNativeShell) {
     ctx.shadowColor = isHighlighted
-      ? 'rgba(0, 210, 190, 0.6)'
+      ? 'rgba(94, 242, 232, 0.6)'
       : colors.fieldLineGlow
     ctx.shadowBlur = isHighlighted ? 12 : 8 * line.similarity
   }
@@ -277,9 +277,9 @@ function drawFieldLine(
     line.sourcePoint.x, line.sourcePoint.y,
     line.targetPoint.x, line.targetPoint.y
   )
-  gradient.addColorStop(0, `rgba(0, 210, 190, ${lineOpacity * 0.3})`)
-  gradient.addColorStop(0.5, `rgba(0, 210, 190, ${lineOpacity})`)
-  gradient.addColorStop(1, `rgba(0, 210, 190, ${lineOpacity * 0.3})`)
+  gradient.addColorStop(0, `rgba(94, 242, 232, ${lineOpacity * 0.3})`)
+  gradient.addColorStop(0.5, `rgba(94, 242, 232, ${lineOpacity})`)
+  gradient.addColorStop(1, `rgba(94, 242, 232, ${lineOpacity * 0.3})`)
 
   ctx.strokeStyle = gradient
   ctx.lineWidth = lineWidth
@@ -340,7 +340,7 @@ function drawSimilarityLabel(ctx: CanvasRenderingContext2D, line: AnimatedFieldL
   ctx.fill()
 
   // Text
-  ctx.fillStyle = '#00D2BE'
+  ctx.fillStyle = '#5EF2E8'
   ctx.fillText(pct, midpoint.x, midpoint.y)
 }
 
@@ -392,7 +392,7 @@ function drawParticle(ctx: CanvasRenderingContext2D, particle: FieldParticle, in
   // Draw particle
   ctx.beginPath()
   ctx.arc(pos.x, pos.y, particle.size, 0, Math.PI * 2)
-  ctx.fillStyle = `rgba(0, 210, 190, ${opacity})`
+  ctx.fillStyle = `rgba(94, 242, 232, ${opacity})`
   ctx.fill()
 
   // Inner bright core
@@ -413,14 +413,14 @@ function drawPulse(ctx: CanvasRenderingContext2D, pulse: ResonancePulse, intensi
   // Draw expanding ring
   ctx.beginPath()
   ctx.arc(pulse.center.x, pulse.center.y, pulse.radius, 0, Math.PI * 2)
-  ctx.strokeStyle = `rgba(0, 210, 190, ${opacity})`
+  ctx.strokeStyle = `rgba(94, 242, 232, ${opacity})`
   ctx.lineWidth = 2
   ctx.stroke()
 
   // Inner glow ring
   ctx.beginPath()
   ctx.arc(pulse.center.x, pulse.center.y, pulse.radius * 0.8, 0, Math.PI * 2)
-  ctx.strokeStyle = `rgba(0, 210, 190, ${opacity * 0.5})`
+  ctx.strokeStyle = `rgba(94, 242, 232, ${opacity * 0.5})`
   ctx.lineWidth = 1
   ctx.stroke()
 }

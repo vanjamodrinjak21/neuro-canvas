@@ -80,8 +80,8 @@ async function keepRemote() {
 .conflict-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  /* Flat scrim — no backdrop blur in chrome (REDESIGN.md §5) */
+  background: rgba(var(--nc-bg-rgb), 0.66);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -151,7 +151,7 @@ async function keepRemote() {
 
 .local-badge {
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--nc-info);
 }
 
 .remote-badge {
@@ -197,7 +197,15 @@ async function keepRemote() {
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.btn:active {
+  transform: scale(0.97);
 }
 
 .btn-outline {

@@ -170,21 +170,16 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      leave-active-class="transition-all duration-200 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
+    <Transition name="gv-fade">
       <div
         v-if="visible"
-        class="fixed inset-0 z-modal bg-nc-bg/95 backdrop-blur-xl flex flex-col"
+        class="fixed inset-0 z-modal bg-nc-bg flex flex-col"
       >
         <!-- Header -->
         <header class="absolute top-4 left-4 right-4 z-10 nc-between pointer-events-none">
           <!-- Left: Title -->
-          <div class="pointer-events-auto nc-glass rounded-nc-xl px-4 py-3 nc-row gap-3 items-center">
-            <div class="w-9 h-9 rounded-nc-lg bg-nc-accent/10 nc-center">
+          <div class="pointer-events-auto bg-nc-surface-2 border border-nc-border rounded-nc-md px-4 py-3 nc-row gap-3 items-center">
+            <div class="w-9 h-9 rounded-nc-md bg-nc-accent/10 nc-center">
               <span class="i-lucide-git-branch text-nc-accent text-xl" />
             </div>
             <div>
@@ -197,7 +192,7 @@ onUnmounted(() => {
 
           <!-- Right: Close button -->
           <button
-            class="pointer-events-auto w-10 h-10 rounded-nc-lg nc-glass nc-center text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-2 transition-all"
+            class="pointer-events-auto w-10 h-10 rounded-nc-md bg-nc-surface-2 border border-nc-border nc-center text-nc-ink-muted hover:text-nc-ink hover:bg-nc-surface-3 nc-anim cursor-pointer active:scale-97"
             @click="emit('close')"
           >
             <span class="i-lucide-x text-xl" />
@@ -223,15 +218,10 @@ onUnmounted(() => {
         </div>
 
         <!-- Hovered Node Info -->
-        <Transition
-          enter-active-class="transition-all duration-150 ease-out"
-          leave-active-class="transition-all duration-100 ease-in"
-          enter-from-class="opacity-0 translate-y-2"
-          leave-to-class="opacity-0 translate-y-2"
-        >
+        <Transition name="gv-pop">
           <div
             v-if="hoveredNode"
-            class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 nc-glass rounded-nc-xl px-4 py-3 max-w-md"
+            class="gv-hover-info absolute bottom-4 left-1/2 z-10 bg-nc-surface-2 border border-nc-border rounded-nc-md px-4 py-3 max-w-md"
           >
             <p class="text-sm text-nc-ink font-medium truncate">{{ hoveredNode.content || $t('canvas.untitled') }}</p>
             <p class="text-xs text-nc-ink-muted mt-1">{{ $t('canvas.graph_view.click_to_navigate_short') }}</p>
@@ -239,7 +229,7 @@ onUnmounted(() => {
         </Transition>
 
         <!-- Legend -->
-        <div class="absolute bottom-4 right-4 z-10 nc-glass rounded-nc-lg px-3 py-2">
+        <div class="absolute bottom-4 right-4 z-10 bg-nc-surface-2 border border-nc-border rounded-nc-md px-3 py-2">
           <div class="text-xs text-nc-ink-muted space-y-1">
             <div class="nc-row gap-2 items-center">
               <span class="i-lucide-mouse-pointer text-sm" />
@@ -267,3 +257,45 @@ onUnmounted(() => {
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+/* Fullscreen overlay fade — opacity only, single ease (REDESIGN.md §6) */
+.gv-fade-enter-active {
+  transition: opacity 300ms var(--nc-ease);
+}
+
+.gv-fade-leave-active {
+  transition: opacity 200ms var(--nc-ease);
+}
+
+.gv-fade-enter-from,
+.gv-fade-leave-to {
+  opacity: 0;
+}
+
+/* Hovered-node info card — transform/opacity, enter 150ms / exit 100ms */
+.gv-hover-info {
+  transform: translateX(-50%);
+}
+
+.gv-pop-enter-active {
+  transition: opacity 150ms var(--nc-ease), transform 150ms var(--nc-ease);
+}
+
+.gv-pop-leave-active {
+  transition: opacity 100ms var(--nc-ease), transform 100ms var(--nc-ease);
+}
+
+.gv-pop-enter-from,
+.gv-pop-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gv-pop-enter-from,
+  .gv-pop-leave-to {
+    transform: translateX(-50%);
+  }
+}
+</style>

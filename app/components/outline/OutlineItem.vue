@@ -122,7 +122,7 @@ defineExpose({ focusInput, el: itemRef })
 }
 
 .nc-outline-item.is-focused {
-  background: var(--nc-accent-glow, rgba(0, 210, 190, 0.06));
+  background: var(--nc-accent-glow, rgba(94, 242, 232, 0.06));
 }
 
 .nc-outline-bullet {
@@ -130,13 +130,13 @@ defineExpose({ focusInput, el: itemRef })
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--nc-text-muted, #52525B);
+  background: var(--nc-text-muted, rgba(244, 244, 248, 0.45));
   margin-top: 10px;
   transition: background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .nc-outline-item.is-focused .nc-outline-bullet {
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent, #5EF2E8);
 }
 
 .nc-outline-content {
@@ -145,21 +145,21 @@ defineExpose({ focusInput, el: itemRef })
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 24px;
-  color: var(--nc-text, #FAFAFA);
+  color: var(--nc-text, #f4f4f8);
   outline: none;
   word-break: break-word;
-  caret-color: var(--nc-accent, #00D2BE);
+  caret-color: var(--nc-accent, #5EF2E8);
 }
 
 .nc-outline-content:empty::before {
   content: 'Type something...';
-  color: var(--nc-text-dim, #3F3F46);
+  color: var(--nc-text-dim, rgba(244, 244, 248, 0.38));
   pointer-events: none;
 }
 
 .nc-outline-content :deep(strong) {
   font-weight: 700;
-  color: var(--nc-text, #FAFAFA);
+  color: var(--nc-text, #f4f4f8);
 }
 
 .nc-outline-content :deep(em) {
@@ -170,16 +170,16 @@ defineExpose({ focusInput, el: itemRef })
 .nc-outline-content :deep(code) {
   font-family: var(--nc-font-mono);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  background: var(--nc-surface-3, #18181B);
+  background: var(--nc-surface-3, #1a1a20);
   padding: 1px 5px;
   border-radius: 4px;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent, #5EF2E8);
 }
 
 .nc-outline-content :deep(a) {
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent, #5EF2E8);
   text-decoration: underline;
-  text-decoration-color: rgba(0, 210, 190, 0.3);
+  text-decoration-color: rgba(94, 242, 232, 0.3);
   text-underline-offset: 2px;
 }
 </style>

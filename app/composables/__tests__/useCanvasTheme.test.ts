@@ -5,7 +5,8 @@ describe('useCanvasTheme', () => {
   it('returns dark palette by default', () => {
     const { colors, isLight } = useCanvasTheme()
     expect(isLight.value).toBe(false)
-    expect(colors.value.canvasBg).toBe('#0A0A0C')
+    // Canonical deep-map black from tokens.css (REDESIGN.md §1)
+    expect(colors.value.canvasBg).toBe('#050508')
   })
 
   it('returns light palette when isLight is true', () => {

@@ -1,6 +1,77 @@
+import { toRaw } from 'vue'
 import type { MapStore } from '~/stores/mapStore'
 import type { DBNode } from '~/composables/useDatabase'
+import type { Node, Edge } from '~/types/canvas'
+import type { CanvasColors } from '~/composables/useCanvasTheme'
 import { useGuestMode } from '~/composables/useGuestMode'
+import { getCanvasColors, getPrintCanvasColors } from '~/composables/useCanvasTheme'
+import { readCurrentTextScale } from '~/composables/useTextScale'
+import { computeContentBounds, computeExportFit } from '~/utils/exportFit'
+import { lerpColor } from '~/utils/color'
+import { drawNode } from '~/components/canvas/renderers/drawNode'
+import { drawEdge } from '~/components/canvas/renderers/drawEdge'
+import { drawRootIndicator } from '~/components/canvas/renderers/drawOverlays'
+
+/** Raster formats supported by the image export path. */
+type RasterFormat = 'png' | 'jpg'
+
+interface RasterFormatSpec {
+  mime: string
+  extensions: string[]
+  filterName: string
+  /** Encoder quality (JPEG only). */
+  quality?: number
+}
+
+const RASTER_FORMATS: Record<RasterFormat, RasterFormatSpec> = {
+  png: { mime: 'image/png', extensions: ['png'], filterName: 'PNG Image' },
+  jpg: { mime: 'image/jpeg', extensions: ['jpg', 'jpeg'], filterName: 'JPEG Image', quality: 0.92 },
+}
+
+/**
+ * Draw the full scene (edges → nodes → root badge, matching the live render
+ * order) in content-space coordinates using the same pure renderers the
+ * canvas uses. Shared verbatim by the raster (PNG/JPG) export and — through
+ * the ctx→SVG shim — the vector map PDF export, so every export pipeline is
+ * guaranteed to produce the same picture.
+ */
+function drawMapScene(
+  ctx: CanvasRenderingContext2D,
+  nodes: Map<string, Node>,
+  edges: Iterable<Edge>,
+  rootNodeId: string | null,
+  colors: CanvasColors,
+  isLight: boolean,
+  textScale: number,
+): void {
+  const noSelection = new Set<string>()
+
+  for (const edge of edges) {
+    drawEdge(ctx, edge, nodes, noSelection, noSelection, colors)
+  }
+
+  for (const node of nodes.values()) {
+    const isRoot = node.isRoot || node.id === rootNodeId
+    const parentNode = node.parentId ? nodes.get(node.parentId) : null
+    const parentIsRoot = !!(parentNode && (parentNode.isRoot || parentNode.id === rootNodeId))
+    drawNode(
+      ctx, node, 'normal', colors,
+      false, false, isRoot,
+      lerpColor,
+      undefined,
+      isLight,
+      parentIsRoot,
+      textScale,
+    )
+  }
+
+  // Root badge on top, matching the live render order.
+  for (const node of nodes.values()) {
+    if (node.isRoot || node.id === rootNodeId) {
+      drawRootIndicator(ctx, node, colors)
+    }
+  }
+}
 
 /**
  * Mind map export & share utilities.
@@ -29,17 +100,104 @@ export function useExport() {
     return btoa(binary)
   }
 
-  // ── PNG export ──────────────────────────────────────────────────────
-  function exportAsPng(canvasEl: HTMLCanvasElement, title: string) {
+  // ── Raster export (PNG / JPG) ───────────────────────────────────────
+  // Offscreen render of the FULL map, independent of the current camera,
+  // zoom, screen DPR and the 360px detail-panel overlay. The previous
+  // implementation blobbed the live canvas element, so exports were plain
+  // viewport screenshots: off-screen nodes were cut off and the output
+  // resolution was whatever the window happened to be. This path computes
+  // the content bounding box of every node + edge, fits it (plus padding)
+  // into a supersampled canvas, and re-draws the map with the same pure
+  // renderers the live canvas uses.
+
+  /**
+   * Render the whole map to an image blob at export quality.
+   * `forceLight` renders with the canonical light palette regardless of the
+   * active theme (used by the print PDF fallback).
+   */
+  async function renderMapToBlob(
+    mapStore: MapStore,
+    format: RasterFormat,
+    opts?: { forceLight?: boolean },
+  ): Promise<Blob> {
+    // toRaw: iterating reactive Maps costs ~15x native and export touches
+    // every node/edge. Same underlying objects, so nothing goes stale.
+    const nodes = toRaw(mapStore.nodes)
+    const edges = toRaw(mapStore.edges)
+    const rootNodeId = mapStore.rootNodeId
+
+    // Empty map → framed blank canvas rather than a failure.
+    const bounds = computeContentBounds(nodes, edges.values())
+      ?? { minX: 0, minY: 0, maxX: 800, maxY: 600 }
+    const fit = computeExportFit(bounds, {
+      devicePixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio : 1,
+    })
+
+    const forceLight = opts?.forceLight === true
+    const isLight = forceLight || (typeof document !== 'undefined'
+      && document.documentElement.classList.contains('light'))
+    const colors = forceLight ? getPrintCanvasColors() : getCanvasColors(isLight)
+    const textScale = readCurrentTextScale()
+
+    // Node text renders in the app font — wait for it so glyphs rasterize
+    // crisp instead of falling back to a default font mid-export.
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      try {
+        await document.fonts.ready
+      } catch { /* non-fatal: fall back to whatever is loaded */ }
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = fit.width
+    canvas.height = fit.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas 2D context unavailable')
+
+    // JPEG has no alpha channel — paint the active theme's canvas bg token
+    // first so transparency never collapses to black (PNG gets the exact
+    // same background the app shows).
+    ctx.fillStyle = colors.canvasBg
+    ctx.fillRect(0, 0, fit.width, fit.height)
+
+    // Content-space → supersampled pixels. Everything below draws in the
+    // same world coordinates the live renderers use.
+    ctx.setTransform(fit.scale, 0, 0, fit.scale, fit.translateX, fit.translateY)
+
+    drawMapScene(ctx, nodes, edges.values(), rootNodeId, colors, isLight, textScale)
+
+    const spec = RASTER_FORMATS[format]
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob)
+          else reject(new Error(`Canvas toBlob (${spec.mime}) failed`))
+        },
+        spec.mime,
+        spec.quality,
+      )
+    })
+  }
+
+  async function exportAsImage(mapStore: MapStore, title: string, format: RasterFormat) {
     if (!guest.requireFeature('export')) return
-    canvasEl.toBlob(async (blob) => {
-      if (blob) {
-        const bytes = new Uint8Array(await blob.arrayBuffer())
-        await saveFile(bytes, sanitizeFilename(title) + '.png', [
-          { name: 'PNG Image', extensions: ['png'] }
-        ])
-      }
-    }, 'image/png')
+    try {
+      const spec = RASTER_FORMATS[format]
+      const blob = await renderMapToBlob(mapStore, format)
+      const bytes = new Uint8Array(await blob.arrayBuffer())
+      await saveFile(bytes, `${sanitizeFilename(title)}.${spec.extensions[0]}`, [
+        { name: spec.filterName, extensions: [...spec.extensions] }
+      ])
+    } catch (e) {
+      console.error('[Export] Raster export failed:', e)
+    }
+  }
+
+  function exportAsPng(mapStore: MapStore, title: string) {
+    return exportAsImage(mapStore, title, 'png')
+  }
+
+  function exportAsJpg(mapStore: MapStore, title: string) {
+    return exportAsImage(mapStore, title, 'jpg')
   }
 
   // ── JSON export ─────────────────────────────────────────────────────
@@ -98,6 +256,52 @@ export function useExport() {
     await saveFile(bytes, sanitizeFilename(title) + '.pdf', [
       { name: 'PDF', extensions: ['pdf'] }
     ])
+  }
+
+  // ── Map PDF export (desktop, AER-76) ────────────────────────────────
+  // Print-ready VECTOR PDF of the map itself — the exact picture on the
+  // canvas, as scalable geometry + real selectable text, always rendered
+  // with the light palette for paper. The heavy pipeline (canvas2svg +
+  // svg2pdf.js + jsPDF + Inter font binaries) lives in a lazily imported
+  // module so none of it enters the main chunk. If any part of the vector
+  // path fails at runtime, the same page layout is re-used with the proven
+  // high-res PNG renderer placed in the PDF — the export never breaks.
+  async function exportAsMapPdf(mapStore: MapStore, title: string) {
+    if (!guest.requireFeature('export')) return
+    try {
+      const nodes = toRaw(mapStore.nodes)
+      const edges = toRaw(mapStore.edges)
+      const rootNodeId = mapStore.rootNodeId
+
+      // Empty map → framed blank page rather than a failure (same default
+      // frame the raster export uses).
+      const bounds = computeContentBounds(nodes, edges.values())
+        ?? { minX: 0, minY: 0, maxX: 800, maxY: 600 }
+      const colors = getPrintCanvasColors()
+      const textScale = readCurrentTextScale()
+
+      const pdf = await import('~/utils/exportMapPdf')
+      let bytes: Uint8Array
+      try {
+        bytes = await pdf.renderMapVectorPdf({
+          bounds,
+          title,
+          background: colors.canvasBg,
+          drawScene: (ctx) =>
+            drawMapScene(ctx, nodes, edges.values(), rootNodeId, colors, true, textScale),
+        })
+      } catch (err) {
+        console.warn('[Export] Vector PDF failed — falling back to raster-in-PDF:', err)
+        const png = await renderMapToBlob(mapStore, 'png', { forceLight: true })
+        bytes = await pdf.renderMapRasterPdf(png, bounds, title, colors.canvasBg)
+      }
+
+      await saveFile(bytes, sanitizeFilename(title) + '.pdf', [
+        { name: 'PDF', extensions: ['pdf'] }
+      ])
+    } catch (e) {
+      console.error('[Export] Map PDF export failed:', e)
+    }
   }
 
   // ── Share (clipboard / native share sheet) ──────────────────────────
@@ -318,9 +522,11 @@ export function useExport() {
 
   return {
     exportAsPng,
+    exportAsJpg,
     exportAsJson,
     exportAsMarkdown,
     exportAsPdf,
+    exportAsMapPdf,
     shareAsText
   }
 }

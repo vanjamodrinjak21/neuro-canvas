@@ -204,10 +204,54 @@ async function exportAllData() {
 }
 
 // ── Delete Account ──────────────────────────────────────────────────
+// Bespoke type-to-confirm dialog (intentionally NOT NcConfirmDialog — it
+// needs the confirmation input) but its shell follows the NcConfirmDialog
+// grammar exactly: surface-2 + hairline, radius 0.5rem, centered
+// scale(0.97)+opacity enter 200ms / exit 150ms, danger = red grammar.
 const showDeleteConfirm = ref(false)
 const deleteConfirmText = ref('')
 const isDeleting = ref(false)
 const deleteError = ref<string | null>(null)
+const deleteInputRef = ref<HTMLInputElement | null>(null)
+const deleteDialogRef = ref<HTMLElement | null>(null)
+let deleteTriggerEl: HTMLElement | null = null
+
+function openDeleteConfirm(e: MouseEvent) {
+  deleteTriggerEl = e.currentTarget as HTMLElement
+  showDeleteConfirm.value = true
+  nextTick(() => deleteInputRef.value?.focus())
+}
+
+function closeDeleteConfirm() {
+  if (isDeleting.value) return
+  showDeleteConfirm.value = false
+  deleteConfirmText.value = ''
+  deleteError.value = null
+  deleteTriggerEl?.focus()
+  deleteTriggerEl = null
+}
+
+// Minimal focus trap — Tab/Shift+Tab cycle within the dialog while open.
+function trapDeleteFocus(e: KeyboardEvent) {
+  const root = deleteDialogRef.value
+  if (!root) return
+  const focusables = Array.from(
+    root.querySelectorAll<HTMLElement>('input, button:not(:disabled)')
+  )
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  if (!first || !last) return
+  const active = document.activeElement as HTMLElement | null
+  if (e.shiftKey) {
+    if (active === first || !root.contains(active)) {
+      e.preventDefault()
+      last.focus()
+    }
+  } else if (active === last || !root.contains(active)) {
+    e.preventDefault()
+    first.focus()
+  }
+}
 
 async function deleteAccount() {
   if (deleteConfirmText.value !== 'DELETE MY ACCOUNT') return
@@ -411,7 +455,7 @@ async function onSignOut() {
         <template v-else-if="totpStep === 'backup'">
           <div class="totp-setup">
             <div class="setting-info">
-              <span class="setting-title" style="color: #22C55E;">{{ t('settings.account.twofa_enabled_title') }}</span>
+              <span class="setting-title success-title">{{ t('settings.account.twofa_enabled_title') }}</span>
               <span class="setting-desc">{{ t('settings.account.backup_codes_desc') }}</span>
             </div>
 
@@ -483,36 +527,53 @@ async function onSignOut() {
         </button>
       </div>
 
-      <div v-if="exportError" class="inline-error" style="padding: 0 20px 12px;">
+      <div v-if="exportError" class="inline-error inline-error--section">
         <span class="i-lucide-alert-circle" />
         {{ exportError }}
       </div>
 
       <!-- Delete Account -->
-      <div class="setting-row danger-row" :class="{ expanded: showDeleteConfirm }">
-        <template v-if="!showDeleteConfirm">
-          <div class="setting-info">
-            <span class="setting-title">{{ t('settings.account.delete_account') }}</span>
-            <span class="setting-desc">{{ t('settings.account.delete_account_desc') }}</span>
-          </div>
-          <button class="delete-btn" @click="showDeleteConfirm = true">
-            {{ t('settings.account.delete') }}
-          </button>
-        </template>
+      <div class="setting-row danger-row">
+        <div class="setting-info">
+          <span class="setting-title">{{ t('settings.account.delete_account') }}</span>
+          <span class="setting-desc">{{ t('settings.account.delete_account_desc') }}</span>
+        </div>
+        <button class="delete-btn" @click="openDeleteConfirm">
+          {{ t('settings.account.delete') }}
+        </button>
+      </div>
+    </div>
 
-        <template v-else>
-          <div class="delete-form">
-            <div class="setting-info">
-              <span class="setting-title delete-title">{{ t('settings.account.delete_account') }}</span>
-              <span class="setting-desc">
+    <!-- Type-to-confirm delete dialog — NcConfirmDialog shell grammar -->
+    <Teleport to="body">
+      <Transition name="dc">
+        <div
+          v-if="showDeleteConfirm"
+          class="dc-overlay"
+          @click.self="closeDeleteConfirm"
+          @keydown.esc.prevent="closeDeleteConfirm"
+        >
+          <div
+            ref="deleteDialogRef"
+            class="dc-modal"
+            role="alertdialog"
+            aria-modal="true"
+            :aria-label="t('settings.account.delete_account')"
+            @keydown.tab="trapDeleteFocus"
+          >
+            <div class="dc-header">
+              <span class="dc-eyebrow">{{ t('settings.account.section_danger') }}</span>
+              <h2 class="dc-title">{{ t('settings.account.delete_account') }}</h2>
+              <p class="dc-subtitle">
                 {{ t('settings.account.delete_confirm_desc_prefix') }}
                 <strong>{{ t('settings.account.delete_confirmation_placeholder') }}</strong>
                 {{ t('settings.account.delete_confirm_desc_suffix') }}
-              </span>
+              </p>
             </div>
 
-            <div class="form-fields">
+            <div class="dc-body">
               <input
+                ref="deleteInputRef"
                 v-model="deleteConfirmText"
                 type="text"
                 class="setting-input delete-input"
@@ -525,27 +586,24 @@ async function onSignOut() {
                 <span class="i-lucide-alert-circle" />
                 {{ deleteError }}
               </div>
+            </div>
 
-              <div class="form-actions">
-                <button
-                  class="cancel-btn"
-                  @click="showDeleteConfirm = false; deleteConfirmText = ''; deleteError = null"
-                >
-                  Cancel
-                </button>
-                <button
-                  class="delete-confirm-btn"
-                  :disabled="isDeleting || deleteConfirmText !== 'DELETE MY ACCOUNT'"
-                  @click="deleteAccount"
-                >
-                  {{ isDeleting ? 'Deleting...' : 'Delete Forever' }}
-                </button>
-              </div>
+            <div class="dc-footer">
+              <button class="dc-btn-ghost" @click="closeDeleteConfirm">
+                {{ t('common.buttons.cancel') }}
+              </button>
+              <button
+                class="dc-btn-danger"
+                :disabled="isDeleting || deleteConfirmText !== 'DELETE MY ACCOUNT'"
+                @click="deleteAccount"
+              >
+                {{ isDeleting ? t('settings.account.deleting') : t('settings.account.delete_forever') }}
+              </button>
             </div>
           </div>
-        </template>
-      </div>
-    </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Sign Out (not in Paper but essential) -->
     <div class="settings-section">
@@ -573,29 +631,31 @@ async function onSignOut() {
   gap: 12px;
 }
 
+/* Section eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
 .section-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0.06em;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
   line-height: 14px;
-  color: var(--s-muted, #52525B);
+  color: var(--nc-text-secondary);
   padding-bottom: 4px;
 }
 
 .section-label.danger {
-  color: #EF4444;
+  color: var(--nc-coral);
 }
 
+/* Setting Row — flat surface + THE hairline (REDESIGN.md §5) */
 .setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: var(--s-surface, #0D0D10);
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 8px;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
 }
 
 .setting-row.expanded {
@@ -610,106 +670,122 @@ async function onSignOut() {
 }
 
 .setting-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
-  color: var(--s-text, #FAFAFA);
+  color: var(--nc-text);
 }
 
 .setting-desc {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 16px;
-  color: var(--s-muted, #555560);
+  color: var(--nc-text-secondary);
 }
 
 .setting-value {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 400;
-  color: var(--s-muted, #555560);
+  color: var(--nc-text-secondary);
 }
 
-/* Action button (Change, Export) */
+/* Action button (Change, Export) — ghost action grammar: mono uppercase
+   chip, hover brightens to accent (REDESIGN.md §5) */
 .action-btn {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.72rem * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--s-text, #FAFAFA);
-  background: none;
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
   padding: 8px 16px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.action-btn:hover:not(:disabled) {
-  border-color: var(--s-accent, #00D2BE);
-  color: var(--s-accent, #00D2BE);
+.action-btn:active:not(:disabled) { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover:not(:disabled) {
+    border-color: var(--nc-border-active);
+    color: var(--nc-accent);
+  }
 }
 
 .action-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* Delete button */
+/* Delete button — calm coral text + hairline, never solid red
+   (REDESIGN.md §1 / ui/NcButton danger) */
 .delete-btn {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #EF4444;
+  color: var(--nc-coral);
   background: none;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 6px;
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.45);
+  border-radius: var(--nc-radius-md);
   padding: 8px 16px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.delete-btn:hover {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: #EF4444;
+.delete-btn:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .delete-btn:hover {
+    background: rgba(var(--nc-coral-rgb), 0.08);
+    border-color: var(--nc-coral);
+  }
 }
 
 .danger-row {
-  border-color: rgba(239, 68, 68, 0.15);
+  border-color: rgba(var(--nc-coral-rgb), 0.15);
 }
 
-/* Toggle Switch */
+/* Toggle Switch — hairline track + chip fill (REDESIGN.md §5 / ui/NcSwitch) */
 .toggle-switch {
   width: 44px;
   height: 24px;
   display: flex;
   align-items: center;
   padding: 2px;
-  border-radius: 12px;
-  border: none;
-  background: var(--s-toggle-off, #1A1A1E);
+  border-radius: 2.4rem;
+  border: 1px solid var(--nc-border);
+  background: var(--nc-chip-bg);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s;
+  transition: background-color var(--nc-duration-normal) var(--nc-ease);
 }
 
 .toggle-switch:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .toggle-knob {
   width: 20px;
   height: 20px;
-  border-radius: 10px;
-  background: var(--s-knob-off, #555560);
+  border-radius: 50%;
+  background: var(--nc-text);
   flex-shrink: 0;
 }
 
-/* Password / Delete forms */
-.password-form,
-.delete-form {
+/* Password form */
+.password-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -722,29 +798,32 @@ async function onSignOut() {
   gap: 10px;
 }
 
+/* Input grammar — chip fill, hairline, focus = border-color only
+   (REDESIGN.md §5) */
 .setting-input {
   width: 100%;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--s-text, #FAFAFA);
-  background: var(--s-bg, #09090B);
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 6px;
+  color: var(--nc-text);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: var(--nc-radius-md);
   padding: 10px 12px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .setting-input:focus {
-  border-color: var(--s-accent, #00D2BE);
+  border-color: var(--nc-accent);
 }
 
 .setting-input::placeholder {
-  color: var(--s-muted, #555560);
+  color: var(--nc-text-dim);
 }
 
+/* Destructive-confirm input focuses coral (REDESIGN.md §1) */
 .delete-input:focus {
-  border-color: #EF4444;
+  border-color: var(--nc-coral);
 }
 
 .form-actions {
@@ -753,105 +832,156 @@ async function onSignOut() {
   gap: 8px;
 }
 
+/* Cancel — quiet ghost text action (REDESIGN.md §5) */
 .cancel-btn {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.72rem * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--s-muted, #555560);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
   background: none;
-  border: 1px solid var(--s-border, #1A1A1E);
-  border-radius: 6px;
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
   padding: 8px 14px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.cancel-btn:hover {
-  color: var(--s-text, #FAFAFA);
+.cancel-btn:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .cancel-btn:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
 }
 
+/* Save — primary ink pill (REDESIGN.md §5) */
 .save-btn {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  color: #09090B;
-  background: var(--s-accent, #00D2BE);
+  font-weight: 700;
+  color: var(--nc-bg);
+  background: var(--nc-text);
   border: none;
-  border-radius: 6px;
+  border-radius: 2.4rem;
   padding: 8px 16px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.save-btn:active:not(:disabled) { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .save-btn:hover:not(:disabled) {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
 }
 
 .save-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
 }
 
+/* Destructive confirm — calm coral fill + hairline, never solid red
+   (REDESIGN.md §1) */
 .delete-confirm-btn {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
-  background: #EF4444;
-  border: none;
-  border-radius: 6px;
+  color: var(--nc-coral);
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.45);
+  border-radius: var(--nc-radius-md);
   padding: 8px 16px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.delete-confirm-btn:active:not(:disabled) { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .delete-confirm-btn:hover:not(:disabled) {
+    background: rgba(var(--nc-coral-rgb), 0.14);
+    border-color: var(--nc-coral);
+  }
 }
 
 .delete-confirm-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .delete-title {
-  color: #EF4444;
+  color: var(--nc-coral);
 }
 
-/* Inline feedback */
+/* Success carries accent — no status rainbow (REDESIGN.md §1) */
+.success-title {
+  color: var(--nc-accent);
+}
+
+/* Inline feedback — coral for errors, accent for success (REDESIGN.md §1) */
 .inline-error {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #EF4444;
+  color: var(--nc-coral);
+}
+
+.inline-error--section {
+  padding: 0 20px 12px;
 }
 
 .inline-success {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #22C55E;
+  color: var(--nc-accent);
 }
 
-/* Sign Out */
+/* Sign Out — coral danger grammar, kept calm (REDESIGN.md §1) */
 .signout-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 44px;
-  border-radius: 8px;
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--nc-radius-md);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.45);
   background: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #EF4444;
+  color: var(--nc-coral);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.signout-btn:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.06);
+.signout-btn:active:not(:disabled) { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .signout-btn:hover:not(:disabled) {
+    background: rgba(var(--nc-coral-rgb), 0.08);
+  }
 }
 
 .signout-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -868,11 +998,12 @@ async function onSignOut() {
   justify-content: center;
   padding: 16px;
   /* QR is shipped as black-on-white for scanner compatibility, so the
-     container stays a neutral light tile regardless of theme — no theme
-     variable here. A 1px ring matches the rest of the panel chrome. */
-  background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+     container stays a neutral light tile regardless of theme — a keyword,
+     not a palette value. The hairline token keeps the edge visible on
+     light surfaces and disappears against the white tile in dark mode. */
+  background: white;
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: var(--nc-radius-md);
 }
 
 .qr-img {
@@ -888,13 +1019,15 @@ async function onSignOut() {
   gap: 6px;
 }
 
+/* Vault key chip — mono accent on chip fill (REDESIGN.md §5) */
 .totp-key {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--s-accent, #00D2BE);
-  background: var(--s-bg, #09090B);
+  color: var(--nc-accent);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: 0.4rem;
   word-break: break-all;
   user-select: all;
 }
@@ -906,24 +1039,185 @@ async function onSignOut() {
 }
 
 .backup-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--s-text, #FAFAFA);
-  background: var(--s-bg, #09090B);
+  color: var(--nc-text);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: 0.4rem;
   text-align: center;
   user-select: all;
 }
 
-/* Light theme */
-:root.light .setting-input {
-  background: #FFFFFF;
-  border-color: #E8E8E6;
-  color: #111111;
+/* ── Delete-account dialog — NcConfirmDialog shell grammar ──
+   Flat surface-2 + hairline, radius 0.5rem, centered origin,
+   scale(0.97)+opacity enter 200ms / exit 150ms (REDESIGN.md §5/§6). */
+.dc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(var(--nc-bg-rgb), 0.66);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
-:root.light .setting-input::placeholder {
-  color: #777777;
+.dc-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-xl);
+  overflow: hidden;
+  transform-origin: center;
 }
+
+.dc-enter-active { transition: opacity 200ms var(--nc-ease); }
+.dc-leave-active { transition: opacity 150ms var(--nc-ease); }
+.dc-enter-active .dc-modal { transition: transform 200ms var(--nc-ease); }
+.dc-leave-active .dc-modal { transition: transform 150ms var(--nc-ease); }
+.dc-enter-from,
+.dc-leave-to { opacity: 0; }
+.dc-enter-from .dc-modal,
+.dc-leave-to .dc-modal { transform: scale(0.97); }
+
+.dc-header {
+  padding: 24px 24px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--nc-border-subtle);
+}
+
+/* Mono micro-label eyebrow — coral in danger context (REDESIGN.md §4) */
+.dc-eyebrow {
+  display: block;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-coral);
+  margin-bottom: 10px;
+}
+
+/* Dialog title — display font 700, tight tracking (REDESIGN.md §4) */
+.dc-title {
+  font-family: var(--nc-font-display);
+  font-size: calc(18px * var(--nc-text-scale, 1));
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+  color: var(--nc-text);
+}
+
+.dc-subtitle {
+  font-family: var(--nc-font-body);
+  font-size: calc(13px * var(--nc-text-scale, 1));
+  color: var(--nc-text-secondary);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+.dc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+}
+
+.dc-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--nc-border-subtle);
+  background: var(--nc-chip-bg);
+}
+
+/* Ghost — mono uppercase text link with underline-grow (REDESIGN.md §5) */
+.dc-btn-ghost {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  border-radius: 0.4rem;
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.78rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.dc-btn-ghost::after {
+  content: '';
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 0.3em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 0.3s var(--nc-ease);
+}
+
+.dc-btn-ghost:active { transform: scale(0.97); }
+
+/* Danger confirm — red pill, destructive-confirm grammar (REDESIGN.md §1) */
+.dc-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: var(--nc-coral);
+  color: var(--nc-bg);
+  border: none;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
+  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.dc-btn-danger:active:not(:disabled) { transform: scale(0.97); }
+
+.dc-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dc-btn-ghost:hover { color: var(--nc-accent); }
+  .dc-btn-ghost:hover::after { transform: scaleX(1); }
+  .dc-btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-enter-active,
+  .dc-leave-active,
+  .dc-enter-active .dc-modal,
+  .dc-leave-active .dc-modal,
+  .dc-btn-ghost,
+  .dc-btn-ghost::after,
+  .dc-btn-danger {
+    transition: none;
+  }
+  .dc-enter-from .dc-modal,
+  .dc-leave-to .dc-modal { transform: none; }
+}
+
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 </style>

@@ -61,7 +61,7 @@ const email = computed(() => route.query.email as string | undefined)
   align-items: center;
   justify-content: center;
   padding: 32px;
-  background: #09090B;
+  background: var(--nc-bg);
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -85,15 +85,15 @@ const email = computed(() => route.query.email as string | undefined)
 .brand-name {
   font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: #FAFAFA;
+  color: var(--nc-text);
   letter-spacing: -0.03em;
 }
 
 /* Card */
 .verify-card {
   width: 100%;
-  background: #111113;
-  border: 1px solid #1A1A1E;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
   border-radius: 8px;
   padding: 40px 32px;
   text-align: center;
@@ -105,47 +105,47 @@ const email = computed(() => route.query.email as string | undefined)
   justify-content: center;
   width: 56px;
   height: 56px;
-  background: rgba(0, 210, 190, 0.08);
+  background: rgba(var(--nc-accent-rgb), 0.08);
   border-radius: 8px;
   margin-bottom: 20px;
 }
 
 .verify-icon {
   font-size: calc(24px * var(--nc-text-scale, 1));
-  color: #00D2BE;
+  color: var(--nc-accent);
 }
 
 .verify-title {
   font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
   margin: 0 0 8px;
   letter-spacing: -0.02em;
 }
 
 .verify-message {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   margin: 0 0 4px;
   line-height: 22px;
 }
 
 .verify-message strong {
-  color: #FAFAFA;
+  color: var(--nc-text);
   font-weight: 500;
 }
 
 .verify-hint {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
   margin: 0 0 24px;
   line-height: 20px;
 }
 
 /* Tips */
 .verify-tips {
-  background: #0D0D0F;
-  border: 1px solid #1A1A1E;
+  background: var(--nc-bg);
+  border: 1px solid var(--nc-border);
   border-radius: 6px;
   padding: 16px;
   margin-bottom: 24px;
@@ -155,7 +155,7 @@ const email = computed(() => route.query.email as string | undefined)
 .tips-title {
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   margin: 0 0 10px;
 }
 
@@ -170,7 +170,7 @@ const email = computed(() => route.query.email as string | undefined)
 
 .tips-list li {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   padding-left: 16px;
   position: relative;
   line-height: 20px;
@@ -183,7 +183,7 @@ const email = computed(() => route.query.email as string | undefined)
   top: 7px;
   width: 4px;
   height: 4px;
-  background: #00D2BE;
+  background: var(--nc-accent);
   border-radius: 50%;
 }
 
@@ -195,10 +195,10 @@ const email = computed(() => route.query.email as string | undefined)
   gap: 6px;
   padding: 12px 20px;
   min-height: 44px;
-  background: #00D2BE;
+  background: var(--nc-accent);
   border: none;
   border-radius: 6px;
-  color: #09090B;
+  color: var(--nc-bg);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-decoration: none;
@@ -209,67 +209,6 @@ const email = computed(() => route.query.email as string | undefined)
   opacity: 0.9;
 }
 
-/* Light theme */
-:root.light .verify-page {
-  background: #FAFAF9;
-}
-
-:root.light .brand-name {
-  color: #111111;
-}
-
-:root.light .verify-card {
-  background: #F5F5F3;
-  border-color: #E8E8E6;
-}
-
-:root.light .icon-wrapper {
-  background: rgba(0, 210, 190, 0.08);
-}
-
-:root.light .verify-icon {
-  color: #00D2BE;
-}
-
-:root.light .verify-title {
-  color: #111111;
-}
-
-:root.light .verify-message {
-  color: #52525B;
-}
-
-:root.light .verify-message strong {
-  color: #111111;
-}
-
-:root.light .verify-hint {
-  color: #777777;
-}
-
-:root.light .verify-tips {
-  background: #F4F4F5;
-  border-color: #E8E8E6;
-}
-
-:root.light .tips-title {
-  color: #52525B;
-}
-
-:root.light .tips-list li {
-  color: #52525B;
-}
-
-:root.light .tips-list li::before {
-  background: #00D2BE;
-}
-
-:root.light .back-btn {
-  background: #00D2BE;
-  color: #FFFFFF;
-}
-
-:root.light .back-btn:hover {
-  opacity: 0.9;
-}
+/* Light theme is carried entirely by the :root.light token rebase in
+   tokens.css — the former hardcoded overrides became no-ops. */
 </style>

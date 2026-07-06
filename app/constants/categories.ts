@@ -8,7 +8,7 @@ export interface CategoryDefinition {
 }
 
 export const NODE_CATEGORIES = {
-  root:       { label: 'Root',       color: '#00D2BE', icon: 'i-lucide-star',         defaultShape: 'pill'      as NodeShape },
+  root:       { label: 'Root',       color: '#5EF2E8', icon: 'i-lucide-star',         defaultShape: 'pill'      as NodeShape },
   concept:    { label: 'Concept',    color: '#60A5FA', icon: 'i-lucide-lightbulb',    defaultShape: 'rounded'   as NodeShape },
   fact:       { label: 'Fact',       color: '#4ADE80', icon: 'i-lucide-check-circle', defaultShape: 'rectangle' as NodeShape },
   question:   { label: 'Question',   color: '#FACC15', icon: 'i-lucide-help-circle',  defaultShape: 'diamond'   as NodeShape },
@@ -31,7 +31,7 @@ export const LEGACY_CATEGORY_MAP: Record<string, CategoryId> = {
 export const CATEGORY_IDS = Object.keys(NODE_CATEGORIES) as CategoryId[]
 
 export function getCategoryColor(category: string): string {
-  return NODE_CATEGORIES[category as CategoryId]?.color ?? '#00D2BE'
+  return NODE_CATEGORIES[category as CategoryId]?.color ?? '#5EF2E8'
 }
 
 export function getCategoryInfo(categoryId: string): CategoryDefinition & { id: string } {

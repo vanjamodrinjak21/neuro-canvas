@@ -101,14 +101,18 @@ function toggleFilter(categoryId: string) {
   filterCategory.value = filterCategory.value === categoryId ? null : categoryId
 }
 
-// Filter chip categories (subset for display)
+// Filter chip categories (subset for display) — colors live in scoped CSS
+// as per-category modifier classes bound to the --nc-* node tokens
 const filterChips = computed(() => [
-  { id: 'main-fact', label: 'Main', color: '#00D2BE' },
-  { id: 'description', label: 'Desc', color: '#60A5FA' },
-  { id: 'evidence', label: 'Evidence', color: '#4ADE80' },
-  { id: 'question', label: 'Question', color: '#FACC15' },
-  { id: 'idea', label: 'Idea', color: '#FB923C' },
+  { id: 'main-fact', label: 'Main' },
+  { id: 'description', label: 'Desc' },
+  { id: 'evidence', label: 'Evidence' },
+  { id: 'question', label: 'Question' },
+  { id: 'idea', label: 'Idea' },
 ])
+
+// Root avatar follows the user-chosen node color (data) via v-bind
+const rootAvatarColor = computed(() => rootNode.value?.style?.borderColor || 'var(--nc-accent)')
 </script>
 
 <template>
@@ -147,14 +151,14 @@ const filterChips = computed(() => [
       <button
         v-for="chip in filterChips"
         :key="chip.id"
-        :class="['explorer__filter-pill', filterCategory === chip.id && 'explorer__filter-pill--active']"
-        :style="filterCategory === chip.id ? {
-          background: `${chip.color}1A`,
-          borderColor: `${chip.color}40`,
-        } : {}"
+        :class="[
+          'explorer__filter-pill',
+          `explorer__filter-pill--${chip.id}`,
+          filterCategory === chip.id && 'explorer__filter-pill--active',
+        ]"
         @click="toggleFilter(chip.id)"
       >
-        <span class="explorer__filter-dot" :style="{ background: chip.color }" />
+        <span class="explorer__filter-dot" />
         <span class="explorer__filter-label">{{ chip.label }}</span>
       </button>
     </div>
@@ -168,8 +172,8 @@ const filterChips = computed(() => [
 
     <!-- Root node card -->
     <div v-if="rootNode && !searchQuery && !filterCategory" class="explorer__root-card" @click="selectNode(rootNode.id)">
-      <div class="explorer__root-avatar" :style="{ background: `${rootNode.style?.borderColor || '#00D2BE'}1F` }">
-        <span :style="{ color: rootNode.style?.borderColor || '#00D2BE' }">{{ rootNode.content.charAt(0).toUpperCase() }}</span>
+      <div class="explorer__root-avatar">
+        <span class="explorer__root-letter">{{ rootNode.content.charAt(0).toUpperCase() }}</span>
       </div>
       <div class="explorer__root-info">
         <span class="explorer__root-name">{{ rootNode.content }}</span>
@@ -217,26 +221,27 @@ const filterChips = computed(() => [
   flex-shrink: 0;
 }
 
+/* Input grammar (REDESIGN.md §5): chip-bg fill, hairline, accent focus
+   border only — no ring/glow */
 .explorer__search {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 8px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: 0.5rem;
   padding: 8px 12px;
-  transition: all 0.2s ease;
+  transition: border-color 200ms var(--nc-ease);
 }
 
 .explorer__search:focus-within,
 .explorer__search--active {
   border-color: var(--nc-accent);
-  box-shadow: 0 0 0 3px var(--nc-accent-glow);
 }
 
 .explorer__search-icon {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: #3F3F46;
+  color: var(--nc-text-dim);
   flex-shrink: 0;
 }
 
@@ -247,11 +252,11 @@ const filterChips = computed(() => [
   outline: none;
   color: var(--nc-ink);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
 }
 
 .explorer__search-input::placeholder {
-  color: #3F3F46;
+  color: var(--nc-text-dim);
 }
 
 .explorer__search-clear {
@@ -266,7 +271,7 @@ const filterChips = computed(() => [
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 150ms var(--nc-ease), background 150ms var(--nc-ease);
 }
 
 .explorer__search-clear:hover {
@@ -274,18 +279,19 @@ const filterChips = computed(() => [
   background: var(--nc-surface-3);
 }
 
+/* kbd hint — mono micro chip */
 .explorer__search-kbd {
   padding: 2px 6px;
-  background: #18181B;
-  border: 1px solid #27272A;
-  border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.35rem;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: #3F3F46;
+  color: var(--nc-text-muted);
   line-height: 1;
 }
 
-/* Filter pills */
+/* Filter pills — per-category colors from the --nc-* node tokens */
 .explorer__filters {
   display: flex;
   flex-wrap: wrap;
@@ -295,52 +301,62 @@ const filterChips = computed(() => [
 }
 
 .explorer__filter-pill {
+  --chip-color: var(--nc-accent);
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid #27272A;
-  border-radius: 100px;
+  border: 1px solid var(--nc-border);
+  border-radius: 2rem;
   background: transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--nc-ease), border-color 150ms var(--nc-ease);
 }
 
-.explorer__filter-pill:hover {
-  border-color: #3F3F46;
+.explorer__filter-pill--main-fact { --chip-color: var(--nc-accent); }
+.explorer__filter-pill--description { --chip-color: var(--nc-node-blue); }
+.explorer__filter-pill--evidence { --chip-color: var(--nc-node-green); }
+.explorer__filter-pill--question { --chip-color: var(--nc-node-yellow); }
+.explorer__filter-pill--idea { --chip-color: var(--nc-node-orange); }
+
+@media (hover: hover) and (pointer: fine) {
+  .explorer__filter-pill:hover {
+    border-color: var(--nc-border-active);
+  }
 }
 
 .explorer__filter-pill--active {
-  background: rgba(0, 210, 190, 0.12);
-  border-color: rgba(0, 210, 190, 0.25);
+  background: color-mix(in srgb, var(--chip-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--chip-color) 25%, transparent);
 }
 
 .explorer__filter-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  background: var(--chip-color);
   flex-shrink: 0;
 }
 
 .explorer__filter-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: #71717A;
+  color: var(--nc-text-muted);
 }
 
 .explorer__filter-pill--active .explorer__filter-label {
-  color: #00D2BE;
+  color: var(--nc-text);
   font-weight: 600;
 }
 
 .explorer__filter-count {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: rgba(0, 210, 190, 0.5);
+  color: var(--nc-text-muted);
 }
 
-/* Section divider */
+/* Section divider — mono uppercase micro-label (REDESIGN.md §4) */
 .explorer__section-divider {
   display: flex;
   align-items: center;
@@ -350,44 +366,48 @@ const filterChips = computed(() => [
 }
 
 .explorer__section-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #27272A;
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--nc-text-muted);
+  letter-spacing: 0.14em;
 }
 
 .explorer__section-line {
   flex: 1;
   height: 1px;
-  background: #18181B;
+  background: var(--nc-border-subtle);
 }
 
 .explorer__section-count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: #27272A;
+  color: var(--nc-text-muted);
 }
 
-/* Root node card */
+/* Root node card — accent tint + left marker */
 .explorer__root-card {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
   margin: 0 10px;
-  background: rgba(0, 210, 190, 0.05);
-  border-radius: 8px;
-  border-left: 2px solid #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.05);
+  border-radius: 0.5rem;
+  border-left: 2px solid var(--nc-accent);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--nc-ease);
   flex-shrink: 0;
 }
 
-.explorer__root-card:hover {
-  background: rgba(0, 210, 190, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .explorer__root-card:hover {
+    background: rgba(var(--nc-accent-rgb), 0.08);
+  }
 }
 
+/* Root avatar — user node color (data) via v-bind */
 .explorer__root-avatar {
   display: flex;
   align-items: center;
@@ -396,9 +416,14 @@ const filterChips = computed(() => [
   height: 30px;
   border-radius: 7px;
   flex-shrink: 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: color-mix(in srgb, v-bind(rootAvatarColor) 12%, transparent);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
+}
+
+.explorer__root-letter {
+  color: v-bind(rootAvatarColor);
 }
 
 .explorer__root-info {
@@ -410,24 +435,24 @@ const filterChips = computed(() => [
 }
 
 .explorer__root-name {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .explorer__root-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
 }
 
 .explorer__root-chevron {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
   flex-shrink: 0;
 }
 
@@ -475,54 +500,5 @@ const filterChips = computed(() => [
   color: var(--nc-ink-faint);
   font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 1.5;
-}
-
-/* Light theme */
-:root.light .explorer__search {
-  background: #F4F4F5;
-  border-color: #E4E4E7;
-}
-
-:root.light .explorer__search-icon {
-  color: #A1A1AA;
-}
-
-:root.light .explorer__search-input::placeholder {
-  color: #A1A1AA;
-}
-
-:root.light .explorer__search-kbd {
-  background: #E4E4E7;
-  border-color: #D4D4D8;
-  color: #A1A1AA;
-}
-
-:root.light .explorer__filter-pill {
-  border-color: #E4E4E7;
-}
-
-:root.light .explorer__filter-label {
-  color: #71717A;
-}
-
-:root.light .explorer__section-label,
-:root.light .explorer__section-count {
-  color: #A1A1AA;
-}
-
-:root.light .explorer__section-line {
-  background: #E4E4E7;
-}
-
-:root.light .explorer__root-card {
-  background: rgba(0, 210, 190, 0.06);
-}
-
-:root.light .explorer__root-name {
-  color: #18181B;
-}
-
-:root.light .explorer__root-meta {
-  color: #A1A1AA;
 }
 </style>

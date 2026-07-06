@@ -52,25 +52,31 @@ const { toasts, dismiss } = useToast()
   align-items: center;
 }
 
+/* Toast grammar (REDESIGN.md §5 + ui/NcToast): flat surface-2, hairline,
+   2px semantic left edge. Accent discipline — cyan for success/info,
+   coral for warning/error; text stays ink, never a status rainbow. */
 .nc-toast {
   pointer-events: auto;
   max-width: 320px;
   min-width: 220px;
   padding: 12px 14px;
-  border-radius: 8px;
-  background: var(--nc-surface-2, #15161A);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--nc-radius-md);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-left-width: 2px;
+  border-left-color: var(--nc-accent);
+  color: var(--nc-text);
   font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.4;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--nc-shadow-md);
   user-select: none;
 }
 
 .nc-toast:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .nc-toast__msg {
@@ -78,40 +84,32 @@ const { toasts, dismiss } = useToast()
   word-wrap: break-word;
 }
 
-.nc-toast--error {
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #FCA5A5;
-}
-
+.nc-toast--error,
 .nc-toast--warning {
-  border-color: rgba(250, 204, 21, 0.4);
-  color: #FACC15;
+  border-left-color: var(--nc-coral);
 }
 
-.nc-toast--success {
-  border-color: rgba(0, 210, 190, 0.4);
-  color: #00D2BE;
-}
-
+.nc-toast--success,
 .nc-toast--info {
-  border-color: rgba(96, 165, 250, 0.4);
-  color: #93C5FD;
+  border-left-color: var(--nc-accent);
 }
 
-/* Enter / leave transitions */
+/* Enter / leave transitions — transform/opacity only, single ease */
 .nc-toast-enter-from {
   opacity: 0;
   transform: translateY(8px);
 }
 .nc-toast-enter-active {
-  transition: opacity 200ms ease-out, transform 200ms ease-out;
+  transition: opacity var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-normal) var(--nc-ease);
 }
 .nc-toast-leave-to {
   opacity: 0;
   transform: translateY(8px);
 }
 .nc-toast-leave-active {
-  transition: opacity 160ms ease-in, transform 160ms ease-in;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {

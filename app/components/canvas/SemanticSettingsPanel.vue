@@ -57,8 +57,8 @@ async function loadBackend() {
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="transition-all duration-200 ease-out"
-      leave-active-class="transition-all duration-150 ease-in"
+      enter-active-class="nc-settings-enter"
+      leave-active-class="nc-settings-leave"
       enter-from-class="translate-x-full opacity-0"
       leave-to-class="translate-x-full opacity-0"
     >
@@ -253,6 +253,15 @@ async function loadBackend() {
 </template>
 
 <style scoped>
+/* Panel slide: 200ms enter, 150ms exit — transform/opacity, single ease */
+.nc-settings-enter {
+  transition: transform 200ms var(--nc-ease), opacity 200ms var(--nc-ease);
+}
+
+.nc-settings-leave {
+  transition: transform 150ms var(--nc-ease), opacity 150ms var(--nc-ease);
+}
+
 .nc-settings-overlay {
   position: fixed;
   inset: 0;
@@ -274,7 +283,7 @@ async function loadBackend() {
   border-left: 1px solid var(--nc-border);
   display: flex;
   flex-direction: column;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--nc-shadow-md);
   overflow-y: auto;
 }
 
@@ -283,31 +292,41 @@ async function loadBackend() {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--nc-border, rgba(255, 255, 255, 0.06));
+  border-bottom: 1px solid var(--nc-border);
 }
 
+/* Panel title — display face (REDESIGN.md §4) */
 .nc-settings-title {
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--nc-ink, rgba(255, 255, 255, 0.95));
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   margin: 0;
 }
 
 .nc-settings-close {
   background: transparent;
   border: none;
-  color: var(--nc-ink-soft, rgba(255, 255, 255, 0.4));
+  color: var(--nc-text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
   display: flex;
   align-items: center;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-settings-close:hover {
-  color: var(--nc-ink, rgba(255, 255, 255, 0.9));
+  color: var(--nc-text);
   background: var(--nc-surface-3);
+}
+
+.nc-settings-close:active {
+  transform: scale(0.97);
 }
 
 .nc-settings-body {
@@ -319,7 +338,7 @@ async function loadBackend() {
 
 .nc-settings-divider {
   height: 1px;
-  background: var(--nc-border, rgba(255, 255, 255, 0.06));
+  background: var(--nc-border);
   margin: 4px 0;
 }
 
@@ -335,9 +354,14 @@ async function loadBackend() {
   gap: 6px;
 }
 
+/* Field label — mono uppercase micro-label (REDESIGN.md §5) */
 .nc-setting-label {
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink, rgba(255, 255, 255, 0.8));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .nc-setting-label-row {
@@ -347,27 +371,34 @@ async function loadBackend() {
 }
 
 .nc-setting-value {
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent-text);
 }
 
-/* Toggle switch */
+/* Toggle switch — active = accent fill + knob travel (never color alone) */
 .nc-toggle {
   position: relative;
   width: 36px;
   height: 20px;
-  border-radius: 10px;
+  border-radius: 2rem;
   background: var(--nc-surface-4);
   border: none;
   cursor: pointer;
   padding: 2px;
-  transition: background 0.2s;
+  transition:
+    background 200ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
   flex-shrink: 0;
 }
 
+.nc-toggle:active {
+  transform: scale(0.97);
+}
+
 .nc-toggle.active {
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent);
 }
 
 .nc-toggle-knob {
@@ -375,12 +406,16 @@ async function loadBackend() {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: white;
-  transition: transform 0.2s;
+  background: var(--nc-text);
+  transition:
+    transform 200ms var(--nc-ease),
+    background 200ms var(--nc-ease);
 }
 
 .nc-toggle.active .nc-toggle-knob {
   transform: translateX(16px);
+  /* Content on accent pairs with bg (REDESIGN.md §1 selection rule) */
+  background: var(--nc-bg);
 }
 
 /* Slider */
@@ -394,13 +429,19 @@ async function loadBackend() {
   outline: none;
 }
 
+/* Keyboard focus stays visible — accent ring grammar (REDESIGN.md §1) */
+.nc-slider:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
 .nc-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent);
   cursor: pointer;
   border: 2px solid rgba(0, 0, 0, 0.3);
 }
@@ -409,7 +450,7 @@ async function loadBackend() {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent);
   cursor: pointer;
   border: 2px solid rgba(0, 0, 0, 0.3);
 }
@@ -421,12 +462,14 @@ async function loadBackend() {
   gap: 8px;
 }
 
+/* Section eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
 .nc-status-heading {
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--nc-ink-soft, rgba(255, 255, 255, 0.4));
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
   margin: 0;
 }
 
@@ -438,12 +481,12 @@ async function loadBackend() {
 
 .nc-status-label {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, rgba(255, 255, 255, 0.5));
+  color: var(--nc-text-muted);
 }
 
 .nc-status-value {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink, rgba(255, 255, 255, 0.8));
+  color: var(--nc-text-secondary);
   font-weight: 500;
 }
 
@@ -451,67 +494,62 @@ async function loadBackend() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent-text);
 }
+
 .nc-status-spinner {
   display: inline-block;
   font-size: calc(12px * var(--nc-text-scale, 1));
   animation: nc-status-spin 0.9s linear infinite;
 }
+
 @keyframes nc-status-spin { to { transform: rotate(360deg); } }
 
 /* Compact pill — same family as the sidebar generate button but
-   right-sized for an inline status row. Brand teal in both modes. */
+   right-sized for an inline status row. Accent tokens flip per theme. */
 .nc-status-load-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 26px;
   padding: 0 12px;
-  background: rgba(0, 210, 190, 0.12);
-  border: 1px solid rgba(0, 210, 190, 0.35);
+  background: rgba(var(--nc-accent-rgb), 0.12);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.35);
   border-radius: 6px;
-  color: var(--nc-accent, #00D2BE);
-  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--nc-accent-text);
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition:
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
+
 .nc-status-load-btn:hover {
-  background: rgba(0, 210, 190, 0.18);
-  border-color: rgba(0, 210, 190, 0.5);
+  background: rgba(var(--nc-accent-rgb), 0.18);
+  border-color: rgba(var(--nc-accent-rgb), 0.5);
 }
+
 .nc-status-load-btn:active {
   transform: scale(0.97);
 }
+
 .nc-status-load-btn:disabled {
   opacity: 0.5;
   cursor: wait;
 }
-:root.light .nc-status-load-btn {
-  background: rgba(0, 168, 154, 0.10);
-  border-color: rgba(0, 168, 154, 0.40);
-  color: #00A89A;
-}
-:root.light .nc-status-load-btn:hover {
-  background: rgba(0, 168, 154, 0.16);
-  border-color: rgba(0, 168, 154, 0.55);
-}
 
+/* Load failure — coral (validation error, REDESIGN.md §1) */
 .nc-status-error {
   margin-top: 6px;
   padding: 6px 8px;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #FCA5A5;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--nc-coral);
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.25);
   border-radius: 6px;
-}
-:root.light .nc-status-error {
-  color: #B91C1C;
-  background: rgba(239, 68, 68, 0.06);
-  border-color: rgba(239, 68, 68, 0.18);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -519,6 +557,11 @@ async function loadBackend() {
   .nc-status-spinner {
     animation: none;
     transition: none;
+  }
+
+  .nc-settings-enter,
+  .nc-settings-leave {
+    transition: opacity 150ms var(--nc-ease);
   }
 }
 </style>

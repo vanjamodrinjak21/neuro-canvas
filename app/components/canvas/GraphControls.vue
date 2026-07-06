@@ -71,7 +71,7 @@ const showPhysics = ref(false)
 </script>
 
 <template>
-  <div class="nc-glass rounded-nc-xl overflow-hidden w-72">
+  <div class="bg-nc-surface-2 border border-nc-border rounded-nc-md overflow-hidden w-72">
     <!-- Header with stats -->
     <div class="px-4 py-3 border-b border-nc-border">
       <div class="nc-between mb-2">
@@ -89,10 +89,10 @@ const showPhysics = ref(false)
       <div class="flex gap-2">
         <button
           :class="[
-            'flex-1 py-2 px-3 rounded-nc-md text-sm font-medium transition-all duration-200',
+            'flex-1 py-2 px-3 rounded-nc-md text-sm font-medium nc-anim cursor-pointer active:scale-97',
             options.mode === 'global'
-              ? 'bg-nc-accent/20 text-nc-accent border border-nc-accent'
-              : 'bg-nc-surface-2 text-nc-ink-muted border border-nc-border hover:bg-nc-surface-3'
+              ? 'bg-nc-accent/10 text-nc-accent-text border border-nc-accent/25'
+              : 'bg-nc-chip text-nc-ink-soft border border-nc-border hover:bg-nc-surface-3 hover:text-nc-ink'
           ]"
           @click="setMode('global')"
         >
@@ -101,10 +101,10 @@ const showPhysics = ref(false)
         </button>
         <button
           :class="[
-            'flex-1 py-2 px-3 rounded-nc-md text-sm font-medium transition-all duration-200',
+            'flex-1 py-2 px-3 rounded-nc-md text-sm font-medium nc-anim cursor-pointer active:scale-97',
             options.mode === 'local'
-              ? 'bg-nc-accent/20 text-nc-accent border border-nc-accent'
-              : 'bg-nc-surface-2 text-nc-ink-muted border border-nc-border hover:bg-nc-surface-3'
+              ? 'bg-nc-accent/10 text-nc-accent-text border border-nc-accent/25'
+              : 'bg-nc-chip text-nc-ink-soft border border-nc-border hover:bg-nc-surface-3 hover:text-nc-ink'
           ]"
           @click="setMode('local')"
         >
@@ -139,7 +139,7 @@ const showPhysics = ref(false)
     <div class="p-4 border-b border-nc-border">
       <div class="nc-label mb-2">{{ $t('canvas.graph_controls_panel.search_label') }}</div>
       <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search text-nc-ink-muted" />
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search text-nc-ink-soft" />
         <input
           v-model="searchQuery"
           type="text"
@@ -152,23 +152,16 @@ const showPhysics = ref(false)
     <!-- Physics Controls (collapsible) -->
     <div class="border-b border-nc-border">
       <button
-        class="w-full p-4 nc-between text-left hover:bg-nc-surface-2/50 transition-colors"
+        class="w-full p-4 nc-between text-left cursor-pointer hover:bg-nc-surface-3 transition-colors duration-150 ease-[var(--nc-ease)]"
         @click="showPhysics = !showPhysics"
       >
         <span class="nc-label">{{ $t('canvas.graph_controls_panel.physics') }}</span>
         <span
-          :class="['i-lucide-chevron-down text-nc-ink-muted transition-transform', showPhysics && 'rotate-180']"
+          :class="['i-lucide-chevron-down text-nc-ink-soft transition-transform duration-200 ease-[var(--nc-ease)]', showPhysics && 'rotate-180']"
         />
       </button>
 
-      <Transition
-        enter-active-class="transition-all duration-200 ease-out"
-        leave-active-class="transition-all duration-150 ease-in"
-        enter-from-class="opacity-0 max-h-0"
-        leave-to-class="opacity-0 max-h-0"
-        enter-to-class="opacity-100 max-h-96"
-        leave-from-class="opacity-100 max-h-96"
-      >
+      <Transition name="gc-collapse">
         <div v-if="showPhysics" class="px-4 pb-4 flex flex-col gap-4 overflow-hidden">
           <!-- Link Distance -->
           <div>
@@ -240,14 +233,14 @@ const showPhysics = ref(false)
     <!-- Actions -->
     <div class="p-4 flex gap-2">
       <button
-        class="flex-1 py-2 px-3 rounded-nc-md bg-nc-surface-2 hover:bg-nc-surface-3 text-sm text-nc-ink-soft hover:text-nc-ink transition-all nc-center gap-1.5"
+        class="flex-1 py-2 px-3 rounded-nc-md bg-nc-chip border border-nc-border hover:bg-nc-surface-3 text-sm text-nc-ink-soft hover:text-nc-ink nc-anim cursor-pointer active:scale-97 nc-center gap-1.5"
         @click="emit('resetZoom')"
       >
         <span class="i-lucide-rotate-ccw text-sm" />
         Reset
       </button>
       <button
-        class="flex-1 py-2 px-3 rounded-nc-md bg-nc-surface-2 hover:bg-nc-surface-3 text-sm text-nc-ink-soft hover:text-nc-ink transition-all nc-center gap-1.5"
+        class="flex-1 py-2 px-3 rounded-nc-md bg-nc-chip border border-nc-border hover:bg-nc-surface-3 text-sm text-nc-ink-soft hover:text-nc-ink nc-anim cursor-pointer active:scale-97 nc-center gap-1.5"
         @click="emit('fitToView')"
       >
         <span class="i-lucide-maximize text-sm" />
@@ -258,6 +251,34 @@ const showPhysics = ref(false)
 </template>
 
 <style scoped>
+/* Collapsible physics section — explicit props only (REDESIGN.md §6) */
+.gc-collapse-enter-active {
+  transition: opacity 200ms var(--nc-ease), max-height 200ms var(--nc-ease);
+}
+
+.gc-collapse-leave-active {
+  transition: opacity 150ms var(--nc-ease), max-height 150ms var(--nc-ease);
+}
+
+.gc-collapse-enter-from,
+.gc-collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+.gc-collapse-enter-to,
+.gc-collapse-leave-from {
+  opacity: 1;
+  max-height: 24rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-collapse-enter-active,
+  .gc-collapse-leave-active {
+    transition: opacity 150ms var(--nc-ease);
+  }
+}
+
 .nc-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -265,6 +286,12 @@ const showPhysics = ref(false)
   background: var(--nc-surface-3);
   border-radius: 2px;
   outline: none;
+}
+
+/* Keyboard focus stays visible — accent ring grammar (REDESIGN.md §1) */
+.nc-slider:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .nc-slider::-webkit-slider-thumb {
@@ -275,7 +302,7 @@ const showPhysics = ref(false)
   background: var(--nc-accent);
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 150ms var(--nc-ease);
 }
 
 .nc-slider::-webkit-slider-thumb:hover {

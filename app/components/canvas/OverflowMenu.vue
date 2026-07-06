@@ -27,6 +27,7 @@ const emit = defineEmits<{
   'version-history': []
   'comments': []
   'export-png': []
+  'export-pdf': []
   'export-json': []
   'export-markdown': []
   help: []
@@ -37,12 +38,14 @@ const { t } = useI18n()
 
 const exportFormats = computed(() => [
   { key: 'png' as const, icon: 'i-lucide-image', label: t('canvas.overflow_menu.export_png'), hint: t('canvas.overflow_menu.export_png_hint') },
+  { key: 'pdf' as const, icon: 'i-lucide-printer', label: t('canvas.overflow_menu.export_pdf'), hint: t('canvas.overflow_menu.export_pdf_hint') },
   { key: 'json' as const, icon: 'i-lucide-braces', label: t('canvas.overflow_menu.export_json'), hint: t('canvas.overflow_menu.export_json_hint') },
   { key: 'markdown' as const, icon: 'i-lucide-file-text', label: t('canvas.overflow_menu.export_markdown'), hint: t('canvas.overflow_menu.export_markdown_hint') }
 ])
 
-function handleExport(format: 'png' | 'json' | 'markdown') {
+function handleExport(format: 'png' | 'pdf' | 'json' | 'markdown') {
   if (format === 'png') emit('export-png')
+  else if (format === 'pdf') emit('export-pdf')
   else if (format === 'json') emit('export-json')
   else emit('export-markdown')
 }
@@ -133,7 +136,7 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
             <DropdownMenuSubTrigger class="menu-item sub-trigger">
               <span class="i-lucide-download menu-icon" />
               <span class="flex-1">{{ $t('canvas.overflow_menu.export') }}</span>
-              <span class="i-lucide-chevron-right text-xs text-nc-ink-muted" />
+              <span class="i-lucide-chevron-right text-xs text-nc-ink-soft" />
             </DropdownMenuSubTrigger>
 
             <DropdownMenuPortal>
@@ -190,16 +193,22 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--nc-ink-soft);
+  color: var(--nc-text-secondary);
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color var(--nc-duration-fast) var(--nc-ease-smooth),
-              background var(--nc-duration-fast) var(--nc-ease-smooth);
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
-.overflow-trigger:hover {
-  color: var(--nc-ink);
-  background: var(--nc-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .overflow-trigger:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
+}
+.overflow-trigger:active {
+  transform: scale(0.97);
 }
 
 /* NOTE: .overflow-panel and .export-panel chrome (background, border,
@@ -207,7 +216,9 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
    GLOBAL rules. They cannot be scoped because radix-vue's
    <DropdownMenuPortal> teleports the panels through multiple component
    wrappers, and the scoped data-v-* attribute does not survive that
-   chain (canvas content was bleeding through — see AER-7). */
+   chain (canvas content was bleeding through — see AER-7). Their
+   open/close motion lives in the unscoped style block below for the
+   same reason. */
 
 /* ── Shared item style ───────────────────── */
 .menu-item {
@@ -217,23 +228,23 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   padding: 8px 12px;
   min-height: 36px;
   border-radius: var(--nc-radius-md);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 450;
-  color: #E4E4E7;
+  color: var(--nc-text);
   cursor: pointer;
   outline: none;
   user-select: none;
-  transition: background var(--nc-duration-fast) var(--nc-ease-smooth),
-              color var(--nc-duration-fast) var(--nc-ease-smooth);
+  transition: background var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 .menu-item[data-disabled] {
   opacity: 0.35;
   cursor: not-allowed;
 }
 .menu-item[data-highlighted] {
-  background: rgba(255, 255, 255, 0.07);
-  color: #FAFAFA;
+  background: var(--nc-surface-3);
+  color: var(--nc-text);
 }
 .menu-item:focus-visible {
   outline: 2px solid var(--nc-accent);
@@ -241,34 +252,39 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
 }
 .menu-icon {
   font-size: calc(16px * var(--nc-text-scale, 1));
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 .menu-item[data-highlighted] .menu-icon {
-  color: #D4D4D8;
+  color: var(--nc-text);
 }
+/* kbd hint — mono micro-label grammar (REDESIGN.md §4) */
 .menu-shortcut {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
   font-family: var(--nc-font-mono);
-  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
+/* Group titles — mono uppercase micro-label (REDESIGN.md §4) */
 .menu-label {
   padding: 8px 12px 4px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 .menu-sep {
   height: 1px;
   margin: 4px 8px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--nc-border);
 }
 
 /* ── Sub-trigger chevron ─────────────────── */
 .sub-trigger[data-state="open"] {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--nc-surface-3);
 }
 
 /* ── Export fly-out panel ────────────────── */
@@ -279,77 +295,71 @@ function handleExport(format: 'png' | 'json' | 'markdown') {
   gap: 10px;
   padding: 8px 12px;
   border-radius: var(--nc-radius-md);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 450;
-  color: #E4E4E7;
+  color: var(--nc-text);
   cursor: pointer;
   outline: none;
   user-select: none;
-  transition: background var(--nc-duration-fast) var(--nc-ease-smooth),
-              color var(--nc-duration-fast) var(--nc-ease-smooth);
+  transition: background var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 .export-item[data-highlighted] {
-  background: rgba(255, 255, 255, 0.07);
-  color: #FAFAFA;
+  background: var(--nc-surface-3);
+  color: var(--nc-text);
 }
 .export-item:focus-visible {
   outline: 2px solid var(--nc-accent);
   outline-offset: -2px;
 }
 .export-item[data-highlighted] .export-icon {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 .export-icon {
   font-size: calc(16px * var(--nc-text-scale, 1));
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
-  transition: color var(--nc-duration-fast) var(--nc-ease-smooth);
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 .export-hint {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
 }
+</style>
 
-/* ── Light theme ────────────────────────── */
-/* (Panel chrome light-mode overrides live in components.css — see AER-7.) */
-:root.light .menu-item {
-  color: #3F3F46;
+<style>
+/* Popover motion (REDESIGN.md §5/§6): transform-origin at the trigger,
+   enter scale(0.97)+opacity 150ms, exit 100ms, single ease. Unscoped for
+   the same portal reason as the panel chrome (AER-7 note above). */
+.overflow-panel,
+.export-panel {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
 }
-:root.light .menu-item[data-highlighted] {
-  background: rgba(0, 0, 0, 0.04);
-  color: #18181B;
+.overflow-panel[data-state='open'],
+.export-panel[data-state='open'] {
+  animation: nc-overflow-menu-in 150ms var(--nc-ease);
 }
-:root.light .menu-icon {
-  color: #71717A;
+.overflow-panel[data-state='closed'],
+.export-panel[data-state='closed'] {
+  animation: nc-overflow-menu-out 100ms var(--nc-ease) forwards;
 }
-:root.light .menu-item[data-highlighted] .menu-icon {
-  color: #3F3F46;
+@keyframes nc-overflow-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
-:root.light .menu-shortcut {
-  color: #A1A1AA;
+@keyframes nc-overflow-menu-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
-:root.light .menu-label {
-  color: #A1A1AA;
+@media (prefers-reduced-motion: reduce) {
+  .overflow-panel,
+  .export-panel {
+    animation-duration: 1ms !important;
+  }
 }
-:root.light .menu-sep {
-  background: rgba(0, 0, 0, 0.06);
-}
-:root.light .sub-trigger[data-state="open"] {
-  background: rgba(0, 0, 0, 0.04);
-}
-:root.light .export-item {
-  color: #3F3F46;
-}
-:root.light .export-item[data-highlighted] {
-  background: rgba(0, 0, 0, 0.04);
-  color: #18181B;
-}
-:root.light .export-icon {
-  color: #71717A;
-}
-:root.light .export-hint {
-  color: #A1A1AA;
-}
-
 </style>

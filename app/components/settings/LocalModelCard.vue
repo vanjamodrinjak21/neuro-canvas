@@ -8,6 +8,10 @@ const formattedProgress = computed(() => {
   return `${formatBytes(localLLM.downloadedBytes.value)} / ${formatBytes(localLLM.totalBytes.value)}`
 })
 
+// Drives the progress-fill width via v-bind() in scoped CSS — no inline
+// :style (REDESIGN.md §9).
+const progressWidth = computed(() => `${localLLM.downloadProgress.value * 100}%`)
+
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
   const k = 1024
@@ -61,7 +65,7 @@ async function handleDownload() {
 
     <div v-if="localLLM.isDownloading.value" class="lmc-progress">
       <div class="lmc-progress-bar">
-        <div class="lmc-progress-fill" :style="{ width: `${localLLM.downloadProgress.value * 100}%` }" />
+        <div class="lmc-progress-fill" />
       </div>
       <div class="lmc-progress-info">
         <span>{{ Math.round(localLLM.downloadProgress.value * 100) }}%</span>
@@ -85,11 +89,13 @@ async function handleDownload() {
 </template>
 
 <style scoped>
+/* Flat surface + THE hairline (REDESIGN.md §5) — tokens only, no local
+   palette; tokens.css rebases everything under :root.light. */
 .local-model-card {
   padding: 16px;
-  background: var(--nc-surface-1, #111113);
-  border: 1px solid var(--nc-border, #1A1A1E);
-  border-radius: 10px;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
 }
 
 .lmc-header {
@@ -102,9 +108,9 @@ async function handleDownload() {
 .lmc-icon {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: rgba(0, 210, 190, 0.1);
-  color: #00D2BE;
+  border-radius: var(--nc-radius-md);
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  color: var(--nc-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -115,40 +121,48 @@ async function handleDownload() {
 .lmc-info { flex: 1; min-width: 0; }
 
 .lmc-title {
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
   margin: 0 0 2px;
 }
 
 .lmc-desc {
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-secondary);
   margin: 0;
 }
 
+/* Status badge — mono chip grammar (REDESIGN.md §5) */
 .lmc-badge {
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.72rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--nc-surface-2, #18181B);
-  color: var(--nc-ink-muted, #71717A);
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-muted);
   flex-shrink: 0;
 }
 
 .lmc-badge.ready {
-  background: rgba(0, 210, 190, 0.1);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border-color: rgba(var(--nc-accent-rgb), 0.25);
+  color: var(--nc-accent);
 }
 
+/* Errors are coral (REDESIGN.md §1) */
 .lmc-error {
   padding: 8px 12px;
   margin-bottom: 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 6px;
-  color: #f87171;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.2);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-coral);
   font-size: calc(12px * var(--nc-text-scale, 1));
 }
 
@@ -163,48 +177,74 @@ async function handleDownload() {
   flex-direction: column;
   gap: 2px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-secondary);
 }
 
 .lmc-loaded {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #00D2BE;
+  color: var(--nc-accent);
 }
 
 .lmc-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00D2BE;
+  background: var(--nc-accent);
 }
 
+/* Primary — ink pill grammar (REDESIGN.md §5) */
 .lmc-download-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #00D2BE;
+  background: var(--nc-text);
   border: none;
-  border-radius: 8px;
-  color: #09090B;
+  border-radius: 2.4rem;
+  color: var(--nc-bg);
+  font-family: var(--nc-font-display);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
+.lmc-download-btn:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .lmc-download-btn:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
+}
+
+/* Danger — calm coral text + hairline, never solid red (REDESIGN.md §1) */
 .lmc-delete-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   background: none;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 6px;
-  color: #EF4444;
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.45);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-coral);
   font-size: calc(12px * var(--nc-text-scale, 1));
   cursor: pointer;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.lmc-delete-btn:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .lmc-delete-btn:hover {
+    background: rgba(var(--nc-coral-rgb), 0.08);
+    border-color: var(--nc-coral);
+  }
 }
 
 .lmc-progress {
@@ -215,22 +255,23 @@ async function handleDownload() {
 
 .lmc-progress-bar {
   height: 4px;
-  background: var(--nc-surface-2, #18181B);
+  background: var(--nc-surface-3);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .lmc-progress-fill {
   height: 100%;
-  background: #00D2BE;
+  width: v-bind(progressWidth);
+  background: var(--nc-accent);
   border-radius: 2px;
-  transition: width 300ms ease;
+  transition: width var(--nc-duration-slow) var(--nc-ease);
 }
 
 .lmc-progress-info {
   display: flex;
   justify-content: space-between;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  color: var(--nc-text-secondary);
 }
 </style>

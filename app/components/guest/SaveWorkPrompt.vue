@@ -84,12 +84,7 @@ function handleRemind() {
 
           <div class="sw-actions">
             <button class="sw-google" @click="handleSignUp">
-              <svg width="14" height="14" viewBox="0 0 18 18">
-                <path fill="#4285F4" d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
-                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
-                <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" />
-                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
-              </svg>
+              <LandingProviderIcon name="google" />
               <span>Save with Google — 8 sec</span>
             </button>
             <div class="sw-or">
@@ -121,23 +116,19 @@ function handleRemind() {
   pointer-events: auto;
 }
 
+/* Save-work prompt — flat surface-2 + hairline (REDESIGN.md §5),
+   radius capped at 8px, calm shadow only. Theme-aware via tokens. */
 .sw-card {
   width: 380px;
   padding: 24px;
-  background: var(--nc-surface, #0C0C10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 14px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   display: flex;
   flex-direction: column;
   gap: 18px;
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
-  font-family: 'Inter', system-ui, sans-serif;
-}
-
-:root.light .sw-card {
-  background: #FFFFFF;
-  border-color: #DDD9CF;
-  box-shadow: 0 28px 80px rgba(26, 26, 26, 0.15);
+  box-shadow: var(--nc-shadow-md);
+  font-family: var(--nc-font-body);
 }
 
 .sw-head {
@@ -146,24 +137,26 @@ function handleRemind() {
   justify-content: space-between;
 }
 
+/* Session counter chip — mono micro-label, coral live/unsaved dot (§1) */
 .sw-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
-  background: rgba(0, 210, 190, 0.06);
-  border: 1px solid rgba(0, 210, 190, 0.22);
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.04em;
-  color: var(--nc-accent, #00D2BE);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .sw-dot {
   width: 5px;
   height: 5px;
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-coral);
   border-radius: 50%;
 }
 
@@ -175,20 +168,27 @@ function handleRemind() {
   height: 24px;
   background: none;
   border: none;
-  color: var(--nc-ink-faint, #52525B);
+  color: var(--nc-text-muted);
   cursor: pointer;
-  border-radius: 6px;
-  transition: background 150ms ease, color 150ms ease;
+  border-radius: var(--nc-radius-sm);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.sw-close:hover {
-  background: var(--nc-surface-3, #1E1E22);
-  color: var(--nc-ink-muted, #A1A1AA);
+@media (hover: hover) and (pointer: fine) {
+  .sw-close:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-text);
+  }
 }
 
-:root.light .sw-close:hover {
-  background: #F4F2EC;
-  color: #5A5A5A;
+.sw-close:active {
+  transform: scale(0.97);
+}
+
+.sw-close:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .sw-body {
@@ -197,83 +197,59 @@ function handleRemind() {
   gap: 10px;
 }
 
+/* Modal header — display 700; the serif italic span is the single
+   accent allowed per headline (REDESIGN.md §4). */
 .sw-title {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-size: calc(32px * var(--nc-text-scale, 1));
-  font-weight: 400;
+  font-family: var(--nc-font-display);
+  font-size: calc(28px * var(--nc-text-scale, 1));
+  font-weight: 700;
   line-height: 1.05;
-  letter-spacing: -0.01em;
-  color: var(--nc-ink, #FAFAFA);
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   margin: 0;
 }
 
-:root.light .sw-title {
-  color: #1A1A1A;
-}
-
 .sw-italic {
+  font-family: var(--nc-font-serif);
   font-style: italic;
-  color: var(--nc-accent, #00D2BE);
-}
-
-:root.light .sw-italic {
-  color: var(--nc-accent-dark, #00B5A4);
+  font-weight: 400;
+  color: var(--nc-accent);
 }
 
 .sw-desc {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   line-height: 1.55;
   margin: 0;
 }
 
-:root.light .sw-desc {
-  color: #5A5A5A;
-}
-
 .sw-desc strong {
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
   font-weight: 500;
 }
 
-:root.light .sw-desc strong {
-  color: #1A1A1A;
-}
-
+/* "Saved means" — flat chip-fill callout, accent check, ink text (§5) */
 .sw-promise {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-  background: var(--nc-bg, #09090B);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
-}
-
-:root.light .sw-promise {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
 }
 
 .sw-promise-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
 }
 
-:root.light .sw-promise-head {
-  color: var(--nc-accent-dark, #00B5A4);
-}
-
 .sw-promise-head span {
-  color: var(--nc-ink, #FAFAFA);
-}
-
-:root.light .sw-promise-head span {
-  color: #1A1A1A;
+  color: var(--nc-text);
 }
 
 .sw-promise-list {
@@ -287,12 +263,8 @@ function handleRemind() {
 
 .sw-promise-list li {
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   line-height: 1.5;
-}
-
-:root.light .sw-promise-list li {
-  color: #5A5A5A;
 }
 
 .sw-actions {
@@ -301,29 +273,45 @@ function handleRemind() {
   gap: 8px;
 }
 
+/* Primary CTA — ink pill (REDESIGN.md §5) */
 .sw-google {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   padding: 12px 16px;
-  background: #FAFAFA;
-  border: 1px solid #DDD9CF;
-  border-radius: 10px;
-  color: #09090B;
-  font-family: inherit;
+  background: var(--nc-text);
+  border: none;
+  border-radius: 2.4rem;
+  color: var(--nc-bg);
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 150ms ease, transform 80ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.sw-google:hover {
-  background: #F0F0F0;
+.sw-google svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sw-google:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
 }
 
 .sw-google:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+
+.sw-google:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .sw-or {
@@ -332,11 +320,7 @@ function handleRemind() {
   justify-content: space-between;
   padding: 0 4px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
-}
-
-:root.light .sw-or {
-  color: #8A8780;
+  color: var(--nc-text-muted);
 }
 
 .sw-email-link {
@@ -345,14 +329,22 @@ function handleRemind() {
   padding: 0;
   font-family: inherit;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-:root.light .sw-email-link {
-  color: #5A5A5A;
+@media (hover: hover) and (pointer: fine) {
+  .sw-email-link:hover {
+    color: var(--nc-accent);
+  }
+}
+
+.sw-email-link:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .sw-card-note {
@@ -364,42 +356,47 @@ function handleRemind() {
   align-items: center;
   justify-content: space-between;
   padding-top: 10px;
-  border-top: 1px solid var(--nc-border, #1E1E22);
+  border-top: 1px solid var(--nc-border);
 }
 
-:root.light .sw-foot {
-  border-top-color: #DDD9CF;
-}
-
+/* Footer dismiss links — mono uppercase ghost grammar; the destructive
+   "discard" hovers coral (accent discipline, §1). */
 .sw-foot-link {
   background: none;
   border: none;
   padding: 0;
-  font-family: inherit;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-muted);
   cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.sw-foot-link:hover {
-  color: var(--nc-ink-muted, #A1A1AA);
+@media (hover: hover) and (pointer: fine) {
+  .sw-foot-link:hover {
+    color: var(--nc-accent);
+  }
+
+  .sw-foot-link.sw-discard:hover {
+    color: var(--nc-coral);
+  }
 }
 
-:root.light .sw-foot-link {
-  color: #8A8780;
+.sw-foot-link:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
-:root.light .sw-foot-link:hover {
-  color: #5A5A5A;
-}
-
-/* Transition */
+/* Transition — enter scale(0.97)+opacity 200ms, exit faster (§5/§6) */
 .sw-enter-active {
-  transition: opacity 250ms var(--nc-ease, cubic-bezier(0.23, 1, 0.32, 1)),
-              transform 250ms var(--nc-ease, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: opacity var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-normal) var(--nc-ease);
 }
 .sw-leave-active {
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease);
 }
 .sw-enter-from {
   opacity: 0;
@@ -407,7 +404,7 @@ function handleRemind() {
 }
 .sw-leave-to {
   opacity: 0;
-  transform: translateY(-6px) scale(0.98);
+  transform: translateY(-8px) scale(0.97);
 }
 
 /* Mobile */
@@ -429,7 +426,7 @@ function handleRemind() {
 @media (prefers-reduced-motion: reduce) {
   .sw-enter-active,
   .sw-leave-active {
-    transition: opacity 150ms ease;
+    transition: opacity 120ms linear;
   }
   .sw-enter-from,
   .sw-leave-to {

@@ -129,7 +129,15 @@ export async function waitForHydration(page: Page): Promise<void> {
   )
 }
 
-/** Fill the email + password inputs on the signin/signup form by type. */
+/**
+ * Fill the credential inputs on the signin/signup form by type.
+ *
+ * The auth forms are PROGRESSIVE: the password input(s) only enter the DOM
+ * once the email model holds a valid address. That reveal doubles as proof
+ * Vue is interactive — a fill that lands before mount sets the DOM value but
+ * never updates the model, so nothing reveals and a submit would go nowhere.
+ * If the reveal doesn't happen, re-fill the email once and wait again.
+ */
 export async function fillCredentials(
   page: Page,
   email: string,
@@ -139,8 +147,21 @@ export async function fillCredentials(
   await waitForHydration(page)
   // Resilient selectors: target inputs by their `type` attribute, which is
   // stable across i18n/markup churn (the app owns the components; we don't).
-  await page.locator('input[type="email"]').fill(email)
-  await page.locator('input[type="password"]').first().fill(password)
+  const emailInput = page.locator('input[type="email"]')
+  const passwordInputs = page.locator('input[type="password"]')
+  await emailInput.fill(email)
+  try {
+    await passwordInputs.first().waitFor({ state: 'visible', timeout: 5_000 })
+  } catch {
+    await emailInput.fill('')
+    await emailInput.fill(email)
+    await passwordInputs.first().waitFor({ state: 'visible', timeout: 10_000 })
+  }
+  // Fill EVERY password input — signup reveals password + confirm together.
+  const count = await passwordInputs.count()
+  for (let i = 0; i < count; i++) {
+    await passwordInputs.nth(i).fill(password)
+  }
 }
 
 /** Click the form's submit button (role + type=submit is markup-stable). */

@@ -108,7 +108,7 @@ export function useMapRenderer() {
     const rootNode = createNode({
       position: startPosition,
       content: structure.rootTopic,
-      style: { borderColor: '#00D2BE' },
+      style: { borderColor: '#5EF2E8' },
       metadata: {
         description: structure.rootDescription,
         isRoot: true,

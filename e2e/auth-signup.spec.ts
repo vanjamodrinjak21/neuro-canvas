@@ -16,8 +16,7 @@ test.describe('signup', () => {
     const user = makeTestUser('signup')
 
     await page.goto('/auth/signup')
-    // The name field is the only text input on the form; fill it explicitly.
-    await page.locator('input[type="text"]').first().fill(user.name)
+    // The form collects no display name — email + password + confirm only.
     await fillCredentials(page, user.email, user.password)
     await submitAuthForm(page)
 

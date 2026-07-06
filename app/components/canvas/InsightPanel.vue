@@ -30,18 +30,9 @@ const insightIcons: Record<string, string> = {
   'accuracy-concern': 'i-lucide-alert-triangle'
 }
 
-// Insight type colors (v1 + v2 types)
-const insightColors: Record<string, string> = {
-  bridge: '#60A5FA',              // Blue
-  gap: '#4ADE80',                 // Green
-  outlier: '#FB923C',             // Orange
-  cluster: '#A78BFA',             // Purple
-  'conceptual-gap': '#38BDF8',    // Sky blue
-  'structural-suggestion': '#818CF8', // Indigo
-  'balance-issue': '#FBBF24',     // Amber
-  'deepening-opportunity': '#34D399', // Emerald
-  'accuracy-concern': '#F87171'   // Red
-}
+// Insight type colors live in scoped CSS as per-type modifier classes
+// (`nc-insight-card--<type>`) bound to the --nc-* node tokens — the type
+// set is fixed, so no inline styles are needed (REDESIGN.md §9).
 
 // Expanded reasoning visibility
 const expandedInsights = ref(new Set<string>())
@@ -227,7 +218,7 @@ function getActionText(insight: Insight): string {
           <span
             :class="[
               'text-sm',
-              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-pulse' : 'i-lucide-scan-eye'
+              insightEngine.isAnalyzing.value ? 'i-lucide-loader-2 animate-pulse' : 'i-nc-ai-mark'
             ]"
           />
           <span>{{ $t('canvas.insight_panel.ai_analyze') }}</span>
@@ -236,7 +227,7 @@ function getActionText(insight: Insight): string {
 
       <!-- Empty state -->
       <div v-if="insights.length === 0 && !insightEngine.isAnalyzing.value" class="nc-insight-empty">
-        <span class="i-lucide-brain text-2xl mb-2 text-nc-ink-muted" />
+        <span class="i-nc-ai-mark text-2xl mb-2 text-nc-ink-muted" />
         <p v-if="semanticStore.nodesWithEmbeddings.length < 3">
           {{ $t('canvas.insight_panel.add_more_nodes') }}
         </p>
@@ -250,17 +241,14 @@ function getActionText(insight: Insight): string {
         <div
           v-for="(insight, index) in insights"
           :key="insight.id"
-          class="nc-insight-card"
-          :style="{ transitionDelay: `${index * 50}ms` }"
+          :class="['nc-insight-card', `nc-insight-card--${insight.type}`]"
+          :style="{ '--delay': `${index * 50}ms` }"
           @mouseenter="handleMouseEnter(insight)"
           @mouseleave="handleMouseLeave"
         >
           <!-- Header -->
           <div class="nc-insight-card-header">
-            <span
-              :class="[insightIcons[insight.type] || 'i-lucide-lightbulb', 'text-base']"
-              :style="{ color: insightColors[insight.type] || '#AAAAB0' }"
-            />
+            <span :class="[insightIcons[insight.type] || 'i-lucide-lightbulb', 'text-base', 'nc-insight-type-icon']" />
             <span class="nc-insight-title">{{ insight.title }}</span>
             <span v-if="isEnriched(insight)" class="nc-insight-ai-badge">AI</span>
             <button
@@ -296,10 +284,7 @@ function getActionText(insight: Insight): string {
             <span class="nc-insight-confidence-bar">
               <span
                 class="nc-insight-confidence-fill"
-                :style="{
-                  width: `${insight.confidence * 100}%`,
-                  backgroundColor: insightColors[insight.type] || '#AAAAB0'
-                }"
+                :style="{ '--fill': `${insight.confidence * 100}%` }"
               />
             </span>
             <span class="nc-insight-confidence-text">
@@ -334,37 +319,40 @@ function getActionText(insight: Insight): string {
 .nc-insight-panel {
   content-visibility: auto;
   contain-intrinsic-size: auto 400px;
-  border-bottom: 1px solid var(--nc-border, #1A1A1E);
+  border-bottom: 1px solid var(--nc-border);
 }
 
+/* Section header — mono uppercase micro-label (REDESIGN.md §4) */
 .nc-insight-header {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.14em;
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: color 150ms var(--nc-ease);
 }
 
 .nc-insight-header:hover {
-  color: var(--nc-ink);
+  color: var(--nc-text);
 }
 
 .nc-insight-count {
-  background: #00D2BE;
-  color: #0D0D10;
+  background: var(--nc-accent);
+  color: var(--nc-bg);
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 700;
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: 2rem;
   min-width: 18px;
   text-align: center;
 }
@@ -373,7 +361,10 @@ function getActionText(insight: Insight): string {
   padding: 0 14px 14px;
   overflow: hidden;
   max-height: 400px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    max-height 300ms var(--nc-ease),
+    padding 300ms var(--nc-ease),
+    opacity 300ms var(--nc-ease);
 }
 
 .nc-insight-content.collapsed {
@@ -390,19 +381,28 @@ function getActionText(insight: Insight): string {
   gap: 6px;
   padding: 8px 12px;
   margin-bottom: 8px;
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.3);
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.3);
   border-radius: 6px;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-insight-analyze-btn:hover:not(:disabled) {
-  background: rgba(0, 210, 190, 0.15);
-  border-color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.15);
+  border-color: var(--nc-accent);
+}
+
+.nc-insight-analyze-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .nc-insight-analyze-btn:disabled {
@@ -416,7 +416,7 @@ function getActionText(insight: Insight): string {
   flex-direction: column;
   align-items: center;
   padding: 8px 0;
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   font-size: calc(11px * var(--nc-text-scale, 1));
   text-align: center;
 }
@@ -428,16 +428,35 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-card {
-  background: var(--nc-surface, #141418);
-  border: 1px solid var(--nc-border, #1A1A1E);
-  border-radius: 8px;
+  --insight-color: var(--nc-text-muted);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   padding: 12px;
-  transition: all 0.15s ease;
+  transition:
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    opacity 150ms var(--nc-ease),
+    transform 150ms var(--nc-ease);
+  /* Entrance stagger from the list index (single custom property) */
+  transition-delay: var(--delay, 0ms);
 }
 
+/* Insight-type accents — fixed type set mapped to the --nc-* node tokens.
+   Coral marks accuracy concerns only (attention), per accent discipline. */
+.nc-insight-card--bridge { --insight-color: var(--nc-node-blue); }
+.nc-insight-card--gap { --insight-color: var(--nc-node-green); }
+.nc-insight-card--outlier { --insight-color: var(--nc-node-orange); }
+.nc-insight-card--cluster { --insight-color: var(--nc-node-purple); }
+.nc-insight-card--conceptual-gap { --insight-color: var(--nc-node-blue); }
+.nc-insight-card--structural-suggestion { --insight-color: var(--nc-node-purple); }
+.nc-insight-card--balance-issue { --insight-color: var(--nc-node-yellow); }
+.nc-insight-card--deepening-opportunity { --insight-color: var(--nc-node-green); }
+.nc-insight-card--accuracy-concern { --insight-color: var(--nc-coral); }
+
 .nc-insight-card:hover {
-  border-color: #2A2A30;
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--nc-border-active);
+  background: var(--nc-surface-3);
 }
 
 .nc-insight-card-header {
@@ -447,11 +466,15 @@ function getActionText(insight: Insight): string {
   margin-bottom: 8px;
 }
 
+.nc-insight-type-icon {
+  color: var(--insight-color);
+}
+
 .nc-insight-title {
   flex: 1;
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -464,9 +487,13 @@ function getActionText(insight: Insight): string {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
+  cursor: pointer;
   opacity: 0;
-  transition: all 0.15s ease;
+  transition:
+    opacity 150ms var(--nc-ease),
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease);
 }
 
 .nc-insight-card:hover .nc-insight-dismiss {
@@ -474,13 +501,13 @@ function getActionText(insight: Insight): string {
 }
 
 .nc-insight-dismiss:hover {
-  color: #FAFAFA;
-  background: #2A2A30;
+  color: var(--nc-text);
+  background: var(--nc-surface-3);
 }
 
 .nc-insight-description {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft);
+  color: var(--nc-text-secondary);
   line-height: 1.5;
   margin-bottom: 10px;
 }
@@ -495,20 +522,24 @@ function getActionText(insight: Insight): string {
 .nc-insight-confidence-bar {
   flex: 1;
   height: 4px;
-  background: #2A2A30;
+  background: var(--nc-surface-3);
   border-radius: 2px;
   overflow: hidden;
 }
 
+/* Fill width is JS-driven via the --fill custom property */
 .nc-insight-confidence-fill {
+  display: block;
   height: 100%;
+  width: var(--fill, 0%);
+  background: var(--insight-color);
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transition: width 300ms var(--nc-ease);
 }
 
 .nc-insight-confidence-text {
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   white-space: nowrap;
 }
 
@@ -525,31 +556,39 @@ function getActionText(insight: Insight): string {
   gap: 4px;
   padding: 6px 8px;
   background: transparent;
-  border: 1px solid #2A2A30;
+  border: 1px solid var(--nc-border);
   border-radius: 4px;
-  color: var(--nc-ink-soft);
+  color: var(--nc-text-secondary);
   font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .nc-insight-action-btn:hover {
-  border-color: #3A3A42;
-  color: #FAFAFA;
-  background: var(--nc-surface-3, #1A1A1E);
+  border-color: var(--nc-border-active);
+  color: var(--nc-text);
+  background: var(--nc-surface-3);
+}
+
+.nc-insight-action-btn:active {
+  transform: scale(0.97);
 }
 
 .nc-insight-action-primary {
-  background: rgba(0, 210, 190, 0.1);
-  border-color: rgba(0, 210, 190, 0.3);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border-color: rgba(var(--nc-accent-rgb), 0.3);
+  color: var(--nc-accent-text);
 }
 
 .nc-insight-action-primary:hover {
-  background: rgba(0, 210, 190, 0.2);
-  border-color: #00D2BE;
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.15);
+  border-color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 
 .nc-insight-analyze-row {
@@ -562,25 +601,29 @@ function getActionText(insight: Insight): string {
   margin-bottom: 0;
 }
 
+/* AI analyze — neutral chip; accent stays the single interactive hue */
 .nc-insight-ai-btn {
-  background: rgba(167, 139, 250, 0.1) !important;
-  border-color: rgba(167, 139, 250, 0.3) !important;
-  color: #A78BFA !important;
+  background: var(--nc-chip-bg);
+  border-color: var(--nc-border);
+  color: var(--nc-text-secondary);
 }
 
 .nc-insight-ai-btn:hover:not(:disabled) {
-  background: rgba(167, 139, 250, 0.15) !important;
-  border-color: #A78BFA !important;
+  background: var(--nc-surface-3);
+  border-color: var(--nc-border-active);
+  color: var(--nc-text);
 }
 
 .nc-insight-ai-badge {
+  font-family: var(--nc-font-mono);
   font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: #A78BFA;
-  background: rgba(167, 139, 250, 0.15);
+  color: var(--nc-text-secondary);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
   padding: 1px 5px;
   border-radius: 4px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.14em;
 }
 
 .nc-insight-reasoning-toggle {
@@ -592,26 +635,27 @@ function getActionText(insight: Insight): string {
   align-items: center;
   gap: 4px;
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   background: none;
   border: none;
   cursor: pointer;
   padding: 2px 0;
+  transition: color 150ms var(--nc-ease);
 }
 
 .nc-insight-reasoning-btn:hover {
-  color: #FAFAFA;
+  color: var(--nc-text);
 }
 
 .nc-insight-reasoning-text {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft);
+  color: var(--nc-text-secondary);
   line-height: 1.5;
   margin-top: 6px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--nc-chip-bg);
   border-radius: 4px;
-  border-left: 2px solid #A78BFA;
+  border-left: 2px solid var(--nc-border-active);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -621,85 +665,5 @@ function getActionText(insight: Insight): string {
   .nc-insight-content {
     transition: none;
   }
-}
-
-/* Light theme */
-:root.light .nc-insight-panel {
-  border-bottom-color: #E8E8E6;
-}
-
-:root.light .nc-insight-header {
-  color: #777777;
-}
-
-:root.light .nc-insight-header:hover {
-  color: #111111;
-}
-
-:root.light .nc-insight-count {
-  color: #FFFFFF;
-}
-
-:root.light .nc-insight-empty {
-  color: #A1A1AA;
-}
-
-:root.light .nc-insight-card {
-  background: #F5F5F3;
-  border-color: #E8E8E6;
-}
-
-:root.light .nc-insight-card:hover {
-  border-color: #D4D4D8;
-  background: #EEEEEC;
-}
-
-:root.light .nc-insight-title {
-  color: #111111;
-}
-
-:root.light .nc-insight-dismiss {
-  color: #A1A1AA;
-}
-
-:root.light .nc-insight-dismiss:hover {
-  color: #111111;
-  background: #E8E8E6;
-}
-
-:root.light .nc-insight-description {
-  color: #777777;
-}
-
-:root.light .nc-insight-confidence-bar {
-  background: #E8E8E6;
-}
-
-:root.light .nc-insight-confidence-text {
-  color: #A1A1AA;
-}
-
-:root.light .nc-insight-action-btn {
-  border-color: #E8E8E6;
-  color: #777777;
-}
-
-:root.light .nc-insight-action-btn:hover {
-  border-color: #D4D4D8;
-  color: #111111;
-  background: #E8E8E6;
-}
-
-:root.light .nc-insight-reasoning-btn {
-  color: #777777;
-}
-
-:root.light .nc-insight-reasoning-btn:hover {
-  color: #111111;
-}
-
-:root.light .nc-insight-reasoning-text {
-  color: #777777;
-  background: rgba(0, 0, 0, 0.03);
 }
 </style>

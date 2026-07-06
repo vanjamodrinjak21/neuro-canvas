@@ -4,6 +4,16 @@
             "title": "Templates",
             "subtitle": "Browse, create, and share mind map templates"
         },
+        "header": {
+            "eyebrow": "templates",
+            "title_a": "Start from",
+            "title_b": "a proven shape."
+        },
+        "count_label_one": "{n} template",
+        "count_label_other": "{n} templates",
+        "card": {
+            "uses_count": "{n} uses"
+        },
         "buttons": {
             "publish_template": "Publish Template"
         },

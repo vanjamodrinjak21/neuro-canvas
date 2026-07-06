@@ -11,12 +11,12 @@
             "account": "Account"
         },
         "section_labels": {
-            "appearance": "01 — appearance",
-            "canvas": "02 — canvas",
-            "updates": "03 — updates",
-            "default_provider": "01 — default provider",
-            "api_keys": "02 — api keys",
-            "local_models": "03 — local models"
+            "appearance": "appearance",
+            "canvas": "canvas",
+            "updates": "updates",
+            "default_provider": "default provider",
+            "api_keys": "api keys",
+            "local_models": "local models"
         },
         "general": {
             "appearance": "Appearance",
@@ -118,9 +118,9 @@
             "delete_confirmation_placeholder": "DELETE MY ACCOUNT",
             "current_password": "Current password",
             "new_password": "New password",
-            "section_account": "01 — account",
-            "section_security": "02 — security",
-            "section_danger": "03 — danger zone",
+            "section_account": "account",
+            "section_security": "security",
+            "section_danger": "danger zone",
             "email_label": "Email",
             "email_desc": "Your account email address",
             "not_set": "Not set",
@@ -157,7 +157,9 @@
             "delete_account_desc": "Permanently delete your account and all data. This cannot be undone.",
             "delete": "Delete",
             "delete_confirm_desc_prefix": "Type",
-            "delete_confirm_desc_suffix": "to confirm"
+            "delete_confirm_desc_suffix": "to confirm",
+            "delete_forever": "Delete Forever",
+            "deleting": "Deleting…"
         },
         "signin_section": {
             "title": "Sign In",

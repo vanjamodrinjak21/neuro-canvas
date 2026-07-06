@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Template, TemplateCategory } from '~/types'
+import type { Template, TemplateCategory, TemplateSortBy } from '~/types'
 import { useMapStore } from '~/stores/mapStore'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useDatabase } from '~/composables/useDatabase'
 import { resolveAvatarInitials } from '~/utils/userDisplay'
+import NcAiMark from '~/components/ui/NcAiMark.vue'
 
 definePageMeta({
   layout: false,
@@ -73,12 +74,23 @@ const categories = computed<Array<{ value: TemplateCategory | 'all' | 'my'; labe
 ])
 
 const activeCategory = ref<string>('all')
-const sortBy = ref('popular')
-const sortOptions = computed(() => [
+const sortBy = ref<TemplateSortBy>('popular')
+const sortOptions = computed<Array<{ value: TemplateSortBy; label: string }>>(() => [
   { value: 'popular', label: t('templates.filter.popular') },
   { value: 'newest', label: t('templates.filter.newest') },
   { value: 'alphabetical', label: t('templates.filter.a_z') },
 ])
+
+// Sort dropdown — same grammar as maps/index.vue (btn-sort + sort-menu)
+const sortMenuOpen = ref(false)
+const currentSortLabel = computed(() => sortOptions.value.find(o => o.value === sortBy.value)?.label ?? '')
+
+function toggleSortMenu() { sortMenuOpen.value = !sortMenuOpen.value }
+function pickSort(v: TemplateSortBy) {
+  sortBy.value = v
+  sortMenuOpen.value = false
+  setSortBy(v)
+}
 
 const displayedTemplates = computed(() => {
   if (activeCategory.value === 'my') return myTemplates.value ?? []
@@ -94,12 +106,6 @@ function handleCategoryChange(cat: string) {
     filters.myTemplates = false
     setCategory(cat as TemplateCategory | 'all')
   }
-}
-
-function handleSortChange(e: Event) {
-  const val = (e.target as HTMLSelectElement).value
-  sortBy.value = val
-  setSortBy(val as any)
 }
 
 let searchDebounce: ReturnType<typeof setTimeout>
@@ -175,6 +181,14 @@ async function handleAIGenerate() {
 }
 
 onMounted(async () => {
+  // Close the sort dropdown on outside click (same pattern as maps/index.vue)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null
+      if (target && !target.closest('.sort-wrap')) sortMenuOpen.value = false
+    })
+  }
+
   if (_isTauri && isDesktopSignedIn.value) {
     // Fetch from remote server using Tauri HTTP plugin (has auth cookies)
     try {
@@ -228,18 +242,62 @@ onMounted(async () => {
       </div>
       <h1 class="m-page-title">{{ $t('templates.page.title') }}</h1>
 
-      <!-- Header -->
+      <!-- Header — same grammar as maps/index.vue (eyebrow, display title
+           with one serif-italic accent, mono count readout, actions row) -->
       <div class="templates-header">
         <div class="header-left">
-          <h1 class="page-title">{{ $t('templates.page.title') }}</h1>
-          <p class="page-subtitle">{{ $t('templates.page.subtitle') }}</p>
+          <span class="header-eyebrow">{{ $t('templates.header.eyebrow') }}</span>
+          <h1 class="header-title">
+            {{ $t('templates.header.title_a') }} <span class="header-title-italic">{{ $t('templates.header.title_b') }}</span>
+          </h1>
+          <span class="header-count">{{ displayedTemplates.length === 1 ? $t('templates.count_label_one', { n: displayedTemplates.length }) : $t('templates.count_label_other', { n: displayedTemplates.length }) }}</span>
         </div>
-        <button v-if="!_isTauri" class="publish-btn" @click="showPublishModal = true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          {{ $t('templates.buttons.publish_template') }}
-        </button>
+
+        <div class="header-actions">
+          <div class="search-box search-box--desktop">
+            <span class="i-lucide-search search-icon" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="search-input"
+              :placeholder="$t('templates.filter.search_placeholder')"
+              @input="handleSearch"
+            >
+          </div>
+          <div class="sort-wrap">
+            <button class="btn-sort" @click="toggleSortMenu">
+              <span class="i-lucide-arrow-up-down" />
+              {{ $t('maps.sort.label') }} <span class="btn-sort-current">· {{ currentSortLabel }}</span>
+            </button>
+            <div v-if="sortMenuOpen" class="sort-menu">
+              <button
+                v-for="opt in sortOptions"
+                :key="opt.value"
+                :class="['sort-item', { active: sortBy === opt.value }]"
+                @click="pickSort(opt.value)"
+              >
+                <span class="i-lucide-check sort-item-check" />
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+          <button v-if="!_isTauri" class="publish-btn" @click="showPublishModal = true">
+            <span class="i-lucide-plus" />
+            {{ $t('templates.buttons.publish_template') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile search (outside header-actions so it stays visible) -->
+      <div class="search-box search-box--mobile">
+        <span class="i-lucide-search search-icon" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="search-input"
+          :placeholder="$t('templates.filter.search_placeholder')"
+          @input="handleSearch"
+        >
       </div>
 
       <!-- Desktop sign-in prompt (Tauri, not signed in) -->
@@ -256,22 +314,17 @@ onMounted(async () => {
         </button>
       </div>
 
-      <!-- AI Generate Bar (hide on Tauri — requires server) -->
+      <!-- AI Generate Bar (hide on Tauri — requires server) — same
+           generate-bar pattern as maps/dashboard, NcAiMark = the AI glyph -->
       <div v-if="!_isTauri" class="ai-bar">
         <div class="ai-bar-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-          </svg>
+          <NcAiMark :size="18" />
         </div>
         <div class="ai-bar-text">
           <span class="ai-bar-title">{{ $t('templates.ai_bar.title') }}</span>
           <span class="ai-bar-desc">{{ $t('templates.ai_bar.description') }}</span>
         </div>
         <div class="ai-bar-input-wrap">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
           <input
             v-model="aiPrompt"
             type="text"
@@ -281,9 +334,7 @@ onMounted(async () => {
           >
         </div>
         <button class="ai-generate-btn" :disabled="!aiPrompt.trim() || aiGenerating" @click="handleAIGenerate">
-          <svg v-if="!aiGenerating" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.121 2.121m8.486 8.486l2.121 2.121M5.636 18.364l2.121-2.121m8.486-8.486l2.121-2.121" />
-          </svg>
+          <NcAiMark v-if="!aiGenerating" :size="14" />
           <div v-else class="btn-spinner" />
           {{ aiGenerating ? $t('templates.ai_bar.generating') : $t('templates.ai_bar.generate') }}
         </button>
@@ -296,7 +347,7 @@ onMounted(async () => {
         </button>
       </div>
 
-      <!-- Filter Bar -->
+      <!-- Category filter row — mono uppercase micro-label chips -->
       <div class="filter-bar">
         <div class="category-tabs">
           <button
@@ -307,27 +358,6 @@ onMounted(async () => {
           >
             {{ cat.label }}
           </button>
-        </div>
-
-        <div class="filter-right">
-          <div class="search-box">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <input
-              v-model="searchQuery"
-              type="text"
-              class="search-input"
-              :placeholder="$t('templates.filter.search_placeholder')"
-              @input="handleSearch"
-            >
-          </div>
-          <div class="sort-wrap">
-            <select v-model="sortBy" class="sort-select" @change="handleSortChange">
-              <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -371,80 +401,124 @@ onMounted(async () => {
 .templates-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--tpl-bg, #0D0D0F);
+  background: var(--nc-bg);
 }
 
 .templates-main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   padding: 32px 40px;
   min-width: 0;
   overflow-y: auto;
   max-height: 100vh;
 }
 
-/* Header */
+/* Header — maps/index.vue grammar (eyebrow + display title + count) */
 .templates-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
 }
 
-.page-title {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(24px * var(--nc-text-scale, 1));
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Section eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
+.header-eyebrow {
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
+}
+
+/* Page title — display 700, tight tracking, static size */
+.header-title {
+  font-family: var(--nc-font-display);
+  font-size: calc(30px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: var(--tpl-text, #E8E8EC);
+  color: var(--nc-text);
   margin: 0;
   letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 
-.page-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--tpl-muted, #71717A);
-  margin: 4px 0 0;
+/* Serif italic accent — max once per page title (REDESIGN.md §4) */
+.header-title-italic {
+  font-family: var(--nc-font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--nc-accent);
 }
 
+/* Numeric readout — mono micro-label */
+.header-count {
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
+  line-height: 14px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Primary CTA = ink pill (REDESIGN.md §5) */
 .publish-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  background: none;
-  border: 1px solid #00D2BE;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  padding: 8px 18px;
+  background: var(--nc-text);
+  border: none;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #00D2BE;
+  font-weight: 700;
+  color: var(--nc-bg);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.publish-btn:hover {
-  background: rgba(0, 210, 190, 0.08);
+.publish-btn:active {
+  transform: scale(0.97);
 }
 
-/* AI Bar */
+@media (hover: hover) and (pointer: fine) {
+  .publish-btn:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
+}
+
+/* AI Bar — accent-tinted flat panel, hairline, radius 8px */
 .ai-bar {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 14px 20px;
-  background: rgba(0, 210, 190, 0.06);
-  border: 1px solid rgba(0, 210, 190, 0.12);
-  border-radius: 12px;
-  margin-bottom: 20px;
+  background: rgba(var(--nc-accent-rgb), 0.05);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.16);
+  border-radius: var(--nc-radius-md);
 }
 
 .ai-bar-icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: rgba(0, 210, 190, 0.15);
-  color: #00D2BE;
+  border-radius: var(--nc-radius-md);
+  background: rgba(var(--nc-accent-rgb), 0.12);
+  color: var(--nc-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -459,28 +533,35 @@ onMounted(async () => {
 }
 
 .ai-bar-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--tpl-text, #E8E8EC);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
 }
 
 .ai-bar-desc {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--tpl-muted, #71717A);
+  color: var(--nc-text-secondary);
 }
 
+/* Input grammar: chip fill, hairline, focus = accent border ONLY */
 .ai-bar-input-wrap {
   flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: var(--tpl-surface, #111113);
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 8px;
-  color: var(--tpl-muted, #71717A);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  color: var(--nc-text-muted);
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+.ai-bar-input-wrap:focus-within {
+  border-color: var(--nc-accent);
 }
 
 .ai-bar-input {
@@ -488,52 +569,64 @@ onMounted(async () => {
   background: none;
   border: none;
   outline: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--tpl-text, #E8E8EC);
+  color: var(--nc-text);
 }
 
 .ai-bar-input::placeholder {
-  color: var(--tpl-muted, #52525B);
+  color: var(--nc-text-dim);
 }
 
+/* AI-flavored CTA = accent pill (NcButton "ai" variant) */
 .ai-generate-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  background: #00D2BE;
+  padding: 8px 18px;
+  background: var(--nc-accent);
   border: none;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #09090B;
+  font-weight: 700;
+  color: var(--nc-bg);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: opacity 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.ai-generate-btn:hover {
-  opacity: 0.9;
+.ai-generate-btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ai-generate-btn:hover {
+    background: var(--nc-accent-light);
+    transform: translateY(-1px);
+  }
 }
 
 .ai-generate-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
 }
 
+/* Errors are coral (REDESIGN.md §1). Negative top margin pulls the banner
+   back toward the ai-bar inside the gap-based column (24 − 16 = 8px). */
 .ai-error-banner {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 8px 20px 0;
+  margin: -16px 0 0;
   padding: 10px 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 6px;
-  color: #f87171;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.25);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-coral);
   font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.4;
 }
@@ -553,22 +646,25 @@ onMounted(async () => {
   flex-shrink: 0;
   background: none;
   border: none;
-  color: #f87171;
+  color: var(--nc-coral);
   cursor: pointer;
   padding: 0;
   opacity: 0.6;
-  transition: opacity 0.15s;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
 }
 
-.ai-error-dismiss:hover {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .ai-error-dismiss:hover {
+    opacity: 1;
+  }
 }
 
+/* Spinner ink = bg color (sits on the accent pill) */
 .btn-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(9, 9, 11, 0.3);
-  border-top-color: #09090B;
+  border: 2px solid rgba(var(--nc-bg-rgb), 0.3);
+  border-top-color: var(--nc-bg);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -579,7 +675,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
@@ -589,93 +684,208 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
+/* Category tabs — mono uppercase micro-labels (REDESIGN.md §4);
+   active = accent text + 2px marker edge, never color alone. */
 .cat-tab {
-  padding: 6px 14px;
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 8px;
+  position: relative;
+  padding: 7px 14px;
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
   background: none;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: 0.7rem;
   font-weight: 500;
-  color: var(--tpl-secondary, #A1A1AA);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   white-space: nowrap;
 }
 
-.cat-tab:hover {
-  color: var(--tpl-text, #E8E8EC);
-  border-color: var(--tpl-border-hover, #2A2A30);
+.cat-tab:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cat-tab:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
 }
 
 .cat-tab.active {
-  background: #00D2BE;
-  border-color: #00D2BE;
-  color: #09090B;
-  font-weight: 600;
+  color: var(--nc-accent);
+  border-color: rgba(var(--nc-accent-rgb), 0.45);
 }
 
-.filter-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.cat-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 3px;
+  height: 2px;
+  background: var(--nc-accent);
 }
 
+/* Search — chip fill + hairline; focus = border-color only (REDESIGN.md §5) */
 .search-box {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--tpl-surface, #111113);
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 8px;
-  color: var(--tpl-muted, #71717A);
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-input);
+  border-radius: var(--nc-radius-md);
+  min-width: 180px;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+.search-box:focus-within {
+  border-color: var(--nc-accent);
+}
+
+/* Mobile variant hidden on desktop — must come AFTER the .search-box base
+   rule (equal specificity: source order decides; ≤768px re-enables it) */
+.search-box--mobile {
+  display: none;
+}
+
+.search-icon {
+  font-size: calc(14px * var(--nc-text-scale, 1));
+  color: var(--nc-text-secondary);
+  flex-shrink: 0;
 }
 
 .search-input {
+  flex: 1;
   background: none;
   border: none;
   outline: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--tpl-text, #E8E8EC);
-  width: 140px;
+  color: var(--nc-text);
+  min-width: 0;
 }
 
 .search-input::placeholder {
-  color: var(--tpl-muted, #52525B);
+  color: var(--nc-text-dim);
 }
 
-.sort-wrap {
-  position: relative;
-}
-
-.sort-select {
-  padding: 6px 28px 6px 12px;
-  background: var(--tpl-surface, #111113);
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--tpl-text, #E8E8EC);
-  appearance: none;
+/* Sort control — mono uppercase micro-label on chip fill (maps grammar) */
+.btn-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-text-secondary);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  font-family: var(--nc-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  outline: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.sort-select option {
-  background: #111113;
-  color: #E8E8EC;
+.btn-sort:active {
+  transform: scale(0.97);
 }
 
-/* Grid */
+@media (hover: hover) and (pointer: fine) {
+  .btn-sort:hover {
+    border-color: var(--nc-border-active);
+    color: var(--nc-text);
+  }
+}
+
+.btn-sort-current { color: var(--nc-text-muted); font-weight: 400; margin-left: 4px; }
+
+.sort-wrap { position: relative; }
+
+/* Dropdown — flat surface-2 + hairline, scale(0.97)+opacity entrance (REDESIGN.md §5) */
+.sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 180px;
+  padding: 4px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  box-shadow: var(--nc-shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transform-origin: top right;
+  animation: sort-menu-in var(--nc-duration-fast) var(--nc-ease);
+}
+
+@keyframes sort-menu-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sort-menu {
+    animation: none;
+  }
+}
+
+.sort-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: var(--nc-radius-sm);
+  text-align: left;
+  font-family: var(--nc-font-body);
+  font-size: calc(13px * var(--nc-text-scale, 1));
+  color: var(--nc-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sort-item:hover { background: var(--nc-surface-3); color: var(--nc-text); }
+}
+
+.sort-item.active { color: var(--nc-accent); }
+.sort-item-check { width: 14px; height: 14px; flex-shrink: 0; visibility: hidden; }
+.sort-item.active .sort-item-check { visibility: visible; }
+
+/* Focus discipline (REDESIGN.md §1) — inputs are border-only above */
+.publish-btn:focus-visible,
+.ai-generate-btn:focus-visible,
+.ai-error-dismiss:focus-visible,
+.cat-tab:focus-visible,
+.btn-sort:focus-visible,
+.sort-item:focus-visible,
+.prompt-signin-btn:focus-visible,
+.m-brand:focus-visible,
+.m-avatar-link:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Grid — same auto-fill card grid as maps/index.vue */
 .templates-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 /* Loading + Empty */
@@ -686,19 +896,48 @@ onMounted(async () => {
   justify-content: center;
   gap: 12px;
   padding: 80px 20px;
-  color: var(--tpl-muted, #71717A);
-  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
 }
 
+/* Survey-frame device (REDESIGN.md §5) — dashed hairline + coral corner
+   marks, reserved for empty states. */
+.empty-state {
+  position: relative;
+  border: 1px dashed var(--nc-border);
+}
+
+.empty-state::before,
+.empty-state::after {
+  content: '+';
+  position: absolute;
+  font-family: var(--nc-font-mono);
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--nc-coral);
+}
+
+.empty-state::before {
+  top: 6px;
+  left: 9px;
+}
+
+.empty-state::after {
+  bottom: 6px;
+  right: 9px;
+}
+
 .empty-state svg {
-  color: var(--tpl-border, #2A2A30);
+  color: var(--nc-text-dim);
 }
 
 .empty-state p {
   margin: 0;
-  font-weight: 500;
-  color: var(--tpl-text, #E8E8EC);
+  font-family: var(--nc-font-display);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
 }
 
 .empty-state span {
@@ -708,8 +947,8 @@ onMounted(async () => {
 .spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid var(--tpl-border, #1A1A1E);
-  border-top-color: #00D2BE;
+  border: 2px solid var(--nc-border);
+  border-top-color: var(--nc-accent);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -718,24 +957,24 @@ onMounted(async () => {
   to { transform: rotate(360deg); }
 }
 
-/* Desktop sign-in prompt */
+/* Desktop sign-in prompt — accent-tinted flat panel */
 .desktop-signin-prompt {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 16px 20px;
-  background: rgba(0, 210, 190, 0.04);
-  border: 1px solid rgba(0, 210, 190, 0.1);
-  border-radius: 12px;
+  background: rgba(var(--nc-accent-rgb), 0.04);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.12);
+  border-radius: var(--nc-radius-md);
   margin-bottom: 20px;
 }
 
 .prompt-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  background: rgba(0, 210, 190, 0.1);
-  color: #00D2BE;
+  border-radius: var(--nc-radius-md);
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  color: var(--nc-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -750,66 +989,56 @@ onMounted(async () => {
 }
 
 .prompt-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--tpl-text, #E8E8EC);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
 }
 
 .prompt-desc {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--tpl-muted, #71717A);
+  color: var(--nc-text-secondary);
 }
 
+/* Ink pill (REDESIGN.md §5) */
 .prompt-signin-btn {
   padding: 8px 20px;
-  background: #00D2BE;
+  background: var(--nc-text);
   border: none;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #09090B;
+  font-weight: 700;
+  color: var(--nc-bg);
   cursor: pointer;
   flex-shrink: 0;
-  transition: opacity 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.prompt-signin-btn:hover {
-  opacity: 0.9;
+.prompt-signin-btn:active {
+  transform: scale(0.97);
 }
 
-/* Light theme */
-:root.light .templates-layout {
-  --tpl-bg: #F5F5F3;
-  --tpl-surface: #FFFFFF;
-  --tpl-border: #E8E8E6;
-  --tpl-border-hover: #D4D4D2;
-  --tpl-text: #111111;
-  --tpl-secondary: #71717A;
-  --tpl-muted: #71717A;
+@media (hover: hover) and (pointer: fine) {
+  .prompt-signin-btn:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
 }
 
-:root.light .ai-bar {
-  background: rgba(0, 210, 190, 0.04);
-  border-color: rgba(0, 210, 190, 0.1);
-}
-
-:root.light .sort-select option,
-:root.light .ai-bar-input-wrap {
-  background: #FFFFFF;
-}
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 
 /* Laptop */
 @media (max-width: 1366px) {
   .templates-main { padding: 28px 32px; }
-  .templates-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Tablet */
 @media (max-width: 1024px) {
-  .templates-grid { grid-template-columns: repeat(2, 1fr); }
   .ai-bar-text { display: none; }
 }
 
@@ -833,32 +1062,29 @@ onMounted(async () => {
   }
   .m-brand {
     display: inline-flex; align-items: center; gap: 8px;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 22px;
-    letter-spacing: -0.01em; color: #FAFAFA; margin: 0;
+    font-family: var(--nc-font-display);
+    font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 700; line-height: 22px;
+    letter-spacing: -0.02em; color: var(--nc-text); margin: 0;
     text-decoration: none;
   }
-  :root.light .m-brand { color: #18181B; }
   .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
   .m-avatar {
-    width: 32px; height: 32px; border-radius: 16px;
-    background: #1A1A1E; border: 1px solid #1E1E22;
-    color: #00D2BE;
-    font-family: 'Inter', system-ui, sans-serif;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--nc-surface-3); border: 1px solid var(--nc-border);
+    color: var(--nc-accent);
+    font-family: var(--nc-font-body);
     font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
     display: flex; align-items: center; justify-content: center;
   }
-  :root.light .m-avatar { background: #F5F5F4; border-color: #E8E8E6; color: #00A89A; }
 
   /* Page title */
   .m-page-title {
     display: block;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: calc(28px * var(--nc-text-scale, 1)); font-weight: 700; line-height: 34px;
-    letter-spacing: -0.02em; color: #FAFAFA;
+    font-family: var(--nc-font-display);
+    font-size: calc(28px * var(--nc-text-scale, 1)); font-weight: 700; line-height: 1.05;
+    letter-spacing: -0.02em; color: var(--nc-text);
     margin: 12px 0 16px;
   }
-  :root.light .m-page-title { color: #18181B; }
 
   /* Hide desktop header bits on mobile */
   .templates-header,
@@ -866,32 +1092,31 @@ onMounted(async () => {
   .ai-bar,
   .ai-error-banner { display: none; }
 
-  /* Filter row: stack chips on top, search above */
+  /* Search box — chip fill + hairline (maps grammar) */
+  .search-box--mobile {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    border-radius: var(--nc-radius-md);
+    background: var(--nc-chip-bg); border: 1px solid var(--nc-border-input);
+    min-width: 0;
+  }
+  .search-box--mobile .search-icon { color: var(--nc-text-secondary); flex-shrink: 0; }
+  .search-box--mobile .search-input {
+    flex: 1; background: none; border: none; outline: none;
+    font-family: var(--nc-font-body);
+    font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 18px;
+    color: var(--nc-text); padding: 0;
+  }
+  .search-box--mobile .search-input::placeholder { color: var(--nc-text-dim); }
+
+  /* Filter row: category chips only */
   .filter-bar {
     display: flex; flex-direction: column; gap: 12px;
-    margin: 0 0 12px; padding: 0;
+    margin: 0; padding: 0;
   }
-  .filter-right { width: 100%; order: -1; }
-  .filter-right .search-box {
-    display: flex; align-items: center; gap: 10px;
-    width: 100%; height: auto;
-    padding: 10px 12px; border-radius: 10px;
-    background: #111114; border: 1px solid #1E1E22;
-  }
-  :root.light .filter-right .search-box { background: #FFFFFF; border-color: #E8E8E6; }
-  .filter-right .search-box svg { color: #888890; flex-shrink: 0; }
-  .filter-right .search-input {
-    flex: 1; width: 100%;
-    background: none; border: none; outline: none;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: calc(15px * var(--nc-text-scale, 1)); line-height: 18px;
-    color: #FAFAFA; padding: 0;
-  }
-  :root.light .filter-right .search-input { color: #18181B; }
-  .filter-right .search-input::placeholder { color: #555558; }
-  .sort-wrap { display: none; }
 
-  /* Category chips */
+  /* Category chips — 44px touch targets (REDESIGN.md §9) */
   .category-tabs {
     display: flex; gap: 8px;
     overflow-x: auto;
@@ -902,21 +1127,16 @@ onMounted(async () => {
   .category-tabs::-webkit-scrollbar { display: none; }
   .cat-tab {
     flex-shrink: 0;
+    min-height: 44px;
     padding: 8px 14px;
-    border-radius: 8px;
-    background: #111114; border: 1px solid #1E1E22;
-    color: #FAFAFA;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px;
-    cursor: pointer;
+    background: var(--nc-chip-bg);
+    border: 1px solid var(--nc-border);
+    color: var(--nc-text-secondary);
   }
-  :root.light .cat-tab { background: #FFFFFF; border-color: #E8E8E6; color: #18181B; }
   .cat-tab.active {
-    background: #00D2BE; border-color: transparent; color: #0A0A0C;
-    font-weight: 600;
+    color: var(--nc-accent);
+    border-color: rgba(var(--nc-accent-rgb), 0.45);
   }
-  :root.light .filter-right .search-box svg { color: #9CA0A6; }
-  :root.light .filter-right .search-input::placeholder { color: #9CA0A6; }
 
   /* Template card list (single column) */
   .templates-grid {
@@ -925,14 +1145,14 @@ onMounted(async () => {
     padding: 0;
   }
 
-  /* iOS — Paper: cat-tab radius stays at 8 (Paper spec), search 10 */
-  :root.platform-ios .filter-right .search-box { border-radius: 10px; }
+  /* iOS — search stays on the 8px input radius */
+  :root.platform-ios .search-box--mobile { border-radius: var(--nc-radius-md); }
   :root.platform-ios .templates-main {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
   }
 
-  /* Android (MD3) */
-  :root.platform-android .filter-right .search-box { border-radius: 28px; padding: 12px 16px; }
+  /* Android (MD3) — full pills */
+  :root.platform-android .search-box--mobile { border-radius: 999px; padding: 12px 16px; }
   :root.platform-android .cat-tab { border-radius: 999px; }
   :root.platform-android .templates-main {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);

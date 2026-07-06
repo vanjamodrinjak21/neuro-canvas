@@ -24,10 +24,9 @@ test.describe('signin', () => {
     await page.waitForTimeout(2_000)
     await expect(page).toHaveURL(/\/auth\/signin/)
 
-    // An error must be surfaced to the user. The app renders a `.form-message`
-    // with the "invalid credentials" copy; assert an error message is visible
-    // without pinning to a specific (i18n) string.
-    const errorMessage = page.locator('.form-message.error')
+    // An error must be surfaced to the user. Target the stable test hook so
+    // the assertion survives markup/i18n churn on the auth pages.
+    const errorMessage = page.getByTestId('auth-message')
     await expect(errorMessage).toBeVisible()
     await expect(errorMessage).not.toHaveText('')
   })

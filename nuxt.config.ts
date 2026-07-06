@@ -155,6 +155,7 @@ export default defineNuxtConfig({
         'Referrer-Policy': 'strict-origin-when-cross-origin'
       }
     },
+    '/': { ssr: true },
     '/docs/**': { ssr: true },
     '/docs': { redirect: '/docs/getting-started/introduction' },
     '/privacy': { ssr: true },
@@ -205,7 +206,8 @@ export default defineNuxtConfig({
 
   // CSS
   css: [
-    '~/assets/css/main.css'
+    '~/assets/css/main.css',
+    '~/assets/css/landing.css'
   ],
 
   // Vite configuration

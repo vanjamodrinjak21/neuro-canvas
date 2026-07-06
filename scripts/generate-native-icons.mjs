@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Regenerate every native app icon from the canonical NcLogo mark (AER-85).
+ * Regenerate every native app icon from the canonical NcLogo mark (AER-85, re-baked for the AER-76 brand).
  *
  * Why per-platform variants instead of one square PNG:
  *  - iOS forbids alpha in app icons — baked rounded corners render as BLACK
@@ -26,42 +26,32 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import sharp from 'sharp'
 
-const TEAL = '#00D2BE' // NcLogo container fill (Paper brand identity sheet)
-const INK = '#09090B'  // mark color, same as NcLogo.vue
+const BG = '#050508'   // NcLogo container fill (--nc-bg dark, tokens.css)
+const NODE = '#F4F4F8' // mark color (--nc-text dark), same as NcLogo.vue
 
-// NcLogo layers ink at 0.5/0.7 opacity over teal. At icon sizes the alpha
-// STACKING shows dark patches where spokes overlap node circles, so bake the
-// blends to solid colors: 0.5-ink-over-teal and 0.7-ink-over-teal.
-const SPOKE = '#056E64'
-const NODE = '#034239'
+// NcLogo strokes the connectors at 0.55 opacity over the container. At icon
+// sizes the alpha shows dark patches where connectors meet node circles, so
+// bake the blend to a solid color: 0.55-text-over-bg.
+const STROKE = '#88888C'
 
-// 6-spoke mark, geometry verbatim from app/components/NcLogo.vue (viewBox 72).
+// Three-node mark, geometry verbatim from app/components/NcLogo.vue (viewBox 64).
 const MARK = `
-  <line x1="36" y1="28" x2="36" y2="19" stroke="${SPOKE}" stroke-width="2.5" />
-  <line x1="43" y1="32" x2="50" y2="27" stroke="${SPOKE}" stroke-width="2.5" />
-  <line x1="43" y1="40" x2="50" y2="45" stroke="${SPOKE}" stroke-width="2.5" />
-  <line x1="36" y1="44" x2="36" y2="53" stroke="${SPOKE}" stroke-width="2.5" />
-  <line x1="29" y1="40" x2="22" y2="45" stroke="${SPOKE}" stroke-width="2.5" />
-  <line x1="29" y1="32" x2="22" y2="27" stroke="${SPOKE}" stroke-width="2.5" />
-  <circle cx="36" cy="16" r="5" fill="${NODE}" />
-  <circle cx="52" cy="26" r="5" fill="${NODE}" />
-  <circle cx="52" cy="46" r="5" fill="${NODE}" />
-  <circle cx="36" cy="56" r="5" fill="${NODE}" />
-  <circle cx="20" cy="46" r="5" fill="${NODE}" />
-  <circle cx="20" cy="26" r="5" fill="${NODE}" />
-  <circle cx="36" cy="36" r="8" fill="${INK}" />
+  <path d="M19.5 42.5 42.5 21M20.5 46l24.5 1.6" stroke="${STROKE}" stroke-width="3.2" stroke-linecap="round" fill="none" />
+  <circle cx="14.5" cy="46.5" r="7" fill="${NODE}" />
+  <circle cx="47.5" cy="16" r="8.4" fill="${NODE}" />
+  <circle cx="49.5" cy="48" r="4.9" fill="${NODE}" />
 `
 
 /** Mark centered in a canvas: markRatio = mark svg edge / canvas edge. */
 const markAt = (canvas, markRatio) => {
   const edge = Math.round(canvas * markRatio)
   const off = Math.round((canvas - edge) / 2)
-  return `<svg x="${off}" y="${off}" width="${edge}" height="${edge}" viewBox="0 0 72 72">${MARK}</svg>`
+  return `<svg x="${off}" y="${off}" width="${edge}" height="${edge}" viewBox="0 0 64 64">${MARK}</svg>`
 }
 
 const svgFullBleed = (s) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}">` +
-  `<rect width="${s}" height="${s}" fill="${TEAL}"/>${markAt(s, 0.78)}</svg>`
+  `<rect width="${s}" height="${s}" fill="${BG}"/>${markAt(s, 0.78)}</svg>`
 
 // Big Sur style: 824/1024 rounded-rect (Apple's grid), transparent outside.
 const svgMacSquircle = (s) => {
@@ -69,17 +59,17 @@ const svgMacSquircle = (s) => {
   const off = Math.round((s - box) / 2)
   const rx = Math.round(box * 0.2237)
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}">` +
-    `<rect x="${off}" y="${off}" width="${box}" height="${box}" rx="${rx}" fill="${TEAL}"/>` +
+    `<rect x="${off}" y="${off}" width="${box}" height="${box}" rx="${rx}" fill="${BG}"/>` +
     `${markAt(s, 0.62)}</svg>`
 }
 
 const svgAndroidLegacy = (s) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}">` +
-  `<rect width="${s}" height="${s}" rx="${Math.round(s * 0.12)}" fill="${TEAL}"/>${markAt(s, 0.78)}</svg>`
+  `<rect width="${s}" height="${s}" rx="${Math.round(s * 0.12)}" fill="${BG}"/>${markAt(s, 0.78)}</svg>`
 
 const svgAndroidRound = (s) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}">` +
-  `<circle cx="${s / 2}" cy="${s / 2}" r="${s / 2}" fill="${TEAL}"/>${markAt(s, 0.66)}</svg>`
+  `<circle cx="${s / 2}" cy="${s / 2}" r="${s / 2}" fill="${BG}"/>${markAt(s, 0.66)}</svg>`
 
 // Adaptive foreground: transparent, mark inside the 66/108 safe zone.
 const svgAndroidForeground = (s) =>
@@ -89,7 +79,7 @@ const png = (svg) => sharp(Buffer.from(svg)).png()
 
 async function writePng(svg, path, { opaque = false } = {}) {
   let img = png(svg)
-  if (opaque) img = img.flatten({ background: TEAL }).removeAlpha()
+  if (opaque) img = img.flatten({ background: BG }).removeAlpha()
   await img.toFile(path)
   console.log('wrote', path)
 }
@@ -113,10 +103,10 @@ for (const [d, size] of Object.entries(DENSITIES)) {
 for (const [d, size] of Object.entries(FG_DENSITIES)) {
   await writePng(svgAndroidForeground(size), `android/app/src/main/res/mipmap-${d}/ic_launcher_foreground.png`)
 }
-// Adaptive background color: teal, not the white placeholder.
+// Adaptive background color: brand bg, not the white placeholder.
 await writeFile(
   'android/app/src/main/res/values/ic_launcher_background.xml',
-  `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n  <color name="ic_launcher_background">${TEAL}</color>\n</resources>\n`
+  `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n  <color name="ic_launcher_background">${BG}</color>\n</resources>\n`
 )
 console.log('wrote android ic_launcher_background.xml')
 

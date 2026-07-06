@@ -72,6 +72,7 @@ function onTabTap() {
 .mobile-tab-bar { display: none; }
 
 @media (max-width: 768px) {
+  /* Flat bg plane + THE hairline top border — no glass, no glow. */
   .mobile-tab-bar {
     display: flex;
     flex-direction: column;
@@ -80,10 +81,12 @@ function onTabTap() {
     left: 0;
     right: 0;
     z-index: 200;
-    background: #09090B;
+    background: var(--nc-bg);
+    border-top: 1px solid var(--nc-border-subtle);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     -webkit-tap-highlight-color: transparent;
   }
+
   .mtb-tabs {
     display: flex;
     align-items: center;
@@ -92,26 +95,51 @@ function onTabTap() {
     width: 100%;
     box-sizing: border-box;
   }
+
+  /* ≥44×44px touch target (REDESIGN.md §9). */
   .mtb-tab {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    color: #A1A1AA;
+    width: 44px;
+    height: 44px;
+    /* Interactive rest ≥ the 0.62 tier (WCAG 1.4.11 — AER-76 icon visibility) */
+    color: var(--nc-text-secondary);
     text-decoration: none;
-    transition: color 150ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
     flex-shrink: 0;
+    transition: color var(--nc-duration-fast) var(--nc-ease),
+                transform var(--nc-duration-press) var(--nc-ease);
   }
-  .mtb-tab--active { color: #00D2BE; }
-  .mtb-tab:active { transform: scale(0.92); }
 
-  /* Light mode — dock must not stay black on a light page. */
-  :root.light .mobile-tab-bar {
-    background: #FFFFFF;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  .mtb-tab--active {
+    color: var(--nc-accent);
   }
-  :root.light .mtb-tab { color: #71717A; }
-  :root.light .mtb-tab--active { color: #00D2BE; }
+
+  /* Non-color active cue: 2px accent marker at the bar's top edge
+     (-20px = .mtb-tabs padding-top, so it sits under the hairline). */
+  .mtb-tab--active::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 2px;
+    background: var(--nc-accent);
+  }
+
+  .mtb-tab:active {
+    transform: scale(0.97);
+  }
+
+  .mtb-tab:focus-visible {
+    outline: 2px solid var(--nc-accent);
+    outline-offset: 3px;
+  }
 }
+
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component overrides are needed. */
 </style>

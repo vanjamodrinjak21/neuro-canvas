@@ -105,12 +105,13 @@ defineProps<Props>()
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--nc-text-muted);
+  /* Mono micro-label grammar (§4) + interactive-card icon at the 0.62 tier */
+  color: var(--nc-text-secondary);
   line-height: 1;
 }
 
 .docs-prev-next__label svg {
-  color: var(--nc-text-muted);
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 
@@ -138,25 +139,9 @@ defineProps<Props>()
   }
 }
 
-/* Light theme */
-:root.light .docs-prev-next {
-  border-top-color: var(--nc-border);
-}
-
-:root.light .docs-prev-next__card {
-  border-color: var(--nc-border);
-}
-
-:root.light .docs-prev-next__card:hover {
-  border-color: var(--nc-accent);
-  background: var(--nc-accent-glow);
-}
-
-:root.light .docs-prev-next__label {
-  color: var(--nc-text-muted);
-}
-
-:root.light .docs-prev-next__label svg {
-  color: var(--nc-text-muted);
+/* Light theme — tokens carry everything except the card title:
+   14px accent text needs the text-tier accent (#0b9e93 is 3.18:1). */
+:root.light .docs-prev-next__title {
+  color: var(--nc-accent-text);
 }
 </style>

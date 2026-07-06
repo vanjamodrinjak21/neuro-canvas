@@ -10,14 +10,15 @@ const props = defineProps<{
 
 const mapStore = useMapStore()
 
-// Category color map
-const DEFAULT_CATEGORY_COLOR = '#00D2BE'
+// Category color map — node-category DATA colors via tokens (REDESIGN.md §1);
+// consumed as CSS custom-property values, never painted as hex chrome.
+const DEFAULT_CATEGORY_COLOR = 'var(--nc-accent)'
 const categoryColors: Record<string, string> = {
   default: DEFAULT_CATEGORY_COLOR,
-  idea: '#A78BFA',
-  task: '#60A5FA',
-  note: '#4ADE80',
-  question: '#F472B6'
+  idea: 'var(--nc-node-purple)',
+  task: 'var(--nc-node-blue)',
+  note: 'var(--nc-node-green)',
+  question: 'var(--nc-node-pink)'
 }
 
 const category = computed(() => {
@@ -31,18 +32,6 @@ const categoryColor = computed(() => {
 const categoryLabel = computed(() => {
   const cat = category.value
   return cat.charAt(0).toUpperCase() + cat.slice(1)
-})
-
-// Determine badge text color based on background color for contrast
-const badgeTextColor = computed(() => {
-  const color = categoryColor.value
-  // Light backgrounds (yellow, green, orange) get dark text; dark backgrounds (purple, pink, blue) get white text
-  const lightBgColors = ['#FACC15', '#4ADE80', '#FB923C']
-  const darkBgColors = ['#A78BFA', '#F472B6', '#60A5FA']
-  if (darkBgColors.includes(color)) return '#FFFFFF'
-  if (lightBgColors.includes(color)) return '#0A0A0C'
-  // Default: use dark text for the accent teal
-  return '#0A0A0C'
 })
 
 const description = computed(() => {
@@ -60,20 +49,17 @@ const connectionCount = computed(() => {
   return count
 })
 
-// Clamp position to stay within viewport
-const style = computed(() => ({
-  position: 'fixed' as const,
-  left: `${Math.max(120, Math.min(props.screenX, window.innerWidth - 120))}px`,
-  top: `${Math.max(8, props.screenY - 12)}px`,
-  transform: 'translateX(-50%) translateY(-100%)',
-  zIndex: 150
-}))
+// Clamp position to stay within viewport — consumed via v-bind() in scoped
+// CSS (no inline :style, REDESIGN.md §9)
+const leftPx = computed(() => `${Math.max(120, Math.min(props.screenX, window.innerWidth - 120))}px`)
+const topPx = computed(() => `${Math.max(8, props.screenY - 12)}px`)
 </script>
 
 <template>
-  <div class="nc-hover-preview" :style="style">
-    <!-- Category badge -->
-    <span class="nc-hover-badge" :style="{ background: categoryColor, color: badgeTextColor }">
+  <div class="nc-hover-preview">
+    <!-- Category badge — chip grammar, category color carried by the dot -->
+    <span class="nc-hover-badge">
+      <span class="nc-hover-badge-dot" />
       {{ categoryLabel }}
     </span>
 
@@ -94,36 +80,59 @@ const style = computed(() => ({
 </template>
 
 <style scoped>
+/* Floating tooltip-panel — flat surface-2 + hairline, no backdrop blur
+   (REDESIGN.md §5); position clamped via v-bind from the script. */
 .nc-hover-preview {
+  position: fixed;
+  left: v-bind(leftPx);
+  top: v-bind(topPx);
+  transform: translateX(-50%) translateY(-100%);
+  z-index: 150;
   max-width: 220px;
   min-width: 140px;
   padding: 8px 10px;
-  background: rgba(18, 18, 24, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-md);
   pointer-events: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* Chip/badge grammar (REDESIGN.md §5): mono micro-label on chip fill,
+   hairline, 0.4rem radius; category color carried by the dot (data color
+   arrives as a token/value via v-bind, never hex chrome). */
 .nc-hover-badge {
-  display: inline-block;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   padding: 1px 6px;
-  border-radius: 6px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
   align-self: flex-start;
-  letter-spacing: 0.02em;
+  color: var(--nc-text-secondary);
+}
+
+.nc-hover-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: v-bind(categoryColor);
 }
 
 .nc-hover-desc {
   font-size: calc(11px * var(--nc-text-scale, 1));
   line-height: 1.4;
-  color: var(--nc-ink-soft, #AAAAB0);
+  color: var(--nc-text-secondary);
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -132,7 +141,7 @@ const style = computed(() => ({
 }
 
 .nc-hover-desc-empty {
-  color: var(--nc-ink-muted, #888890);
+  color: var(--nc-text-muted);
   font-style: italic;
 }
 
@@ -141,6 +150,6 @@ const style = computed(() => ({
   align-items: center;
   gap: 4px;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #888890);
+  color: var(--nc-text-muted);
 }
 </style>
