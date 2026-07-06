@@ -4,6 +4,7 @@ import { resolveAvatarInitials } from '~/utils/userDisplay'
 import { useMapStore } from '~/stores/mapStore'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import NcCardSchematic from '~/components/ui/NcCardSchematic.vue'
 
 definePageMeta({
   layout: false,
@@ -421,25 +422,10 @@ function formatDate(timestamp: number): string {
             <span :class="selectedIds.has(map.id) ? 'i-lucide-check-square' : 'i-lucide-square'" />
           </button>
 
-          <!-- Preview -->
+          <!-- Preview — shared schematic device (NcCardSchematic, AER-76) -->
           <div class="card-preview">
             <img v-if="map.preview" :src="map.preview" :alt="map.title" class="preview-img">
-            <div v-else class="preview-mock" aria-hidden="true">
-              <div class="mock-row">
-                <span class="mock-blob teal mock-w48" />
-                <span class="mock-blob gray mock-w56" />
-              </div>
-              <div class="mock-row mock-row--mid">
-                <span class="mock-blob gray dim mock-w40" />
-                <span class="mock-blob teal solid mock-w52h22" />
-                <span class="mock-blob gray dim mock-w44" />
-              </div>
-              <div class="mock-row">
-                <span class="mock-blob teal mock-w44" />
-                <span class="mock-blob gray dim mock-w50" />
-              </div>
-              <span class="mock-count">{{ map.nodes.length }} nodes</span>
-            </div>
+            <NcCardSchematic v-else :count="map.nodes.length" />
           </div>
 
           <!-- Info -->
@@ -848,53 +834,7 @@ function formatDate(timestamp: number): string {
   color: var(--nc-text-dim);
 }
 
-.preview-mock {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  justify-content: center;
-}
-
-.mock-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mock-row--mid { gap: 12px; }
-
-.mock-blob {
-  height: 16px;
-  border-radius: 0.35rem;
-}
-
-.mock-blob.gray { background: var(--nc-border); }
-.mock-blob.gray.dim { background: var(--nc-border-subtle); }
-.mock-blob.teal { background: rgba(var(--nc-accent-rgb), 0.32); }
-.mock-blob.teal.solid { background: rgba(var(--nc-accent-rgb), 0.85); }
-
-/* Static blob widths (formerly inline styles — REDESIGN.md §9) */
-.mock-blob.mock-w40 { width: 40px; }
-.mock-blob.mock-w44 { width: 44px; }
-.mock-blob.mock-w48 { width: 48px; }
-.mock-blob.mock-w50 { width: 50px; }
-.mock-blob.mock-w56 { width: 56px; }
-.mock-blob.mock-w52h22 { width: 52px; height: 22px; }
-
-/* Node count readout — mono micro-label */
-.mock-count {
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
-  font-family: var(--nc-font-mono);
-  font-size: calc(10px * var(--nc-text-scale, 1));
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--nc-text-muted);
-}
+/* Schematic preview device lives in NcCardSchematic.vue (shared, AER-76) */
 
 /* Card info */
 .card-info {
@@ -1275,6 +1215,10 @@ function formatDate(timestamp: number): string {
     overflow: hidden;
   }
   .map-card .preview-img { width: 100%; height: 100%; object-fit: cover; }
+  /* Schematic shrinks to a glyph inside the 44px row preview */
+  .map-card .card-preview :deep(.nc-schematic) { padding: 0; }
+  .map-card .card-preview :deep(.nc-schematic-rows) { transform: scale(0.3); }
+  .map-card .card-preview :deep(.nc-schematic-count) { display: none; }
   .map-card .preview-placeholder {
     display: flex; align-items: center; justify-content: center;
     width: 100%; height: 100%;

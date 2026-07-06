@@ -9,6 +9,7 @@ import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { safeImageUrl } from '~/utils/safeUrl'
 import { resolveDisplayName, resolveAvatarInitials } from '~/utils/userDisplay'
 import NcAiMark from '~/components/ui/NcAiMark.vue'
+import NcCardSchematic from '~/components/ui/NcCardSchematic.vue'
 import type { GenerationTone } from '~/types'
 
 const { t, locale: currentLocale } = useI18n()
@@ -439,18 +440,18 @@ async function deleteMap(mapId: string, event: Event) {
   }
 }
 
+// Same relative-date grammar as maps/index.vue (i18n common.time.* keys) so
+// the card meta line reads identically on every map-like surface (AER-76).
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (diffHours < 1) return 'Just now'
-  if (diffHours < 24) return t('dashboard.map_card.edited', { time: `${diffHours}h ago` })
-  if (diffDays === 1) return t('dashboard.map_card.edited', { time: 'yesterday' })
-  if (diffDays < 7) return t('dashboard.map_card.edited', { time: `${diffDays} days ago` })
-  if (diffDays < 30) return t('dashboard.map_card.edited', { time: `${Math.floor(diffDays / 7)} weeks ago` })
-  return t('dashboard.map_card.edited', { time: date.toLocaleDateString() })
+
+  if (diffDays === 0) return t('common.time.today')
+  if (diffDays === 1) return t('common.time.yesterday')
+  if (diffDays < 7) return t('common.time.days_ago', { n: diffDays })
+  return date.toLocaleDateString()
 }
 
 // AI Quick Start — enqueue a background generation and close the modal so the
@@ -768,27 +769,17 @@ async function createFromTemplate(template: typeof templates.value[0]) {
               @click="openMap(map.id)"
             >
               <div class="dcard-thumb">
-                <div class="dcard-thumb-rows">
-                  <div class="dcard-thumb-row">
-                    <span class="dcard-blob teal dcard-blob--w48" />
-                    <span class="dcard-blob gray dcard-blob--w56" />
-                  </div>
-                  <div class="dcard-thumb-row dcard-thumb-row--mid">
-                    <span class="dcard-blob gray dim dcard-blob--w40" />
-                    <span class="dcard-blob teal solid dcard-blob--hub" />
-                    <span class="dcard-blob gray dim dcard-blob--w44" />
-                  </div>
-                  <div class="dcard-thumb-row">
-                    <span class="dcard-blob teal dcard-blob--w44" />
-                    <span class="dcard-blob gray dim dcard-blob--w50" />
-                  </div>
-                </div>
-                <span class="dcard-count">{{ countItems(map.nodes) }} nodes</span>
+                <!-- Shared schematic preview device (NcCardSchematic, AER-76) -->
+                <NcCardSchematic :count="countItems(map.nodes)" />
               </div>
               <div class="dcard-info">
                 <div class="dcard-info-text">
                   <h3 class="dcard-title">{{ map.title }}</h3>
-                  <p class="dcard-date">{{ formatDate(map.updatedAt) }}</p>
+                  <p class="dcard-meta">
+                    <span>{{ $t('maps.nodes_count', { n: countItems(map.nodes) }) }}</span>
+                    <span class="dcard-meta-dot">&middot;</span>
+                    <span>{{ $t('maps.edited_prefix') }} {{ formatDate(map.updatedAt) }}</span>
+                  </p>
                 </div>
                 <button type="button" class="dcard-menu" :title="$t('dashboard.delete_confirm.delete')" @click="deleteMap(map.id, $event)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -1215,14 +1206,16 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   margin-bottom: 16px;
 }
 
+/* Map card — same frame as maps/index.vue: flat surface-2 + hairline,
+   radius-md, hover = border shift ONLY (one card design, AER-76). */
 .dcard {
   width: 100%;
-  border: 1px solid var(--nc-border-subtle);
-  border-radius: 8px;
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--nc-surface);
+  background: var(--nc-surface-2);
   cursor: pointer;
   transition: border-color var(--nc-duration-fast) var(--nc-ease),
               transform var(--nc-duration-press) var(--nc-ease);
@@ -1233,88 +1226,35 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 .dcard:active { transform: scale(0.97); }
 
+/* Preview frame — hosts the shared schematic device (NcCardSchematic) */
 .dcard-thumb {
   position: relative;
-  height: 200px;
+  height: 160px;
   background: var(--nc-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.dcard-thumb-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-}
-
-.dcard-thumb-row {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-}
-
-.dcard-thumb-row--mid { gap: 12px; }
-
-.dcard-blob {
-  display: block;
-  height: 18px;
-  border-radius: 4px;
-  background: var(--nc-border-subtle);
   flex-shrink: 0;
-  opacity: 0.7;
-}
-
-.dcard-blob.gray { background: var(--nc-surface-3); }
-.dcard-blob.gray.dim { opacity: 0.6; }
-.dcard-blob.teal { background: rgba(var(--nc-accent-rgb), 0.2); opacity: 0.7; }
-.dcard-blob.teal.solid { background: rgba(var(--nc-accent-rgb), 0.2); opacity: 1; border-radius: 5px; }
-
-/* Static thumbnail sketch widths (were inline styles — REDESIGN.md §9) */
-.dcard-blob--w40 { width: 40px; }
-.dcard-blob--w44 { width: 44px; }
-.dcard-blob--w48 { width: 48px; }
-.dcard-blob--w50 { width: 50px; }
-.dcard-blob--w56 { width: 56px; }
-.dcard-blob--hub { width: 52px; height: 22px; }
-
-.dcard-count {
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 500;
-  line-height: 14px;
-  color: var(--nc-text-muted);
+  overflow: hidden;
 }
 
 .dcard-info {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
-  background: var(--nc-surface-2);
-  border-top: 1px solid var(--nc-border-subtle);
+  padding: 16px;
 }
-
-:root.light .dcard-info { background: var(--nc-surface-2); }
 
 .dcard-info-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
   min-width: 0;
 }
 
+/* Card title is USER CONTENT — body face, 500 (maps grammar) */
 .dcard-title {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 18px;
+  font-weight: 500;
+  line-height: 20px;
   color: var(--nc-text);
   margin: 0;
   white-space: nowrap;
@@ -1322,12 +1262,22 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   text-overflow: ellipsis;
 }
 
-.dcard-date {
-  font-family: 'Inter', sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
+/* Meta line — mono uppercase micro-label (maps grammar) */
+.dcard-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
   line-height: 16px;
-  color: var(--nc-text-muted);
   margin: 0;
+}
+
+.dcard-meta-dot {
+  color: var(--nc-text-dim);
 }
 
 .dcard-menu {
@@ -1621,8 +1571,8 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   background: var(--nc-surface);
 }
 
-.dskel-thumb { height: 152px; background: var(--nc-surface-2); }
-.dskel-info { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.dskel-thumb { height: 160px; background: var(--nc-surface-2); }
+.dskel-info { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 .dskel-title { height: 14px; width: 60%; border-radius: 4px; background: var(--nc-surface-3); }
 .dskel-date { height: 10px; width: 40%; border-radius: 4px; background: var(--nc-surface-3); }
 
@@ -2233,29 +2183,19 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .dcard {
     display: flex; align-items: center; gap: 12px;
     padding: 12px;
-    background: var(--nc-surface-2); border: 1px solid var(--nc-border-subtle); border-radius: 10px;
+    background: var(--nc-surface-2); border: 1px solid var(--nc-border); border-radius: var(--nc-radius-md);
     box-shadow: none;
   }
   .dcard-thumb {
     flex-shrink: 0; width: 44px; height: 44px;
-    background: var(--nc-surface-3); border-radius: 8px; padding: 0;
+    background: var(--nc-surface-3); border-radius: var(--nc-radius-md); padding: 0;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
-  .dcard-thumb-rows { display: none; }
-  /* Map-sketch glyph — alpha mask painted with the accent token so it
-     tracks both themes with zero hardcoded colors (REDESIGN.md §9).
-     Dimmer rects use fill-opacity in the mask alpha channel. */
-  .dcard-thumb::before {
-    content: '';
-    width: 32px; height: 32px;
-    background-color: var(--nc-accent);
-    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='4' y='3' width='8' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='black' fill-opacity='0.28'/><rect x='3' y='10' width='5' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='9' y='10' width='7' height='4' rx='1' fill='black'/><rect x='17' y='10' width='4' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='4' y='18' width='6' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='black' fill-opacity='0.28'/></svg>");
-    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='4' y='3' width='8' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='black' fill-opacity='0.28'/><rect x='3' y='10' width='5' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='9' y='10' width='7' height='4' rx='1' fill='black'/><rect x='17' y='10' width='4' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='4' y='18' width='6' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='black' fill-opacity='0.28'/></svg>");
-    -webkit-mask-size: contain; mask-size: contain;
-    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  }
-  .dcard-count { display: none; }
+  /* Schematic shrinks to a glyph inside the 44px row preview (maps grammar) */
+  .dcard-thumb :deep(.nc-schematic) { padding: 0; }
+  .dcard-thumb :deep(.nc-schematic-rows) { transform: scale(0.3); }
+  .dcard-thumb :deep(.nc-schematic-count) { display: none; }
   .dcard-info {
     flex: 1; min-width: 0;
     display: flex; align-items: center; gap: 8px;
@@ -2264,15 +2204,15 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   }
   .dcard-info-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
   .dcard-title {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--nc-font-body);
     font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
     color: var(--nc-text); margin: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .dcard-date {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
-    color: var(--nc-text-muted); margin: 0;
+  .dcard-meta {
+    font-size: calc(11px * var(--nc-text-scale, 1)); font-weight: 400; line-height: 16px;
+    color: var(--nc-text-secondary);
+    display: flex; gap: 4px;
   }
   /* Chevron glyph — alpha mask painted with the dim-ink token */
   .dcard-menu {

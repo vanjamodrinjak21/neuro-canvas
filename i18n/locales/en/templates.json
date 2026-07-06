@@ -11,6 +11,9 @@
         },
         "count_label_one": "{n} template",
         "count_label_other": "{n} templates",
+        "card": {
+            "uses_count": "{n} uses"
+        },
         "buttons": {
             "publish_template": "Publish Template"
         },

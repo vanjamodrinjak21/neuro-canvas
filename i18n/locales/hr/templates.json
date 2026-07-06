@@ -11,6 +11,9 @@
         },
         "count_label_one": "{n} predlo\u017eak",
         "count_label_other": "{n} predlo\u017eaka",
+        "card": {
+            "uses_count": "{n} kori\u0161tenja"
+        },
         "buttons": {
             "publish_template": "Objavi predlo\u017eak"
         },
