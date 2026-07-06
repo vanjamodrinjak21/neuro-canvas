@@ -106,12 +106,37 @@ export async function signInViaUi(page: Page, user: TestUser): Promise<void> {
   await page.waitForURL('**/dashboard', { timeout: 30_000 })
 }
 
+/**
+ * Wait until Vue has hydrated the page. The auth forms rely on
+ * `@submit.prevent` — a click that lands BEFORE hydration performs a NATIVE
+ * form submit (full-page GET back to the same route) that wipes the inputs
+ * and never navigates, so the spec times out waiting for /dashboard. The dev
+ * server in CI compiles routes on first hit, which makes that window wide
+ * enough to lose the race reliably (AER-74).
+ */
+export async function waitForHydration(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const app = (window as { useNuxtApp?: () => { isHydrating?: boolean } }).useNuxtApp
+      if (!app) return false
+      try {
+        return app().isHydrating === false
+      } catch {
+        return false
+      }
+    },
+    { timeout: 30_000 },
+  )
+}
+
 /** Fill the email + password inputs on the signin/signup form by type. */
 export async function fillCredentials(
   page: Page,
   email: string,
   password: string,
 ): Promise<void> {
+  // Interacting before hydration loses keystrokes and native-submits the form.
+  await waitForHydration(page)
   // Resilient selectors: target inputs by their `type` attribute, which is
   // stable across i18n/markup churn (the app owns the components; we don't).
   await page.locator('input[type="email"]').fill(email)
