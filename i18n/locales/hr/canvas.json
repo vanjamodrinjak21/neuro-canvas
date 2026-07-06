@@ -55,6 +55,8 @@
       "export": "Izvezi",
       "export_png": "PNG slika",
       "export_png_hint": "Snimka zaslona",
+      "export_pdf": "PDF",
+      "export_pdf_hint": "Za ispis",
       "export_json": "JSON",
       "export_json_hint": "Potpuni podaci",
       "export_markdown": "Markdown",

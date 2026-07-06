@@ -164,3 +164,102 @@ export function computeExportFit(
     translateY: (padding - bounds.minY) * scale,
   }
 }
+
+// ---------------------------------------------------------------------------
+// PDF page fit (print export)
+// ---------------------------------------------------------------------------
+
+/** A4 short side in PDF points (210 mm). */
+export const PDF_PAGE_SHORT_PT = 595.28
+/** A4 long side in PDF points (297 mm). */
+export const PDF_PAGE_LONG_PT = 841.89
+/** Default page margin in PDF points (≈10 mm). */
+export const PDF_MARGIN_PT = 28.35
+
+export interface PdfLayoutOptions {
+  /** Breathing room around the content in content-space pixels (see {@link ExportFitOptions.padding}). */
+  padding?: number
+  /** Page margin on every side, in PDF points. Default {@link PDF_MARGIN_PT} (~10 mm). */
+  marginPt?: number
+  /** Page short side in points. Default A4 ({@link PDF_PAGE_SHORT_PT}). */
+  pageShortPt?: number
+  /** Page long side in points. Default A4 ({@link PDF_PAGE_LONG_PT}). */
+  pageLongPt?: number
+}
+
+/** Placement of the (padded) map content on a single PDF page. */
+export interface PdfPageLayout {
+  /** Landscape when the padded content is wider than tall; portrait otherwise (ties → portrait). */
+  orientation: 'portrait' | 'landscape'
+  /** Page width in points, after orientation is applied. */
+  pageWidthPt: number
+  /** Page height in points, after orientation is applied. */
+  pageHeightPt: number
+  /** The margin actually used, in points. */
+  marginPt: number
+  /** Padded content width in content-space pixels (what gets drawn). */
+  contentWidthPx: number
+  /** Padded content height in content-space pixels. */
+  contentHeightPx: number
+  /** Multiplier from content-space pixels to PDF points. */
+  scale: number
+  /** Left edge of the placed content on the page, in points. */
+  offsetXPt: number
+  /** Top edge of the placed content on the page, in points. */
+  offsetYPt: number
+  /** Placed content width on the page, in points. */
+  placedWidthPt: number
+  /** Placed content height on the page, in points. */
+  placedHeightPt: number
+}
+
+/**
+ * Fit padded content bounds onto a single PDF page.
+ *
+ * - Orientation is chosen automatically: landscape when the padded content is
+ *   wider than tall, portrait otherwise (a perfect square stays portrait).
+ * - The map is scaled uniformly ("contain") so it fits **fully** inside the
+ *   page margins — large maps scale down, small maps scale up. Because the
+ *   export is vector, upscaling stays crisp.
+ * - The placed content is centered inside the margin box on both axes.
+ *
+ * Pure math — safe to unit test without a DOM (see __tests__/exportFit.test.ts).
+ */
+export function computePdfPageLayout(
+  bounds: ContentBounds,
+  options: PdfLayoutOptions = {},
+): PdfPageLayout {
+  const padding = options.padding ?? EXPORT_PADDING
+  const marginPt = options.marginPt ?? PDF_MARGIN_PT
+  const shortPt = options.pageShortPt ?? PDF_PAGE_SHORT_PT
+  const longPt = options.pageLongPt ?? PDF_PAGE_LONG_PT
+
+  const contentWidthPx = Math.max(1e-6, Math.max(0, bounds.maxX - bounds.minX) + padding * 2)
+  const contentHeightPx = Math.max(1e-6, Math.max(0, bounds.maxY - bounds.minY) + padding * 2)
+
+  const orientation: PdfPageLayout['orientation'] =
+    contentWidthPx > contentHeightPx ? 'landscape' : 'portrait'
+  const pageWidthPt = orientation === 'landscape' ? longPt : shortPt
+  const pageHeightPt = orientation === 'landscape' ? shortPt : longPt
+
+  const availWidthPt = Math.max(1e-6, pageWidthPt - marginPt * 2)
+  const availHeightPt = Math.max(1e-6, pageHeightPt - marginPt * 2)
+
+  const scale = Math.min(availWidthPt / contentWidthPx, availHeightPt / contentHeightPx)
+  const placedWidthPt = contentWidthPx * scale
+  const placedHeightPt = contentHeightPx * scale
+
+  return {
+    orientation,
+    pageWidthPt,
+    pageHeightPt,
+    marginPt,
+    contentWidthPx,
+    contentHeightPx,
+    scale,
+    offsetXPt: marginPt + (availWidthPt - placedWidthPt) / 2,
+    offsetYPt: marginPt + (availHeightPt - placedHeightPt) / 2,
+    placedWidthPt,
+    placedHeightPt,
+  }
+}

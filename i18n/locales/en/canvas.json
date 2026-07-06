@@ -55,6 +55,8 @@
       "export": "Export",
       "export_png": "PNG Image",
       "export_png_hint": "Screenshot",
+      "export_pdf": "PDF",
+      "export_pdf_hint": "Print-ready",
       "export_json": "JSON",
       "export_json_hint": "Full data",
       "export_markdown": "Markdown",

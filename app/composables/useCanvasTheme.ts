@@ -34,30 +34,43 @@ export interface CanvasColors {
  * tokens.css as the single source of truth while feeding the renderers the
  * same resolved strings they always received — no renderer API change.
  */
+type TokenReader = (name: string, fallback: string) => string
+
 function readToken(name: string, fallback: string): string {
   if (typeof document === 'undefined') return fallback
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   return value || fallback
 }
 
-function accentAlpha(alpha: number, fallbackRgb: string): string {
-  const rgb = readToken('--nc-accent-rgb', fallbackRgb)
-  return `rgba(${rgb}, ${alpha})`
+/**
+ * Token reader that ignores the live DOM and returns the canonical fallback
+ * values. Used by print/PDF export: when the dark theme is active the
+ * document's custom properties hold DARK values, so reading them would
+ * produce a mixed palette — the fallbacks ARE the tokens.css light values.
+ */
+const readFallbackToken: TokenReader = (_name, fallback) => fallback
+
+function makeAccentAlpha(read: TokenReader) {
+  return (alpha: number, fallbackRgb: string): string => {
+    const rgb = read('--nc-accent-rgb', fallbackRgb)
+    return `rgba(${rgb}, ${alpha})`
+  }
 }
 
 const DARK_ACCENT_RGB = '94, 242, 232'
 const LIGHT_ACCENT_RGB = '11, 158, 147'
 
-function buildDarkColors(): CanvasColors {
-  const accent = readToken('--nc-accent', '#5EF2E8')
+function buildDarkColors(read: TokenReader = readToken): CanvasColors {
+  const accentAlpha = makeAccentAlpha(read)
+  const accent = read('--nc-accent', '#5EF2E8')
   return {
-    canvasBg: readToken('--nc-canvas', '#050508'),
-    nodeBg: readToken('--nc-surface-2', '#131318'),
-    nodeBorder: readToken('--nc-border', 'rgba(244, 244, 248, 0.14)'),
-    nodeTier2Bg: readToken('--nc-surface', '#0d0d11'),
+    canvasBg: read('--nc-canvas', '#050508'),
+    nodeBg: read('--nc-surface-2', '#131318'),
+    nodeBorder: read('--nc-border', 'rgba(244, 244, 248, 0.14)'),
+    nodeTier2Bg: read('--nc-surface', '#0d0d11'),
     nodeTier1Border: accentAlpha(0.45, DARK_ACCENT_RGB),
-    nodeTier2Border: readToken('--nc-border-subtle', 'rgba(244, 244, 248, 0.08)'),
-    nodeText: readToken('--nc-text', '#f4f4f8'),
+    nodeTier2Border: read('--nc-border-subtle', 'rgba(244, 244, 248, 0.08)'),
+    nodeText: read('--nc-text', '#f4f4f8'),
     nodeSelected: accent,
     nodeGlow: accentAlpha(0.08, DARK_ACCENT_RGB),
     nodeHoverBorder: accent,
@@ -71,26 +84,27 @@ function buildDarkColors(): CanvasColors {
     boxSelectFill: accentAlpha(0.06, DARK_ACCENT_RGB),
     boxSelectBorder: accentAlpha(0.4, DARK_ACCENT_RGB),
     connectionPreview: accent,
-    anchorFill: readToken('--nc-canvas', '#050508'),
+    anchorFill: read('--nc-canvas', '#050508'),
     anchorBorder: accent,
     rootIndicatorBg: accent,
-    rootIndicatorText: readToken('--nc-bg', '#050508'),
+    rootIndicatorText: read('--nc-bg', '#050508'),
   }
 }
 
 // Light-mode neutrals stay tuned for visibility against the warm-paper canvas
 // (#FAFAF9) — only the accent family follows the token (light accent is the
 // darker #0b9e93 per REDESIGN.md §2; #5EF2E8 is never used on paper).
-function buildLightColors(): CanvasColors {
-  const accent = readToken('--nc-accent', '#0b9e93')
+function buildLightColors(read: TokenReader = readToken): CanvasColors {
+  const accentAlpha = makeAccentAlpha(read)
+  const accent = read('--nc-accent', '#0b9e93')
   return {
-    canvasBg: readToken('--nc-canvas', '#FAFAF9'),
+    canvasBg: read('--nc-canvas', '#FAFAF9'),
     nodeBg: '#FFFFFF',
     nodeBorder: '#D4D4D0',
     nodeTier2Bg: '#FFFFFF',
     nodeTier1Border: accentAlpha(0.85, LIGHT_ACCENT_RGB),
     nodeTier2Border: 'rgba(0, 0, 0, 0.16)',
-    nodeText: readToken('--nc-text', '#111111'),
+    nodeText: read('--nc-text', '#111111'),
     nodeSelected: accent,
     nodeGlow: accentAlpha(0.12, LIGHT_ACCENT_RGB),
     nodeHoverBorder: accent,
@@ -104,12 +118,12 @@ function buildLightColors(): CanvasColors {
     boxSelectFill: accentAlpha(0.1, LIGHT_ACCENT_RGB),
     boxSelectBorder: accentAlpha(0.55, LIGHT_ACCENT_RGB),
     connectionPreview: accent,
-    anchorFill: readToken('--nc-canvas', '#FAFAF9'),
+    anchorFill: read('--nc-canvas', '#FAFAF9'),
     anchorBorder: accent,
     rootIndicatorBg: accent,
     // Ink on the light accent (5.69:1) — bg-colored text on #0b9e93 is
     // only 3.18:1 and fails AA for the root badge label.
-    rootIndicatorText: readToken('--nc-accent-contrast', '#111111'),
+    rootIndicatorText: read('--nc-accent-contrast', '#111111'),
   }
 }
 
@@ -121,6 +135,16 @@ function buildLightColors(): CanvasColors {
  */
 export function getCanvasColors(isLight: boolean): CanvasColors {
   return isLight ? buildLightColors() : buildDarkColors()
+}
+
+/**
+ * The LIGHT palette resolved from canonical token values, ignoring the live
+ * DOM entirely. PDF/print export renders paper-friendly light regardless of
+ * the active theme; `getCanvasColors(true)` can't do that because a dark
+ * document's custom properties hold dark values.
+ */
+export function getPrintCanvasColors(): CanvasColors {
+  return buildLightColors(readFallbackToken)
 }
 
 export function useCanvasTheme() {

@@ -915,6 +915,13 @@ function handleExportPdf() {
   exportUtils.exportAsPdf(mapStore, mapStore.title as string)
 }
 
+function handleExportMapPdf() {
+  // Desktop (AER-76): print-ready VECTOR PDF of the map graphic itself —
+  // light palette, A4 auto-orientation, real selectable text. The mobile
+  // sheet keeps the outline-document PDF above.
+  exportUtils.exportAsMapPdf(mapStore, mapStore.title as string)
+}
+
 function startEditingTitle() {
   editedTitle.value = mapStore.title as unknown as string
   isEditingTitle.value = true
@@ -2326,6 +2333,7 @@ useHead({
         @version-history="showVersionHistory = true"
         @comments="showComments = true"
         @export-png="handleExportPng"
+        @export-pdf="handleExportMapPdf"
         @export-json="handleExportJson"
         @export-markdown="handleExportMarkdown"
         @open-shortcuts="showShortcutsModal = true"

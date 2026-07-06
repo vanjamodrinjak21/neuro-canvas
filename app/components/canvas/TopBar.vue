@@ -27,6 +27,7 @@ const emit = defineEmits<{
   'version-history': []
   'comments': []
   'export-png': []
+  'export-pdf': []
   'export-json': []
   'export-markdown': []
   'settings': []
@@ -232,6 +233,7 @@ defineExpose({ focusTitleInput })
           @version-history="emit('version-history')"
           @comments="emit('comments')"
           @export-png="emit('export-png')"
+          @export-pdf="emit('export-pdf')"
           @export-json="emit('export-json')"
           @export-markdown="emit('export-markdown')"
           @help="emit('open-shortcuts')"

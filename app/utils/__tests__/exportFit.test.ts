@@ -2,9 +2,13 @@ import { describe, it, expect } from 'vitest'
 import {
   computeContentBounds,
   computeExportFit,
+  computePdfPageLayout,
   EXPORT_PADDING,
   EXPORT_MAX_PIXELS,
   EXPORT_MAX_SIDE,
+  PDF_PAGE_SHORT_PT,
+  PDF_PAGE_LONG_PT,
+  PDF_MARGIN_PT,
   type ContentBounds,
 } from '../exportFit'
 import type { Node, Edge } from '~/types/canvas'
@@ -180,5 +184,125 @@ describe('computeExportFit', () => {
     expect(fit.scale).toBe(3)
     expect(fit.width).toBe((100 + 20) * 3)
     expect(project(fit, 0, 0)).toEqual({ x: 30, y: 30 })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// computePdfPageLayout (print PDF export, AER-76)
+// ---------------------------------------------------------------------------
+
+describe('computePdfPageLayout', () => {
+  const availShort = PDF_PAGE_SHORT_PT - PDF_MARGIN_PT * 2
+  const availLong = PDF_PAGE_LONG_PT - PDF_MARGIN_PT * 2
+
+  it('single node (wider than tall) → landscape A4, upscaled to fill the width', () => {
+    // 200×80 node at (100,100); padded 296×176 → wider than tall.
+    const bounds: ContentBounds = { minX: 100, minY: 100, maxX: 300, maxY: 180 }
+    const layout = computePdfPageLayout(bounds)
+
+    expect(layout.orientation).toBe('landscape')
+    expect(layout.pageWidthPt).toBe(PDF_PAGE_LONG_PT)
+    expect(layout.pageHeightPt).toBe(PDF_PAGE_SHORT_PT)
+    expect(layout.contentWidthPx).toBe(200 + EXPORT_PADDING * 2)
+    expect(layout.contentHeightPx).toBe(80 + EXPORT_PADDING * 2)
+
+    // Width is the binding axis: it uses the full margin box; vector output
+    // upscales losslessly, so small maps grow to a readable print size.
+    expect(layout.scale).toBeCloseTo(availLong / 296, 10)
+    expect(layout.scale).toBeGreaterThan(1)
+    expect(layout.placedWidthPt).toBeCloseTo(availLong, 10)
+    expect(layout.offsetXPt).toBeCloseTo(PDF_MARGIN_PT, 10)
+
+    // Height has slack → vertically centered inside the margin box.
+    expect(layout.placedHeightPt).toBeLessThan(availShort)
+    expect(layout.offsetYPt).toBeCloseTo(
+      PDF_MARGIN_PT + (availShort - layout.placedHeightPt) / 2, 10,
+    )
+  })
+
+  it('wide map → landscape, fully contained, width-bound, centered vertically', () => {
+    const bounds: ContentBounds = { minX: -500, minY: 0, maxX: 1500, maxY: 500 }
+    const layout = computePdfPageLayout(bounds) // padded 2096×596
+
+    expect(layout.orientation).toBe('landscape')
+    expect(layout.scale).toBeCloseTo(availLong / 2096, 10)
+
+    // The whole padded map fits inside the margins on BOTH axes.
+    expect(layout.placedWidthPt).toBeLessThanOrEqual(availLong + 1e-9)
+    expect(layout.placedHeightPt).toBeLessThanOrEqual(availShort + 1e-9)
+
+    // Symmetric margins: left offset == margin (binding axis), and the
+    // placed rect is centered: page mid == placed mid.
+    expect(layout.offsetXPt).toBeCloseTo(PDF_MARGIN_PT, 10)
+    expect(layout.offsetXPt + layout.placedWidthPt / 2).toBeCloseTo(layout.pageWidthPt / 2, 10)
+    expect(layout.offsetYPt + layout.placedHeightPt / 2).toBeCloseTo(layout.pageHeightPt / 2, 10)
+  })
+
+  it('tall map → portrait, height-bound, centered horizontally', () => {
+    const bounds: ContentBounds = { minX: 0, minY: -800, maxX: 500, maxY: 1200 }
+    const layout = computePdfPageLayout(bounds) // padded 596×2096
+
+    expect(layout.orientation).toBe('portrait')
+    expect(layout.pageWidthPt).toBe(PDF_PAGE_SHORT_PT)
+    expect(layout.pageHeightPt).toBe(PDF_PAGE_LONG_PT)
+    expect(layout.scale).toBeCloseTo(availLong / 2096, 10)
+
+    expect(layout.offsetYPt).toBeCloseTo(PDF_MARGIN_PT, 10)
+    expect(layout.placedWidthPt).toBeLessThan(availShort)
+    expect(layout.offsetXPt).toBeCloseTo(
+      PDF_MARGIN_PT + (availShort - layout.placedWidthPt) / 2, 10,
+    )
+  })
+
+  it('square content ties break to portrait', () => {
+    const layout = computePdfPageLayout({ minX: 0, minY: 0, maxX: 400, maxY: 400 })
+    expect(layout.orientation).toBe('portrait')
+  })
+
+  it('never crops: placed rect always inside the margin box, for any aspect', () => {
+    const cases: ContentBounds[] = [
+      { minX: 0, minY: 0, maxX: 40_000, maxY: 200 },   // extremely wide
+      { minX: 0, minY: 0, maxX: 200, maxY: 40_000 },   // extremely tall
+      { minX: -3, minY: -3, maxX: 3, maxY: 3 },        // tiny
+      { minX: 0, minY: 0, maxX: 12_000, maxY: 9_000 }, // huge
+    ]
+    for (const bounds of cases) {
+      const layout = computePdfPageLayout(bounds)
+      expect(layout.scale).toBeGreaterThan(0)
+      expect(Number.isFinite(layout.scale)).toBe(true)
+      expect(layout.offsetXPt).toBeGreaterThanOrEqual(layout.marginPt - 1e-9)
+      expect(layout.offsetYPt).toBeGreaterThanOrEqual(layout.marginPt - 1e-9)
+      expect(layout.offsetXPt + layout.placedWidthPt)
+        .toBeLessThanOrEqual(layout.pageWidthPt - layout.marginPt + 1e-9)
+      expect(layout.offsetYPt + layout.placedHeightPt)
+        .toBeLessThanOrEqual(layout.pageHeightPt - layout.marginPt + 1e-9)
+    }
+  })
+
+  it('degenerate zero-area bounds still produce a valid page (padding saves it)', () => {
+    const layout = computePdfPageLayout({ minX: 10, minY: 10, maxX: 10, maxY: 10 })
+    expect(layout.orientation).toBe('portrait') // padded square
+    expect(layout.contentWidthPx).toBe(EXPORT_PADDING * 2)
+    expect(Number.isFinite(layout.scale)).toBe(true)
+    expect(layout.scale).toBeGreaterThan(0)
+  })
+
+  it('honours custom padding, margin and page size options', () => {
+    const bounds: ContentBounds = { minX: 0, minY: 0, maxX: 100, maxY: 50 }
+    const layout = computePdfPageLayout(bounds, {
+      padding: 0,
+      marginPt: 10,
+      pageShortPt: 400,
+      pageLongPt: 800,
+    })
+    expect(layout.orientation).toBe('landscape')
+    expect(layout.pageWidthPt).toBe(800)
+    expect(layout.pageHeightPt).toBe(400)
+    expect(layout.marginPt).toBe(10)
+    expect(layout.contentWidthPx).toBe(100)
+    // avail 780×380 for 100×50 → min(780/100, 380/50) = 7.6 → height binds.
+    expect(layout.scale).toBeCloseTo(7.6, 10)
+    expect(layout.offsetYPt).toBeCloseTo(10, 10)
+    expect(layout.offsetXPt).toBeCloseTo(10 + (780 - 760) / 2, 10)
   })
 })

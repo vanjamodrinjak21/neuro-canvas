@@ -27,6 +27,7 @@ const emit = defineEmits<{
   'version-history': []
   'comments': []
   'export-png': []
+  'export-pdf': []
   'export-json': []
   'export-markdown': []
   help: []
@@ -37,12 +38,14 @@ const { t } = useI18n()
 
 const exportFormats = computed(() => [
   { key: 'png' as const, icon: 'i-lucide-image', label: t('canvas.overflow_menu.export_png'), hint: t('canvas.overflow_menu.export_png_hint') },
+  { key: 'pdf' as const, icon: 'i-lucide-printer', label: t('canvas.overflow_menu.export_pdf'), hint: t('canvas.overflow_menu.export_pdf_hint') },
   { key: 'json' as const, icon: 'i-lucide-braces', label: t('canvas.overflow_menu.export_json'), hint: t('canvas.overflow_menu.export_json_hint') },
   { key: 'markdown' as const, icon: 'i-lucide-file-text', label: t('canvas.overflow_menu.export_markdown'), hint: t('canvas.overflow_menu.export_markdown_hint') }
 ])
 
-function handleExport(format: 'png' | 'json' | 'markdown') {
+function handleExport(format: 'png' | 'pdf' | 'json' | 'markdown') {
   if (format === 'png') emit('export-png')
+  else if (format === 'pdf') emit('export-pdf')
   else if (format === 'json') emit('export-json')
   else emit('export-markdown')
 }
