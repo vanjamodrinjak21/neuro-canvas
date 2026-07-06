@@ -232,7 +232,15 @@ export async function checkRateLimit(
     // redis.eval executes Lua atomically on Redis server — this is the standard
     // ioredis pattern for atomic INCR+EXPIRE, not arbitrary code evaluation
     const count = await (redis as any).eval(RATE_LIMIT_LUA, 1, key, windowSeconds) as number
-    return { allowed: count <= max, remaining: Math.max(0, max - count) }
+    // E2E suites register users and create shares far faster than the abuse
+    // ceilings allow (AER-74: 5 registrations/hr per IP 429s the auth specs).
+    // Raise the ceiling 1000x in explicitly-flagged test runs only; the flag
+    // is inert in production regardless of who sets it, and the limiter keeps
+    // running (still atomic, still fails closed) so the code path stays real.
+    const relaxed = process.env.E2E_RELAXED_RATE_LIMITS === '1'
+      && process.env.NODE_ENV !== 'production'
+    const effectiveMax = relaxed ? max * 1000 : max
+    return { allowed: count <= effectiveMax, remaining: Math.max(0, effectiveMax - count) }
   } catch (error) {
     console.error('checkRateLimit error:', error)
     return { allowed: false, remaining: 0 } // Fail closed — block on Redis outage
