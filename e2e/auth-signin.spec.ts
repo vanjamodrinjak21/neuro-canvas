@@ -53,9 +53,10 @@ test.describe('signin', () => {
     // Hard reload — the auth middleware re-runs getSession() on the fresh load.
     await page.reload()
 
-    // Still authenticated: we stay on the protected route, not bounced to signin.
-    await page.waitForLoadState('networkidle')
-    await expect(page).toHaveURL(/\/dashboard/)
+    // Still authenticated: we stay on the protected route, not bounced to
+    // signin. NOT `networkidle` — the dev server keeps an HMR websocket open,
+    // so network-idle never fires and the wait times out (AER-74).
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 })
     const session = await page.request.get('/api/auth/session').then((r) => r.json())
     expect(session?.user?.email).toBe(user.email)
   })

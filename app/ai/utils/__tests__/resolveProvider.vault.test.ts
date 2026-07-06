@@ -177,3 +177,29 @@ describe('resolveProvider — native read-through (AER-61)', () => {
     expect(resolved.apiKey).toBeUndefined()
   })
 })
+
+// ─── AER-79: web guard relaxation — server resolves by provider ──────────────
+// With the provider-scoped fallback in server/utils/resolveCredential.ts, a
+// cloud provider that EXISTS locally but lost its credential wiring (stale id
+// healed elsewhere, pull raced, partial sync) must fall through to the server
+// instead of failing fast on the client — the server finds the account's key
+// for that provider, or 404s with the actionable "add a key" message.
+describe('resolveProvider — web falls through to server provider fallback (AER-79)', () => {
+  it('resolves a cloud provider WITHOUT local credential wiring instead of throwing', async () => {
+    setPlatform('web')
+    setProvider({ localApiKey: undefined, credentialId: undefined })
+
+    const resolved = await resolveProvider()
+
+    expect(resolved.type).toBe('anthropic')
+    expect(resolved.credentialId).toBeUndefined()
+    expect(remoteFetch).not.toHaveBeenCalled()
+  })
+
+  it('still fails fast on web for the on-device local runtime (not server-resolvable)', async () => {
+    setPlatform('web')
+    setProvider({ type: 'local', localApiKey: undefined, credentialId: undefined })
+
+    await expect(resolveProvider()).rejects.toThrow(/No API key configured/)
+  })
+})

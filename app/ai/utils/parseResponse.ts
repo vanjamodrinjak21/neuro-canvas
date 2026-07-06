@@ -28,11 +28,19 @@ export function parseJsonResponse<T>(content: string): T {
   const bracketed = extractBalanced(content, '[', ']')
   if (bracketed) candidates.push(bracketed)
 
-  // 4. Greedy fallbacks (first { … last }, first [ … last ])
-  const objectGreedy = content.match(/\{[\s\S]*\}/)?.[0]
-  const arrayGreedy = content.match(/\[[\s\S]*\]/)?.[0]
-  if (objectGreedy) candidates.push(objectGreedy)
-  if (arrayGreedy) candidates.push(arrayGreedy)
+  // 4. Greedy fallbacks (first { … last }, first [ … last }). indexOf-based:
+  // the regex equivalent (/\{[\s\S]*\}/) retries from every start position
+  // when there is no match, which is O(n²) on large bracket-heavy garbage.
+  const firstBrace = content.indexOf('{')
+  const lastBrace = content.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    candidates.push(content.slice(firstBrace, lastBrace + 1))
+  }
+  const firstBracket = content.indexOf('[')
+  const lastBracket = content.lastIndexOf(']')
+  if (firstBracket !== -1 && lastBracket > firstBracket) {
+    candidates.push(content.slice(firstBracket, lastBracket + 1))
+  }
 
   // 5. Raw content as last resort
   candidates.push(content)
@@ -84,36 +92,37 @@ function tryParse<T>(jsonStr: string): T | undefined {
 /**
  * Find the longest balanced substring between the given open/close characters.
  * Skips characters inside strings.
+ *
+ * Single pass (AER-81): a stack of unmatched `open` indices makes every pop a
+ * balanced span — exactly the span the old per-start rescan found — O(n)
+ * instead of O(n²), so a large malformed response can no longer hang the
+ * main thread.
  */
 function extractBalanced(source: string, open: string, close: string): string | null {
-  let best: string | null = null
+  let bestStart = -1
   let bestLen = 0
-  for (let start = 0; start < source.length; start++) {
-    if (source[start] !== open) continue
-    let depth = 0
-    let inString = false
-    let escaped = false
-    for (let i = start; i < source.length; i++) {
-      const ch = source[i]
-      if (escaped) { escaped = false; continue }
-      if (ch === '\\') { escaped = true; continue }
-      if (ch === '"') { inString = !inString; continue }
-      if (inString) continue
-      if (ch === open) depth++
-      else if (ch === close) {
-        depth--
-        if (depth === 0) {
-          const len = i - start + 1
-          if (len > bestLen) {
-            best = source.slice(start, i + 1)
-            bestLen = len
-          }
-          break
-        }
+  const stack: number[] = []
+  let inString = false
+  let escaped = false
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i]
+    if (escaped) { escaped = false; continue }
+    if (ch === '\\') { escaped = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === open) {
+      stack.push(i)
+    } else if (ch === close) {
+      const start = stack.pop()
+      if (start === undefined) continue
+      const len = i - start + 1
+      if (len > bestLen) {
+        bestStart = start
+        bestLen = len
       }
     }
   }
-  return best
+  return bestStart === -1 ? null : source.slice(bestStart, bestStart + bestLen)
 }
 
 /**
@@ -141,7 +150,10 @@ function repairTruncatedJson(json: string): string {
   // Remove dangling key without value: `"someKey":` at end
   result = result.replace(/,?\s*"[^"]*"\s*:\s*$/, '')
   // Remove dangling key without colon: `"someKey"` at end of object (not a value)
-  result = result.replace(/,?\s*"[^"]*"\s*$/, (match) => {
+  result = result.replace(/,?\s*"[^"]*"\s*$/, (match, offset: number) => {
+    // A string preceded by `:` is a complete VALUE, not a dangling key —
+    // stripping it would orphan its key (`{"title":` → unparseable).
+    if (result.slice(0, offset).trimEnd().endsWith(':')) return match
     // Only strip if we're inside an object context (last open bracket was {)
     const lastBrace = result.lastIndexOf('{')
     const lastBracket = result.lastIndexOf('[')
@@ -166,13 +178,15 @@ function repairTruncatedJson(json: string): string {
     if (ch === '}' || ch === ']') stack.pop()
   }
 
-  // Close unclosed brackets in reverse order
+  // Close unclosed brackets in reverse order. Joined once — appending one
+  // char at a time re-copies the whole string per bracket, which is O(n²)
+  // on pathological inputs with thousands of unclosed brackets (AER-81).
+  const closers: string[] = []
   while (stack.length > 0) {
     const open = stack.pop()
-    result += open === '{' ? '}' : ']'
+    closers.push(open === '{' ? '}' : ']')
   }
-
-  return result
+  return result + closers.join('')
 }
 
 /**

@@ -90,3 +90,55 @@ describe('checkRateLimit — Redis key passthrough (AER-48)', () => {
     expect(result.allowed).toBe(false)
   })
 })
+
+describe('checkRateLimit — E2E relaxation flag (AER-74)', () => {
+  beforeEach(() => {
+    evalMock.mockReset()
+    vi.unstubAllEnvs()
+  })
+
+  it('multiplies the ceiling when E2E_RELAXED_RATE_LIMITS=1 outside production', async () => {
+    vi.stubEnv('E2E_RELAXED_RATE_LIMITS', '1')
+    vi.stubEnv('NODE_ENV', 'test')
+    // 6th registration in the window: over the nominal max of 5, but far
+    // below the relaxed ceiling — must be allowed in a flagged test run.
+    evalMock.mockResolvedValue(6)
+    const { checkRateLimit } = await import('../redis')
+
+    const result = await checkRateLimit('register:127.0.0.1', 5, 3600)
+
+    expect(result.allowed).toBe(true)
+  })
+
+  it('ignores the flag when NODE_ENV is production', async () => {
+    vi.stubEnv('E2E_RELAXED_RATE_LIMITS', '1')
+    vi.stubEnv('NODE_ENV', 'production')
+    evalMock.mockResolvedValue(6)
+    const { checkRateLimit } = await import('../redis')
+
+    const result = await checkRateLimit('register:127.0.0.1', 5, 3600)
+
+    expect(result.allowed).toBe(false)
+  })
+
+  it('enforces the nominal ceiling when the flag is absent', async () => {
+    vi.stubEnv('NODE_ENV', 'test')
+    evalMock.mockResolvedValue(6)
+    const { checkRateLimit } = await import('../redis')
+
+    const result = await checkRateLimit('register:127.0.0.1', 5, 3600)
+
+    expect(result.allowed).toBe(false)
+  })
+
+  it('still fails CLOSED on Redis errors even when relaxed', async () => {
+    vi.stubEnv('E2E_RELAXED_RATE_LIMITS', '1')
+    vi.stubEnv('NODE_ENV', 'test')
+    evalMock.mockRejectedValue(new Error('redis down'))
+    const { checkRateLimit } = await import('../redis')
+
+    const result = await checkRateLimit('register:127.0.0.1', 5, 3600)
+
+    expect(result.allowed).toBe(false)
+  })
+})

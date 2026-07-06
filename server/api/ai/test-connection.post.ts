@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     apiKey = body.rawApiKey
   } else if (body.credentialId || body.provider !== 'ollama') {
     try {
-      const cred = await resolveCredential(userId, body.credentialId)
+      const cred = await resolveCredential(userId, body.credentialId, { provider: body.provider })
       apiKey = cred.apiKey
     } catch {
       return { success: false, message: 'No API key found. Add one in Settings.' }

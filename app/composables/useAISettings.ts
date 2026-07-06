@@ -292,9 +292,13 @@ export function useAISettings() {
   async function syncVaultOnInit(): Promise<void> {
     if (_vaultSyncAttempted) return
     const ready = nativeAuthIfReady()
-    // Not native / signed-out / offline — leave the attempt UNSPENT so a later
-    // call (after sign-in) actually runs the reconcile.
-    if (!ready) return
+    // Not native-ready. On WEB this is the cross-device path (AER-78); on a
+    // native shell that's signed-out/offline, leave the attempt UNSPENT so a
+    // later call (after sign-in) actually runs the reconcile.
+    if (!ready) {
+      if (!_isTauri() && !_isCapacitor()) await webVaultPull()
+      return
+    }
 
     let list: VaultCredentialMeta[]
     try {
@@ -413,6 +417,100 @@ export function useAISettings() {
     }
 
     if (changed) await save()
+  }
+
+  /**
+   * WEB + signed-in (AER-78): wire local provider config to the account's
+   * vault credentials so a second browser works without retyping the key.
+   * Radically simpler than the native reconcile because the server resolves
+   * keys by credentialId at generation time — this pull is additive, touches
+   * WIRING only, and NO key material ever reaches the web client.
+   *
+   * One-shot semantics mirror syncVaultOnInit: spent only after the list
+   * fetch succeeds, so a guest/signed-out 401 or an offline attempt retries
+   * on the next initialize() after sign-in. NEVER throws.
+   */
+  async function webVaultPull(): Promise<void> {
+    if (typeof window === 'undefined') return
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+
+    let list: VaultCredentialMeta[]
+    try {
+      const res = await ($fetch as any)('/api/vault/credentials') as { credentials?: VaultCredentialMeta[] }
+      list = Array.isArray(res?.credentials) ? res.credentials : []
+    } catch {
+      // 401 (guest / signed-out) or transport failure — leave the attempt
+      // UNSPENT so the pull runs after sign-in.
+      return
+    }
+    _vaultSyncAttempted = true
+
+    const vaultIds = new Set(list.map(c => c.id))
+    let changed = false
+
+    for (const cred of list) {
+      const providerType = cred.provider as AIProviderType
+      // Keyless local runtimes never have vault rows worth wiring.
+      if (providerType === 'ollama' || providerType === 'local') continue
+      if (!PROVIDER_TEMPLATES[providerType]) continue
+
+      let target = state.settings.providers.find(p => p.type === providerType)
+      if (!target) {
+        // Fresh browser — create the provider from the template; addProvider
+        // without a key makes no vault call and persists via save().
+        target = await addProvider(providerType)
+        changed = true
+      }
+      // Point at the account row unless the current reference resolves to a
+      // LIVE vault row (self-heals ids gone stale after a delete + re-add on
+      // another device; never clobbers a working reference).
+      if (!(target.credentialId && vaultIds.has(target.credentialId))) {
+        if (target.credentialId !== cred.id) {
+          target.credentialId = cred.id
+          changed = true
+        }
+      }
+      if (!target.isEnabled) {
+        target.isEnabled = true
+        changed = true
+      }
+    }
+
+    // Delete-propagation (non-destructive): a cloud provider whose provider
+    // type no longer has ANY vault row cannot generate — the server-side
+    // provider fallback has nothing to fall back to. Disable it (never
+    // delete) so the default promotes to a usable provider and settings show
+    // the key is gone. Providers holding on-device key material (imported
+    // native settings) are never touched.
+    const vaultTypes = new Set(list.map(c => c.provider))
+    for (const p of state.settings.providers) {
+      if (p.type === 'ollama' || p.type === 'local') continue
+      if (!p.isEnabled || p.localApiKey) continue
+      if (vaultTypes.has(p.type)) continue
+      p.isEnabled = false
+      changed = true
+    }
+
+    if (!changed) return
+
+    // Broken-default promotion, same rule as the native pull but keyed on
+    // credentialId — web needs no on-device key material to be usable.
+    const currentDefault = state.settings.providers.find(p => p.id === state.settings.defaultProviderId)
+    const defaultUsable = !!currentDefault
+      && currentDefault.isEnabled
+      && (currentDefault.type === 'local'
+        ? true
+        : !!(currentDefault.localApiKey || currentDefault.credentialId))
+    if (!defaultUsable) {
+      const promote = state.settings.providers.find(p =>
+        p.isEnabled && p.type !== 'ollama' && p.type !== 'local' && !!p.credentialId)
+      if (promote) {
+        state.settings.defaultProviderId = promote.id
+        for (const p of state.settings.providers) p.isDefault = (p.id === promote.id)
+      }
+    }
+
+    await save()
   }
 
   /**

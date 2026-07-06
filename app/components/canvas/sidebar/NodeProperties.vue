@@ -73,6 +73,15 @@ function updateContent() {
   }
 }
 
+// The header pencil is the natural "rename" affordance — it focuses the
+// Label field below (which commits on blur/Enter). It shipped with no
+// handler at all, so clicking it silently did nothing.
+const labelInputRef = ref<HTMLInputElement | null>(null)
+function focusLabelInput() {
+  labelInputRef.value?.focus()
+  labelInputRef.value?.select()
+}
+
 function updateNotes() {
   if (props.selectedNode) {
     mapStore.updateNode(props.selectedNode.id, {
@@ -162,7 +171,11 @@ const categoryChips = computed(() => [
           <span class="properties__header-name">{{ selectedNode.content }}</span>
           <span class="properties__header-meta">Root node · {{ connectionCount }} connections</span>
         </div>
-        <button class="properties__edit-btn">
+        <button
+          class="properties__edit-btn"
+          :aria-label="$t('canvas.node_props_form.label')"
+          @click="focusLabelInput"
+        >
           <span class="i-lucide-pencil" />
         </button>
       </div>
@@ -233,6 +246,7 @@ const categoryChips = computed(() => [
             <span class="properties__char-count">{{ localContent.length }}/{{ labelMaxLength }}</span>
           </div>
           <input
+            ref="labelInputRef"
             v-model="localContent"
             type="text"
             :placeholder="$t('canvas.node_panel.label_full_placeholder')"

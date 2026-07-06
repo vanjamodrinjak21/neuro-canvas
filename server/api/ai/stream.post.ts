@@ -4,6 +4,7 @@ import { validateBody, aiCompletionSchema } from '../../utils/validation'
 import { validateOutboundUrl, safeFetch } from '../../utils/ssrf'
 import { resolveCredential } from '../../utils/resolveCredential'
 import { openaiTokenParams } from '../../utils/openaiChatBody'
+import { createStreamBudget } from '../../utils/streamBudget'
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAuthSession(event)
@@ -18,7 +19,7 @@ export default defineEventHandler(async (event) => {
   // Resolve API key from vault (never from request body)
   let apiKey: string | null = null
   if (body.provider !== 'ollama') {
-    const cred = await resolveCredential(userId, body.credentialId)
+    const cred = await resolveCredential(userId, body.credentialId, { provider: body.provider })
     apiKey = cred.apiKey
   }
 
@@ -41,6 +42,26 @@ export default defineEventHandler(async (event) => {
       function sendEvent(data: Record<string, unknown>) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
       }
+
+      // Provider failures ride the SSE channel over HTTP 200, so the global
+      // error-handler plugin never sees them. Log before emitting — without
+      // this, failed generations are invisible in production logs (AER-77).
+      function sendError(message: string, detail?: { status?: number }) {
+        console.error('[ai/stream] provider error', {
+          provider: body.provider,
+          model: body.model,
+          message,
+          ...detail,
+          ts: new Date().toISOString()
+        })
+        // statusCode lets userFriendlyError() localise downstream (429 → rate
+        // limited, 5xx → provider down) instead of falling back to "generic".
+        sendEvent({ type: 'error', message, statusCode: detail?.status })
+      }
+
+      // Resource caps (AER-81): a hung or malicious upstream (custom baseUrl
+      // is user-supplied) must not hold this connection or push bytes forever.
+      const budget = createStreamBudget()
 
       try {
         switch (body.provider) {
@@ -70,14 +91,14 @@ export default defineEventHandler(async (event) => {
 
             if (!response.ok) {
               const err = await response.json().catch(() => ({}))
-              sendEvent({ type: 'error', message: (err as any).error?.message || `API error: ${response.status}` })
+              sendError((err as any).error?.message || `API error: ${response.status}`, { status: response.status })
               controller.close()
               return
             }
 
             const reader = response.body?.getReader()
             if (!reader) {
-              sendEvent({ type: 'error', message: 'No response body' })
+              sendError('No response body')
               controller.close()
               return
             }
@@ -88,6 +109,13 @@ export default defineEventHandler(async (event) => {
             while (true) {
               const { done, value } = await reader.read()
               if (done) break
+
+              const violation = budget.consume(value.byteLength)
+              if (violation) {
+                await reader.cancel().catch(() => { /* upstream already gone */ })
+                sendError(violation)
+                return
+              }
 
               buffer += decoder.decode(value, { stream: true })
               const lines = buffer.split('\n')
@@ -133,14 +161,14 @@ export default defineEventHandler(async (event) => {
 
             if (!response.ok) {
               const err = await response.json().catch(() => ({}))
-              sendEvent({ type: 'error', message: (err as any).error?.message || `API error: ${response.status}` })
+              sendError((err as any).error?.message || `API error: ${response.status}`, { status: response.status })
               controller.close()
               return
             }
 
             const reader = response.body?.getReader()
             if (!reader) {
-              sendEvent({ type: 'error', message: 'No response body' })
+              sendError('No response body')
               controller.close()
               return
             }
@@ -151,6 +179,13 @@ export default defineEventHandler(async (event) => {
             while (true) {
               const { done, value } = await reader.read()
               if (done) break
+
+              const violation = budget.consume(value.byteLength)
+              if (violation) {
+                await reader.cancel().catch(() => { /* upstream already gone */ })
+                sendError(violation)
+                return
+              }
 
               buffer += decoder.decode(value, { stream: true })
               const lines = buffer.split('\n')
@@ -192,14 +227,14 @@ export default defineEventHandler(async (event) => {
             })
 
             if (!response.ok) {
-              sendEvent({ type: 'error', message: `Ollama error: ${response.status}` })
+              sendError(`Ollama error: ${response.status}`, { status: response.status })
               controller.close()
               return
             }
 
             const reader = response.body?.getReader()
             if (!reader) {
-              sendEvent({ type: 'error', message: 'No response body' })
+              sendError('No response body')
               controller.close()
               return
             }
@@ -210,6 +245,13 @@ export default defineEventHandler(async (event) => {
             while (true) {
               const { done, value } = await reader.read()
               if (done) break
+
+              const violation = budget.consume(value.byteLength)
+              if (violation) {
+                await reader.cancel().catch(() => { /* upstream already gone */ })
+                sendError(violation)
+                return
+              }
 
               buffer += decoder.decode(value, { stream: true })
               const lines = buffer.split('\n')
@@ -230,10 +272,10 @@ export default defineEventHandler(async (event) => {
           }
 
           default:
-            sendEvent({ type: 'error', message: `Unsupported provider: ${body.provider}` })
+            sendError(`Unsupported provider: ${body.provider}`)
         }
       } catch (e) {
-        sendEvent({ type: 'error', message: e instanceof Error ? e.message : 'Stream failed' })
+        sendError(e instanceof Error ? e.message : 'Stream failed')
       } finally {
         controller.close()
       }
