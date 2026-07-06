@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 
 interface CommentRow {
   id: string
@@ -26,6 +27,8 @@ const { t, locale } = useI18n()
 // gate them when offline. Reading cached threads still works offline.
 const { isOnline } = useSyncEngine()
 const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
+
+const { confirm, ConfirmDialog } = useConfirmDialog()
 
 const comments = ref<CommentRow[]>([])
 const loading = ref(true)
@@ -110,7 +113,14 @@ async function reopenThread(threadId: string) {
 }
 
 async function deleteComment(commentId: string) {
-  if (!window.confirm(t('canvas.comments.delete_confirm'))) return
+  const confirmed = await confirm({
+    title: t('canvas.comments.delete_confirm'),
+    confirmText: t('common.buttons.delete'),
+    cancelText: t('common.buttons.cancel'),
+    variant: 'danger',
+    icon: 'i-lucide-trash-2'
+  })
+  if (!confirmed) return
   try {
     await $fetch(`/api/maps/${props.mapId}/comments/${commentId}${queryParam.value}`, {
       method: 'DELETE',
@@ -274,6 +284,7 @@ onKeyStroke('Escape', () => emit('close'))
       </section>
     </div>
   </aside>
+  <component :is="ConfirmDialog" />
 </template>
 
 <style scoped>

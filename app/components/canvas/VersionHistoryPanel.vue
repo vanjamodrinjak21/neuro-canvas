@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
 import { useSyncEngine } from '~/composables/useSyncEngine'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 
 interface VersionRow {
   id: string
@@ -24,12 +25,12 @@ const { t, locale } = useI18n()
 const { isOnline } = useSyncEngine()
 const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
 
+const { confirm, ConfirmDialog } = useConfirmDialog()
+
 const versions = ref<VersionRow[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const restoringId = ref<string | null>(null)
-/** Row currently showing the inline "are you sure?" confirm. */
-const pendingId = ref<string | null>(null)
 
 async function load() {
   loading.value = true
@@ -47,17 +48,18 @@ async function load() {
   }
 }
 
-function askRestore(versionId: string) {
+async function askRestore(versionId: string) {
   if (restoringId.value || !isOnline.value) return
-  pendingId.value = versionId
-}
-function cancelRestore() {
-  pendingId.value = null
-}
-
-async function confirmRestore(versionId: string) {
+  const confirmed = await confirm({
+    title: t('canvas.version_history.title'),
+    description: t('canvas.version_history.restore_confirm'),
+    confirmText: t('canvas.version_history.restore'),
+    cancelText: t('canvas.version_history.cancel'),
+    variant: 'danger',
+    icon: 'i-lucide-history'
+  })
+  if (!confirmed) return
   restoringId.value = versionId
-  pendingId.value = null
   error.value = null
   try {
     await $fetch(`/api/maps/${props.mapId}/versions/${versionId}/restore`, {
@@ -111,7 +113,6 @@ function onBackdrop() {
 
 onMounted(load)
 onKeyStroke('Escape', () => {
-  if (pendingId.value) { pendingId.value = null; return }
   if (!restoringId.value) emit('close')
 })
 </script>
@@ -149,7 +150,6 @@ onKeyStroke('Escape', () => {
             v-for="v in versions"
             :key="v.id"
             class="vh-row"
-            :class="{ 'is-pending': pendingId === v.id }"
           >
             <div class="vh-row-main">
               <div class="vh-row-time">{{ formatDate(v.createdAt) }}</div>
@@ -162,19 +162,7 @@ onKeyStroke('Escape', () => {
               </div>
             </div>
 
-            <div v-if="pendingId === v.id" class="vh-confirm">
-              <span class="vh-confirm-q">{{ t('canvas.version_history.restore_confirm') }}</span>
-              <div class="vh-confirm-actions">
-                <button class="vh-btn vh-btn-ghost" @click="cancelRestore">
-                  {{ t('canvas.version_history.cancel') }}
-                </button>
-                <button class="vh-btn vh-btn-primary" @click="confirmRestore(v.id)">
-                  {{ t('canvas.version_history.restore') }}
-                </button>
-              </div>
-            </div>
             <button
-              v-else
               class="vh-btn vh-restore"
               :disabled="!!restoringId || !isOnline"
               :title="offlineHint"
@@ -189,6 +177,7 @@ onKeyStroke('Escape', () => {
       </section>
     </div>
   </Teleport>
+  <component :is="ConfirmDialog" />
 </template>
 
 <style scoped>
@@ -318,11 +307,6 @@ onKeyStroke('Escape', () => {
 @media (hover: hover) and (pointer: fine) {
   .vh-row:hover { background: var(--nc-chip-bg); }
 }
-/* Pending confirm = selected state: accent fill + left marker, never color alone */
-.vh-row.is-pending {
-  background: rgba(var(--nc-accent-rgb), 0.06);
-  box-shadow: inset 2px 0 0 var(--nc-accent);
-}
 .vh-row-main { min-width: 0; }
 .vh-row-time { font-size: calc(13.5px * var(--nc-text-scale, 1)); font-weight: 550; }
 .vh-row-meta {
@@ -362,45 +346,4 @@ onKeyStroke('Escape', () => {
   }
 }
 .vh-restore:disabled { opacity: 0.45; cursor: not-allowed; }
-
-.vh-confirm {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.vh-confirm-q {
-  font-size: calc(11.5px * var(--nc-text-scale, 1));
-  color: var(--nc-text-secondary);
-  max-width: 180px;
-  text-align: right;
-  line-height: 1.35;
-}
-.vh-confirm-actions { display: flex; gap: 8px; }
-.vh-btn-ghost {
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--nc-text-secondary);
-}
-@media (hover: hover) and (pointer: fine) {
-  .vh-btn-ghost:hover { color: var(--nc-text); background: var(--nc-surface-3); }
-}
-/* Restore confirm — destructive-confirm accent → coral (REDESIGN.md §1) */
-.vh-btn-primary {
-  border: 1px solid rgba(var(--nc-coral-rgb), 0.4);
-  background: rgba(var(--nc-coral-rgb), 0.12);
-  color: var(--nc-coral);
-  font-weight: 650;
-}
-@media (hover: hover) and (pointer: fine) {
-  .vh-btn-primary:hover {
-    background: rgba(var(--nc-coral-rgb), 0.18);
-    border-color: rgba(var(--nc-coral-rgb), 0.55);
-  }
-}
-
-@media (max-width: 560px) {
-  .vh-confirm { flex-direction: column; align-items: flex-end; gap: 8px; }
-  .vh-confirm-q { max-width: none; }
-}
 </style>
