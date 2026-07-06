@@ -127,21 +127,6 @@ const recommended = computed(() => {
 
 const versionTag = computed(() => (release.value?.tag ?? 'beta').toUpperCase())
 
-/** app version as published — read from the asset filenames */
-const version = computed(() => {
-  for (const a of release.value?.assets ?? []) {
-    const m = a.name.match(/\d+\.\d+\.\d+/)
-    if (m) return m[0]
-  }
-  return null
-})
-
-/** hover tip: the app version behind the link */
-function tip(f: FileRow): string | undefined {
-  if (!f.name) return undefined
-  return `NeuroCanvas ${version.value ?? versionTag.value}`
-}
-
 const instKey: Record<Platform, string> = {
   macos: 'instMacos',
   windows: 'instWindows',
@@ -169,9 +154,8 @@ const instKey: Record<Platform, string> = {
 
     <div v-if="recommended" class="download-cta">
       <a
-        class="btn-primary tip"
+        class="btn-primary"
         :href="recommended.url"
-        :data-tip="tip(recommended)"
         target="_blank"
         rel="noopener"
         data-cursor="link"
@@ -198,9 +182,8 @@ const instKey: Record<Platform, string> = {
           <a
             v-for="f in p.files"
             :key="f.label"
-            class="card__file tip"
+            class="card__file"
             :href="f.url"
-            :data-tip="tip(f)"
             target="_blank"
             rel="noopener"
             data-cursor="link"
