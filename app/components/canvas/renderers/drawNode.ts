@@ -43,6 +43,46 @@ const CATEGORY_STRIP_COLORS: Record<string, string> = {
   default: '',
 }
 
+// Text-wrap layout cache (AER-82). Wrapping runs ctx.measureText per WORD per
+// node per FRAME — the dominant full-LOD render cost on large maps. The layout
+// depends only on (font, available width, content), so cache computed lines.
+// Bounded by insertion-order eviction; edits/resizes re-key naturally.
+const MAX_WRAP_CACHE = 2000
+const wrapCache = new Map<string, string[]>()
+
+function wrapNodeText(
+  ctx: CanvasRenderingContext2D,
+  content: string,
+  font: string,
+  maxWidth: number
+): string[] {
+  const key = `${font}|${maxWidth}|${content}`
+  const cached = wrapCache.get(key)
+  if (cached) return cached
+
+  const words = content.split(' ')
+  const lines: string[] = []
+  let currentLine = ''
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word
+    const m = ctx.measureText(testLine)
+    if (m.width > maxWidth && currentLine) {
+      lines.push(currentLine)
+      currentLine = word
+    } else {
+      currentLine = testLine
+    }
+  }
+  if (currentLine) lines.push(currentLine)
+
+  if (wrapCache.size >= MAX_WRAP_CACHE) {
+    const oldest = wrapCache.keys().next().value
+    if (oldest !== undefined) wrapCache.delete(oldest)
+  }
+  wrapCache.set(key, lines)
+  return lines
+}
+
 /** Subset of colors used by the simplified node renderer. */
 export interface NodeColorsSimplified {
   nodeBg: string
@@ -247,23 +287,10 @@ export function drawNode(
   ctx.textBaseline = 'middle'
 
   // Wrap using the same padding the sizer used so text fits exactly.
+  // Layout is cached across frames (AER-82) — see wrapNodeText.
   const metrics = getNodeMetrics(fontSize)
   const maxWidth = drawWidth - metrics.paddingX
-  const words = node.content.split(' ')
-  const lines: string[] = []
-  let currentLine = ''
-
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word
-    const m = ctx.measureText(testLine)
-    if (m.width > maxWidth && currentLine) {
-      lines.push(currentLine)
-      currentLine = word
-    } else {
-      currentLine = testLine
-    }
-  }
-  if (currentLine) lines.push(currentLine)
+  const lines = wrapNodeText(ctx, node.content, ctx.font, maxWidth)
 
   const lineHeight = metrics.lineHeight
   const textY = drawY + drawHeight / 2 - ((lines.length - 1) * lineHeight) / 2
