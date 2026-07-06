@@ -73,7 +73,7 @@ export default defineConfig({
       'nc-teal-dark': 'var(--nc-teal-dark)',
 
       // Coral (live markers only) + chip fill
-      'nc-coral': 'var(--nc-coral)',
+      'nc-coral': 'rgba(var(--nc-coral-rgb), %alpha)',
       'nc-chip': 'var(--nc-chip-bg)',
 
       // Node Colors

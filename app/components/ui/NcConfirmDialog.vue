@@ -81,16 +81,18 @@ function handleCancel() {
 </template>
 
 <style scoped>
+/* All colors token-driven (var(--nc-*)) so light mode flips automatically —
+   the per-theme override block this file used to carry is gone by design. */
 .confirm-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  animation: confirmFadeIn 150ms ease-out;
+  background: rgba(var(--nc-bg-rgb), 0.66);
+  animation: confirmFadeIn 150ms var(--nc-ease);
 }
 
+/* Flat surface-2 + hairline, radius ≤ 0.5rem, transform-origin center,
+   enter scale(0.97)+opacity 200ms single ease (REDESIGN.md §5/§6). */
 .confirm-modal {
   position: fixed;
   left: 50%;
@@ -99,57 +101,60 @@ function handleCancel() {
   width: 90%;
   max-width: 400px;
   transform: translate(-50%, -50%);
-  background: #18181B;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  transform-origin: center;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: confirmSlideUp 200ms ease-out;
+  box-shadow: var(--nc-shadow-xl);
+  animation: confirmScaleIn 200ms var(--nc-ease);
   outline: none;
 }
 
 .confirm-header {
   padding: 24px 24px 16px;
   text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--nc-border-subtle);
 }
 
 .confirm-icon {
   width: 40px;
   height: 40px;
   margin: 0 auto 16px;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: calc(20px * var(--nc-text-scale, 1));
 }
 
-/* Matches the home (dashboard) delete modal exactly. */
+/* Coral = destructive-confirm accent; cyan = interactive (REDESIGN.md §1) */
 .confirm-icon--danger {
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.22);
-  color: #DC2626;
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.22);
+  color: var(--nc-coral);
 }
 
 .confirm-icon--default {
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.2);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.2);
+  color: var(--nc-accent);
 }
 
+/* Modal header — display font 700, tight tracking (REDESIGN.md §4) */
 .confirm-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(18px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   margin: 0 0 6px;
-  color: #FAFAFA;
+  color: var(--nc-text);
 }
 
 .confirm-subtitle {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: #71717A;
+  color: var(--nc-text-secondary);
   margin: 4px 0 0;
   line-height: 1.5;
 }
@@ -157,10 +162,11 @@ function handleCancel() {
 .confirm-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
   padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--nc-border-subtle);
+  background: var(--nc-chip-bg);
 }
 
 .confirm-btn {
@@ -168,76 +174,81 @@ function handleCancel() {
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition:
+    background-color 0.15s var(--nc-ease),
+    color 0.15s var(--nc-ease),
+    transform 0.15s var(--nc-ease),
+    opacity 0.15s var(--nc-ease);
 }
 
+.confirm-btn:active {
+  transform: scale(0.97);
+}
+
+/* Ghost — mono uppercase text link with underline-grow (REDESIGN.md §5) */
 .confirm-btn--ghost {
+  position: relative;
   background: transparent;
-  color: #A1A1AA;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.4rem;
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.78rem * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
-.confirm-btn--ghost:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #E4E4E7;
+.confirm-btn--ghost::after {
+  content: '';
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 0.3em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 0.45s var(--nc-ease);
 }
 
+/* Primary — ink pill; Danger — coral pill (destructive confirm) */
+.confirm-btn--primary,
 .confirm-btn--danger {
-  background: #DC2626;
-  color: #FFFFFF;
-}
-
-.confirm-btn--danger:hover {
-  background: #B91C1C;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
+  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-weight: 700;
 }
 
 .confirm-btn--primary {
-  background: #00D2BE;
-  color: #09090B;
+  background: var(--nc-text);
+  color: var(--nc-bg);
 }
 
-.confirm-btn--primary:hover {
-  opacity: 0.9;
+.confirm-btn--danger {
+  background: var(--nc-coral);
+  color: var(--nc-bg);
 }
 
-/* ── Light theme ── */
-:root.light .confirm-modal {
-  background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-}
+@media (hover: hover) and (pointer: fine) {
+  .confirm-btn--ghost:hover {
+    color: var(--nc-accent);
+  }
 
-:root.light .confirm-header {
-  border-bottom-color: rgba(0, 0, 0, 0.06);
-}
+  .confirm-btn--ghost:hover::after {
+    transform: scaleX(1);
+  }
 
-:root.light .confirm-title {
-  color: #18181B;
-}
+  .confirm-btn--primary:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
 
-:root.light .confirm-subtitle {
-  color: #71717A;
-}
-
-:root.light .confirm-footer {
-  border-top-color: rgba(0, 0, 0, 0.06);
-  background: #FAFAF9;
-}
-
-:root.light .confirm-btn--ghost {
-  color: #71717A;
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-:root.light .confirm-btn--ghost:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: #18181B;
+  .confirm-btn--danger:hover {
+    transform: translateY(-1px);
+  }
 }
 
 /* ── Animations ── */
@@ -246,8 +257,8 @@ function handleCancel() {
   to { opacity: 1; }
 }
 
-@keyframes confirmSlideUp {
-  from { opacity: 0; transform: translate(-50%, -50%) translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translate(-50%, -50%) translateY(0) scale(1); }
+@keyframes confirmScaleIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 </style>

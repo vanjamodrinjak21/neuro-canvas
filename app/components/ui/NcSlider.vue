@@ -48,31 +48,30 @@ const internalValue = computed({
       :class="[
         'relative flex items-center select-none touch-none',
         orientation === 'horizontal' ? 'w-full h-5' : 'flex-col w-5 h-full',
-        disabled && 'opacity-50 cursor-not-allowed'
+        disabled && 'opacity-45 cursor-not-allowed'
       ]"
     >
+      <!-- Hairline track, accent fill — no glow (REDESIGN.md §5) -->
       <SliderTrack
         :class="[
-          'relative grow rounded-full bg-nc-graphite/80 border border-nc-border',
+          'relative grow rounded-full bg-nc-chip border border-nc-border',
           orientation === 'horizontal' ? 'h-2' : 'w-2'
         ]"
       >
         <SliderRange
-          class="absolute rounded-full bg-nc-teal shadow-[0_0_8px_rgba(0,210,190,0.4)]"
+          class="absolute rounded-full bg-nc-accent"
           :class="orientation === 'horizontal' ? 'h-full' : 'w-full'"
         />
       </SliderTrack>
 
+      <!-- Ink thumb with press feedback -->
       <SliderThumb
         v-for="(_, index) in modelValue"
         :key="index"
         :class="[
-          'block w-5 h-5 rounded-full bg-nc-teal shadow-[0_0_12px_rgba(0,210,190,0.5)]',
-          'border-2 border-nc-surface',
-          'focus:outline-none focus:ring-2 focus:ring-nc-teal/40 focus:ring-offset-2 focus:ring-offset-nc-charcoal',
-          'transition-all duration-200',
-          'hover:scale-110 hover:shadow-[0_0_16px_rgba(0,210,190,0.6)]',
-          disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing active:scale-95'
+          'block w-5 h-5 rounded-full bg-nc-ink border border-nc-border',
+          'nc-anim',
+          disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing active:scale-97'
         ]"
       />
     </SliderRoot>

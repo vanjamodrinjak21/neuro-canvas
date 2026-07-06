@@ -103,7 +103,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="nc-select" :class="{ 'is-open': open, 'is-disabled': disabled }">
+  <div ref="root" class="nc-select" :class="{ 'is-open': open, 'is-disabled': disabled, 'has-label': !!$slots.label }">
+    <!-- Optional label — mono micro-label (REDESIGN.md §4/§5) -->
+    <span v-if="$slots.label" class="nc-select__label">
+      <slot name="label" />
+    </span>
     <button
       ref="triggerEl"
       type="button"
@@ -156,6 +160,21 @@ onBeforeUnmount(() => {
   position: relative;
   display: inline-flex;
 }
+.nc-select.has-label {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+.nc-select__label {
+  font-family: var(--nc-font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
+}
+/* Input grammar (REDESIGN.md §5): chip fill, 1px hairline, radius 0.5rem.
+   Focus = border-color accent ONLY — no ring, no glow. */
 .nc-select__trigger {
   display: flex;
   align-items: center;
@@ -164,22 +183,23 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 36px;
   padding: 0 10px 0 12px;
-  background: var(--nc-bg);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--nc-border);
-  border-radius: 6px;
+  border-radius: 0.5rem;
   color: var(--nc-text);
-  font: 400 13px Inter, system-ui, sans-serif;
+  font-family: var(--nc-font-body);
+  font-size: 13px;
+  font-weight: 400;
   cursor: pointer;
-  transition: border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease), background-color var(--nc-duration-fast) var(--nc-ease);
 }
-.nc-select__trigger:hover { border-color: var(--nc-text-dim); }
+.nc-select__trigger:hover { border-color: var(--nc-border-active); }
 .nc-select__trigger:focus-visible {
   outline: none;
   border-color: var(--nc-accent);
-  box-shadow: 0 0 0 3px var(--nc-accent-glow);
 }
 .nc-select.is-open .nc-select__trigger { border-color: var(--nc-accent); }
-.nc-select.is-disabled .nc-select__trigger { opacity: 0.5; cursor: not-allowed; }
+.nc-select.is-disabled .nc-select__trigger { opacity: 0.45; cursor: not-allowed; }
 .nc-select__value {
   flex: 1;
   text-align: left;
@@ -190,50 +210,55 @@ onBeforeUnmount(() => {
 .nc-select__chevron {
   flex-shrink: 0;
   color: var(--nc-text-muted);
-  transition: transform var(--nc-duration-fast) ease, color var(--nc-duration-fast) ease;
+  transition: transform var(--nc-duration-fast) var(--nc-ease), color var(--nc-duration-fast) var(--nc-ease);
 }
 .nc-select.is-open .nc-select__chevron { transform: rotate(180deg); color: var(--nc-text-secondary); }
 
+/* Popover — flat surface-2 + hairline, origin at the trigger (REDESIGN.md §5) */
 .nc-select__list {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 50;
+  z-index: var(--nc-z-dropdown);
   min-width: 100%;
   max-height: 264px;
   overflow-y: auto;
   list-style: none;
   margin: 0;
   padding: 4px;
-  background: var(--nc-surface);
+  background: var(--nc-surface-2);
   border: 1px solid var(--nc-border);
-  border-radius: 8px;
-  box-shadow: var(--nc-shadow-lg);
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-md);
+  transform-origin: top left;
 }
+/* Items: hover = surface-3 + text brighten; selected = accent text */
 .nc-select__option {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 7px 10px;
-  border-radius: 6px;
+  border-radius: 0.4rem;
   color: var(--nc-text-secondary);
-  font: 400 13px Inter, system-ui, sans-serif;
+  font-family: var(--nc-font-body);
+  font-size: 13px;
+  font-weight: 400;
   white-space: nowrap;
   cursor: pointer;
   outline: none;
-  transition: background var(--nc-duration-fast) ease, color var(--nc-duration-fast) ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease), color var(--nc-duration-fast) var(--nc-ease);
 }
 .nc-select__option:hover,
 .nc-select__option:focus {
   background: var(--nc-surface-3);
   color: var(--nc-text);
 }
-.nc-select__option.is-selected { color: var(--nc-text); }
+.nc-select__option.is-selected { color: var(--nc-accent); }
 .nc-select__check { flex-shrink: 0; color: var(--nc-accent); }
 
-.nc-select-pop-enter-active { transition: opacity 150ms ease, transform 150ms ease; }
-.nc-select-pop-leave-active { transition: opacity 100ms ease, transform 100ms ease; }
+.nc-select-pop-enter-active { transition: opacity 180ms var(--nc-ease), transform 180ms var(--nc-ease); }
+.nc-select-pop-leave-active { transition: opacity 120ms var(--nc-ease), transform 120ms var(--nc-ease); }
 .nc-select-pop-enter-from,
-.nc-select-pop-leave-to { opacity: 0; transform: translateY(-4px) scale(0.97); }
+.nc-select-pop-leave-to { opacity: 0; transform: scale(0.97); }
 </style>

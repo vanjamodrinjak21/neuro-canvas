@@ -21,40 +21,32 @@ const emit = defineEmits<{
   click: [event: MouseEvent]
 }>()
 
+// Component grammar per design/REDESIGN.md §5:
+// primary/ai = ink/accent pill; secondary/ghost = mono uppercase underline-grow
+// text link; danger = calm coral border/text; tool = flat chip for toolbars.
 const variantClasses: Record<string, string> = {
-  primary: 'bg-nc-teal text-nc-charcoal active:scale-97 nc-btn-primary-hover',
-  secondary: 'nc-glass text-nc-ink active:scale-97 nc-btn-secondary-hover',
-  ghost: 'text-nc-ink-soft bg-transparent border-transparent nc-btn-ghost-hover',
-  danger: 'bg-nc-error/10 text-nc-error border-nc-error/20 nc-btn-danger-hover',
-  ai: 'ai-gradient text-nc-charcoal font-semibold shadow-nc-glow active:scale-97 nc-btn-ai-hover',
-  tool: `
-    bg-gradient-to-b from-white/[0.02] to-transparent
-    border border-nc-border
-    text-nc-ink-muted
-    shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]
-    active:scale-97 active:translate-y-0
-    active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]
-    relative overflow-hidden nc-btn-tool-hover
-  `
+  primary: 'nc-btn-primary-v rounded-[2.4rem] bg-nc-ink text-nc-bg font-display font-bold',
+  secondary: 'nc-btn-ghost-v font-mono uppercase tracking-[0.1em] font-medium text-nc-text-secondary bg-transparent',
+  ghost: 'nc-btn-ghost-v font-mono uppercase tracking-[0.1em] font-medium text-nc-text-secondary bg-transparent',
+  danger: 'nc-btn-danger-v rounded-nc-md font-sans font-medium bg-nc-chip text-nc-coral border-nc-coral/45',
+  ai: 'nc-btn-ai-v rounded-[2.4rem] bg-nc-accent text-nc-bg font-display font-bold',
+  tool: 'nc-btn-tool-v rounded-nc-md font-sans font-medium bg-transparent border-nc-border text-nc-ink-muted'
 }
 
 const sizeClasses: Record<string, string> = {
-  sm: 'px-3 py-1.5 text-sm gap-1.5',
-  md: 'px-4 py-2 text-base gap-2',
-  lg: 'px-6 py-3 text-lg gap-2.5',
+  sm: 'px-3.5 py-1.5 text-sm gap-1.5',
+  md: 'px-5 py-2 text-base gap-2',
+  lg: 'px-7 py-3 text-lg gap-2.5',
   icon: 'p-2 aspect-square'
 }
 
 const buttonClass = computed(() => [
-  // Base styles
+  // Base styles — transitions via nc-anim (explicit properties, single ease)
   'inline-flex items-center justify-center',
-  'font-medium rounded-nc-md',
   'border border-transparent',
-  // Explicit properties only — never transition:all
-  'transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-150',
+  'nc-anim',
   'cursor-pointer select-none',
-  'font-sans',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
+  'active:scale-97',
 
   // Variant
   variantClasses[props.variant],
@@ -62,8 +54,8 @@ const buttonClass = computed(() => [
   // Size
   sizeClasses[props.size],
 
-  // States
-  props.disabled && 'opacity-40 grayscale-[0.3] cursor-not-allowed pointer-events-none',
+  // States — disabled: opacity .45, no transform (pointer-events off)
+  props.disabled && 'opacity-45 cursor-not-allowed pointer-events-none',
   props.loading && 'opacity-70 cursor-wait'
 ])
 
@@ -89,44 +81,58 @@ function handleClick(event: MouseEvent) {
 </template>
 
 <style scoped>
-/* Hover animations gated to pointer devices only */
+/* Ghost / secondary — mono uppercase text link with underline-grow.
+   The underline rests at scaleX(0.35), origin-left, and grows on hover. */
+.nc-btn-ghost-v {
+  position: relative;
+  font-size: 0.78rem;
+}
+
+.nc-btn-ghost-v::after {
+  content: '';
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 0.3em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 0.45s var(--nc-ease);
+}
+
+/* Hover effects gated to pointer devices (REDESIGN.md §6) */
 @media (hover: hover) and (pointer: fine) {
-  .nc-btn-primary-hover:hover {
-    background-color: var(--nc-teal-dark);
-    box-shadow: 0 0 32px rgba(0, 210, 190, 0.25);
+  /* Primary ink pill — hover flips to accent, lifts 1px. No glow in chrome. */
+  .nc-btn-primary-v:hover {
+    background-color: var(--nc-accent);
     transform: translateY(-1px);
   }
 
-  .nc-btn-secondary-hover:hover {
-    border-color: var(--nc-teal);
-    color: var(--nc-teal);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  .nc-btn-ai-v:hover {
+    background-color: var(--nc-accent-light);
+    transform: translateY(-1px);
   }
 
-  .nc-btn-ghost-hover:hover {
-    color: var(--nc-ink);
-    background-color: var(--nc-graphite);
+  .nc-btn-ghost-v:hover {
+    color: var(--nc-accent);
   }
 
-  .nc-btn-danger-hover:hover {
-    background-color: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
+  .nc-btn-ghost-v:hover::after {
+    transform: scaleX(1);
   }
 
-  .nc-btn-ai-hover:hover {
-    filter: brightness(1.1);
-    transform: scale(1.02);
+  /* Danger — coral border/text logic, kept calm. */
+  .nc-btn-danger-v:hover {
+    border-color: var(--nc-coral);
+    background-color: rgba(var(--nc-coral-rgb), 0.08);
   }
 
-  .nc-btn-tool-hover:hover {
+  /* Tool — flat chip; hover brightens text + border, no movement. */
+  .nc-btn-tool-v:hover {
     background-color: var(--nc-surface-2);
     color: var(--nc-ink);
     border-color: var(--nc-border-active);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 4px 16px rgba(0, 0, 0, 0.3),
-      0 0 24px var(--nc-accent-glow);
-    transform: translateY(-1px);
   }
 }
 </style>

@@ -18,25 +18,21 @@ const paddingClasses: Record<string, string> = {
   lg: 'p-6'
 }
 
+// Flat surface + 1px hairline, radius ≤ 0.5rem (REDESIGN.md §5).
+// Interactive hover = border-color shift only — no lift, no glow.
 const cardClass = computed(() => [
-  // Base glass effect
-  props.elevated ? 'nc-glass-elevated' : 'nc-glass',
-
-  // Border radius
-  'rounded-nc-xl',
+  props.elevated ? 'bg-nc-surface-2' : 'bg-nc-surface',
+  'border border-nc-border rounded-nc-md',
 
   // Padding
   paddingClasses[props.padding],
 
-  // Shadow
-  props.elevated ? 'shadow-nc-lg' : 'shadow-nc-md',
-
-  // Interactive hover effect — specific properties only, hover gated to pointer devices via style block
+  // Interactive: border-color shift on hover (gated in style block), press feedback
   props.interactive && [
     'cursor-pointer',
-    'transition-[border-color,box-shadow,transform] duration-150',
+    'nc-anim',
     'nc-card-interactive',
-    'active:translate-y-0 active:scale-97'
+    'active:scale-97'
   ]
 ])
 </script>
@@ -50,9 +46,7 @@ const cardClass = computed(() => [
 <style scoped>
 @media (hover: hover) and (pointer: fine) {
   .nc-card-interactive:hover {
-    border-color: rgba(0, 210, 190, 0.3);
-    box-shadow: 0 0 32px rgba(0, 210, 190, 0.25);
-    transform: translateY(-2px);
+    border-color: var(--nc-text-secondary);
   }
 }
 </style>

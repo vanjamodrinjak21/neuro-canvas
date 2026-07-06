@@ -23,18 +23,16 @@ const props = withDefaults(defineProps<{
   radius: 8,
 })
 
-const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.8))
+// Dynamic sizing flows through v-bind() custom properties in the scoped
+// style block — no inline :style (REDESIGN.md §9).
+const boxSizePx = computed(() => `${props.containerSize ?? Math.round(props.size * 1.8)}px`)
+const radiusPx = computed(() => `${props.radius}px`)
 </script>
 
 <template>
   <div
     v-if="container"
     class="nc-logo-mark"
-    :style="{
-      width: `${boxSize}px`,
-      height: `${boxSize}px`,
-      borderRadius: `${radius}px`,
-    }"
   >
     <svg
       :width="size"
@@ -76,6 +74,9 @@ const boxSize = computed(() => props.containerSize ?? Math.round(props.size * 1.
 
 <style scoped>
 .nc-logo-mark {
+  width: v-bind(boxSizePx);
+  height: v-bind(boxSizePx);
+  border-radius: v-bind(radiusPx);
   background: var(--nc-bg);
   border: 1px solid var(--nc-border);
   color: var(--nc-text);

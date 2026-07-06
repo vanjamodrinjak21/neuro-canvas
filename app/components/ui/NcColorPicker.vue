@@ -50,10 +50,8 @@ function handleCustomChange(event: Event) {
     <PopoverTrigger as-child>
       <button
         type="button"
-        class="w-8 h-8 rounded-nc-md border-2 border-nc-pencil
-               hover:border-nc-teal transition-[border-color] duration-150
-               active:scale-97
-               focus:outline-none focus:ring-2 focus:ring-nc-teal focus:ring-offset-2 focus:ring-offset-nc-charcoal"
+        class="nc-color-trigger w-8 h-8 rounded-nc-md border border-nc-border
+               nc-anim active:scale-97 cursor-pointer"
         :style="{ backgroundColor: modelValue }"
       >
         <span class="sr-only">Pick a color</span>
@@ -61,23 +59,20 @@ function handleCustomChange(event: Event) {
     </PopoverTrigger>
 
     <PopoverPortal>
-      <!-- Enter 150ms ease-out, exit 100ms — scale from 0.97 minimum -->
+      <!-- Flat surface-2 + hairline; origin at trigger, enter 150ms / exit 100ms -->
       <PopoverContent
         :side-offset="8"
-        class="z-dropdown nc-glass-elevated rounded-nc-xl p-4 shadow-nc-xl w-[220px]
-               animate-in fade-in-0 zoom-in-97 duration-[150ms]
-               data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-97 data-[state=closed]:duration-[100ms]"
+        class="nc-picker-pop z-dropdown nc-glass-elevated rounded-nc-md p-4 w-[220px]"
       >
-        <!-- Preset colors -->
+        <!-- Preset colors — swatch palette values are data, not chrome -->
         <div class="grid grid-cols-4 gap-2 mb-4">
           <button
             v-for="color in presets"
             :key="color"
             type="button"
-            class="w-10 h-10 rounded-nc-md border-2 transition-[transform,box-shadow] duration-150
-                   nc-swatch-btn active:scale-97
-                   focus:outline-none focus:ring-2 focus:ring-nc-teal"
-            :class="modelValue === color ? 'border-nc-ink ring-2 ring-nc-teal' : 'border-transparent'"
+            class="w-10 h-10 rounded-[0.4rem] border nc-anim
+                   nc-swatch-btn active:scale-97 cursor-pointer"
+            :class="modelValue === color ? 'border-nc-ink' : 'border-transparent'"
             :style="{ backgroundColor: color }"
             @click="selectColor(color)"
           >
@@ -90,15 +85,16 @@ function handleCustomChange(event: Event) {
         </div>
 
         <!-- Custom color picker -->
-        <div v-if="showCustom" class="pt-3 border-t border-nc-pencil">
-          <label class="block text-xs font-medium text-nc-ink-muted mb-2">
+        <div v-if="showCustom" class="pt-3 border-t border-nc-border-subtle">
+          <!-- Mono micro-label (REDESIGN.md §4) -->
+          <label class="block font-mono text-[0.68rem] uppercase tracking-[0.16em] text-nc-text-secondary mb-2">
             Custom Color
           </label>
           <div class="flex items-center gap-2">
             <input
               type="color"
               :value="customColor"
-              class="w-10 h-10 rounded-nc-md border-2 border-nc-pencil cursor-pointer
+              class="w-10 h-10 rounded-nc-md border border-nc-border cursor-pointer
                      appearance-none bg-transparent
                      [&::-webkit-color-swatch-wrapper]:p-0
                      [&::-webkit-color-swatch]:rounded-nc-sm [&::-webkit-color-swatch]:border-none"
@@ -108,8 +104,8 @@ function handleCustomChange(event: Event) {
               type="text"
               :value="customColor"
               placeholder="#000000"
-              class="flex-1 px-3 py-2 rounded-nc-md bg-nc-graphite text-nc-ink text-sm uppercase
-                     border border-nc-pencil focus:border-nc-teal focus:outline-none"
+              class="flex-1 px-3 py-2 rounded-nc-md bg-nc-chip text-nc-ink text-sm uppercase
+                     border border-nc-border focus:border-nc-accent focus:outline-none nc-anim"
               @input="handleCustomChange"
             >
           </div>
@@ -120,10 +116,38 @@ function handleCustomChange(event: Event) {
 </template>
 
 <style scoped>
+/* Popover motion — origin at trigger, scale(0.97)+opacity (REDESIGN.md §5/§6) */
+.nc-picker-pop {
+  transform-origin: var(--radix-popover-content-transform-origin);
+}
+.nc-picker-pop[data-state='open'] {
+  animation: nc-picker-in 150ms var(--nc-ease);
+}
+.nc-picker-pop[data-state='closed'] {
+  animation: nc-picker-out 100ms var(--nc-ease) forwards;
+}
+
+@keyframes nc-picker-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes nc-picker-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
+  .nc-color-trigger:hover {
+    border-color: var(--nc-accent);
+  }
+
+  /* Subtle lift only — no glow in chrome */
   .nc-swatch-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 32px rgba(0, 210, 190, 0.25);
+    transform: scale(1.06);
   }
 }
 </style>

@@ -3,8 +3,7 @@ import {
   TooltipRoot,
   TooltipTrigger,
   TooltipPortal,
-  TooltipContent,
-  TooltipArrow
+  TooltipContent
 } from 'radix-vue'
 
 export interface NcTooltipProps {
@@ -31,23 +30,53 @@ withDefaults(defineProps<NcTooltipProps>(), {
     </TooltipTrigger>
 
     <TooltipPortal>
-      <!-- Enter 125ms strong ease-out, exit 75ms instant — scale from 0.97 min -->
+      <!-- data-tip grammar (REDESIGN.md §5): flat bg, hairline, mono micro type -->
       <TooltipContent
         :side="side"
         :align="align"
         :side-offset="sideOffset"
-        class="z-tooltip nc-glass-elevated rounded-nc-md px-3 py-1.5
-               text-sm text-nc-text shadow-nc-lg
-               animate-in fade-in-0 zoom-in-97 duration-[125ms]
-               data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-97 data-[state=closed]:duration-[75ms]
-               data-[side=bottom]:slide-in-from-top-1
-               data-[side=left]:slide-in-from-right-1
-               data-[side=right]:slide-in-from-left-1
-               data-[side=top]:slide-in-from-bottom-1"
+        class="nc-tooltip-content px-2.5 py-1.5"
       >
         {{ content }}
-        <TooltipArrow class="fill-nc-graphite" :width="10" :height="5" />
       </TooltipContent>
     </TooltipPortal>
   </TooltipRoot>
 </template>
+
+<style scoped>
+.nc-tooltip-content {
+  z-index: var(--nc-z-toast);
+  max-width: 280px;
+  background: var(--nc-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.35rem;
+  color: var(--nc-text);
+  font-family: var(--nc-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  transform-origin: var(--radix-tooltip-content-transform-origin);
+}
+
+/* Enter 150ms / exit 100ms, scale(0.97)+opacity, single ease (REDESIGN.md §6) */
+.nc-tooltip-content[data-state='delayed-open'],
+.nc-tooltip-content[data-state='instant-open'] {
+  animation: nc-tip-in 150ms var(--nc-ease);
+}
+.nc-tooltip-content[data-state='closed'] {
+  animation: nc-tip-out 100ms var(--nc-ease) forwards;
+}
+
+@keyframes nc-tip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes nc-tip-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+</style>

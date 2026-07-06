@@ -26,7 +26,6 @@ const emit = defineEmits<{
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
-const isFocused = ref(false)
 
 const sizeClasses: Record<string, string> = {
   sm: 'px-3 py-1.5 text-sm',
@@ -34,12 +33,14 @@ const sizeClasses: Record<string, string> = {
   lg: 'px-5 py-3 text-lg'
 }
 
+// Input grammar (REDESIGN.md §5): chip fill, 1px hairline, radius 0.5rem.
+// Focus = border-color accent ONLY (no ring, no glow). Invalid = coral border.
 const inputClass = computed(() => [
   // Base
   'w-full rounded-nc-md',
-  'bg-nc-graphite',
-  'border transition-[border-color,box-shadow] duration-150',
-  'text-nc-ink placeholder-nc-ink-muted',
+  'bg-nc-chip',
+  'border nc-anim',
+  'text-nc-ink placeholder-nc-ink-faint',
   'font-sans',
   'focus:outline-none',
 
@@ -48,14 +49,11 @@ const inputClass = computed(() => [
 
   // Border states
   props.error
-    ? 'border-nc-error/50 focus:border-nc-error focus:ring-2 focus:ring-nc-error/20'
-    : 'border-nc-pencil focus:border-nc-teal focus:ring-2 focus:ring-nc-teal/20',
-
-  // Focus glow
-  isFocused.value && !props.error && 'shadow-[0_0_0_3px_rgba(0,210,190,0.1)]',
+    ? 'border-nc-coral focus:border-nc-coral'
+    : 'border-nc-border focus:border-nc-accent',
 
   // Disabled
-  props.disabled && 'opacity-40 grayscale-[0.3] cursor-not-allowed bg-nc-pencil'
+  props.disabled && 'opacity-45 cursor-not-allowed'
 ])
 
 function handleInput(event: Event) {
@@ -64,12 +62,10 @@ function handleInput(event: Event) {
 }
 
 function handleFocus(event: FocusEvent) {
-  isFocused.value = true
   emit('focus', event)
 }
 
 function handleBlur(event: FocusEvent) {
-  isFocused.value = false
   emit('blur', event)
 }
 
@@ -86,6 +82,11 @@ defineExpose({ focus, blur, inputRef })
 
 <template>
   <div class="relative">
+    <!-- Optional label — mono micro-label (REDESIGN.md §4/§5) -->
+    <label v-if="$slots.label" class="nc-input-label">
+      <slot name="label" />
+    </label>
+
     <input
       ref="inputRef"
       :type="type"
@@ -99,9 +100,22 @@ defineExpose({ focus, blur, inputRef })
       @blur="handleBlur"
     >
 
-    <!-- Error message -->
-    <p v-if="error" class="mt-1.5 text-sm text-nc-error font-sans">
+    <!-- Error message — validation errors are coral (REDESIGN.md §1) -->
+    <p v-if="error" class="mt-1.5 text-sm text-nc-coral font-sans">
       {{ error }}
     </p>
   </div>
 </template>
+
+<style scoped>
+.nc-input-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-family: var(--nc-font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
+}
+</style>

@@ -40,26 +40,27 @@ const sizeClasses = {
 
 <template>
   <span class="nc-switch-touch" :class="[disabled && 'cursor-not-allowed']">
+    <!-- Hairline track, accent fill when on, ink thumb — no glow (REDESIGN.md §5) -->
     <SwitchRoot
       v-model:checked="checked"
       :disabled="disabled"
       :class="[
         'group relative inline-flex shrink-0 cursor-pointer items-center rounded-full',
-        'border-2 border-transparent transition-[background-color,box-shadow] duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nc-teal focus-visible:ring-offset-2 focus-visible:ring-offset-nc-charcoal',
-        'data-[state=checked]:bg-nc-teal data-[state=unchecked]:bg-nc-pencil',
-        'data-[state=checked]:shadow-nc-glow',
-        disabled && 'opacity-40 grayscale-[0.3] cursor-not-allowed',
+        'border border-nc-border nc-anim',
+        'data-[state=unchecked]:bg-nc-chip',
+        'data-[state=checked]:bg-nc-accent data-[state=checked]:border-nc-accent',
+        'active:scale-97',
+        disabled && 'opacity-45 cursor-not-allowed',
         sizeClasses[size].root
       ]"
     >
       <SwitchThumb
         :class="[
-          'pointer-events-none block rounded-full bg-nc-ink shadow-nc-sm ring-0',
-          'transition-[transform,background-color] duration-150',
+          'pointer-events-none block rounded-full bg-nc-ink',
+          'nc-anim',
           'data-[state=unchecked]:translate-x-0.5 data-[state=unchecked]:scale-90',
           'data-[state=checked]:scale-100',
-          'group-data-[state=checked]:bg-nc-charcoal',
+          'group-data-[state=checked]:bg-nc-bg',
           sizeClasses[size].thumb
         ]"
       />
