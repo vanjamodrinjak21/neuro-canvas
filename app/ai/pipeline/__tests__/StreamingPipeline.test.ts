@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { streamCompletion } from '~/ai/pipeline/StreamingPipeline'
 
 // ---------------------------------------------------------------------------
