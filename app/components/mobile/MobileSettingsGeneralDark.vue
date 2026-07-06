@@ -94,7 +94,7 @@ async function manualUpdateCheck() {
     <header class="mgen-top">
       <button class="mgen-back" type="button" @click="emit('back')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 5L8 12L15 19" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span>{{ t('mobile.settingsGeneral.backToSettings') }}</span>
       </button>
@@ -175,7 +175,7 @@ async function manualUpdateCheck() {
             <span class="mgen-row-hint">{{ t('mobile.settingsGeneral.editorFontHint') }}</span>
           </div>
           <svg class="mgen-chev" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L9 7L5 11" stroke="#52525B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </div>
 
@@ -189,13 +189,12 @@ async function manualUpdateCheck() {
           <div class="mgen-slider">
             <button class="mgen-slider-cap mgen-slider-cap--sm" type="button" @click="setFontSize('xs')">A</button>
             <div class="mgen-slider-track">
-              <div class="mgen-slider-fill" :style="{ width: sliderPercent + '%' }" />
-              <div class="mgen-slider-knob" :style="{ left: 'calc(' + sliderPercent + '% - 8px)' }" />
+              <div class="mgen-slider-fill" />
+              <div class="mgen-slider-knob" />
               <button
-                v-for="(step, i) in FONT_SIZE_STEPS"
+                v-for="step in FONT_SIZE_STEPS"
                 :key="step"
                 class="mgen-slider-step"
-                :style="{ left: ((i / (FONT_SIZE_STEPS.length - 1)) * 100) + '%' }"
                 type="button"
                 :aria-label="step"
                 @click="setFontSize(step)"
@@ -228,8 +227,8 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon mgen-icon--mint">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C15 3 17.5 4.5 19 6.5" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" />
-              <path d="M21 3V7H17" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C15 3 17.5 4.5 19 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M21 3V7H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -251,8 +250,8 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M8 12H16" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+              <path d="M8 12H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -274,8 +273,8 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="18" height="18" rx="3" stroke="#A1A1AA" stroke-width="1.6" />
-              <path d="M3 9H21M9 21V9" stroke="#A1A1AA" stroke-width="1.6" />
+              <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.6" />
+              <path d="M3 9H21M9 21V9" stroke="currentColor" stroke-width="1.6" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -297,8 +296,8 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="18" height="14" rx="2" stroke="#A1A1AA" stroke-width="1.6" />
-              <rect x="14" y="11" width="6" height="5" rx="1" stroke="#A1A1AA" stroke-width="1.6" fill="none" />
+              <rect x="3" y="3" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6" />
+              <rect x="14" y="11" width="6" height="5" rx="1" stroke="currentColor" stroke-width="1.6" fill="none" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -328,8 +327,8 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C15 3 17.5 4.5 19 6.5" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-              <path d="M21 3V7H17" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C15 3 17.5 4.5 19 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M21 3V7H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -352,8 +351,8 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3v9m0 0l4-4m-4 4l-4-4" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M3 16v3a2 2 0 002 2h14a2 2 0 002-2v-3" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M12 3v9m0 0l4-4m-4 4l-4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3 16v3a2 2 0 002 2h14a2 2 0 002-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -379,8 +378,8 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M13.7 21a2 2 0 01-3.4 0" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M13.7 21a2 2 0 01-3.4 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -403,7 +402,7 @@ async function manualUpdateCheck() {
         <div class="mgen-row">
           <div class="mgen-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-6" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
           <div class="mgen-row-text">
@@ -446,11 +445,16 @@ async function manualUpdateCheck() {
   --mgen-ink: var(--nc-ink);
   --mgen-body: var(--nc-ink-soft);
   --mgen-mute: var(--nc-ink-faint);
-  --mgen-mint: #00D2BE;
-  --mgen-surface: rgba(250, 250, 250, 0.04);
-  --mgen-stroke: rgba(250, 250, 250, 0.10);
-  --mgen-stroke-soft: rgba(250, 250, 250, 0.06);
-  --mgen-stroke-icon: rgba(250, 250, 250, 0.08);
+  --mgen-mint: var(--nc-accent);
+  --mgen-surface: var(--nc-chip-bg);
+  --mgen-stroke: var(--nc-border);
+  --mgen-stroke-soft: var(--nc-border-subtle);
+  /* Theme-tile swatch constants — these DEPICT the light/dark themes and must
+     not flip with the active theme (a picture of "light" is always paper). */
+  --mgen-swatch-paper: #FAFAFA;
+  --mgen-swatch-ink: #09090B;
+  --mgen-swatch-line-light: #D4D4D8;
+  --mgen-swatch-line-dark: #3F3F46;
 
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
@@ -458,7 +462,7 @@ async function manualUpdateCheck() {
   height: 100dvh;
   background: var(--mgen-bg);
   color: var(--mgen-ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -476,32 +480,16 @@ async function manualUpdateCheck() {
 }
 .mgen-back {
   display: flex; align-items: center; gap: 10px;
+  min-height: 44px;
   padding: 4px 4px 4px 0;
   background: none; border: none; cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--mgen-body);
 }
-.mgen-live {
-  display: flex; align-items: center; gap: 6px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.30);
-}
-.mgen-live-dot {
-  width: 6px; height: 6px; border-radius: 999px;
-  background: var(--mgen-mint);
-  animation: mgen-pulse 2.4s ease-in-out infinite;
-}
-@keyframes mgen-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.mgen-live-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
-  letter-spacing: 0.08em;
-  color: var(--mgen-mint);
-}
+.mgen-back svg { color: var(--nc-text-muted); }
 
 /* Hero */
 .mgen-hero {
@@ -510,27 +498,29 @@ async function manualUpdateCheck() {
   flex-shrink: 0;
 }
 .mgen-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.12em; color: var(--mgen-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .mgen-hero-line {
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px;
   margin: 14px 0 0 0; padding: 0;
 }
 .mgen-hero-sans {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
-  letter-spacing: -0.025em; color: var(--mgen-ink);
+  font-family: var(--nc-font-display);
+  font-weight: 700; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
+  letter-spacing: -0.02em; color: var(--mgen-ink);
 }
 .mgen-hero-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic; font-weight: 400;
   font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
-  letter-spacing: -0.02em; color: var(--mgen-mint);
+  letter-spacing: -0.02em; color: var(--nc-accent-text);
 }
 .mgen-hero-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 400; font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--mgen-body);
   margin-top: 10px;
@@ -551,16 +541,18 @@ async function manualUpdateCheck() {
   padding: 24px 4px 10px;
 }
 .mgen-section-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.12em; color: var(--mgen-mute);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .mgen-section-status {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.08em; color: var(--mgen-mute);
 }
-.mgen-section-status--mint { color: var(--mgen-mint); }
+.mgen-section-status--mint { color: var(--nc-accent-text); }
 
 /* Theme tiles */
 .mgen-tiles {
@@ -572,52 +564,54 @@ async function manualUpdateCheck() {
   padding: 12px;
   background: var(--mgen-surface);
   border: 1px solid var(--mgen-stroke-soft);
-  border-radius: 14px;
+  border-radius: 0.5rem;
   cursor: pointer;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color 150ms var(--nc-ease), background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
+.mgen-tile:active { transform: scale(0.97); }
+/* Selected tile — accent hairline + tinted fill (1px only, never 2px) */
 .mgen-tile--on {
-  background: rgba(0, 210, 190, 0.08);
-  border: 1.5px solid var(--mgen-mint);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid var(--mgen-mint);
 }
 .mgen-tile-preview {
   display: flex; flex-direction: column; gap: 4px;
   padding: 8px; height: 60px;
-  border-radius: 8px;
+  border-radius: 0.4rem;
 }
-.mgen-tile-preview--light { background: #FAFAFA; }
+.mgen-tile-preview--light { background: var(--mgen-swatch-paper); }
 .mgen-tile-preview--dark {
-  background: #09090B;
+  background: var(--mgen-swatch-ink);
   border: 1px solid var(--mgen-stroke);
 }
 .mgen-tile-preview--auto {
   display: flex; flex-direction: row; gap: 0;
   height: 60px; padding: 0;
-  border-radius: 8px; overflow: hidden;
+  border-radius: 0.4rem; overflow: hidden;
 }
 .mgen-tile-half { flex: 1 1 0; }
-.mgen-tile-half--light { background: #FAFAFA; }
-.mgen-tile-half--dark { background: #09090B; border-left: 1px solid var(--mgen-stroke); }
+.mgen-tile-half--light { background: var(--mgen-swatch-paper); }
+.mgen-tile-half--dark { background: var(--mgen-swatch-ink); border-left: 1px solid var(--mgen-stroke); }
 .mgen-tile-line { display: block; height: 4px; border-radius: 2px; }
-.mgen-tile-line--head { width: 40%; background: #09090B; height: 4px; }
-.mgen-tile-line--head-dark { background: #FAFAFA; }
-.mgen-tile-line--body { width: 70%; background: #D4D4D8; height: 3px; }
-.mgen-tile-line--body-dark { background: #3F3F46; }
+.mgen-tile-line--head { width: 40%; background: var(--mgen-swatch-ink); height: 4px; }
+.mgen-tile-line--head-dark { background: var(--mgen-swatch-paper); }
+.mgen-tile-line--body { width: 70%; background: var(--mgen-swatch-line-light); height: 3px; }
+.mgen-tile-line--body-dark { background: var(--mgen-swatch-line-dark); }
 .mgen-tile-line--short { width: 55%; }
 .mgen-tile-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mgen-mute);
   text-align: center;
 }
-.mgen-tile-label--on { color: var(--mgen-mint); font-weight: 600; }
+.mgen-tile-label--on { color: var(--nc-accent-text); font-weight: 600; }
 
 /* Card group */
 .mgen-card {
   background: var(--mgen-surface);
   border: 1px solid var(--mgen-stroke-soft);
-  border-radius: 16px;
+  border-radius: 0.5rem;
   overflow: hidden;
 }
 .mgen-row {
@@ -637,23 +631,26 @@ async function manualUpdateCheck() {
   flex: 1 1 0; min-width: 0;
 }
 .mgen-row-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--mgen-ink);
 }
+/* Aside note — mono micro-label (serif italic is reserved for page titles) */
 .mgen-row-italic {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-weight: 400;
-  color: var(--mgen-mint);
+  font-family: var(--nc-font-mono);
+  font-style: normal; font-weight: 500;
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  letter-spacing: 0.08em;
+  color: var(--nc-text-dim);
   margin-left: 4px;
 }
 .mgen-row-hint {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 13px;
   letter-spacing: 0.04em; color: var(--mgen-mute);
 }
 .mgen-row-value {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.04em; color: var(--mgen-body);
   font-variant-numeric: tabular-nums;
@@ -662,70 +659,71 @@ async function manualUpdateCheck() {
 
 .mgen-icon {
   width: 36px; height: 36px;
-  border-radius: 10px;
-  background: rgba(250, 250, 250, 0.04);
-  border: 1px solid rgba(250, 250, 250, 0.08);
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--mgen-stroke-soft);
+  color: var(--nc-text-muted);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .mgen-icon--mint {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.22);
+  background: rgba(var(--nc-accent-rgb), 0.10);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.22);
+  color: var(--nc-accent-text);
 }
 .mgen-tile-mini {
   width: 36px; height: 36px;
-  border-radius: 10px;
-  background: rgba(250, 250, 250, 0.04);
-  border: 1px solid rgba(250, 250, 250, 0.08);
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--mgen-stroke-soft);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .mgen-tile-mini-text {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic;
   font-size: calc(18px * var(--nc-text-scale, 1)); line-height: 18px; color: var(--mgen-ink);
 }
-.mgen-chev { flex-shrink: 0; }
+.mgen-chev { flex-shrink: 0; color: var(--nc-text-dim); }
 
-/* Toggle */
-/* ── Toggle — iOS UISwitch style ───────────────────────────────────────
-   Track:  52 × 32 rounded rectangle, radius 13.  Off #E9E9EA / mint on.
-   Knob:   28px white CIRCLE, vertically centered, 2px inset, 20px travel. */
+/* ── Toggle — NcSwitch grammar (REDESIGN.md §5) ────────────────────────
+   Hairline track on chip fill when off; accent track + bg-ink knob when on.
+   52 × 32 track, 26px knob, 20px travel. No glow, single ease. */
 .mgen-toggle {
   position: relative;
   width: 52px; height: 32px;
   padding: 0;
-  border: none;
-  border-radius: 13px;
-  background: #E9E9EA;
+  border: 1px solid var(--nc-border);
+  border-radius: 999px;
+  background: var(--nc-chip-bg);
   cursor: pointer;
-  transition: background 220ms cubic-bezier(0.33, 0, 0.2, 1);
+  transition: background-color 200ms var(--nc-ease), border-color 200ms var(--nc-ease), transform 120ms var(--nc-ease);
   flex-shrink: 0;
   display: inline-block;
   -webkit-tap-highlight-color: transparent;
 }
+/* Expand hit area to the 44px minimum (track is 32px tall) */
+.mgen-toggle::before {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
+}
+.mgen-toggle:active { transform: scale(0.97); }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 50%;
-  width: 28px; height: 28px; border-radius: 999px; /* CIRCLE */
-  background: #FFFFFF;
+  width: 26px; height: 26px; border-radius: 999px;
+  background: var(--nc-ink);
   transform: translateY(-50%);
-  transition: transform 220ms cubic-bezier(0.33, 0, 0.2, 1);
-  box-shadow:
-    0 2px 5px rgba(0, 0, 0, 0.26),
-    0 1px 2px rgba(0, 0, 0, 0.20),
-    0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  transition: transform 200ms var(--nc-ease), background-color 200ms var(--nc-ease);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
+  border-color: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  /* 52 − 28 − 2 − 2 = 20px travel. Keep vertical centering. */
+  /* 50 (inner) − 26 (knob) − 2 − 2 = 20px travel. Keep vertical centering. */
   transform: translate(20px, -50%);
-}
-.mgen-toggle:active .mgen-toggle-knob {
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.30),
-    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  background: var(--nc-bg);
 }
 
 /* Slider */
@@ -733,8 +731,11 @@ async function manualUpdateCheck() {
   display: flex; align-items: center; gap: 12px;
 }
 .mgen-slider-cap {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px;
+  margin: -10px -8px;
   background: none; border: none; cursor: pointer;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   color: var(--mgen-mute);
   flex-shrink: 0;
 }
@@ -743,110 +744,108 @@ async function manualUpdateCheck() {
 .mgen-slider-track {
   position: relative; flex: 1 1 0;
   height: 4px; border-radius: 999px;
-  background: rgba(250, 250, 250, 0.08);
+  background: var(--nc-border-subtle);
 }
 .mgen-slider-fill {
   position: absolute; left: 0; top: 0;
   height: 4px; border-radius: 999px;
   background: var(--mgen-mint);
-  transition: width 180ms ease;
+  width: calc(v-bind(sliderPercent) * 1%);
+  transition: width 180ms var(--nc-ease);
 }
 .mgen-slider-knob {
   position: absolute; top: -6px;
   width: 16px; height: 16px;
-  border-radius: 999px; background: #FAFAFA;
-  box-shadow: 0 0 0 4px rgba(0, 210, 190, 0.22);
-  transition: left 180ms ease;
+  border-radius: 999px; background: var(--nc-text);
+  border: 1px solid var(--nc-border);
+  left: calc(v-bind(sliderPercent) * 1% - 8px);
+  transition: left 180ms var(--nc-ease);
 }
 .mgen-slider-step {
-  position: absolute; top: -10px;
-  width: 24px; height: 24px;
+  position: absolute; top: -20px;
+  width: 40px; height: 44px;
   background: transparent; border: none; cursor: pointer;
-  margin-left: -12px;
+  margin-left: -20px;
 }
 .mgen-slider-step:nth-of-type(1) { left: 0; }
-.mgen-slider-step--mid { left: 50%; }
-.mgen-slider-step--end { left: 100%; }
+.mgen-slider-step:nth-of-type(2) { left: 25%; }
+.mgen-slider-step:nth-of-type(3) { left: 50%; }
+.mgen-slider-step:nth-of-type(4) { left: 75%; }
+.mgen-slider-step:nth-of-type(5) { left: 100%; }
 
 /* Segmented */
 .mgen-seg {
   display: flex; padding: 3px;
   background: var(--mgen-bg);
   border: 1px solid var(--mgen-stroke);
-  border-radius: 10px;
+  border-radius: 0.5rem;
   flex-shrink: 0;
 }
 .mgen-seg-btn {
+  position: relative;
   padding: 5px 11px;
-  background: none; border: none; cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mgen-mute);
-  border-radius: 7px;
+  border-radius: 0.35rem;
+  transition: color 150ms var(--nc-ease), background-color 150ms var(--nc-ease), border-color 150ms var(--nc-ease);
+}
+/* Vertical hit-area extension to reach the 44px minimum */
+.mgen-seg-btn::before {
+  content: '';
+  position: absolute;
+  inset: -13px 0;
 }
 .mgen-seg-btn--on {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.22);
-  color: var(--mgen-mint);
+  background: rgba(var(--nc-accent-rgb), 0.10);
+  border-color: rgba(var(--nc-accent-rgb), 0.22);
+  color: var(--nc-accent-text);
   font-weight: 600;
 }
 
 /* Updates — Check now button (AER-14) */
 .mgen-update-btn {
+  position: relative;
   flex-shrink: 0;
   padding: 7px 12px;
   background: var(--mgen-bg);
   border: 1px solid var(--mgen-stroke);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500;
   font-size: calc(10px * var(--nc-text-scale, 1));
   line-height: 12px;
   letter-spacing: 0.08em;
   color: var(--mgen-body);
   text-transform: uppercase;
-  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+  transition: color 150ms var(--nc-ease), border-color 150ms var(--nc-ease), background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.mgen-update-btn:hover:not(:disabled) {
-  color: var(--mgen-mint);
-  border-color: rgba(0, 210, 190, 0.30);
-  background: rgba(0, 210, 190, 0.06);
+/* Vertical hit-area extension to reach the 44px minimum */
+.mgen-update-btn::before {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+.mgen-update-btn:active:not(:disabled) { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .mgen-update-btn:hover:not(:disabled) {
+    color: var(--nc-accent-text);
+    border-color: rgba(var(--nc-accent-rgb), 0.30);
+    background: rgba(var(--nc-accent-rgb), 0.06);
+  }
 }
 .mgen-update-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .mgen-spacer {
   height: calc(96px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
-}
-
-/* Light theme */
-:root.light .mgen {
-  /* White-on-dark overlays become black-on-light so subtle surfaces/strokes
-     stay legible against the warm-paper background. */
-  --mgen-surface: rgba(17, 17, 17, 0.03);
-  --mgen-stroke: rgba(17, 17, 17, 0.10);
-  --mgen-stroke-soft: rgba(17, 17, 17, 0.06);
-  --mgen-stroke-icon: rgba(17, 17, 17, 0.08);
-}
-:root.light .mgen-icon,
-:root.light .mgen-tile-mini {
-  background: rgba(17, 17, 17, 0.03);
-  border-color: rgba(17, 17, 17, 0.08);
-}
-:root.light .mgen-toggle {
-  background: rgba(120, 120, 128, 0.28);
-}
-/* On-state must stay mint in light mode — the rule above has higher specificity
-   than .mgen-toggle--on, so without this the on/off tracks look identical. */
-:root.light .mgen-toggle--on {
-  background: var(--mgen-mint);
-}
-:root.light .mgen-slider-track {
-  background: rgba(17, 17, 17, 0.08);
 }
 </style>
