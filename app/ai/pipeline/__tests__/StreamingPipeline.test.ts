@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { streamCompletion } from '~/ai/pipeline/StreamingPipeline'
 
 // ---------------------------------------------------------------------------
@@ -125,5 +125,38 @@ describe('streamCompletion (web SSE path)', () => {
     )
     expect(failure.message).toBe('Forbidden: CSRF validation failed')
     expect(failure.statusCode).toBe(403)
+  })
+})
+
+// ─── AER-81: resource guards — stall timeout + output size cap ───────────────
+describe('streamCompletion — resource guards (AER-81)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('rejects when the stream stalls (no data for 90s) instead of hanging forever', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      body: new ReadableStream<Uint8Array>({ start() { /* never enqueues, never closes */ } })
+    }))
+    vi.useFakeTimers()
+
+    const promise = streamCompletion(PARAMS)
+    const assertion = expect(promise).rejects.toThrow(/stalled/)
+    await vi.advanceTimersByTimeAsync(90_001)
+    await assertion
+  })
+
+  it('rejects once the stream exceeds the output size limit', async () => {
+    const big = 'x'.repeat(800_000)
+    vi.stubGlobal('fetch', sseFetch([
+      { type: 'delta', content: big },
+      { type: 'delta', content: big },
+      { type: 'delta', content: big },
+      { type: 'done' }
+    ]))
+
+    await expect(streamCompletion(PARAMS)).rejects.toThrow(/exceeded/)
   })
 })
