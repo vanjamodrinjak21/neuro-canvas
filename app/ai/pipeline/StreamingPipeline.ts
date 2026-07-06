@@ -7,6 +7,7 @@ export interface StreamEvent {
   content?: string
   usage?: unknown
   message?: string
+  statusCode?: number
 }
 
 export interface StreamOptions {
@@ -111,23 +112,30 @@ export async function streamCompletion(
       buffer = lines.pop() || ''
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const event: StreamEvent = JSON.parse(line.slice(6))
+        if (!line.startsWith('data: ')) continue
 
-            if (event.type === 'delta' && event.content) {
-              accumulated += event.content
-              onDelta?.(event.content, accumulated)
-            } else if (event.type === 'done') {
-              onDone?.(accumulated, event.usage)
-            } else if (event.type === 'error') {
-              onError?.(event.message || 'Unknown streaming error')
-              throw new Error(event.message || 'Streaming error')
-            }
-          } catch (e) {
-            if (e instanceof Error && e.message.includes('Streaming error')) throw e
-            // Skip malformed SSE data
-          }
+        // Only JSON.parse is guarded here. Event handling must stay OUTSIDE
+        // the catch: server-reported provider failures arrive as `error`
+        // events on an HTTP-200 stream, and swallowing them makes a failed
+        // generation look like a successful empty response (AER-77).
+        let event: StreamEvent
+        try {
+          event = JSON.parse(line.slice(6))
+        } catch {
+          continue // Skip malformed SSE data
+        }
+
+        if (event.type === 'delta' && event.content) {
+          accumulated += event.content
+          onDelta?.(event.content, accumulated)
+        } else if (event.type === 'done') {
+          onDone?.(accumulated, event.usage)
+        } else if (event.type === 'error') {
+          const message = event.message || 'Unknown streaming error'
+          onError?.(message)
+          const err = new Error(message) as Error & { statusCode?: number }
+          if (event.statusCode) err.statusCode = event.statusCode
+          throw err
         }
       }
     }

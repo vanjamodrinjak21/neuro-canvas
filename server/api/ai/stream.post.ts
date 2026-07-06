@@ -42,6 +42,22 @@ export default defineEventHandler(async (event) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
       }
 
+      // Provider failures ride the SSE channel over HTTP 200, so the global
+      // error-handler plugin never sees them. Log before emitting — without
+      // this, failed generations are invisible in production logs (AER-77).
+      function sendError(message: string, detail?: { status?: number }) {
+        console.error('[ai/stream] provider error', {
+          provider: body.provider,
+          model: body.model,
+          message,
+          ...detail,
+          ts: new Date().toISOString()
+        })
+        // statusCode lets userFriendlyError() localise downstream (429 → rate
+        // limited, 5xx → provider down) instead of falling back to "generic".
+        sendEvent({ type: 'error', message, statusCode: detail?.status })
+      }
+
       try {
         switch (body.provider) {
           case 'openai':
@@ -70,14 +86,14 @@ export default defineEventHandler(async (event) => {
 
             if (!response.ok) {
               const err = await response.json().catch(() => ({}))
-              sendEvent({ type: 'error', message: (err as any).error?.message || `API error: ${response.status}` })
+              sendError((err as any).error?.message || `API error: ${response.status}`, { status: response.status })
               controller.close()
               return
             }
 
             const reader = response.body?.getReader()
             if (!reader) {
-              sendEvent({ type: 'error', message: 'No response body' })
+              sendError('No response body')
               controller.close()
               return
             }
@@ -133,14 +149,14 @@ export default defineEventHandler(async (event) => {
 
             if (!response.ok) {
               const err = await response.json().catch(() => ({}))
-              sendEvent({ type: 'error', message: (err as any).error?.message || `API error: ${response.status}` })
+              sendError((err as any).error?.message || `API error: ${response.status}`, { status: response.status })
               controller.close()
               return
             }
 
             const reader = response.body?.getReader()
             if (!reader) {
-              sendEvent({ type: 'error', message: 'No response body' })
+              sendError('No response body')
               controller.close()
               return
             }
@@ -192,14 +208,14 @@ export default defineEventHandler(async (event) => {
             })
 
             if (!response.ok) {
-              sendEvent({ type: 'error', message: `Ollama error: ${response.status}` })
+              sendError(`Ollama error: ${response.status}`, { status: response.status })
               controller.close()
               return
             }
 
             const reader = response.body?.getReader()
             if (!reader) {
-              sendEvent({ type: 'error', message: 'No response body' })
+              sendError('No response body')
               controller.close()
               return
             }
@@ -230,10 +246,10 @@ export default defineEventHandler(async (event) => {
           }
 
           default:
-            sendEvent({ type: 'error', message: `Unsupported provider: ${body.provider}` })
+            sendError(`Unsupported provider: ${body.provider}`)
         }
       } catch (e) {
-        sendEvent({ type: 'error', message: e instanceof Error ? e.message : 'Stream failed' })
+        sendError(e instanceof Error ? e.message : 'Stream failed')
       } finally {
         controller.close()
       }
