@@ -128,7 +128,7 @@ watch(() => props.streamingText, () => {
             :disabled="!topic.trim() || isGenerating"
             @click="onSubmit"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#09090B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
             </svg>
             <span>{{ t('mobile.generate.generateButton') }}</span>
@@ -138,7 +138,7 @@ watch(() => props.streamingText, () => {
         <!-- STREAMING STATE -->
         <template v-else>
           <div class="mgs-progress">
-            <div class="mgs-progress-bar" :style="{ width: progress + '%' }" />
+            <div class="mgs-progress-bar" />
           </div>
           <span class="mgs-progress-meta">
             {{ progress < 100 ? t('mobile.generate.progressGenerating', { n: streamingText.length }) : t('mobile.generate.progressBuilding') }}
@@ -162,13 +162,14 @@ watch(() => props.streamingText, () => {
 </template>
 
 <style scoped>
+/* Flat scrim — no blur in chrome (REDESIGN.md §5) */
 .mgs-backdrop {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
   z-index: 200;
 }
 
+/* Sheet grammar: flat surface-2 + hairline top (REDESIGN.md §5) */
 .mgs {
   position: fixed;
   left: 0; right: 0; bottom: var(--kbd-h, 0px);
@@ -179,12 +180,12 @@ watch(() => props.streamingText, () => {
   padding: 0 18px;
   /* Clear the mobile tab dock (~70px) so the bottom actions sit above it. */
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
-  transition: bottom 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  background: #09090B;
-  border-top: 1px solid rgba(250, 250, 250, 0.10);
-  border-radius: 24px 24px 0 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  color: #FAFAFA;
+  transition: bottom 220ms var(--nc-ease);
+  background: var(--nc-surface-2);
+  border-top: 1px solid var(--nc-border);
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-family: var(--nc-font-body);
+  color: var(--nc-text);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
@@ -200,41 +201,43 @@ watch(() => props.streamingText, () => {
   background: transparent; border: none; padding: 0;
   cursor: pointer;
 }
+/* Drag handle in --nc-border color (REDESIGN.md sheet grammar) */
 .mgs-handle-bar {
   width: 44px; height: 5px;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.18);
+  background: var(--nc-border);
 }
 
 .mgs-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.14em;
-  color: #00D2BE;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
   margin: 6px 4px 14px;
 }
 
 .mgs-title {
   display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
   margin: 0 4px 8px;
-  font-weight: 500;
+  font-weight: 700;
 }
 .mgs-title-sans {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 32px;
-  letter-spacing: -0.025em;
-  color: #FAFAFA;
+  font-family: var(--nc-font-display);
+  font-weight: 700; font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 32px;
+  letter-spacing: -0.02em;
+  color: var(--nc-text);
 }
 .mgs-title-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic; font-weight: 400;
   font-size: calc(38px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.02em;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
 }
 .mgs-sub {
   font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   margin: 0 4px 22px;
 }
 
@@ -243,30 +246,32 @@ watch(() => props.streamingText, () => {
   display: flex; flex-direction: column; gap: 8px;
   margin-bottom: 18px;
 }
+/* Input label grammar: mono uppercase micro-label (REDESIGN.md §5) */
 .mgs-field-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 12px;
-  letter-spacing: 0.14em;
-  color: #52525B;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .mgs-input {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(250, 250, 250, 0.04);
-  border: 1px solid rgba(250, 250, 250, 0.10);
-  border-radius: 12px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   font-family: inherit;
   font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
-  color: #FAFAFA;
+  color: var(--nc-text);
   outline: none;
   box-sizing: border-box;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color 150ms var(--nc-ease);
 }
+/* Focus = border-color only, no ring/glow (REDESIGN.md §5) */
 .mgs-input:focus {
-  border-color: rgba(0, 210, 190, 0.45);
-  background: rgba(0, 210, 190, 0.05);
+  border-color: var(--nc-accent);
 }
-.mgs-input::placeholder { color: #52525B; }
+.mgs-input::placeholder { color: var(--nc-text-dim); }
 
 .mgs-depth {
   display: flex; flex-direction: column; gap: 8px;
@@ -276,66 +281,75 @@ watch(() => props.streamingText, () => {
   display: flex; gap: 8px;
 }
 .mgs-pill {
+  position: relative;
   flex: 1 1 0;
   padding: 10px 12px;
-  background: rgba(250, 250, 250, 0.04);
-  border: 1px solid rgba(250, 250, 250, 0.10);
-  border-radius: 10px;
-  color: #A1A1AA;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  color: var(--nc-text-secondary);
   font-family: inherit; font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1));
   text-transform: capitalize;
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition: background-color 150ms var(--nc-ease), border-color 150ms var(--nc-ease), color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
+/* Vertical hit-area extension to reach the 44px minimum */
+.mgs-pill::before {
+  content: '';
+  position: absolute;
+  inset: -3px 0;
+}
+.mgs-pill:active { transform: scale(0.97); }
 .mgs-pill--active {
-  background: rgba(0, 210, 190, 0.12);
-  border-color: rgba(0, 210, 190, 0.45);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.12);
+  border-color: rgba(var(--nc-accent-rgb), 0.45);
+  color: var(--nc-accent-text);
 }
 
 .mgs-go {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%;
   padding: 14px 16px;
-  background: #00D2BE;
+  background: var(--nc-accent);
   border: none;
-  border-radius: 12px;
+  border-radius: 0.5rem;
   font-family: inherit; font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1));
-  color: #09090B;
+  color: var(--nc-bg);
   cursor: pointer;
-  transition: background 150ms ease, transform 120ms ease;
+  transition: background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.mgs-go:active { transform: scale(0.98); background: #00b8a6; }
-.mgs-go:disabled { opacity: 0.5; cursor: not-allowed; }
+.mgs-go:active { transform: scale(0.97); background: var(--nc-accent-dark); }
+.mgs-go:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* STREAMING */
 .mgs-progress {
   width: 100%;
   height: 4px;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.06);
+  background: var(--nc-border-subtle);
   overflow: hidden;
   margin: 4px 0 8px;
 }
 .mgs-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #00D2BE, #6FE1D4);
-  transition: width 280ms ease;
+  background: var(--nc-accent);
+  width: calc(v-bind(progress) * 1%);
+  transition: width 280ms var(--nc-ease);
 }
 .mgs-progress-meta {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.10em;
-  color: #71717A;
+  color: var(--nc-text-muted);
   margin: 0 4px 14px;
 }
 .mgs-stream {
   width: 100%;
   max-height: 38dvh;
   padding: 14px 16px;
-  background: rgba(250, 250, 250, 0.03);
-  border: 1px solid rgba(250, 250, 250, 0.08);
-  border-radius: 12px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: 0.5rem;
   overflow-y: auto;
   box-sizing: border-box;
   scrollbar-width: none;
@@ -343,60 +357,49 @@ watch(() => props.streamingText, () => {
 .mgs-stream::-webkit-scrollbar { display: none; }
 .mgs-stream-text {
   margin: 0;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 16px;
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .mgs-cancel {
+  position: relative;
   align-self: flex-end;
   margin-top: 14px;
   padding: 10px 16px;
   background: transparent;
-  border: 1px solid rgba(250, 250, 250, 0.12);
-  border-radius: 10px;
-  color: #A1A1AA;
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  color: var(--nc-text-secondary);
   font-family: inherit; font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1));
   cursor: pointer;
+  transition: background-color 120ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
+/* Vertical hit-area extension to reach the 44px minimum */
+.mgs-cancel::before {
+  content: '';
+  position: absolute;
+  inset: -3px 0;
+}
+.mgs-cancel:active { transform: scale(0.97); background: var(--nc-surface-3); }
 
+/* Errors are coral (REDESIGN.md §1) */
 .mgs-error {
   margin: 14px 4px 0;
-  font-size: calc(12px * var(--nc-text-scale, 1)); color: #FCA5A5;
+  font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-coral);
 }
 
 .mgs-bottom-spacer { height: 8px; }
 
-/* Light */
-:root.light .mgs {
-  background: #FAFAF9;
-  color: #18181B;
-  border-top-color: rgba(0, 0, 0, 0.08);
-}
-:root.light .mgs-handle-bar { background: rgba(0, 0, 0, 0.18); }
-:root.light .mgs-input,
-:root.light .mgs-pill,
-:root.light .mgs-stream {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.10);
-  color: #18181B;
-}
-:root.light .mgs-stream-text { color: #52525B; }
-:root.light .mgs-progress { background: rgba(0, 0, 0, 0.06); }
-/* The sans half of the title is hardcoded white (#FAFAFA) — invisible on paper.
-   Repaint to ink; the serif accent stays mint. */
-:root.light .mgs-title-sans { color: #18181B; }
-/* Cancel button's white-tint border vanishes on light — flip to dark hairline. */
-:root.light .mgs-cancel { border-color: rgba(0, 0, 0, 0.12); color: #52525B; }
-
-/* Transitions */
-.mgs-fade-enter-active, .mgs-fade-leave-active { transition: opacity 220ms ease; }
+/* Transitions — single ease, percent-based translateY (REDESIGN.md §6) */
+.mgs-fade-enter-active, .mgs-fade-leave-active { transition: opacity 220ms var(--nc-ease); }
 .mgs-fade-enter-from, .mgs-fade-leave-to { opacity: 0; }
-.mgs-slide-enter-active { transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1); }
-.mgs-slide-leave-active { transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1); }
+.mgs-slide-enter-active { transition: transform 280ms var(--nc-ease); }
+.mgs-slide-leave-active { transition: transform 220ms var(--nc-ease); }
 .mgs-slide-enter-from, .mgs-slide-leave-to { transform: translateY(100%); }
-
-:root.platform-android .mgs { border-radius: 20px 20px 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  .mgs-slide-enter-active, .mgs-slide-leave-active { transition: none; }
+}
 </style>

@@ -131,7 +131,7 @@ async function onSubmit() {
           @click="onSubmit"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M8 3.5V12.5M3.5 8H12.5" stroke="#09090B" stroke-width="2" stroke-linecap="round" />
+            <path d="M8 3.5V12.5M3.5 8H12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
           <span>{{ submitting ? t('mobile.capture.saving') : t('mobile.capture.action') }}</span>
         </button>
@@ -143,13 +143,14 @@ async function onSubmit() {
 </template>
 
 <style scoped>
+/* Flat scrim — no blur in chrome (REDESIGN.md §5) */
 .qcs-backdrop {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
   z-index: 200;
 }
 
+/* Sheet grammar: flat surface-2 + hairline top (REDESIGN.md §5) */
 .qcs {
   position: fixed;
   left: 0; right: 0; bottom: var(--kbd-h, 0px);
@@ -159,12 +160,12 @@ async function onSubmit() {
   max-height: 90dvh;
   padding: 0 18px;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
-  transition: bottom 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  background: #09090B;
-  border-top: 1px solid rgba(250, 250, 250, 0.10);
-  border-radius: 24px 24px 0 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  color: #FAFAFA;
+  transition: bottom 220ms var(--nc-ease);
+  background: var(--nc-surface-2);
+  border-top: 1px solid var(--nc-border);
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-family: var(--nc-font-body);
+  color: var(--nc-text);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
@@ -180,42 +181,44 @@ async function onSubmit() {
   background: transparent; border: none; padding: 0;
   cursor: pointer;
 }
+/* Drag handle in --nc-border color (REDESIGN.md sheet grammar) */
 .qcs-handle-bar {
   width: 44px; height: 5px;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.18);
+  background: var(--nc-border);
 }
 
 .qcs-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); line-height: 14px;
-  letter-spacing: 0.14em;
-  color: #00D2BE;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
   margin: 6px 4px 14px;
 }
 
 .qcs-title {
   display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
   margin: 0 4px 8px;
-  font-weight: 500;
+  font-weight: 700;
 }
 .qcs-title-sans {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 32px;
-  letter-spacing: -0.025em;
-  color: #FAFAFA;
+  font-family: var(--nc-font-display);
+  font-weight: 700; font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 32px;
+  letter-spacing: -0.02em;
+  color: var(--nc-text);
 }
 .qcs-title-serif {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic;
   font-weight: 400; font-size: calc(30px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.02em;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
 }
 
 .qcs-sub {
   font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 18px;
-  color: #A1A1AA;
+  color: var(--nc-text-secondary);
   margin: 0 4px 18px;
 }
 
@@ -223,60 +226,65 @@ async function onSubmit() {
   display: flex; flex-direction: column; gap: 8px;
   margin-bottom: 16px;
 }
+/* Input label grammar: mono uppercase micro-label (REDESIGN.md §5) */
 .qcs-field-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.10em;
-  color: #71717A;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
   padding: 0 4px;
 }
 .qcs-input {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(250, 250, 250, 0.04);
-  border: 1px solid rgba(250, 250, 250, 0.10);
-  border-radius: 12px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   font-family: inherit;
   font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 22px;
-  color: #FAFAFA;
+  color: var(--nc-text);
   outline: none;
   box-sizing: border-box;
   resize: none;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color 150ms var(--nc-ease);
 }
+/* Focus = border-color only, no ring/glow (REDESIGN.md §5) */
 .qcs-input:focus {
-  border-color: rgba(0, 210, 190, 0.45);
-  background: rgba(0, 210, 190, 0.05);
+  border-color: var(--nc-accent);
 }
-.qcs-input::placeholder { color: #52525B; }
+.qcs-input::placeholder { color: var(--nc-text-dim); }
 
 .qcs-go {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%;
   padding: 14px 16px;
-  background: #00D2BE;
+  background: var(--nc-accent);
   border: none;
-  border-radius: 12px;
+  border-radius: 0.5rem;
   font-family: inherit; font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1));
-  color: #09090B;
+  color: var(--nc-bg);
   cursor: pointer;
-  transition: background 150ms ease, transform 120ms ease;
+  transition: background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.qcs-go:active { transform: scale(0.98); background: #00b8a6; }
-.qcs-go:disabled { opacity: 0.5; cursor: not-allowed; }
+.qcs-go:active { transform: scale(0.97); background: var(--nc-accent-dark); }
+.qcs-go:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .qcs-hint {
   font-size: calc(12px * var(--nc-text-scale, 1)); line-height: 16px;
-  color: #52525B;
+  color: var(--nc-text-muted);
   margin: 12px 4px 0;
   text-align: center;
 }
 
-/* Transitions */
-.qcs-fade-enter-active, .qcs-fade-leave-active { transition: opacity 220ms ease; }
+/* Transitions — single ease, percent-based translateY (§6) */
+.qcs-fade-enter-active, .qcs-fade-leave-active { transition: opacity 220ms var(--nc-ease); }
 .qcs-fade-enter-from, .qcs-fade-leave-to { opacity: 0; }
 
-.qcs-slide-enter-active { transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1); }
-.qcs-slide-leave-active { transition: transform 200ms cubic-bezier(0.4, 0, 1, 1); }
+.qcs-slide-enter-active { transition: transform 260ms var(--nc-ease); }
+.qcs-slide-leave-active { transition: transform 200ms var(--nc-ease); }
 .qcs-slide-enter-from, .qcs-slide-leave-to { transform: translateY(100%); }
+@media (prefers-reduced-motion: reduce) {
+  .qcs-slide-enter-active, .qcs-slide-leave-active { transition: none; }
+}
 </style>

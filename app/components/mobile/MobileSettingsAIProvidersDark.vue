@@ -149,7 +149,7 @@ function maskKey(type: string): string {
     <header class="map-top">
       <button class="map-back" type="button" @click="emit('back')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 5L8 12L15 19" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span>{{ t('mobile.settingsAiProviders.back') }}</span>
       </button>
@@ -193,22 +193,22 @@ function maskKey(type: string): string {
           <div class="map-active-top">
             <div class="map-prov-tile map-prov-tile--lg">
               <svg v-if="provider.iconKey === 'anthropic'" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 4L4 18H7L8 15H14L15 18H18L13 4H9Z M9 12L11 6L13 12H9Z" fill="#00D2BE" />
+                <path d="M9 4L4 18H7L8 15H14L15 18H18L13 4H9Z M9 12L11 6L13 12H9Z" fill="currentColor" />
               </svg>
               <svg v-else-if="provider.iconKey === 'openai'" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="8" stroke="#00D2BE" stroke-width="1.6" />
-                <path d="M8 12C9 10 11 10 12 12C13 14 15 14 16 12" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" />
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" />
+                <path d="M8 12C9 10 11 10 12 12C13 14 15 14 16 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
               </svg>
               <svg v-else-if="provider.iconKey === 'openrouter'" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 12H20" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" />
-                <path d="M4 12L9 7M4 12L9 17" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M20 12L15 7M20 12L15 17" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M4 12H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                <path d="M4 12L9 7M4 12L9 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M20 12L15 7M20 12L15 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="4" y="4" width="16" height="16" rx="3" stroke="#00D2BE" stroke-width="1.6" />
-                <circle cx="9" cy="10" r="1" fill="#00D2BE" />
-                <circle cx="15" cy="10" r="1" fill="#00D2BE" />
-                <path d="M9 15C10 16 14 16 15 15" stroke="#00D2BE" stroke-width="1.6" stroke-linecap="round" />
+                <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.6" />
+                <circle cx="9" cy="10" r="1" fill="currentColor" />
+                <circle cx="15" cy="10" r="1" fill="currentColor" />
+                <path d="M9 15C10 16 14 16 15 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
               </svg>
             </div>
             <div class="map-active-info">
@@ -264,7 +264,7 @@ function maskKey(type: string): string {
 
           <div v-if="keyTestSuccess === provider.type" class="map-test-result map-test-result--ok">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M5 13L9 17L19 7" stroke="#00D2BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             <span>{{ t('mobile.settingsAiProviders.keyVerified') }}</span>
           </div>
@@ -310,22 +310,22 @@ function maskKey(type: string): string {
           <button class="map-row" type="button" @click="openSheet(provider.type, 'connect')">
             <div class="map-icon">
               <svg v-if="provider.iconKey === 'anthropic'" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 4L4 18H7L8 15H14L15 18H18L13 4H9Z M9 12L11 6L13 12H9Z" fill="#A1A1AA" />
+                <path d="M9 4L4 18H7L8 15H14L15 18H18L13 4H9Z M9 12L11 6L13 12H9Z" fill="currentColor" />
               </svg>
               <svg v-else-if="provider.iconKey === 'openai'" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="8" stroke="#A1A1AA" stroke-width="1.6" />
-                <path d="M8 12C9 10 11 10 12 12C13 14 15 14 16 12" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" />
+                <path d="M8 12C9 10 11 10 12 12C13 14 15 14 16 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
               </svg>
               <svg v-else-if="provider.iconKey === 'openrouter'" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 12H20" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-                <path d="M4 12L9 7M4 12L9 17" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M20 12L15 7M20 12L15 17" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M4 12H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                <path d="M4 12L9 7M4 12L9 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M20 12L15 7M20 12L15 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="4" y="4" width="16" height="16" rx="3" stroke="#A1A1AA" stroke-width="1.6" />
-                <circle cx="9" cy="10" r="1" fill="#A1A1AA" />
-                <circle cx="15" cy="10" r="1" fill="#A1A1AA" />
-                <path d="M9 15C10 16 14 16 15 15" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+                <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.6" />
+                <circle cx="9" cy="10" r="1" fill="currentColor" />
+                <circle cx="15" cy="10" r="1" fill="currentColor" />
+                <path d="M9 15C10 16 14 16 15 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
               </svg>
             </div>
             <div class="map-row-text">
@@ -344,8 +344,8 @@ function maskKey(type: string): string {
       <!-- Vault note -->
       <div class="map-vault-note">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect x="5" y="11" width="14" height="9" rx="2" stroke="#A1A1AA" stroke-width="1.6" />
-          <path d="M8 11V8C8 5.79 9.79 4 12 4C14.21 4 16 5.79 16 8V11" stroke="#A1A1AA" stroke-width="1.6" />
+          <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6" />
+          <path d="M8 11V8C8 5.79 9.79 4 12 4C14.21 4 16 5.79 16 8V11" stroke="currentColor" stroke-width="1.6" />
         </svg>
         <span class="map-vault-text">
           {{ t('mobile.settingsAiProviders.vaultLine1') }}<br>
@@ -387,13 +387,13 @@ function maskKey(type: string): string {
                 @click="sheetReveal = !sheetReveal"
               >
                 <svg v-if="sheetReveal" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M3 3L21 21" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-                  <path d="M10.6 6.2C11.06 6.07 11.53 6 12 6C18 6 22 12 22 12C21.4 13 20.7 14 19.9 14.8M14 14.2C13.45 14.7 12.75 15 12 15C10.34 15 9 13.66 9 12C9 11.25 9.3 10.55 9.8 10" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
-                  <path d="M6.5 7.5C3.6 9.4 2 12 2 12C2 12 6 18 12 18C13.36 18 14.62 17.74 15.74 17.32" stroke="#A1A1AA" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M3 3L21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M10.6 6.2C11.06 6.07 11.53 6 12 6C18 6 22 12 22 12C21.4 13 20.7 14 19.9 14.8M14 14.2C13.45 14.7 12.75 15 12 15C10.34 15 9 13.66 9 12C9 11.25 9.3 10.55 9.8 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M6.5 7.5C3.6 9.4 2 12 2 12C2 12 6 18 12 18C13.36 18 14.62 17.74 15.74 17.32" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                 </svg>
                 <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M2 12C2 12 6 6 12 6C18 6 22 12 22 12C22 12 18 18 12 18C6 18 2 12 2 12Z" stroke="#A1A1AA" stroke-width="1.6" />
-                  <circle cx="12" cy="12" r="3" stroke="#A1A1AA" stroke-width="1.6" />
+                  <path d="M2 12C2 12 6 6 12 6C18 6 22 12 22 12C22 12 18 18 12 18C6 18 2 12 2 12Z" stroke="currentColor" stroke-width="1.6" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" />
                 </svg>
               </button>
             </div>
@@ -440,10 +440,10 @@ function maskKey(type: string): string {
   --map-ink: var(--nc-ink);
   --map-body: var(--nc-ink-soft);
   --map-mute: var(--nc-ink-faint);
-  --map-mint: #00D2BE;
-  --map-surface: rgba(250, 250, 250, 0.04);
-  --map-stroke: rgba(250, 250, 250, 0.10);
-  --map-stroke-soft: rgba(250, 250, 250, 0.06);
+  --map-mint: var(--nc-accent);
+  --map-surface: var(--nc-chip-bg);
+  --map-stroke: var(--nc-border);
+  --map-stroke-soft: var(--nc-border-subtle);
 
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
@@ -451,7 +451,7 @@ function maskKey(type: string): string {
   height: 100dvh;
   background: var(--map-bg);
   color: var(--map-ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -468,18 +468,22 @@ function maskKey(type: string): string {
 }
 .map-back {
   display: flex; align-items: center; gap: 10px;
+  min-height: 44px;
   padding: 4px 4px 4px 0;
   background: none; border: none; cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--map-body);
 }
+.map-back svg { color: var(--nc-text-muted); }
+/* Vault chip — chip grammar (REDESIGN.md §5): chip fill + hairline + accent text */
 .map-live {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 9px;
   border-radius: 999px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.30);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--map-stroke);
 }
 .map-live-dot {
   width: 6px; height: 6px; border-radius: 999px;
@@ -487,10 +491,13 @@ function maskKey(type: string): string {
   animation: map-pulse 2.4s ease-in-out infinite;
 }
 @keyframes map-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) {
+  .map-live-dot { animation: none; }
+}
 .map-live-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
-  color: var(--map-mint);
+  color: var(--nc-accent-text);
 }
 
 /* Hero */
@@ -500,27 +507,28 @@ function maskKey(type: string): string {
   flex-shrink: 0;
 }
 .map-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
-  color: var(--map-mute);
+  font-family: var(--nc-font-mono);
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .map-hero-line {
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px;
   margin: 14px 0 0 0; padding: 0;
 }
 .map-hero-sans {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
-  letter-spacing: -0.025em; color: var(--map-ink);
+  font-family: var(--nc-font-display);
+  font-weight: 700; font-size: calc(36px * var(--nc-text-scale, 1)); line-height: 38px;
+  letter-spacing: -0.02em; color: var(--map-ink);
 }
 .map-hero-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic; font-weight: 400;
   font-size: calc(46px * var(--nc-text-scale, 1)); line-height: 38px;
-  letter-spacing: -0.02em; color: var(--map-mint);
+  letter-spacing: -0.02em; color: var(--nc-accent-text);
 }
 .map-hero-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 20px;
   color: var(--map-body); margin-top: 10px;
 }
@@ -539,31 +547,32 @@ function maskKey(type: string): string {
   padding: 24px 4px 10px;
 }
 .map-section-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
-  color: var(--map-mute);
+  font-family: var(--nc-font-mono);
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .map-section-status {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
   color: var(--map-mute);
 }
-.map-section-status--mint { color: var(--map-mint); }
+.map-section-status--mint { color: var(--nc-accent-text); }
 
-/* Empty state */
+/* Empty state — dashed survey frame is sanctioned for empty states (§5) */
 .map-empty {
   display: flex; flex-direction: column; gap: 4px;
   padding: 18px;
   background: var(--map-surface);
   border: 1px dashed var(--map-stroke);
-  border-radius: 14px;
+  border-radius: 0.5rem;
 }
 .map-empty-title {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic; font-size: calc(18px * var(--nc-text-scale, 1)); color: var(--map-ink);
 }
 .map-empty-sub {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--map-mute);
 }
@@ -572,45 +581,52 @@ function maskKey(type: string): string {
 .map-active-card {
   display: flex; flex-direction: column; gap: 13px;
   padding: 15px;
-  background: rgba(0, 210, 190, 0.04);
-  border: 1px solid rgba(0, 210, 190, 0.22);
-  border-radius: 16px;
+  background: rgba(var(--nc-accent-rgb), 0.04);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.22);
+  border-radius: 0.5rem;
 }
 .map-active-top { display: flex; align-items: center; gap: 12px; }
 .map-prov-tile {
   width: 36px; height: 36px;
-  border-radius: 10px;
+  border-radius: 0.4rem;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.28);
+  background: rgba(var(--nc-accent-rgb), 0.10);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.28);
+  color: var(--nc-accent-text);
   flex-shrink: 0;
 }
-.map-prov-tile--lg { width: 44px; height: 44px; border-radius: 12px; }
+.map-prov-tile--lg { width: 44px; height: 44px; border-radius: 0.4rem; }
 .map-active-info {
   display: flex; flex-direction: column; gap: 3px;
   flex: 1 1 0; min-width: 0;
 }
 .map-active-titlebar { display: flex; align-items: baseline; gap: 8px; }
 .map-active-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 600; font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 20px;
   letter-spacing: -0.01em; color: var(--map-ink);
 }
+/* Primary marker — mono micro-label (serif italic is reserved for page titles) */
 .map-active-italic {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-size: calc(16px * var(--nc-text-scale, 1)); color: var(--map-mint);
+  font-family: var(--nc-font-mono);
+  font-style: normal; font-weight: 500;
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nc-accent-text);
 }
 .map-active-sub {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--map-mute);
 }
 .map-status-pill {
+  position: relative;
   display: flex; align-items: center; gap: 6px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.30);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--map-stroke);
   flex-shrink: 0;
 }
 .map-status-dot {
@@ -618,16 +634,24 @@ function maskKey(type: string): string {
   background: var(--map-mint);
 }
 .map-status-text {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 600; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.08em;
-  color: var(--map-mint);
+  color: var(--nc-accent-text);
 }
 .map-status-pill--cta {
   cursor: pointer;
   background: var(--map-mint);
   border-color: var(--map-mint);
+  transition: transform 120ms var(--nc-ease);
 }
-.map-status-pill--cta .map-status-text { color: #09090B; }
+/* Vertical hit-area extension to reach the 44px minimum */
+.map-status-pill--cta::before {
+  content: '';
+  position: absolute;
+  inset: -11px 0;
+}
+.map-status-pill--cta:active { transform: scale(0.97); }
+.map-status-pill--cta .map-status-text { color: var(--nc-bg); }
 
 .map-stats { display: flex; gap: 12px; }
 .map-stat {
@@ -635,23 +659,23 @@ function maskKey(type: string): string {
   flex: 1 1 0; min-width: 0;
 }
 .map-stat-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
 .map-stat-value {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--map-ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.map-stat-value--ok { color: var(--map-mint); }
+.map-stat-value--ok { color: var(--nc-accent-text); }
 .map-stat-divider { width: 1px; background: var(--map-stroke-soft); }
 
 .map-model-row {
   display: flex; flex-direction: column; gap: 8px;
 }
 .map-model-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
@@ -659,21 +683,30 @@ function maskKey(type: string): string {
   display: flex; flex-wrap: wrap; gap: 6px;
 }
 .map-model-pill {
+  position: relative;
   flex: 0 0 auto;
   padding: 6px 10px;
   background: var(--map-surface);
   border: 1px solid var(--map-stroke);
   border-radius: 999px;
   cursor: pointer;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 500; font-size: calc(12px * var(--nc-text-scale, 1)); letter-spacing: -0.005em;
   color: var(--map-body);
   white-space: nowrap;
+  transition: background-color 120ms var(--nc-ease), border-color 120ms var(--nc-ease), color 120ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
+/* Vertical hit-area extension to reach the 44px minimum */
+.map-model-pill::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+.map-model-pill:active:not(:disabled) { transform: scale(0.97); }
 .map-model-pill--on {
-  background: rgba(0, 210, 190, 0.10);
-  border-color: rgba(0, 210, 190, 0.45);
-  color: var(--map-mint);
+  background: rgba(var(--nc-accent-rgb), 0.10);
+  border-color: rgba(var(--nc-accent-rgb), 0.45);
+  color: var(--nc-accent-text);
   font-weight: 600;
 }
 .map-model-pill--soon {
@@ -684,46 +717,57 @@ function maskKey(type: string): string {
 .map-test-result {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
-  border-radius: 10px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  border-radius: 0.4rem;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.02em;
   line-height: 14px;
 }
 .map-test-result--ok {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.30);
-  color: var(--map-mint);
+  background: rgba(var(--nc-accent-rgb), 0.10);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.30);
+  color: var(--nc-accent-text);
 }
+/* Validation errors are coral (REDESIGN.md §1) */
 .map-test-result--err {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.30);
-  color: #FCA5A5;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.30);
+  color: var(--nc-coral);
 }
 
 .map-actions { display: flex; gap: 8px; }
 .map-action {
+  position: relative;
   flex: 1 1 0;
   padding: 10px;
   background: var(--map-surface);
   border: 1px solid var(--map-stroke);
-  border-radius: 10px;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 600; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--map-body);
   text-align: center;
+  transition: background-color 120ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
+/* Vertical hit-area extension to reach the 44px minimum */
+.map-action::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+.map-action:active:not(:disabled) { transform: scale(0.97); background: var(--nc-surface-3); }
+.map-action:disabled { opacity: 0.45; cursor: not-allowed; }
 .map-action--primary {
-  background: rgba(0, 210, 190, 0.10);
-  border: 1px solid rgba(0, 210, 190, 0.28);
-  color: var(--map-mint);
+  background: rgba(var(--nc-accent-rgb), 0.10);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.28);
+  color: var(--nc-accent-text);
 }
 
 /* Available card */
 .map-card {
   background: var(--map-surface);
   border: 1px solid var(--map-stroke-soft);
-  border-radius: 16px;
+  border-radius: 0.5rem;
   overflow: hidden;
 }
 .map-row {
@@ -733,14 +777,15 @@ function maskKey(type: string): string {
   background: transparent; border: none;
   cursor: pointer; text-align: left;
   font-family: inherit; color: inherit;
-  transition: background 150ms ease;
+  transition: background-color 150ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
-.map-row:active { background: rgba(250, 250, 250, 0.04); }
+.map-row:active { background: var(--nc-surface-3); transform: scale(0.97); }
 .map-icon {
   width: 36px; height: 36px;
-  border-radius: 10px;
-  background: rgba(250, 250, 250, 0.04);
-  border: 1px solid rgba(250, 250, 250, 0.08);
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--map-stroke-soft);
+  color: var(--nc-text-muted);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -749,27 +794,30 @@ function maskKey(type: string): string {
   flex: 1 1 0; min-width: 0;
 }
 .map-row-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-weight: 600; font-size: calc(14px * var(--nc-text-scale, 1)); line-height: 18px;
   letter-spacing: -0.01em; color: var(--map-ink);
 }
+/* Aside note — mono micro-label (serif italic is reserved for page titles) */
 .map-row-italic {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-style: italic; font-weight: 400;
-  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--map-body);
+  font-family: var(--nc-font-mono);
+  font-style: normal; font-weight: 500;
+  font-size: calc(10px * var(--nc-text-scale, 1));
+  letter-spacing: 0.06em;
+  color: var(--nc-text-dim);
   margin-left: 4px;
 }
 .map-row-hint {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
   color: var(--map-mute);
 }
 .map-pill {
   padding: 5px 10px;
-  background: var(--map-surface);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--map-stroke);
   border-radius: 999px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 600; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--map-body);
   flex-shrink: 0;
@@ -786,10 +834,11 @@ function maskKey(type: string): string {
   padding: 12px 14px;
   background: var(--map-surface);
   border: 1px solid var(--map-stroke-soft);
-  border-radius: 12px;
+  border-radius: 0.5rem;
+  color: var(--nc-text-muted);
 }
 .map-vault-text {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); line-height: 14px;
   letter-spacing: 0.04em;
   color: var(--map-body);
@@ -800,53 +849,54 @@ function maskKey(type: string): string {
   flex-shrink: 0;
 }
 
-/* Key entry sheet */
+/* Key entry sheet — flat scrim (no blur in chrome, REDESIGN.md §5) */
 .map-sheet-backdrop {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: flex-end;
   justify-content: center;
   padding-bottom: var(--kbd-h, 0px);
-  transition: padding-bottom 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: padding-bottom 220ms var(--nc-ease);
   z-index: 100;
 }
+/* Flat surface-2 + hairline top (REDESIGN.md sheet grammar) */
 .map-sheet {
   width: 100%;
   display: flex; flex-direction: column;
   /* Extra bottom space so the Save button clears the fixed tab dock (~76px). */
   padding: 14px 20px calc(28px + 76px + env(safe-area-inset-bottom, 0px)) 20px;
-  background: #0E0E11;
+  background: var(--nc-surface-2);
   border-top: 1px solid var(--map-stroke);
-  border-radius: 22px 22px 0 0;
+  border-radius: 0.5rem 0.5rem 0 0;
 }
+/* Drag handle in --nc-border color */
 .map-sheet-grab {
   align-self: center;
   width: 40px; height: 4px; border-radius: 999px;
-  background: var(--map-stroke);
+  background: var(--nc-border);
   margin-bottom: 18px;
 }
 .map-sheet-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
-  color: var(--map-mute);
+  font-family: var(--nc-font-mono);
+  font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 .map-sheet-title {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500; font-size: calc(28px * var(--nc-text-scale, 1)); line-height: 32px;
+  font-family: var(--nc-font-display);
+  font-weight: 700; font-size: calc(28px * var(--nc-text-scale, 1)); line-height: 32px;
   letter-spacing: -0.02em;
   color: var(--map-ink);
   margin: 10px 0 0 0;
 }
 .map-sheet-title-dot {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic;
-  color: var(--map-mint);
+  color: var(--nc-accent-text);
   margin-left: 2px;
 }
 .map-sheet-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 19px;
   color: var(--map-body);
   margin: 8px 0 18px 0;
@@ -855,41 +905,54 @@ function maskKey(type: string): string {
   display: flex; flex-direction: column; gap: 8px;
 }
 .map-sheet-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
+  font-family: var(--nc-font-mono);
+  font-weight: 500; font-size: calc(10px * var(--nc-text-scale, 1)); letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--map-mute);
 }
+/* Input grammar: chip fill + hairline, accent focus border only */
 .map-sheet-input-wrap {
   display: flex; align-items: center; gap: 8px;
   padding: 12px 14px;
-  background: var(--map-surface);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--map-stroke);
-  border-radius: 12px;
+  border-radius: 0.5rem;
+  transition: border-color 150ms var(--nc-ease);
 }
+.map-sheet-input-wrap:focus-within { border-color: var(--nc-accent); }
 .map-sheet-input {
   flex: 1 1 0;
   background: none; border: none;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(13px * var(--nc-text-scale, 1)); letter-spacing: 0.02em;
   color: var(--map-ink);
   outline: none;
   min-width: 0;
 }
-.map-sheet-input::placeholder { color: var(--map-mute); }
+.map-sheet-input::placeholder { color: var(--nc-text-dim); }
 .map-sheet-reveal {
+  position: relative;
   background: none; border: none; cursor: pointer;
   padding: 4px;
+  color: var(--nc-text-muted);
   display: flex; align-items: center; justify-content: center;
 }
+/* Expand hit area to the 44px minimum */
+.map-sheet-reveal::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
 .map-sheet-hint {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(9px * var(--nc-text-scale, 1)); letter-spacing: 0.12em;
   color: var(--map-mute);
 }
+/* Validation errors are coral (REDESIGN.md §1) */
 .map-sheet-error {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 500; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.04em;
-  color: var(--map-red, #EF4444);
+  color: var(--nc-coral);
 }
 .map-sheet-actions {
   display: flex; gap: 10px;
@@ -899,62 +962,44 @@ function maskKey(type: string): string {
   flex: 1 1 0;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px;
-  background: var(--map-surface);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--map-stroke);
-  border-radius: 12px;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-weight: 600; font-size: calc(11px * var(--nc-text-scale, 1)); letter-spacing: 0.10em;
   color: var(--map-body);
+  transition: background-color 120ms var(--nc-ease), border-color 120ms var(--nc-ease), transform 120ms var(--nc-ease);
 }
+.map-sheet-btn:active:not(:disabled) { transform: scale(0.97); }
 .map-sheet-btn--primary {
   flex: 2 1 0;
   background: var(--map-mint);
   border-color: var(--map-mint);
-  color: #09090B;
+  color: var(--nc-bg);
 }
 .map-sheet-btn--primary:disabled {
-  opacity: 0.5; cursor: not-allowed;
+  opacity: 0.45; cursor: not-allowed;
 }
 .map-sheet-btn--primary:active:not(:disabled) {
-  background: #00b8a6;
-  border-color: #00b8a6;
+  background: var(--nc-accent-dark);
+  border-color: var(--nc-accent-dark);
 }
 
+/* Sheet motion — 200-280ms, single ease, percent-based translateY */
 .map-sheet-enter-active, .map-sheet-leave-active {
-  transition: opacity 200ms ease;
+  transition: opacity 200ms var(--nc-ease);
 }
 .map-sheet-enter-active .map-sheet, .map-sheet-leave-active .map-sheet {
-  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 280ms var(--nc-ease);
 }
 .map-sheet-enter-from, .map-sheet-leave-to { opacity: 0; }
 .map-sheet-enter-from .map-sheet, .map-sheet-leave-to .map-sheet {
   transform: translateY(100%);
 }
-
-/* Light theme — white-on-dark overlays (surfaces, strokes, row active) read as
-   invisible on warm paper, so flip the local vars to dark-on-light overlays and
-   patch the few hardcoded rgba(250,250,250,…) values that don't use them. */
-:root.light .map {
-  --map-surface: rgba(17, 17, 17, 0.03);
-  --map-stroke: rgba(17, 17, 17, 0.10);
-  --map-stroke-soft: rgba(17, 17, 17, 0.08);
-}
-:root.light .map-row:active {
-  background: rgba(17, 17, 17, 0.04);
-}
-:root.light .map-icon {
-  background: rgba(17, 17, 17, 0.03);
-  border-color: rgba(17, 17, 17, 0.08);
-}
-/* Available-list provider glyphs are drawn in muted grey (#A1A1AA); nudge to
-   body ink so they stay legible on the lighter icon tile. */
-:root.light .map-icon svg [stroke="#A1A1AA"] { stroke: #3F3F46; }
-:root.light .map-icon svg [fill="#A1A1AA"] { fill: #3F3F46; }
-:root.light .map-back svg path { stroke: #71717A; }
-:root.light .map-vault-note svg path,
-:root.light .map-vault-note svg rect { stroke: #71717A; }
-:root.light .map-sheet {
-  background: #FFFFFF;
+@media (prefers-reduced-motion: reduce) {
+  .map-sheet-enter-active .map-sheet, .map-sheet-leave-active .map-sheet {
+    transition: none;
+  }
 }
 </style>
