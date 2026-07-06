@@ -76,5 +76,10 @@ export default defineConfig({
         timeout: 180_000,
         stdout: 'pipe',
         stderr: 'pipe',
+        // The suite registers users / creates shares far faster than the
+        // per-IP abuse ceilings (AER-74). checkRateLimit honors this flag
+        // outside production only. Managed servers (E2E_BASE_URL) must set
+        // it themselves.
+        env: { E2E_RELAXED_RATE_LIMITS: '1' },
       },
 })
