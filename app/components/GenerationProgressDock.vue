@@ -149,42 +149,44 @@ watch(
   pointer-events: none;
 }
 
+/* Toast-adjacent card grammar: flat surface-2 + hairline, calm shadow only. */
 .nc-gen-card {
   pointer-events: auto;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
-  background: var(--nc-surface, #111114);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 14px;
-  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.6);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  box-shadow: var(--nc-shadow-md);
 }
 
+/* Accent discipline (REDESIGN.md §1): cyan for ready, coral for error. */
 .nc-gen-card--ready {
-  border-color: rgba(0, 210, 190, 0.4);
+  border-color: rgba(var(--nc-accent-rgb), 0.4);
 }
 
 .nc-gen-card--error {
-  border-color: rgba(248, 113, 113, 0.4);
+  border-color: rgba(var(--nc-coral-rgb), 0.4);
 }
 
 .nc-gen-icon {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--nc-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: calc(18px * var(--nc-text-scale, 1));
-  background: rgba(0, 210, 190, 0.1);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  color: var(--nc-accent);
 }
 
 .nc-gen-card--error .nc-gen-icon {
-  background: rgba(248, 113, 113, 0.12);
-  color: #F87171;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  color: var(--nc-coral);
 }
 
 .nc-gen-spin {
@@ -200,55 +202,65 @@ watch(
 }
 
 .nc-gen-topic {
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Status readout — mono micro-label grammar (REDESIGN.md §4). */
 .nc-gen-status {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .nc-gen-status--ok {
-  color: #00D2BE;
+  color: var(--nc-accent);
 }
 
+/* Errors carry dynamic prose — keep mono + coral, but drop the micro-label
+   casing so long server messages stay readable and wrap cleanly. */
 .nc-gen-status--err {
-  color: #F87171;
+  color: var(--nc-coral);
+  text-transform: none;
+  letter-spacing: 0.01em;
   white-space: normal;
-  line-height: 1.35;
+  line-height: 1.5;
 }
 
 .nc-gen-pct {
-  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
-  color: var(--nc-ink-soft);
+  font-family: var(--nc-font-mono);
+  color: var(--nc-text-secondary);
 }
 
 .nc-gen-track {
   position: relative;
   height: 4px;
-  border-radius: 999px;
-  background: var(--nc-surface-3, #0D0D10);
+  border-radius: 2px;
+  background: var(--nc-surface-3);
   overflow: hidden;
 }
 
+/* Indeterminate fill — solid accent (no gradients in chrome). */
 .nc-gen-shimmer {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
   width: 40%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, #00D2BE, transparent);
-  animation: nc-gen-slide 1.3s ease-in-out infinite;
+  border-radius: 2px;
+  background: var(--nc-accent);
+  animation: nc-gen-slide 1.3s var(--nc-ease) infinite;
 }
 
 .nc-gen-actions {
@@ -257,59 +269,102 @@ watch(
   margin-top: 2px;
 }
 
+/* Secondary — mono uppercase chip (matches ui/NcToast action grammar). */
 .nc-gen-btn {
   flex: 1;
   padding: 7px 10px;
-  border-radius: 8px;
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 500;
+  border-radius: 0.4rem;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.72rem * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  background: transparent;
-  border: 1px solid #2A2A30;
-  color: var(--nc-ink-soft);
-  transition: all 0.15s ease;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-gen-btn:hover {
-  border-color: #3A3A40;
-  color: var(--nc-ink, #FAFAFA);
+.nc-gen-btn:active {
+  transform: scale(0.97);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .nc-gen-btn:hover {
+    border-color: var(--nc-border-active);
+    color: var(--nc-text);
+  }
+}
+
+/* Primary — ink pill grammar (REDESIGN.md §5). */
 .nc-gen-btn--primary {
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-text);
   border-color: transparent;
-  color: #0A0A0C;
+  border-radius: 2.4rem;
+  color: var(--nc-bg);
+  font-family: var(--nc-font-display);
+  font-weight: 700;
+  font-size: calc(12px * var(--nc-text-scale, 1));
+  letter-spacing: -0.015em;
+  text-transform: none;
 }
 
-.nc-gen-btn--primary:hover {
-  background: #00E5CF;
-  color: #0A0A0C;
+@media (hover: hover) and (pointer: fine) {
+  .nc-gen-btn--primary:hover {
+    background: var(--nc-accent);
+    border-color: transparent;
+    color: var(--nc-bg);
+    transform: translateY(-1px);
+  }
 }
 
+/* Icon button — transparent, hover brightens on surface-3. */
 .nc-gen-close {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  border-radius: 7px;
+  border-radius: 0.35rem;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--nc-ink-muted);
+  color: var(--nc-text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-gen-close:hover {
-  color: var(--nc-ink, #FAFAFA);
-  background: var(--nc-surface-3, #1A1A1E);
+.nc-gen-close:active {
+  transform: scale(0.97);
 }
 
-/* Enter/leave + reorder animation */
-.nc-gen-enter-active,
+@media (hover: hover) and (pointer: fine) {
+  .nc-gen-close:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
+}
+
+.nc-gen-btn:focus-visible,
+.nc-gen-close:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Enter/leave — transform/opacity only, single ease; exit faster. */
+.nc-gen-enter-active {
+  transition: opacity var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-normal) var(--nc-ease);
+}
+
 .nc-gen-leave-active {
-  transition: all 0.25s ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease);
 }
 
 .nc-gen-enter-from,

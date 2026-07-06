@@ -116,10 +116,10 @@ function handleKeepExploring() {
             <path d="M162 60 L240 210" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 4" fill="none" class="edge-ai" />
           </svg>
           <div class="preview-node selected">{{ $t('auth.upgrade_modal.selected_node') }}</div>
-          <div class="preview-node ai-node" style="left: 178px; top: 18px;">{{ $t('auth.upgrade_modal.ai_node_counter') }}</div>
-          <div class="preview-node ai-node" style="left: 178px; top: 78px;">{{ $t('auth.upgrade_modal.ai_node_assumption') }}</div>
-          <div class="preview-node ai-node" style="left: 178px; top: 138px;">{{ $t('auth.upgrade_modal.ai_node_example') }}</div>
-          <div class="preview-node ai-node" style="left: 178px; top: 198px;">{{ $t('auth.upgrade_modal.ai_node_stress') }}</div>
+          <div class="preview-node ai-node ai-node-1">{{ $t('auth.upgrade_modal.ai_node_counter') }}</div>
+          <div class="preview-node ai-node ai-node-2">{{ $t('auth.upgrade_modal.ai_node_assumption') }}</div>
+          <div class="preview-node ai-node ai-node-3">{{ $t('auth.upgrade_modal.ai_node_example') }}</div>
+          <div class="preview-node ai-node ai-node-4">{{ $t('auth.upgrade_modal.ai_node_stress') }}</div>
         </div>
 
         <div class="preview-receipt">
@@ -146,12 +146,7 @@ function handleKeepExploring() {
 
         <div class="auth-oauth">
           <button class="oauth-btn oauth-google" @click="handleOAuth('google')">
-            <svg width="14" height="14" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
-              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
-              <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" />
-              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
-            </svg>
+            <LandingProviderIcon name="google" />
             <span>{{ $t('auth.oauth.google') }}</span>
           </button>
           <button class="oauth-btn oauth-github" @click="handleOAuth('github')">
@@ -199,46 +194,37 @@ function handleKeepExploring() {
 </template>
 
 <style scoped>
+/* Scrim — flat, no blur (REDESIGN.md §5) */
 .um-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(var(--nc-bg-rgb), 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
 }
 
-:root.light .um-overlay {
-  background: rgba(26, 26, 26, 0.45);
-}
-
+/* Modal — flat surface-2 + hairline, radius capped at 8px, calm shadow */
 .upgrade-split {
   display: flex;
   width: 100%;
   max-width: 780px;
   min-height: 480px;
-  background: var(--nc-surface, #0C0C10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 18px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   overflow: hidden;
-  box-shadow: 0 60px 120px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--nc-shadow-md);
 }
 
-:root.light .upgrade-split {
-  background: #FFFFFF;
-  border-color: #DDD9CF;
-  box-shadow: 0 60px 120px rgba(26, 26, 26, 0.18);
-}
-
-/* Transitions */
+/* Transitions — enter scale(0.97)+opacity 200ms, exit faster (§5/§6) */
 .um-overlay-enter-active {
-  transition: opacity 200ms ease;
+  transition: opacity var(--nc-duration-normal) var(--nc-ease);
 }
 .um-overlay-leave-active {
-  transition: opacity 150ms ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
 }
 .um-overlay-enter-from,
 .um-overlay-leave-to {
@@ -246,22 +232,23 @@ function handleKeepExploring() {
 }
 
 .um-panel-enter-active {
-  transition: opacity 250ms cubic-bezier(0.23, 1, 0.32, 1),
-              transform 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-normal) var(--nc-ease);
 }
 .um-panel-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease);
 }
 .um-panel-enter-from,
 .um-panel-leave-to {
   opacity: 0;
-  transform: scale(0.97) translateY(8px);
+  transform: scale(0.97);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .um-panel-enter-active,
   .um-panel-leave-active {
-    transition: opacity 150ms ease;
+    transition: opacity 120ms linear;
   }
   .um-panel-enter-from,
   .um-panel-leave-to {
@@ -274,30 +261,27 @@ function handleKeepExploring() {
   width: 380px;
   flex-shrink: 0;
   padding: 32px 28px;
-  background: var(--nc-bg, #09090B);
-  border-right: 1px solid var(--nc-border, #1E1E22);
+  background: var(--nc-bg);
+  border-right: 1px solid var(--nc-border);
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-:root.light .upgrade-preview {
-  background: #FAF8F4;
-  border-right-color: #DDD9CF;
-}
-
+/* Feature eyebrow — cyan mono chip (REDESIGN.md §5 chips/badges) */
 .preview-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.22);
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.04em;
-  color: var(--nc-accent, #00D2BE);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-accent);
   align-self: flex-start;
 }
 
@@ -305,15 +289,10 @@ function handleKeepExploring() {
   position: relative;
   width: 100%;
   height: 240px;
-  background: var(--nc-bg, #09090B);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
+  background: var(--nc-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
   overflow: hidden;
-}
-
-:root.light .preview-canvas {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
 }
 
 .preview-edges {
@@ -322,21 +301,17 @@ function handleKeepExploring() {
 }
 
 .preview-edges .edge-solid {
-  color: var(--nc-border-hover, #3F3F46);
-}
-
-:root.light .preview-edges .edge-solid {
-  color: #C8C4B8;
+  color: var(--nc-border-active);
 }
 
 .preview-edges .edge-ai {
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .preview-node {
   position: absolute;
   font-size: calc(10px * var(--nc-text-scale, 1));
-  border-radius: 8px;
+  border-radius: var(--nc-radius-sm);
   font-weight: 500;
   padding: 6px 11px;
   white-space: nowrap;
@@ -345,64 +320,50 @@ function handleKeepExploring() {
 .preview-node.selected {
   left: 14px;
   top: 50px;
-  background: var(--nc-surface-3, #1E1E22);
-  border: 1px solid var(--nc-border-hover, #3F3F46);
-  color: var(--nc-ink, #FAFAFA);
+  background: var(--nc-surface-3);
+  border: 1px solid var(--nc-border-active);
+  color: var(--nc-text);
   font-size: calc(11px * var(--nc-text-scale, 1));
 }
 
-:root.light .preview-node.selected {
-  background: #EDE9E0;
-  border-color: #C8C4B8;
-  color: #1A1A1A;
-}
-
 .preview-node.ai-node {
-  background: var(--nc-surface, #0C0C10);
-  border: 1px solid rgba(0, 210, 190, 0.4);
-  color: var(--nc-ink, #FAFAFA);
+  background: var(--nc-surface-2);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.4);
+  color: var(--nc-text);
 }
 
-:root.light .preview-node.ai-node {
-  background: #FFFFFF;
-  border-color: rgba(0, 181, 164, 0.5);
-  color: #1A1A1A;
-}
+/* AI-node positions (was inline style — REDESIGN.md §9 forbids it) */
+.ai-node-1 { left: 178px; top: 18px; }
+.ai-node-2 { left: 178px; top: 78px; }
+.ai-node-3 { left: 178px; top: 138px; }
+.ai-node-4 { left: 178px; top: 198px; }
 
 .preview-receipt {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 14px 16px;
-  background: var(--nc-surface, #0C0C10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
-}
-
-:root.light .preview-receipt {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
 }
 
 .receipt-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--nc-accent, #00D2BE);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-accent);
 }
 
 .receipt-text {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   line-height: 1.5;
-}
-
-:root.light .receipt-text {
-  color: #5A5A5A;
 }
 
 /* ───── Auth Pane ───── */
@@ -412,6 +373,7 @@ function handleKeepExploring() {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  font-family: var(--nc-font-body);
 }
 
 .auth-header {
@@ -420,37 +382,30 @@ function handleKeepExploring() {
   gap: 10px;
 }
 
+/* Modal header — display 700; serif italic span is the single accent (§4) */
 .auth-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(32px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.05;
-  letter-spacing: -0.01em;
-  color: var(--nc-ink, #FAFAFA);
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   margin: 0;
 }
 
 .auth-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: var(--nc-font-serif);
   font-style: italic;
   font-weight: 400;
-  color: var(--nc-accent, #00D2BE);
-}
-
-:root.light .auth-serif {
-  color: var(--nc-accent-dark, #00B5A4);
+  color: var(--nc-accent);
 }
 
 .auth-desc {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   line-height: 1.55;
   max-width: 340px;
   margin: 0;
-}
-
-:root.light .auth-desc {
-  color: #5A5A5A;
 }
 
 .auth-oauth {
@@ -466,47 +421,61 @@ function handleKeepExploring() {
   gap: 10px;
   width: 100%;
   height: 44px;
-  border-radius: 10px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background 150ms ease, border-color 150ms ease, transform 80ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.oauth-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .oauth-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
+.oauth-btn:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Primary CTA — ink pill (REDESIGN.md §5) */
 .oauth-google {
-  background: #FAFAFA;
-  color: #09090B;
-  font-weight: 600;
+  background: var(--nc-text);
+  color: var(--nc-bg);
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
+  font-size: calc(14px * var(--nc-text-scale, 1));
+  font-weight: 700;
 }
 
-.oauth-google:hover {
-  background: #F0F0F0;
-}
-
-:root.light .oauth-google {
-  border-color: #DDD9CF;
-}
-
+/* Secondary provider — hairline chip, mono uppercase (landing auth grammar) */
 .oauth-github {
-  background: var(--nc-surface-3, #1E1E22);
-  border-color: var(--nc-border-hover, #3F3F46);
-  color: var(--nc-ink, #FAFAFA);
+  background: transparent;
+  border-color: var(--nc-border);
+  border-radius: 0.5rem;
+  font-family: var(--nc-font-mono);
+  font-size: calc(12px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
 }
 
-.oauth-github:hover {
-  border-color: var(--nc-ink-muted, #A1A1AA);
-}
+@media (hover: hover) and (pointer: fine) {
+  .oauth-google:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
 
-:root.light .oauth-github {
-  background: #1A1A1A;
-  border-color: #1A1A1A;
-  color: #FAF8F4;
+  .oauth-github:hover {
+    color: var(--nc-accent);
+    border-color: rgba(var(--nc-accent-rgb), 0.5);
+  }
 }
 
 .auth-divider {
@@ -516,47 +485,50 @@ function handleKeepExploring() {
 }
 
 .auth-divider span {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--nc-ink-faint, #52525B);
+  letter-spacing: 0.18em;
+  color: var(--nc-text-muted);
 }
 
 .divider-line {
   flex: 1;
   height: 1px;
-  background: var(--nc-border, #1E1E22);
+  background: var(--nc-border);
 }
 
-:root.light .divider-line {
-  background: #DDD9CF;
-}
-
+/* Email row — input grammar: chip fill + hairline (REDESIGN.md §5) */
 .auth-email-btn {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: var(--nc-bg, #09090B);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 10px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   cursor: pointer;
   text-align: left;
-  transition: border-color 150ms ease, color 150ms ease;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.auth-email-btn:hover {
-  border-color: var(--nc-ink-muted, #A1A1AA);
-  color: var(--nc-ink, #FAFAFA);
+@media (hover: hover) and (pointer: fine) {
+  .auth-email-btn:hover {
+    border-color: var(--nc-border-active);
+    color: var(--nc-text);
+  }
 }
 
-:root.light .auth-email-btn {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
-  color: #5A5A5A;
+.auth-email-btn:active {
+  transform: scale(0.97);
+}
+
+.auth-email-btn:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .auth-email-btn span:first-of-type {
@@ -564,9 +536,9 @@ function handleKeepExploring() {
 }
 
 .auth-kbd {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
+  color: var(--nc-text-dim);
 }
 
 .auth-mini {
@@ -574,11 +546,7 @@ function handleKeepExploring() {
   align-items: center;
   gap: 8px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
-}
-
-:root.light .auth-mini {
-  color: #8A8780;
+  color: var(--nc-text-muted);
 }
 
 .auth-footer {
@@ -586,17 +554,13 @@ function handleKeepExploring() {
   align-items: center;
   justify-content: space-between;
   padding-top: 12px;
-  border-top: 1px solid var(--nc-border, #1E1E22);
+  border-top: 1px solid var(--nc-border);
   margin-top: auto;
-}
-
-:root.light .auth-footer {
-  border-top-color: #DDD9CF;
 }
 
 .auth-signin-prompt {
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
+  color: var(--nc-text-muted);
 }
 
 .auth-signin-link {
@@ -604,35 +568,51 @@ function handleKeepExploring() {
   border: none;
   padding: 0;
   margin-left: 4px;
-  color: var(--nc-ink-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   font-family: inherit;
   font-size: calc(12px * var(--nc-text-scale, 1));
   cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.auth-signin-link:hover {
-  color: var(--nc-ink, #FAFAFA);
+@media (hover: hover) and (pointer: fine) {
+  .auth-signin-link:hover {
+    color: var(--nc-accent);
+  }
 }
 
+.auth-signin-link:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Dismiss — mono uppercase ghost grammar (REDESIGN.md §5) */
 .auth-keep-link {
   background: none;
   border: none;
   padding: 0;
-  font-family: inherit;
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-faint, #52525B);
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nc-text-secondary);
   cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.auth-keep-link:hover {
-  color: var(--nc-ink-muted, #A1A1AA);
+@media (hover: hover) and (pointer: fine) {
+  .auth-keep-link:hover {
+    color: var(--nc-accent);
+  }
+}
+
+.auth-keep-link:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 /* Mobile */
 @media (max-width: 720px) {
-  :deep(.nc-dialog__panel) {
-    max-width: 92vw !important;
-  }
   .upgrade-split {
     flex-direction: column;
     min-height: 0;
@@ -640,11 +620,8 @@ function handleKeepExploring() {
   .upgrade-preview {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid var(--nc-border, #1E1E22);
+    border-bottom: 1px solid var(--nc-border);
     padding: 24px 20px;
-  }
-  :root.light .upgrade-preview {
-    border-bottom-color: #DDD9CF;
   }
   .preview-canvas {
     height: 180px;

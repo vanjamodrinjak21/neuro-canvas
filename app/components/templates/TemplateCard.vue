@@ -9,15 +9,17 @@ const emit = defineEmits<{
   (e: 'click', template: Template): void
 }>()
 
+// Category hues come from the token palette only (REDESIGN.md §9 — never
+// re-hardcode a palette in a component). Consumed via v-bind() in scoped CSS.
 const categoryColors: Record<string, string> = {
-  education: '#3B82F6',
-  business: '#00D2BE',
-  creative: '#F59E0B',
-  planning: '#8B5CF6',
-  research: '#EF4444',
+  education: 'var(--nc-node-blue)',
+  business: 'var(--nc-accent)',
+  creative: 'var(--nc-node-orange)',
+  planning: 'var(--nc-node-purple)',
+  research: 'var(--nc-node-pink)',
 }
 
-const categoryColor = computed(() => categoryColors[props.template.category] || '#71717A')
+const categoryColor = computed(() => categoryColors[props.template.category] || 'var(--nc-text-muted)')
 
 const preview = computed(() => props.template.previewData as TemplatePreviewData | null)
 
@@ -60,7 +62,6 @@ const displayCategory = computed(() => builtin.category(props.template.category)
           :y1="ln.y1"
           :x2="ln.x2"
           :y2="ln.y2"
-          stroke="#3F3F46"
           stroke-width="1"
         />
         <rect
@@ -81,7 +82,6 @@ const displayCategory = computed(() => builtin.category(props.template.category)
           :x="shape.x + shape.width / 2"
           :y="shape.y + shape.height / 2 + (shape.fontSize || 7) * 0.35"
           :font-size="shape.fontSize || 7"
-          fill="#E8E8EC"
           text-anchor="middle"
           font-family="Inter, system-ui, sans-serif"
           font-weight="600"
@@ -98,10 +98,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
     <div class="card-info">
       <div class="card-header">
         <span class="card-title">{{ displayTitle }}</span>
-        <span
-          class="category-badge"
-          :style="{ background: categoryColor + '18', color: categoryColor }"
-        >
+        <span class="category-badge">
           {{ displayCategory }}
         </span>
       </div>
@@ -110,7 +107,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
 
       <div class="card-footer">
         <div class="card-author">
-          <span class="author-avatar" :style="{ background: categoryColor }">{{ authorInitial }}</span>
+          <span class="author-avatar">{{ authorInitial }}</span>
           <span class="author-name">{{ authorName }}</span>
         </div>
         <div class="card-uses">
@@ -128,28 +125,36 @@ const displayCategory = computed(() => builtin.category(props.template.category)
 </template>
 
 <style scoped>
+/* Card grammar (REDESIGN.md §5): flat surface-2 + 1px hairline, radius 8px.
+   Hover = border-color shift ONLY — no lift, no shadow growth, no glow. */
 .template-card {
   display: flex;
   flex-direction: column;
-  background: var(--tc-bg, #111113);
-  border: 1px solid var(--tc-border, #1A1A1E);
-  border-radius: 12px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   text-align: left;
   padding: 0;
   width: 100%;
 }
 
-.template-card:hover {
-  border-color: var(--tc-border-hover, #2A2A30);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .template-card:hover {
+    border-color: var(--nc-border-active);
+  }
 }
 
 .template-card:active {
-  transform: translateY(0);
+  transform: scale(0.97);
+}
+
+.template-card:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 /* Preview */
@@ -157,7 +162,7 @@ const displayCategory = computed(() => builtin.category(props.template.category)
   position: relative;
   width: 100%;
   aspect-ratio: 270 / 140;
-  background: var(--tc-preview-bg, #0D0D0F);
+  background: var(--nc-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -169,18 +174,29 @@ const displayCategory = computed(() => builtin.category(props.template.category)
   height: 80%;
 }
 
+.preview-svg line {
+  stroke: var(--nc-border);
+}
+
+.preview-svg text {
+  fill: var(--nc-text);
+}
+
+/* Chip grammar (REDESIGN.md §5): mono on chip fill, hairline, radius 0.4rem */
 .ai-badge {
   position: absolute;
   top: 10px;
   right: 10px;
   padding: 4px 10px;
-  background: rgba(0, 210, 190, 0.12);
-  color: #00D2BE;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.22);
+  color: var(--nc-accent);
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  border-radius: 6px;
-  letter-spacing: 0.02em;
+  font-weight: 500;
+  border-radius: 0.4rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* Info */
@@ -198,11 +214,13 @@ const displayCategory = computed(() => builtin.category(props.template.category)
   gap: 8px;
 }
 
+/* Card title = display voice (REDESIGN.md §4) */
 .card-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--tc-text, #E8E8EC);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   line-height: 20px;
   white-space: nowrap;
   overflow: hidden;
@@ -211,19 +229,24 @@ const displayCategory = computed(() => builtin.category(props.template.category)
 
 .category-badge {
   padding: 2px 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  color: v-bind(categoryColor);
+  border-radius: 0.4rem;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .card-description {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 400;
-  color: var(--tc-muted, #71717A);
+  color: var(--nc-text-secondary);
   line-height: 18px;
   margin: 0;
   display: -webkit-box;
@@ -253,45 +276,31 @@ const displayCategory = computed(() => builtin.category(props.template.category)
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: #09090B;
+  background: v-bind(categoryColor);
+  color: var(--nc-bg);
   flex-shrink: 0;
 }
 
 .author-name {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
-  color: var(--tc-muted, #71717A);
+  color: var(--nc-text-muted);
 }
 
 .card-uses {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
-  color: var(--tc-muted, #71717A);
+  color: var(--nc-text-muted);
 }
 
-/* Light theme */
-:root.light .template-card {
-  --tc-bg: #FFFFFF;
-  --tc-border: #E8E8E6;
-  --tc-border-hover: #D4D4D2;
-  --tc-preview-bg: #F5F5F3;
-  --tc-text: #111111;
-  --tc-muted: #71717A;
-}
-
-:root.light .ai-badge {
-  background: rgba(0, 210, 190, 0.08);
-}
-
-:root.light .template-card:hover {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-}
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 </style>

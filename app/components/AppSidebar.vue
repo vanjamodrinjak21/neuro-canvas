@@ -59,7 +59,7 @@ function sidebarThemeReveal(btn: HTMLElement, theme: 'light' | 'dark' | 'system'
   setTimeout(() => {
     userStore.setPreference('theme', theme)
     setTimeout(() => {
-      overlay.style.transition = 'opacity 300ms ease'
+      overlay.style.transition = 'opacity 300ms cubic-bezier(0.16, 1, 0.3, 1)'
       overlay.style.opacity = '0'
       setTimeout(() => {
         overlay.style.display = 'none'
@@ -405,11 +405,13 @@ const palette = useCommandPalette()
   bottom: 0;
   width: 100vw;
   height: 100vh;
-  background: #00D2BE;
+  background: var(--nc-accent);
   z-index: 9999;
   pointer-events: none;
 }
 
+/* Flat --nc-bg plane + THE hairline right border (REDESIGN.md §5).
+   No local --sb-* palette — tokens are the single source of truth. */
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -417,11 +419,11 @@ const palette = useCommandPalette()
   height: 100vh;
   flex-shrink: 0;
   padding: 20px 16px;
-  background: var(--sb-bg, #09090B);
-  border-right: 1px solid var(--sb-border, #1A1A1E);
+  background: var(--nc-bg);
+  border-right: 1px solid var(--nc-border-subtle);
   position: sticky;
   top: 0;
-  transition: width var(--nc-duration-normal, 200ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: width var(--nc-duration-normal) var(--nc-ease);
 }
 
 .sidebar.collapsed {
@@ -446,11 +448,11 @@ const palette = useCommandPalette()
 }
 
 .logo-text {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--sb-text, #FAFAFA);
+  letter-spacing: -0.02em;
+  color: var(--nc-text);
   flex: 1;
 }
 
@@ -463,17 +465,26 @@ const palette = useCommandPalette()
   height: 28px;
   border: none;
   background: none;
-  border-radius: 6px;
-  color: var(--sb-muted, #52525B);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-text-muted);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.collapse-btn:hover,
-.expand-btn:hover {
-  color: var(--sb-text, #FAFAFA);
-  background: var(--sb-hover, #111113);
+.collapse-btn:active,
+.expand-btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .collapse-btn:hover,
+  .expand-btn:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
 }
 
 .expand-btn {
@@ -484,17 +495,24 @@ const palette = useCommandPalette()
   font-size: calc(16px * var(--nc-text-scale, 1));
 }
 
-/* Search */
+/* Search — input grammar: chip fill + hairline, focus/hover = border only */
 .sidebar-search {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
   margin-bottom: 20px;
-  background: var(--sb-surface, #111113);
-  border: 1px solid var(--sb-border, #1A1A1E);
-  border-radius: 6px;
-  cursor: text;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  cursor: pointer;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-search:hover {
+    border-color: var(--nc-border-active);
+  }
 }
 
 .collapsed-search {
@@ -504,22 +522,26 @@ const palette = useCommandPalette()
   width: 40px;
   height: 36px;
   margin-bottom: 20px;
-  background: var(--sb-surface, #111113);
-  border: 1px solid var(--sb-border, #1A1A1E);
-  border-radius: 6px;
-  color: var(--sb-muted, #52525B);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  color: var(--nc-text-muted);
   font-size: calc(14px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.collapsed-search:hover {
-  color: var(--sb-text, #FAFAFA);
+@media (hover: hover) and (pointer: fine) {
+  .collapsed-search:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
 }
 
 .search-icon {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--sb-muted, #52525B);
+  color: var(--nc-text-muted);
   flex-shrink: 0;
 }
 
@@ -528,26 +550,28 @@ const palette = useCommandPalette()
   background: none;
   border: none;
   outline: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--sb-text, #FAFAFA);
+  color: var(--nc-text);
   min-width: 0;
+  cursor: pointer;
 }
 
 .search-input::placeholder {
-  color: var(--sb-muted, #52525B);
+  color: var(--nc-text-dim);
 }
 
+/* kbd hint — mono chip (REDESIGN.md §4) */
 .search-kbd {
   margin-left: auto;
   padding: 2px 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--sb-muted-2, #3F3F46);
-  background: var(--sb-kbd-bg, #18181B);
-  border: 1px solid var(--sb-kbd-border, #27272A);
-  border-radius: 4px;
+  color: var(--nc-text-muted);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: 0.35rem;
   flex-shrink: 0;
 }
 
@@ -559,25 +583,26 @@ const palette = useCommandPalette()
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 10px;
   min-height: 40px;
-  border-radius: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: var(--nc-radius-sm);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--sb-secondary, #A1A1AA);
+  color: var(--nc-text-secondary);
   text-decoration: none;
   border: none;
   background: none;
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: background var(--nc-duration-fast) var(--nc-ease-out),
-              color var(--nc-duration-fast) var(--nc-ease-out),
-              transform var(--nc-duration-press) var(--nc-ease-out);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 @media (hover: none) {
@@ -597,14 +622,32 @@ const palette = useCommandPalette()
   width: 40px;
 }
 
-.nav-item:hover {
-  background: var(--sb-hover, #111113);
-  color: var(--sb-text, #FAFAFA);
+@media (hover: hover) and (pointer: fine) {
+  .nav-item:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-text);
+  }
 }
 
+/* Active — accent text + 2px marker edge, never color alone (REDESIGN.md §5) */
 .nav-item.active {
-  background: var(--sb-active-bg, rgba(0, 210, 190, 0.08));
-  color: var(--sb-accent, #00D2BE);
+  background: var(--nc-chip-bg);
+  color: var(--nc-accent);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--nc-accent);
+}
+
+.collapsed .nav-item.active::before {
+  top: 6px;
+  bottom: 6px;
 }
 
 .nav-icon {
@@ -630,9 +673,9 @@ const palette = useCommandPalette()
   gap: 2px;
   padding: 3px;
   margin-bottom: 8px;
-  background: var(--sb-surface, #111113);
-  border: 1px solid var(--sb-border, #1A1A1E);
-  border-radius: 6px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
 }
 
 .theme-opt {
@@ -642,25 +685,28 @@ const palette = useCommandPalette()
   justify-content: center;
   gap: 5px;
   padding: 6px 4px;
-  border-radius: 4px;
+  border-radius: 0.35rem;
   border: none;
   background: none;
-  color: var(--sb-muted, #52525B);
+  color: var(--nc-text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.theme-opt:hover {
-  color: var(--sb-text, #FAFAFA);
+@media (hover: hover) and (pointer: fine) {
+  .theme-opt:hover {
+    color: var(--nc-text);
+  }
 }
 
 .theme-opt.active {
-  background: var(--sb-theme-active, #09090B);
-  color: var(--sb-accent, #00D2BE);
+  background: var(--nc-surface-2);
+  color: var(--nc-accent);
 }
 
 .theme-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
@@ -701,10 +747,10 @@ const palette = useCommandPalette()
   align-items: center;
   gap: 10px;
   padding: 12px 10px;
-  border-top: 1px solid var(--sb-border, #1A1A1E);
+  border-top: 1px solid var(--nc-border-subtle);
   cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.15s;
+  border-radius: var(--nc-radius-sm);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .collapsed .sidebar-user {
@@ -712,8 +758,10 @@ const palette = useCommandPalette()
   padding: 12px 8px;
 }
 
-.sidebar-user:hover {
-  background: var(--sb-hover, #111113);
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-user:hover {
+    background: var(--nc-surface-3);
+  }
 }
 
 .user-avatar {
@@ -724,20 +772,21 @@ const palette = useCommandPalette()
   justify-content: center;
   flex-shrink: 0;
   /* Circular avatar so a Google profile photo with dark edges doesn't
-     read as a hard black square against the warm-paper sidebar. The
-     thin ring keeps the edge visible even when the image background
+     read as a hard black square against the sidebar plane. The thin
+     ring keeps the edge visible even when the image background
      matches the sidebar. */
   border-radius: 50%;
-  background: var(--sb-accent, #00D2BE);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  background: var(--nc-accent);
+  box-shadow: inset 0 0 0 1px rgba(var(--nc-bg-rgb), 0.08);
   overflow: hidden;
 }
 
+/* Selection grammar: accent fill carries bg-colored ink (REDESIGN.md §1) */
 .user-initials {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: #09090B;
+  color: var(--nc-bg);
   line-height: 16px;
 }
 
@@ -749,10 +798,10 @@ const palette = useCommandPalette()
 }
 
 .user-name {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--sb-text, #FAFAFA);
+  color: var(--nc-text);
   line-height: 16px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -760,10 +809,10 @@ const palette = useCommandPalette()
 }
 
 .user-email {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 400;
-  color: var(--sb-muted, #52525B);
+  color: var(--nc-text-muted);
   line-height: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -772,9 +821,9 @@ const palette = useCommandPalette()
 
 .user-chevron {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--sb-muted-2, #3F3F46);
+  color: var(--nc-text-dim);
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: transform var(--nc-duration-normal) var(--nc-ease);
 }
 
 /* Guest engagement ladder */
@@ -783,7 +832,7 @@ const palette = useCommandPalette()
   flex-direction: column;
   gap: 14px;
   padding: 14px 14px 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
 }
 
 .guest-ladder.is-collapsed {
@@ -796,16 +845,19 @@ const palette = useCommandPalette()
   justify-content: space-between;
 }
 
+/* Mono micro-labels (REDESIGN.md §4) */
 .ladder-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--sb-muted, #52525B);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .ladder-count {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .ladder-list {
@@ -823,11 +875,11 @@ const palette = useCommandPalette()
   gap: 10px;
   padding: 8px 6px;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--sb-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
 }
 
 .ladder-item.is-next {
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent);
 }
 
 .ladder-icon {
@@ -836,29 +888,17 @@ const palette = useCommandPalette()
   justify-content: center;
   width: 22px;
   height: 22px;
-  background: var(--sb-surface-2, #121216);
-  border: 1px solid var(--sb-border, #1E1E22);
-  border-radius: 6px;
-  color: var(--sb-muted, #52525B);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  border-radius: 0.35rem;
+  color: var(--nc-text-muted);
   flex-shrink: 0;
 }
 
-:root.light .ladder-icon {
-  background: #F4F2EC;
-  border-color: #DDD9CF;
-  color: #8A8780;
-}
-
 .ladder-icon--ai {
-  background: rgba(0, 210, 190, 0.06);
-  border-color: rgba(0, 210, 190, 0.22);
-  color: var(--nc-accent, #00D2BE);
-}
-
-:root.light .ladder-icon--ai {
-  background: rgba(0, 181, 164, 0.06);
-  border-color: rgba(0, 181, 164, 0.22);
-  color: var(--nc-accent-dark, #00B5A4);
+  background: rgba(var(--nc-accent-rgb), 0.06);
+  border-color: rgba(var(--nc-accent-rgb), 0.22);
+  color: var(--nc-accent);
 }
 
 .ladder-label {
@@ -867,35 +907,35 @@ const palette = useCommandPalette()
 }
 
 .ladder-arrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  color: var(--sb-muted, #52525B);
+  color: var(--nc-text-muted);
 }
 
+/* Save CTA — flat surface card, hairline shifts on hover (no glow) */
 .ladder-cta {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 14px;
-  background: var(--sb-surface-2, #121216);
-  border: 1px solid rgba(0, 210, 190, 0.22);
-  border-radius: 12px;
+  background: var(--nc-surface-2);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.22);
+  border-radius: var(--nc-radius-md);
   text-decoration: none;
   color: inherit;
-  transition: border-color 150ms ease, transform 80ms ease;
+  cursor: pointer;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.ladder-cta:hover {
-  border-color: rgba(0, 210, 190, 0.4);
+@media (hover: hover) and (pointer: fine) {
+  .ladder-cta:hover {
+    border-color: rgba(var(--nc-accent-rgb), 0.4);
+  }
 }
 
 .ladder-cta:active {
-  transform: scale(0.99);
-}
-
-:root.light .ladder-cta {
-  background: #F4F2EC;
-  border-color: rgba(0, 181, 164, 0.25);
+  transform: scale(0.97);
 }
 
 .is-collapsed .ladder-cta {
@@ -908,42 +948,46 @@ const palette = useCommandPalette()
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.04em;
-  color: var(--sb-muted, #A1A1AA);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 .ladder-cta-title {
+  font-family: var(--nc-font-display);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--sb-text, #FAFAFA);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
   line-height: 1.3;
-}
-
-:root.light .ladder-cta-title {
-  color: #1A1A1A;
 }
 
 .ladder-cta-desc {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--sb-muted, #A1A1AA);
+  color: var(--nc-text-secondary);
   line-height: 1.4;
 }
 
-:root.light .ladder-cta-desc {
-  color: #5A5A5A;
-}
-
+/* Ink-pill visual per primary button grammar (REDESIGN.md §5) */
 .ladder-cta-btn {
   margin-top: 4px;
   padding: 8px 12px;
-  background: var(--nc-accent, #00D2BE);
-  border-radius: 8px;
-  color: #09090B;
+  background: var(--nc-text);
+  border-radius: 2.4rem;
+  color: var(--nc-bg);
+  font-family: var(--nc-font-display);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ladder-cta:hover .ladder-cta-btn {
+    background: var(--nc-accent);
+  }
 }
 
 .ladder-cta-collapsed {
@@ -952,9 +996,9 @@ const palette = useCommandPalette()
   justify-content: center;
   width: 100%;
   height: 28px;
-  background: var(--nc-accent, #00D2BE);
-  color: #09090B;
-  border-radius: 6px;
+  background: var(--nc-text);
+  color: var(--nc-bg);
+  border-radius: 2.4rem;
 }
 
 .sidebar-user-row {
@@ -999,41 +1043,43 @@ const palette = useCommandPalette()
   text-decoration: none;
   color: inherit;
   padding: 8px;
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  border-radius: var(--nc-radius-md);
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
   cursor: pointer;
 }
 
-.sidebar-user-link:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-:root.light .sidebar-user-link:hover {
-  background: rgba(0, 0, 0, 0.04);
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-user-link:hover {
+    background: var(--nc-surface-3);
+  }
 }
 
 .sidebar-theme-btn {
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   border: none;
   background: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--sb-muted, #71717A);
+  color: var(--nc-text-muted);
   flex-shrink: 0;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.sidebar-theme-btn:hover {
-  color: var(--sb-text, #FAFAFA);
-  background: rgba(255, 255, 255, 0.06);
+.sidebar-theme-btn:active {
+  transform: scale(0.97);
 }
 
-:root.light .sidebar-theme-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-theme-btn:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
 }
 
 /* User section wrapper */
@@ -1041,7 +1087,7 @@ const palette = useCommandPalette()
   position: relative;
 }
 
-/* Sign In button (desktop local mode) */
+/* Sign In button (desktop local mode) — accent = interactive/hot */
 .signin-btn {
   display: flex;
   align-items: center;
@@ -1049,23 +1095,32 @@ const palette = useCommandPalette()
   width: 100%;
   padding: 8px 10px;
   margin-top: 4px;
-  border: none;
-  background: rgba(0, 210, 190, 0.08);
-  border-radius: 6px;
-  color: #00D2BE;
-  font-family: 'Inter', system-ui, sans-serif;
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.22);
+  background: var(--nc-chip-bg);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-accent);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   text-decoration: none;
 }
 
-.signin-btn:hover {
-  background: rgba(0, 210, 190, 0.15);
+.signin-btn:active {
+  transform: scale(0.97);
 }
 
-/* Sign Out button */
+@media (hover: hover) and (pointer: fine) {
+  .signin-btn:hover {
+    background: rgba(var(--nc-accent-rgb), 0.08);
+    border-color: rgba(var(--nc-accent-rgb), 0.4);
+  }
+}
+
+/* Sign Out button — coral = destructive-confirm accent (REDESIGN.md §1) */
 .signout-btn {
   display: flex;
   align-items: center;
@@ -1074,37 +1129,44 @@ const palette = useCommandPalette()
   padding: 8px 10px;
   margin-top: 4px;
   border: none;
-  background: rgba(239, 68, 68, 0.06);
-  border-radius: 6px;
-  color: #EF4444;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: rgba(var(--nc-coral-rgb), 0.06);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-coral);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.signout-btn:hover {
-  background: rgba(239, 68, 68, 0.12);
+.signout-btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .signout-btn:hover {
+    background: rgba(var(--nc-coral-rgb), 0.12);
+  }
 }
 
 /* Sign out transition */
 .signout-enter-active {
-  transition: opacity 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              transform 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              max-height 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              margin-top 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              padding-top 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              padding-bottom 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease),
+              max-height var(--nc-duration-fast) var(--nc-ease),
+              margin-top var(--nc-duration-fast) var(--nc-ease),
+              padding-top var(--nc-duration-fast) var(--nc-ease),
+              padding-bottom var(--nc-duration-fast) var(--nc-ease);
 }
 
 .signout-leave-active {
-  transition: opacity 100ms cubic-bezier(0.4, 0, 1, 1),
-              transform 100ms cubic-bezier(0.4, 0, 1, 1),
-              max-height 100ms cubic-bezier(0.4, 0, 1, 1),
-              margin-top 100ms cubic-bezier(0.4, 0, 1, 1),
-              padding-top 100ms cubic-bezier(0.4, 0, 1, 1),
-              padding-bottom 100ms cubic-bezier(0.4, 0, 1, 1);
+  transition: opacity var(--nc-duration-instant) var(--nc-ease),
+              transform var(--nc-duration-instant) var(--nc-ease),
+              max-height var(--nc-duration-instant) var(--nc-ease),
+              margin-top var(--nc-duration-instant) var(--nc-ease),
+              padding-top var(--nc-duration-instant) var(--nc-ease),
+              padding-bottom var(--nc-duration-instant) var(--nc-ease);
 }
 
 .signout-enter-from {
@@ -1138,47 +1200,8 @@ const palette = useCommandPalette()
   padding-bottom: 0;
 }
 
-/* Light theme */
-:root.light .sidebar {
-  --sb-bg: #F5F5F3;
-  --sb-border: #E8E8E6;
-  --sb-surface: #E8E8E6;
-  --sb-text: #111111;
-  --sb-secondary: #71717A;
-  --sb-muted: #777777;
-  --sb-muted-2: #D4D4D8;
-  --sb-accent: #00D2BE;
-  --sb-active-bg: rgba(0, 210, 190, 0.08);
-  --sb-hover: #E8E8E6;
-  --sb-kbd-bg: #F4F4F5;
-  --sb-kbd-border: #E8E8E6;
-  --sb-theme-active: #FFFFFF;
-}
-
-:root.light .user-avatar {
-  background: var(--sb-accent);
-}
-
-:root.light .user-initials {
-  color: #FFFFFF;
-}
-
-:root.light .collapse-btn:hover,
-:root.light .expand-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-:root.light .collapsed-search:hover {
-  color: var(--sb-text);
-}
-
-:root.light .signout-btn {
-  background: rgba(239, 68, 68, 0.04);
-}
-
-:root.light .signout-btn:hover {
-  background: rgba(239, 68, 68, 0.08);
-}
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 
 /* Laptop breakpoint */
 @media (max-width: 1366px) {

@@ -60,13 +60,17 @@ const adapting = ref(false)
 const adaptProgress = ref<{ done: number; total: number } | null>(null)
 const adaptError = ref<string | null>(null)
 
+// Category hues come from the token palette only (REDESIGN.md §9 — never
+// re-hardcode a palette in a component). Consumed via v-bind() in scoped CSS.
 const categoryColors: Record<string, string> = {
-  education: '#3B82F6',
-  business: '#00D2BE',
-  creative: '#F59E0B',
-  planning: '#8B5CF6',
-  research: '#EF4444',
+  education: 'var(--nc-node-blue)',
+  business: 'var(--nc-accent)',
+  creative: 'var(--nc-node-orange)',
+  planning: 'var(--nc-node-purple)',
+  research: 'var(--nc-node-pink)',
 }
+
+const categoryColor = computed(() => categoryColors[template.value?.category ?? ''] || 'var(--nc-text-muted)')
 
 const preview = computed(() => template.value?.previewData as TemplatePreviewData | null)
 
@@ -296,7 +300,6 @@ onMounted(() => {
               :x="shape.x + shape.width / 2"
               :y="shape.y + shape.height / 2 + (shape.fontSize || 10) * 0.35"
               :font-size="shape.fontSize || 10"
-              fill="#E8E8EC"
               text-anchor="middle"
               font-family="Inter, system-ui, sans-serif"
               font-weight="600"
@@ -314,10 +317,7 @@ onMounted(() => {
           <div class="info-header">
             <h1 class="info-title">{{ displayTitle }}</h1>
             <div class="info-badges">
-              <span
-                class="info-badge"
-                :style="{ background: (categoryColors[template.category] || '#71717A') + '18', color: categoryColors[template.category] || '#71717A' }"
-              >
+              <span class="info-badge">
                 {{ $t('templates.filter.' + template.category) }}
               </span>
               <span v-if="template.aiEnhanced" class="info-badge ai">{{ $t('templates.detail.ai_enhanced') }}</span>
@@ -393,7 +393,7 @@ onMounted(() => {
 .detail-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--tpl-bg, #0D0D0F);
+  background: var(--nc-bg);
 }
 
 .detail-main {
@@ -404,7 +404,7 @@ onMounted(() => {
   max-height: 100vh;
 }
 
-/* Breadcrumb */
+/* Breadcrumb — nav grammar: mono uppercase, secondary → text on hover */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -416,30 +416,36 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--tpl-muted, #71717A);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--nc-text-secondary);
   text-decoration: none;
   padding: 6px 12px;
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 6px;
-  transition: color 0.15s, border-color 0.15s;
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
+  cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.breadcrumb-link:hover {
-  color: var(--tpl-text, #E8E8EC);
-  border-color: var(--tpl-border-hover, #2A2A30);
+@media (hover: hover) and (pointer: fine) {
+  .breadcrumb-link:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
 }
 
 .breadcrumb svg:not(.breadcrumb-link svg) {
-  color: var(--tpl-muted, #52525B);
+  color: var(--nc-text-dim);
 }
 
 .breadcrumb-current {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--tpl-muted, #71717A);
+  color: var(--nc-text-secondary);
 }
 
 /* Content */
@@ -448,13 +454,13 @@ onMounted(() => {
   gap: 40px;
 }
 
-/* Preview */
+/* Preview — flat surface + hairline (REDESIGN.md §5) */
 .detail-preview {
   flex: 1;
   min-height: 500px;
-  background: var(--tpl-surface, #111113);
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 12px;
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -467,18 +473,25 @@ onMounted(() => {
   height: 70%;
 }
 
+.preview-svg text {
+  fill: var(--nc-text);
+}
+
+/* Chip grammar: mono on flat fill, hairline, radius 0.4rem */
 .ai-badge {
   position: absolute;
   top: 16px;
   right: 16px;
   padding: 6px 14px;
-  background: var(--tpl-surface, #111113);
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(13px * var(--nc-text-scale, 1));
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
+  font-family: var(--nc-font-mono);
+  font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--tpl-text, #E8E8EC);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-accent);
 }
 
 /* Info Panel */
@@ -496,13 +509,15 @@ onMounted(() => {
   gap: 10px;
 }
 
+/* Page title = display 700 (REDESIGN.md §4) */
 .info-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(24px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: var(--tpl-text, #E8E8EC);
+  color: var(--nc-text);
   margin: 0;
   letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 
 .info-badges {
@@ -513,31 +528,37 @@ onMounted(() => {
 
 .info-badge {
   padding: 4px 12px;
-  border-radius: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  color: v-bind(categoryColor);
+  font-family: var(--nc-font-mono);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .info-badge.ai {
-  background: rgba(0, 210, 190, 0.12);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border-color: rgba(var(--nc-accent-rgb), 0.22);
+  color: var(--nc-accent);
 }
 
 .info-description {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 22px;
-  color: var(--tpl-muted, #71717A);
+  color: var(--nc-text-secondary);
   margin: 0;
 }
 
-/* Stats */
+/* Stats — display numerals over mono micro-labels */
 .info-stats {
   display: flex;
   gap: 0;
-  border-top: 1px solid var(--tpl-border, #1A1A1E);
-  border-bottom: 1px solid var(--tpl-border, #1A1A1E);
+  border-top: 1px solid var(--nc-border);
+  border-bottom: 1px solid var(--nc-border);
   padding: 16px 0;
 }
 
@@ -550,16 +571,19 @@ onMounted(() => {
 }
 
 .stat-value {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(20px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: var(--tpl-text, #E8E8EC);
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
 }
 
 .stat-label {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--tpl-muted, #71717A);
+  font-family: var(--nc-font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
 
 /* Author */
@@ -573,14 +597,14 @@ onMounted(() => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--tpl-border, #2A2A30);
+  background: var(--nc-surface-3);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: var(--tpl-text, #E8E8EC);
+  color: var(--nc-text);
   flex-shrink: 0;
 }
 
@@ -590,16 +614,16 @@ onMounted(() => {
 }
 
 .author-name {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--tpl-text, #E8E8EC);
+  color: var(--nc-text);
 }
 
 .author-date {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--tpl-muted, #71717A);
+  color: var(--nc-text-muted);
 }
 
 /* Actions */
@@ -615,33 +639,53 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 12px 20px;
-  border-radius: 10px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
   font-size: calc(15px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.15s, background 0.15s;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
+.action-btn:active {
+  transform: scale(0.97);
+}
+
+.action-btn:focus-visible,
+.breadcrumb-link:focus-visible,
+.back-link:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Primary CTA = ink pill (REDESIGN.md §5) */
 .action-btn.primary {
-  background: #00D2BE;
+  background: var(--nc-text);
   border: none;
-  color: #09090B;
+  color: var(--nc-bg);
 }
 
-.action-btn.primary:hover { opacity: 0.9; }
-
+/* AI-flavored CTA = accent pill (NcButton "ai" variant) */
 .action-btn.secondary {
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.2);
-  color: #00D2BE;
+  background: var(--nc-accent);
+  border: none;
+  color: var(--nc-bg);
 }
 
-.action-btn.secondary:hover {
-  background: rgba(0, 210, 190, 0.12);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.primary:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
+
+  .action-btn.secondary:hover {
+    background: var(--nc-accent-light);
+    transform: translateY(-1px);
+  }
 }
 
-/* Tags */
+/* Tags — chip grammar: mono on chip fill, hairline, radius 0.4rem */
 .info-tags {
   display: flex;
   gap: 6px;
@@ -650,12 +694,12 @@ onMounted(() => {
 
 .tag {
   padding: 4px 12px;
-  background: var(--tpl-surface, #111113);
-  border: 1px solid var(--tpl-border, #1A1A1E);
-  border-radius: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.4rem;
+  font-family: var(--nc-font-mono);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--tpl-muted, #71717A);
+  color: var(--nc-text-secondary);
 }
 
 /* Loading / Error */
@@ -668,8 +712,8 @@ onMounted(() => {
 .spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid var(--tpl-border, #1A1A1E);
-  border-top-color: #00D2BE;
+  border: 2px solid var(--nc-border);
+  border-top-color: var(--nc-accent);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -679,24 +723,17 @@ onMounted(() => {
 .error-state {
   text-align: center;
   padding: 80px;
-  font-family: 'Inter', system-ui, sans-serif;
-  color: var(--tpl-muted, #71717A);
+  font-family: var(--nc-font-body);
+  color: var(--nc-text-secondary);
 }
 
 .back-link {
-  color: #00D2BE;
+  color: var(--nc-accent);
   text-decoration: none;
 }
 
-/* Light theme */
-:root.light .detail-layout {
-  --tpl-bg: #F5F5F3;
-  --tpl-surface: #FFFFFF;
-  --tpl-border: #E8E8E6;
-  --tpl-border-hover: #D4D4D2;
-  --tpl-text: #111111;
-  --tpl-muted: #71717A;
-}
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component palette overrides are needed. */
 
 /* Laptop */
 @media (max-width: 1366px) {

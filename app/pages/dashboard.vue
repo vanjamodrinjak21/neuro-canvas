@@ -247,7 +247,7 @@ function onCardEnter(el: Element, done: () => void) {
   const delay = Math.max(0, (index - visibleLimit.value) * 50)
 
   requestAnimationFrame(() => {
-    htmlEl.style.transition = `opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms, transform 0.25s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms`
+    htmlEl.style.transition = `opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`
     htmlEl.style.opacity = '1'
     htmlEl.style.transform = 'translateY(0) scale(1)'
   })
@@ -260,18 +260,11 @@ function onCardLeave(el: Element, done: () => void) {
   const index = Number(htmlEl.dataset.index) || 0
   const reverseDelay = Math.max(0, (index - visibleLimit.value)) * 20
 
-  htmlEl.style.transition = `opacity 0.12s ease ${reverseDelay}ms, transform 0.12s ease ${reverseDelay}ms`
+  htmlEl.style.transition = `opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1) ${reverseDelay}ms, transform 0.12s cubic-bezier(0.16, 1, 0.3, 1) ${reverseDelay}ms`
   htmlEl.style.opacity = '0'
   htmlEl.style.transform = 'translateY(-8px) scale(0.96)'
 
   setTimeout(done, 120 + reverseDelay)
-}
-
-// Node category colors for thumbnail rendering
-const nodeColors = ['#00D2BE', '#A78BFA', '#60A5FA', '#F472B6', '#4ADE80', '#FB923C', '#FACC15']
-
-function getNodeColor(index: number): string {
-  return nodeColors[index % nodeColors.length] ?? '#00D2BE'
 }
 
 // Close modals on escape
@@ -788,17 +781,17 @@ async function createFromTemplate(template: typeof templates.value[0]) {
               <div class="dcard-thumb">
                 <div class="dcard-thumb-rows">
                   <div class="dcard-thumb-row">
-                    <span class="dcard-blob teal" style="width:48px" />
-                    <span class="dcard-blob gray" style="width:56px" />
+                    <span class="dcard-blob teal dcard-blob--w48" />
+                    <span class="dcard-blob gray dcard-blob--w56" />
                   </div>
                   <div class="dcard-thumb-row dcard-thumb-row--mid">
-                    <span class="dcard-blob gray dim" style="width:40px" />
-                    <span class="dcard-blob teal solid" style="width:52px;height:22px" />
-                    <span class="dcard-blob gray dim" style="width:44px" />
+                    <span class="dcard-blob gray dim dcard-blob--w40" />
+                    <span class="dcard-blob teal solid dcard-blob--hub" />
+                    <span class="dcard-blob gray dim dcard-blob--w44" />
                   </div>
                   <div class="dcard-thumb-row">
-                    <span class="dcard-blob teal" style="width:44px" />
-                    <span class="dcard-blob gray dim" style="width:50px" />
+                    <span class="dcard-blob teal dcard-blob--w44" />
+                    <span class="dcard-blob gray dim dcard-blob--w50" />
                   </div>
                 </div>
                 <span class="dcard-count">{{ countItems(map.nodes) }} nodes</span>
@@ -866,20 +859,20 @@ async function createFromTemplate(template: typeof templates.value[0]) {
                 </div>
               </div>
               <div class="doverview-chart">
-                <div class="dov-bar" style="height:8px" />
-                <div class="dov-bar" style="height:14px" />
-                <div class="dov-bar" style="height:6px" />
-                <div class="dov-bar dov-bar--t1" style="height:22px" />
-                <div class="dov-bar dov-bar--t2" style="height:18px" />
-                <div class="dov-bar" style="height:10px" />
-                <div class="dov-bar dov-bar--t3" style="height:30px" />
-                <div class="dov-bar dov-bar--t1" style="height:24px" />
-                <div class="dov-bar" style="height:12px" />
-                <div class="dov-bar" style="height:16px" />
-                <div class="dov-bar dov-bar--t4" style="height:28px" />
-                <div class="dov-bar dov-bar--peak" style="height:36px" />
-                <div class="dov-bar dov-bar--t1" style="height:20px" />
-                <div class="dov-bar" style="height:8px" />
+                <div class="dov-bar" />
+                <div class="dov-bar" />
+                <div class="dov-bar" />
+                <div class="dov-bar dov-bar--t1" />
+                <div class="dov-bar dov-bar--t2" />
+                <div class="dov-bar" />
+                <div class="dov-bar dov-bar--t3" />
+                <div class="dov-bar dov-bar--t1" />
+                <div class="dov-bar" />
+                <div class="dov-bar" />
+                <div class="dov-bar dov-bar--t4" />
+                <div class="dov-bar dov-bar--peak" />
+                <div class="dov-bar dov-bar--t1" />
+                <div class="dov-bar" />
               </div>
             </div>
           </div>
@@ -1041,7 +1034,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
       <!-- Delete Confirm -->
       <Teleport to="body">
         <div v-if="deleteConfirmVisible" class="modal-overlay" @click.self="cancelDeleteMap">
-          <div class="modal" style="max-width: 400px;">
+          <div class="modal modal--sm">
             <div class="modal-header">
               <div class="modal-icon modal-icon-danger"><span class="i-lucide-trash-2" /></div>
               <h2 class="modal-title">{{ $t('dashboard.delete_confirm.title') }}</h2>
@@ -1073,59 +1066,28 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #09090B;
+  background: var(--nc-bg);
 }
-:root.light .auth-loading { background: #FAFAF9; }
 
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 2px solid #1A1A1E;
-  border-top-color: #00D2BE;
+  border: 2px solid var(--nc-border);
+  border-top-color: var(--nc-accent);
   border-radius: 50%;
   animation: spin 600ms linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Token-driven — the old local --d-* palette (the re-hardcoding
+   anti-pattern, REDESIGN.md §9) is gone; light mode comes for free
+   because tokens.css rebases every --nc-* var under :root.light. */
 .dash {
-  --d-bg: #09090B;
-  --d-surface: #0D0D0F;
-  --d-surface-2: #111113;
-  --d-surface-3: #18181B;
-  --d-surface-4: #27272A;
-  --d-border: #1A1A1E;
-  --d-border-2: #27272A;
-  --d-text: #FAFAFA;
-  --d-text-2: #A1A1AA;
-  --d-text-3: #71717A;
-  --d-text-4: #52525B;
-  --d-text-5: #3F3F46;
-  --d-accent: #00D2BE;
-  --d-accent-soft: rgba(0, 210, 190, 0.08);
-  --d-accent-soft-2: rgba(0, 210, 190, 0.1);
-  --d-accent-soft-3: rgba(0, 210, 190, 0.12);
-  --d-accent-soft-4: rgba(0, 210, 190, 0.2);
-
   display: flex;
   min-height: 100vh;
-  background: var(--d-bg);
-  color: var(--d-text);
-  font-family: 'Inter', system-ui, sans-serif;
-}
-
-:root.light .dash {
-  --d-bg: #FAFAF9;
-  --d-surface: #FFFFFF;
-  --d-surface-2: #F5F5F3;
-  --d-surface-3: #F0F0EE;
-  --d-surface-4: #E8E8E6;
-  --d-border: #E8E8E6;
-  --d-border-2: #DDD9CF;
-  --d-text: #111111;
-  --d-text-2: #555555;
-  --d-text-3: #777777;
-  --d-text-4: #999999;
-  --d-text-5: #BBBBBB;
+  background: var(--nc-bg);
+  color: var(--nc-text);
+  font-family: var(--nc-font-body);
 }
 
 /* ═══════════════════════ MAIN ═══════════════════════ */
@@ -1157,22 +1119,25 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dheader-left { display: flex; flex-direction: column; gap: 4px; }
 
+/* Section eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
 .dheader-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--d-text-4);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
   margin: 0;
   line-height: 14px;
 }
 
+/* Page title — Cabinet Grotesk 700, tight-tracked (REDESIGN.md §4) */
 .dheader-title {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(28px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 34px;
-  color: var(--d-text);
+  line-height: 1.05;
+  color: var(--nc-text);
   margin: 0;
 }
 
@@ -1182,52 +1147,76 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   gap: 10px;
 }
 
-/* Buttons */
+/* Buttons — component grammar (REDESIGN.md §5) */
 .dbtn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 8px 14px;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
+  border-radius: var(--nc-radius-sm);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
   cursor: pointer;
   border: 1px solid transparent;
   white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease, opacity 120ms ease;
+  transition: background-color var(--nc-duration-press) var(--nc-ease),
+              border-color var(--nc-duration-press) var(--nc-ease),
+              color var(--nc-duration-press) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease),
+              opacity var(--nc-duration-press) var(--nc-ease);
 }
 
-.dbtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.dbtn:disabled { opacity: 0.45; cursor: not-allowed; }
 .dbtn:active:not(:disabled) { transform: scale(0.97); }
 
+/* Primary — ink pill; hover flips to accent, lifts 1px. No glow. */
 .dbtn-primary {
-  background: var(--d-accent);
-  color: #09090B;
-  font-weight: 600;
-  padding: 8px 16px;
+  background: var(--nc-text);
+  color: var(--nc-bg);
+  font-family: var(--nc-font-display);
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 2.4rem;
 }
-.dbtn-primary:hover:not(:disabled) { background: #00BFAB; }
+
+@media (hover: hover) and (pointer: fine) {
+  .dbtn-primary:hover:not(:disabled) {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
+}
 
 .dbtn-outline {
-  background: var(--d-surface-2);
-  color: var(--d-text-2);
-  border-color: var(--d-border-2);
+  background: var(--nc-chip-bg);
+  color: var(--nc-text-secondary);
+  border-color: var(--nc-border);
 }
-:root.light .dbtn-outline { background: #FFFFFF; color: var(--d-text-2); }
-.dbtn-outline:hover:not(:disabled) { color: var(--d-text); border-color: var(--d-text-4); }
+
+@media (hover: hover) and (pointer: fine) {
+  .dbtn-outline:hover:not(:disabled) { color: var(--nc-text); border-color: var(--nc-border-active); }
+}
 
 .dbtn-ghost {
   background: transparent;
-  color: var(--d-text-2);
-  border-color: var(--d-border-2);
+  color: var(--nc-text-secondary);
+  border-color: var(--nc-border);
 }
 
+/* Danger — calm coral, never solid red (REDESIGN.md §1) */
 .dbtn-danger {
-  background: #DC2626;
-  color: #FAFAFA;
+  background: var(--nc-chip-bg);
+  color: var(--nc-coral);
+  border-color: rgba(var(--nc-coral-rgb), 0.45);
   font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dbtn-danger:hover:not(:disabled) {
+    border-color: var(--nc-coral);
+    background: rgba(var(--nc-coral-rgb), 0.08);
+  }
 }
 
 /* Section label */
@@ -1239,12 +1228,12 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 
 .dsection-text {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--d-text-4);
+  color: var(--nc-text-secondary);
   line-height: 14px;
 }
 
@@ -1259,9 +1248,9 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-family: 'Inter', sans-serif;
 }
 
-.dsort-prefix { font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px; color: var(--d-text-4); }
-.dsort-value { font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px; color: var(--d-text-2); }
-.dsort svg { color: var(--d-text-2); }
+.dsort-prefix { font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px; color: var(--nc-text-muted); }
+.dsort-value { font-size: calc(12px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 16px; color: var(--nc-text-secondary); }
+.dsort svg { color: var(--nc-text-secondary); }
 
 /* Maps grid */
 .dmaps-grid {
@@ -1273,23 +1262,26 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dcard {
   width: 100%;
-  border: 1px solid var(--d-border);
+  border: 1px solid var(--nc-border-subtle);
   border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--d-surface);
+  background: var(--nc-surface);
   cursor: pointer;
-  transition: border-color 150ms ease, transform 100ms ease;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.dcard:hover { border-color: var(--d-accent-soft-4); }
-.dcard:active { transform: scale(0.99); }
+@media (hover: hover) and (pointer: fine) {
+  .dcard:hover { border-color: var(--nc-border-active); }
+}
+.dcard:active { transform: scale(0.97); }
 
 .dcard-thumb {
   position: relative;
   height: 200px;
-  background: var(--d-surface);
+  background: var(--nc-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1315,18 +1307,23 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   display: block;
   height: 18px;
   border-radius: 4px;
-  background: var(--d-border);
+  background: var(--nc-border-subtle);
   flex-shrink: 0;
   opacity: 0.7;
 }
 
-.dcard-blob.gray { background: #1E1E22; }
+.dcard-blob.gray { background: var(--nc-surface-3); }
 .dcard-blob.gray.dim { opacity: 0.6; }
-.dcard-blob.teal { background: rgba(0, 210, 190, 0.2); opacity: 0.7; }
-.dcard-blob.teal.solid { background: rgba(0, 210, 190, 0.2); opacity: 1; border-radius: 5px; }
+.dcard-blob.teal { background: rgba(var(--nc-accent-rgb), 0.2); opacity: 0.7; }
+.dcard-blob.teal.solid { background: rgba(var(--nc-accent-rgb), 0.2); opacity: 1; border-radius: 5px; }
 
-:root.light .dcard-blob.gray { background: #E8E8E6; }
-:root.light .dcard-blob.teal { background: rgba(0, 210, 190, 0.25); }
+/* Static thumbnail sketch widths (were inline styles — REDESIGN.md §9) */
+.dcard-blob--w40 { width: 40px; }
+.dcard-blob--w44 { width: 44px; }
+.dcard-blob--w48 { width: 48px; }
+.dcard-blob--w50 { width: 50px; }
+.dcard-blob--w56 { width: 56px; }
+.dcard-blob--hub { width: 52px; height: 22px; }
 
 .dcard-count {
   position: absolute;
@@ -1336,7 +1333,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 14px;
-  color: var(--d-text-4);
+  color: var(--nc-text-muted);
 }
 
 .dcard-info {
@@ -1344,11 +1341,11 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: var(--d-surface-2);
-  border-top: 1px solid var(--d-border);
+  background: var(--nc-surface-2);
+  border-top: 1px solid var(--nc-border-subtle);
 }
 
-:root.light .dcard-info { background: var(--d-surface-2); }
+:root.light .dcard-info { background: var(--nc-surface-2); }
 
 .dcard-info-text {
   display: flex;
@@ -1363,7 +1360,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 18px;
-  color: var(--d-text);
+  color: var(--nc-text);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1374,7 +1371,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-family: 'Inter', sans-serif;
   font-size: calc(12px * var(--nc-text-scale, 1));
   line-height: 16px;
-  color: var(--d-text-4);
+  color: var(--nc-text-muted);
   margin: 0;
 }
 
@@ -1383,13 +1380,16 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   border: none;
   padding: 4px;
   border-radius: 4px;
-  color: var(--d-text-5);
+  color: var(--nc-text-dim);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background-color var(--nc-duration-press) var(--nc-ease),
+              color var(--nc-duration-press) var(--nc-ease);
 }
 
-.dcard-menu:hover { background: var(--d-surface-3); color: var(--d-text); }
+@media (hover: hover) and (pointer: fine) {
+  .dcard-menu:hover { background: var(--nc-surface-3); color: var(--nc-text); }
+}
 
 /* Show more */
 .dshow-more {
@@ -1400,17 +1400,17 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   margin: 0 0 16px;
   padding: 8px 14px;
   background: transparent;
-  border: 1px solid var(--d-border);
+  border: 1px solid var(--nc-border-subtle);
   border-radius: 6px;
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--d-text-2);
+  color: var(--nc-text-secondary);
   cursor: pointer;
   align-self: center;
   width: fit-content;
 }
 
-.dshow-more svg { transition: transform 200ms ease; }
+.dshow-more svg { transition: transform var(--nc-duration-normal) var(--nc-ease); }
 .dshow-more svg.flipped { transform: rotate(180deg); }
 
 /* Second row */
@@ -1423,7 +1423,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 .dnew-card {
   width: 268px;
   height: 210px;
-  border: 1px dashed var(--d-border-2);
+  border: 1px dashed var(--nc-border);
   border-radius: 8px;
   background: transparent;
   display: flex;
@@ -1432,43 +1432,50 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   justify-content: center;
   gap: 10px;
   cursor: pointer;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
   flex-shrink: 0;
 }
 
-.dnew-card:hover {
-  border-color: var(--d-accent);
-  background: var(--d-accent-soft);
+@media (hover: hover) and (pointer: fine) {
+  .dnew-card:hover {
+    border-color: var(--nc-accent);
+    background: rgba(var(--nc-accent-rgb), 0.08);
+  }
 }
 
 .dnew-icon {
   width: 40px;
   height: 40px;
-  border: 1px solid var(--d-border-2);
-  background: var(--d-surface-2);
+  border: 1px solid var(--nc-border);
+  background: var(--nc-surface-2);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--d-text-4);
+  color: var(--nc-text-muted);
 }
 
-.dnew-card:hover .dnew-icon { color: var(--d-accent); border-color: var(--d-accent); }
+@media (hover: hover) and (pointer: fine) {
+  .dnew-card:hover .dnew-icon { color: var(--nc-accent); border-color: var(--nc-accent); }
+}
 
 .dnew-label {
   font-family: 'Inter', sans-serif;
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
-  color: var(--d-text-4);
+  color: var(--nc-text-muted);
 }
 
-.dnew-card:hover .dnew-label { color: var(--d-accent); }
+@media (hover: hover) and (pointer: fine) {
+  .dnew-card:hover .dnew-label { color: var(--nc-accent); }
+}
 
 .doverview {
   flex: 1;
-  background: var(--d-surface);
-  border: 1px solid var(--d-border);
+  background: var(--nc-surface);
+  border: 1px solid var(--nc-border-subtle);
   border-radius: 8px;
   padding: 20px 24px;
   display: flex;
@@ -1484,15 +1491,15 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .doverview-eyebrow,
 .doverview-period {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
-  color: var(--d-text-4);
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
   line-height: 14px;
 }
 
 .doverview-eyebrow {
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
@@ -1507,22 +1514,27 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   gap: 4px;
 }
 
+/* Stat numerals — display face (serif is reserved for italic accents,
+   REDESIGN.md §4); mono labels underneath. */
 .dov-num {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-size: calc(40px * var(--nc-text-scale, 1));
-  letter-spacing: -0.01em;
+  font-family: var(--nc-font-display);
+  font-weight: 700;
+  font-size: calc(36px * var(--nc-text-scale, 1));
+  letter-spacing: -0.02em;
   line-height: 1;
-  color: var(--d-text);
+  color: var(--nc-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.dov-num.accent { color: var(--d-accent); }
+.dov-num.accent { color: var(--nc-accent); }
 
 .dov-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   line-height: 12px;
-  color: var(--d-text-4);
+  color: var(--nc-text-secondary);
 }
 
 .doverview-chart {
@@ -1534,16 +1546,32 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 
 .dov-bar {
   flex: 1;
-  background: var(--d-border);
+  background: var(--nc-border-subtle);
   border-radius: 2px;
   min-width: 0;
 }
 
-.dov-bar--t1 { background: rgba(0, 210, 190, 0.2); }
-.dov-bar--t2 { background: rgba(0, 210, 190, 0.15); }
-.dov-bar--t3 { background: rgba(0, 210, 190, 0.25); }
-.dov-bar--t4 { background: rgba(0, 210, 190, 0.3); }
-.dov-bar--peak { background: rgba(0, 210, 190, 0.5); }
+.dov-bar--t1 { background: rgba(var(--nc-accent-rgb), 0.2); }
+.dov-bar--t2 { background: rgba(var(--nc-accent-rgb), 0.15); }
+.dov-bar--t3 { background: rgba(var(--nc-accent-rgb), 0.25); }
+.dov-bar--t4 { background: rgba(var(--nc-accent-rgb), 0.3); }
+.dov-bar--peak { background: rgba(var(--nc-accent-rgb), 0.5); }
+
+/* Static sparkline heights (were inline styles — REDESIGN.md §9) */
+.dov-bar:nth-child(1) { height: 8px; }
+.dov-bar:nth-child(2) { height: 14px; }
+.dov-bar:nth-child(3) { height: 6px; }
+.dov-bar:nth-child(4) { height: 22px; }
+.dov-bar:nth-child(5) { height: 18px; }
+.dov-bar:nth-child(6) { height: 10px; }
+.dov-bar:nth-child(7) { height: 30px; }
+.dov-bar:nth-child(8) { height: 24px; }
+.dov-bar:nth-child(9) { height: 12px; }
+.dov-bar:nth-child(10) { height: 16px; }
+.dov-bar:nth-child(11) { height: 28px; }
+.dov-bar:nth-child(12) { height: 36px; }
+.dov-bar:nth-child(13) { height: 20px; }
+.dov-bar:nth-child(14) { height: 8px; }
 
 /* AI banner */
 .dai-banner {
@@ -1552,30 +1580,33 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   gap: 20px;
   margin-top: 16px;
   padding: 18px 24px;
-  background: rgba(0, 210, 190, 0.04);
-  border: 1px solid var(--d-accent-soft-2);
+  background: rgba(var(--nc-accent-rgb), 0.04);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.1);
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease);
   width: 100%;
 }
 
-.dai-banner:hover {
-  background: rgba(0, 210, 190, 0.07);
-  border-color: var(--d-accent-soft-3);
+@media (hover: hover) and (pointer: fine) {
+  .dai-banner:hover {
+    background: rgba(var(--nc-accent-rgb), 0.07);
+    border-color: rgba(var(--nc-accent-rgb), 0.12);
+  }
 }
 
 .dai-banner-icon {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: var(--d-accent-soft-2);
+  background: rgba(var(--nc-accent-rgb), 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--d-accent);
+  color: var(--nc-accent);
 }
 
 .dai-banner-body {
@@ -1591,7 +1622,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 18px;
-  color: var(--d-text);
+  color: var(--nc-text);
 }
 
 .dai-banner-quote {
@@ -1599,7 +1630,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-style: italic;
   font-size: calc(16px * var(--nc-text-scale, 1));
   line-height: 20px;
-  color: var(--d-text-2);
+  color: var(--nc-text-secondary);
 }
 
 .dai-banner-cta {
@@ -1607,13 +1638,13 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  background: var(--d-accent-soft-3);
+  background: rgba(var(--nc-accent-rgb), 0.12);
   border-radius: 6px;
   flex-shrink: 0;
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   line-height: 16px;
-  color: var(--d-accent);
+  color: var(--nc-accent);
 }
 
 /* Skeleton */
@@ -1624,19 +1655,19 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 
 .dskel-card {
-  border: 1px solid var(--d-border);
+  border: 1px solid var(--nc-border-subtle);
   border-radius: 8px;
   overflow: hidden;
-  background: var(--d-surface);
+  background: var(--nc-surface);
 }
 
-.dskel-thumb { height: 152px; background: var(--d-surface-2); }
+.dskel-thumb { height: 152px; background: var(--nc-surface-2); }
 .dskel-info { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
-.dskel-title { height: 14px; width: 60%; border-radius: 4px; background: var(--d-surface-3); }
-.dskel-date { height: 10px; width: 40%; border-radius: 4px; background: var(--d-surface-3); }
+.dskel-title { height: 14px; width: 60%; border-radius: 4px; background: var(--nc-surface-3); }
+.dskel-date { height: 10px; width: 40%; border-radius: 4px; background: var(--nc-surface-3); }
 
 .dskel-shimmer {
-  background: linear-gradient(90deg, var(--d-surface-2) 0%, var(--d-surface-3) 50%, var(--d-surface-2) 100%);
+  background: linear-gradient(90deg, var(--nc-surface-2) 0%, var(--nc-surface-3) 50%, var(--nc-surface-2) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
@@ -1650,48 +1681,55 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   justify-content: center;
   padding: 80px 20px;
   text-align: center;
-  border: 1px dashed var(--d-border-2);
+  border: 1px dashed var(--nc-border);
   border-radius: 8px;
 }
-.dempty-icon { font-size: calc(32px * var(--nc-text-scale, 1)); color: var(--d-text-4); margin-bottom: 16px; }
-.dempty-title { font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0 0 8px; }
-.dempty-desc { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0 0 24px; }
+.dempty-icon { font-size: calc(32px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); margin-bottom: 16px; }
+.dempty-title { font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--nc-text); margin: 0 0 8px; }
+.dempty-desc { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); margin: 0 0 24px; }
 
 /* Mobile */
 .m-top, .m-actions { display: none; }
 
-/* Modals (kept compact) */
+/* Modals — flat surface-2 + hairline, scale(0.97)+opacity entrance
+   (REDESIGN.md §5/§6). Scrim is a flat bg-tinted veil, no blur. */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(var(--nc-bg-rgb), 0.6);
   z-index: 1000;
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
 }
-:root.light .modal-overlay { background: rgba(0, 0, 0, 0.4); }
 
-/* Fullscreen takeover for the AI generation phase. Drops the padding +
-   any backdrop blur so the inner modal can fill the viewport, and
-   uses a heavier scrim so the cancelled canvas behind isn't a visual
-   distraction during the ~20-30s generation. */
+/* Fullscreen takeover for the AI generation phase. Heavier scrim so the
+   canvas behind isn't a visual distraction during the ~20-30s generation. */
 .modal-overlay--fullscreen {
   padding: 0;
-  background: rgba(7, 7, 9, 0.96);
-  backdrop-filter: blur(10px);
-}
-:root.light .modal-overlay--fullscreen {
-  background: rgba(250, 250, 249, 0.97);
+  background: rgba(var(--nc-bg-rgb), 0.96);
 }
 
 .modal, .ai-modal {
-  background: var(--d-surface);
-  border: 1px solid var(--d-border-2);
-  border-radius: 12px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   max-width: 480px;
   width: 100%;
   overflow: hidden;
-  color: var(--d-text);
+  color: var(--nc-text);
+  animation: modal-in var(--nc-duration-normal) var(--nc-ease);
+}
+
+.modal--sm { max-width: 400px; }
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal, .ai-modal { animation: none; }
 }
 
 .ai-modal--fullscreen {
@@ -1708,130 +1746,121 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   justify-content: center;
 }
 .modal-wide { max-width: 720px; }
-.modal-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--d-border); }
+.modal-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--nc-border-subtle); }
 .modal-icon {
   width: 40px; height: 40px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--d-accent-soft); color: var(--d-accent);
+  background: rgba(var(--nc-accent-rgb), 0.08); color: var(--nc-accent);
   font-size: calc(20px * var(--nc-text-scale, 1)); margin-bottom: 16px;
 }
-.modal-icon-danger { background: rgba(220, 38, 38, 0.1); color: #DC2626; }
-.modal-title { font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0 0 6px; }
-.modal-subtitle { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0; line-height: 1.5; }
+/* Destructive — coral, never red (REDESIGN.md §1) */
+.modal-icon-danger { background: rgba(var(--nc-coral-rgb), 0.1); color: var(--nc-coral); }
+.modal-title { font-family: var(--nc-font-display); font-size: calc(18px * var(--nc-text-scale, 1)); font-weight: 700; letter-spacing: -0.015em; color: var(--nc-text); margin: 0 0 6px; }
+.modal-subtitle { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); margin: 0; line-height: 1.5; }
 .modal-body { padding: 20px 24px; }
 .modal-footer {
-  padding: 16px 24px; border-top: 1px solid var(--d-border);
+  padding: 16px 24px; border-top: 1px solid var(--nc-border-subtle);
   display: flex; justify-content: flex-end; gap: 10px;
 }
 
 .templates-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .template-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
-  padding: 16px; background: var(--d-surface-2);
-  border: 1px solid var(--d-border); border-radius: 8px;
+  padding: 16px; background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border); border-radius: 8px;
   text-align: left; cursor: pointer;
-  transition: border-color 150ms ease;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
-.template-card:hover { border-color: var(--d-accent); }
+.template-card:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .template-card:hover { border-color: var(--nc-accent); }
+}
 .template-icon {
   width: 32px; height: 32px; border-radius: 6px;
-  background: var(--d-accent-soft); color: var(--d-accent);
+  background: rgba(var(--nc-accent-rgb), 0.08); color: var(--nc-accent);
   display: flex; align-items: center; justify-content: center;
   font-size: calc(16px * var(--nc-text-scale, 1));
 }
-.template-name { font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0; }
-.template-desc { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0; line-height: 1.5; }
+.template-name { font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--nc-text); margin: 0; }
+.template-desc { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); margin: 0; line-height: 1.5; }
 
-.import-hint { font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--d-text-4); text-align: center; margin: 12px 0 0; }
+.import-hint { font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); text-align: center; margin: 12px 0 0; }
 
 .ai-modal-content { padding: 28px; }
-.ai-modal-title { font-size: calc(20px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--d-text); margin: 0 0 6px; line-height: 1.3; }
-.ai-modal-subtitle { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-3); margin: 0 0 20px; line-height: 1.5; }
+.ai-modal-title { font-size: calc(20px * var(--nc-text-scale, 1)); font-weight: 600; color: var(--nc-text); margin: 0 0 6px; line-height: 1.3; }
+.ai-modal-subtitle { font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); margin: 0 0 20px; line-height: 1.5; }
 .ai-modal-input-wrap { margin-bottom: 16px; }
+/* Input grammar: chip fill + hairline, focus = border only */
 .ai-modal-input {
   width: 100%; padding: 12px 14px;
-  background: var(--d-surface-2); border: 1px solid var(--d-border-2);
-  border-radius: 8px; color: var(--d-text);
-  font-family: 'Inter', sans-serif; font-size: calc(14px * var(--nc-text-scale, 1));
-  outline: none; transition: border-color 120ms ease;
+  background: var(--nc-chip-bg); border: 1px solid var(--nc-border);
+  border-radius: 8px; color: var(--nc-text);
+  font-family: var(--nc-font-body); font-size: calc(14px * var(--nc-text-scale, 1));
+  outline: none; transition: border-color var(--nc-duration-press) var(--nc-ease);
 }
-.ai-modal-input:focus { border-color: var(--d-accent); }
+.ai-modal-input:focus { border-color: var(--nc-accent); }
+/* Validation — coral (REDESIGN.md §1) */
 .ai-error-banner {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  padding: 10px 12px; background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.2);
   border-radius: 6px; margin-bottom: 16px;
-  color: #FCA5A5; font-size: calc(13px * var(--nc-text-scale, 1));
+  color: var(--nc-coral); font-size: calc(13px * var(--nc-text-scale, 1));
 }
-.ai-error-icon { color: #EF4444; flex-shrink: 0; }
+.ai-error-icon { color: var(--nc-coral); flex-shrink: 0; }
 .ai-error-text { flex: 1; }
-.ai-error-dismiss { background: transparent; border: none; color: #FCA5A5; cursor: pointer; }
+.ai-error-dismiss { background: transparent; border: none; color: var(--nc-coral); cursor: pointer; }
 .ai-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .ai-modal-cancel {
   padding: 8px 14px; background: transparent;
-  border: 1px solid var(--d-border-2); border-radius: 6px;
-  color: var(--d-text-2); font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500; cursor: pointer;
+  border: 1px solid var(--nc-border); border-radius: 6px;
+  color: var(--nc-text-secondary); font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 500; cursor: pointer;
 }
 .ai-modal-generate {
-  padding: 8px 16px; background: var(--d-accent);
+  padding: 8px 16px; background: var(--nc-accent);
   border: none; border-radius: 6px;
-  color: #09090B; font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; cursor: pointer;
+  color: var(--nc-bg); font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; cursor: pointer;
 }
-.ai-modal-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+.ai-modal-generate:disabled { opacity: 0.45; cursor: not-allowed; }
 .ai-progress-bar {
   position: relative;
   height: 4px;
-  background: var(--d-surface-3);
+  background: var(--nc-surface-3);
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 20px;
 }
+/* Flat accent fill — the old gradient shimmer is out (no gradients in
+   chrome, REDESIGN.md §5); liveness comes from the eyebrow dots + halo. */
 .ai-progress-fill {
   position: relative;
   height: 100%;
-  background: var(--d-accent);
-  transition: width 600ms cubic-bezier(0.23, 1, 0.32, 1);
-  /* Indeterminate shimmer that travels through the filled portion
-     while we wait between discrete step updates — keeps the bar feeling
-     alive even when the % isn't changing. */
+  background: var(--nc-accent);
+  transition: width 600ms var(--nc-ease);
   overflow: hidden;
-}
-.ai-progress-fill::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 100%
-  );
-  animation: ai-progress-shimmer 1.6s linear infinite;
-}
-@keyframes ai-progress-shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 .ai-steps { display: flex; flex-direction: column; gap: 10px; }
 .ai-step {
   display: flex; align-items: center; gap: 10px;
-  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--d-text-4);
+  font-size: calc(13px * var(--nc-text-scale, 1)); color: var(--nc-text-muted);
   /* Fade-in when a step appears or its status changes. */
-  transition: color 300ms ease;
+  transition: color var(--nc-duration-slow) var(--nc-ease);
 }
-.ai-step--active { color: var(--d-text); }
-.ai-step--done { color: var(--d-text-2); }
+.ai-step--active { color: var(--nc-text); }
+.ai-step--done { color: var(--nc-text-secondary); }
 .ai-step-indicator {
   position: relative;
   width: 16px; height: 16px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--d-border-2); flex-shrink: 0;
-  transition: border-color 200ms ease, background 200ms ease;
+  border: 1px solid var(--nc-border); flex-shrink: 0;
+  transition: border-color var(--nc-duration-normal) var(--nc-ease),
+              background-color var(--nc-duration-normal) var(--nc-ease);
 }
 .ai-step--active .ai-step-indicator,
 .ai-step--done .ai-step-indicator {
-  border-color: var(--d-accent); color: var(--d-accent);
-  background: var(--d-accent-soft);
+  border-color: var(--nc-accent); color: var(--nc-accent);
+  background: rgba(var(--nc-accent-rgb), 0.08);
 }
 /* Halo ring around the ACTIVE step's indicator — breathes outward to
    draw the eye to where work is happening right now. */
@@ -1840,7 +1869,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   position: absolute;
   inset: -3px;
   border-radius: inherit;
-  border: 1.5px solid var(--d-accent);
+  border: 1.5px solid var(--nc-accent);
   opacity: 0.55;
   animation: ai-step-halo 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -1848,10 +1877,9 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   0%, 100% { transform: scale(1);    opacity: 0.55; }
   50%      { transform: scale(1.4);  opacity: 0;    }
 }
-.ai-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--d-accent); animation: pulse 1s ease-in-out infinite; }
+.ai-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--nc-accent); animation: pulse 1s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-progress-fill::after,
   .ai-step--active .ai-step-indicator::before,
   .ai-step-dot { animation: none !important; }
 }
@@ -1887,25 +1915,23 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--d-text-3);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  color: var(--nc-text-muted);
   font-size: calc(16px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
-.ai-fullscreen-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--d-text);
+.ai-fullscreen-close:active {
+  transform: scale(0.97);
 }
-:root.light .ai-fullscreen-close {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-  color: #52525B;
-}
-:root.light .ai-fullscreen-close:hover {
-  background: rgba(0, 0, 0, 0.07);
-  color: #18181B;
+@media (hover: hover) and (pointer: fine) {
+  .ai-fullscreen-close:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-text);
+  }
 }
 
 /* Hero input — wide, single-line, with an inline send button. */
@@ -1926,12 +1952,14 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   flex-direction: column;
   gap: 8px;
 }
+/* Input label — mono micro-label (REDESIGN.md §4/§5) */
 .ai-opt-label {
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--d-text-3);
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  color: var(--nc-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.16em;
 }
 .ai-opt-count {
   display: flex;
@@ -1941,18 +1969,19 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 .ai-opt-count-input {
   width: 110px;
   padding: 4px 8px;
-  background: var(--d-surface);
-  border: 1px solid var(--d-border-2);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
   border-radius: 8px;
-  font-family: var(--nc-font-mono, 'JetBrains Mono', monospace);
+  font-family: var(--nc-font-mono);
   font-size: calc(22px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--d-text);
+  color: var(--nc-text);
   -moz-appearance: textfield;
+  transition: border-color var(--nc-duration-press) var(--nc-ease);
 }
 .ai-opt-count-input:focus {
   outline: none;
-  border-color: var(--d-accent);
+  border-color: var(--nc-accent);
 }
 .ai-opt-count-input::-webkit-outer-spin-button,
 .ai-opt-count-input::-webkit-inner-spin-button {
@@ -1961,78 +1990,78 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 .ai-opt-count-suffix {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--d-text-3);
+  color: var(--nc-text-muted);
 }
 .ai-fullscreen-input {
   flex: 1;
   height: 52px;
   padding: 0 18px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  color: var(--d-text);
-  background: var(--d-surface);
-  border: 1px solid var(--d-border-2);
-  border-radius: 10px;
+  color: var(--nc-text);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   outline: none;
-  transition: border-color 150ms ease;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 .ai-fullscreen-input::placeholder {
-  color: var(--d-text-4);
+  color: var(--nc-text-dim);
 }
 .ai-fullscreen-input:focus {
-  border-color: var(--d-accent);
+  border-color: var(--nc-accent);
 }
+/* AI CTA — accent pill (NcButton "ai" variant grammar); no inset shine */
 .ai-fullscreen-generate {
   height: 52px;
   padding: 0 22px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #0A0A0C;
-  background: #00D2BE;
+  font-weight: 700;
+  color: var(--nc-bg);
+  background: var(--nc-accent);
   border: none;
-  border-radius: 10px;
+  border-radius: 2.4rem;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  transition: background 150ms ease, transform 120ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
-.ai-fullscreen-generate:hover {
-  background: #1AE0CD;
+@media (hover: hover) and (pointer: fine) {
+  .ai-fullscreen-generate:hover:not(:disabled) {
+    background: var(--nc-accent-light);
+    transform: translateY(-1px);
+  }
 }
 .ai-fullscreen-generate:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 .ai-fullscreen-generate:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-  background: #00D2BE;
+  background: var(--nc-accent);
 }
-:root.light .ai-fullscreen-generate {
-  background: #00A89A;
-  color: #FFFFFF;
-  box-shadow: none;
-}
-:root.light .ai-fullscreen-generate:hover {
-  background: #00BFAF;
-}
+/* Eyebrow — mono micro-label (REDESIGN.md §4) */
 .ai-fullscreen-eyebrow {
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--d-text-4);
+  color: var(--nc-text-secondary);
   margin: 0;
 }
+/* Modal hero title — display face, static size (chrome sizes stay static,
+   REDESIGN.md §4; clamp() is landing-only). */
 .ai-fullscreen-title {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: clamp(24px, 4vw, 36px);
+  font-family: var(--nc-font-display);
+  font-size: calc(32px * var(--nc-text-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.15;
-  color: var(--d-text);
+  color: var(--nc-text);
   margin: 0;
   /* Long topic names + quoted strings get a soft wrap rather than overflow. */
   word-break: break-word;
@@ -2044,7 +2073,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--d-accent);
+  color: var(--nc-accent);
 }
 .ai-eyebrow-spinner {
   display: inline-block;
@@ -2084,7 +2113,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 1.55;
-  color: var(--d-text-3);
+  color: var(--nc-text-muted);
   margin: -14px 0 0;
   max-width: 65ch;
 }
@@ -2102,7 +2131,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--d-text-3);
+  color: var(--nc-text-muted);
   min-width: 38px;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -2125,7 +2154,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 }
 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.8); } }
 .ai-step-label { flex: 1; }
-.ai-step-elapsed { font-family: 'JetBrains Mono', monospace; font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--d-text-4); }
+.ai-step-elapsed { font-family: 'JetBrains Mono', monospace; font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); }
 
 .hidden { display: none; }
 
@@ -2157,34 +2186,30 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     align-items: center; justify-content: center;
     width: 40px; height: 40px;
     background: none; border: none; padding: 0;
-    color: #FAFAFA; cursor: pointer;
+    color: var(--nc-text); cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  :root.light .m-top-search { color: #18181B; }
   /* Show search ONLY on Android (Paper differentiates here) */
   :root.platform-android .m-top-search { display: flex; }
   :root.platform-android .m-top { height: 56px; }
   .m-brand {
     font-family: 'Inter', system-ui, sans-serif;
     font-size: calc(17px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 22px;
-    letter-spacing: -0.01em; color: var(--d-text); margin: 0;
+    letter-spacing: -0.01em; color: var(--nc-text); margin: 0;
   }
   .m-avatar-link { display: flex; align-items: center; text-decoration: none; }
   .m-avatar {
     width: 32px; height: 32px; border-radius: 50%;
-    background: #1A1A1E; border: 1px solid #1E1E22;
-    color: #00D2BE;
+    background: var(--nc-surface-3); border: 1px solid var(--nc-border-subtle);
+    color: var(--nc-accent);
     font-family: 'Inter', system-ui, sans-serif;
     font-size: calc(13px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 16px;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
   :root.light .m-avatar {
-    background: #F5F5F4;
-    border-color: #E8E8E6;
-    color: #00A89A;
     /* Extra inset ring so dark profile photos don't fight the warm-paper sidebar. */
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.05);
   }
   .m-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -2193,7 +2218,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     display: block;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: calc(28px * var(--nc-text-scale, 1)); font-weight: 700; line-height: 34px;
-    letter-spacing: -0.02em; color: var(--d-text);
+    letter-spacing: -0.02em; color: var(--nc-text);
     margin: 12px 0 16px;
   }
 
@@ -2205,15 +2230,13 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .m-action {
     flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     padding: 14px; border-radius: 10px;
-    background: #111114; border: 1px solid #1E1E22;
-    color: var(--d-text);
+    background: var(--nc-surface-2); border: 1px solid var(--nc-border-subtle);
+    color: var(--nc-text);
     font-family: 'Inter', system-ui, sans-serif;
     font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
     cursor: pointer;
   }
-  :root.light .m-action { background: #FFFFFF; border-color: #E8E8E6; color: #18181B; }
-  .m-action-primary { background: #00D2BE; color: #0A0A0C; border-color: transparent; font-weight: 600; }
-  :root.light .m-action-primary { background: #00D2BE; color: #0A0A0C; }
+  .m-action-primary { background: var(--nc-text); color: var(--nc-bg); border-color: transparent; font-weight: 600; }
 
   /* Section label: "Recent maps" / "See all" — matches Paper Android Dashboard */
   .dsection-label {
@@ -2223,9 +2246,8 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .dsection-text {
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 0; /* hide original "RECENT · X OF Y" */
-    color: #FAFAFA;
+    color: var(--nc-text);
   }
-  :root.light .dsection-text { color: #18181B; }
   .dsection-text::after {
     content: 'Recent maps';
     font-family: 'Inter', system-ui, sans-serif;
@@ -2237,15 +2259,10 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     background: none; border: none; padding: 0;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: calc(14px * var(--nc-text-scale, 1)); font-weight: 500; line-height: 18px;
-    color: #00D2BE; cursor: pointer;
-  }
-  :root.light .dsection-text { color: #6B6E74; }
-  :root.light .dcard-date { color: #6B6E74; }
-  :root.light .dcard-menu {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA0A6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
+    color: var(--nc-accent); cursor: pointer;
   }
   .dsort svg, .dsort-prefix { display: none; }
-  .dsort-value { color: #00D2BE; }
+  .dsort-value { color: var(--nc-accent); }
   .dsort-value::before { content: 'See all'; }
   .dsort-value { font-size: 0; }
   .dsort-value::before { font-size: calc(14px * var(--nc-text-scale, 1)); }
@@ -2258,26 +2275,27 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .dcard {
     display: flex; align-items: center; gap: 12px;
     padding: 12px;
-    background: #111114; border: 1px solid #1E1E22; border-radius: 10px;
+    background: var(--nc-surface-2); border: 1px solid var(--nc-border-subtle); border-radius: 10px;
     box-shadow: none;
   }
-  :root.light .dcard { background: #FFFFFF; border-color: #E8E8E6; }
   .dcard-thumb {
     flex-shrink: 0; width: 44px; height: 44px;
-    background: #1A1A1E; border-radius: 8px; padding: 0;
+    background: var(--nc-surface-3); border-radius: 8px; padding: 0;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
-  :root.light .dcard-thumb { background: #F5F5F4; }
   .dcard-thumb-rows { display: none; }
+  /* Map-sketch glyph — alpha mask painted with the accent token so it
+     tracks both themes with zero hardcoded colors (REDESIGN.md §9).
+     Dimmer rects use fill-opacity in the mask alpha channel. */
   .dcard-thumb::before {
     content: '';
     width: 32px; height: 32px;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><rect x='4' y='3' width='8' height='3' rx='1' fill='%2300D2BE' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='%233F3F45'/><rect x='3' y='10' width='5' height='4' rx='1' fill='%233F3F45'/><rect x='9' y='10' width='7' height='4' rx='1' fill='%2300D2BE'/><rect x='17' y='10' width='4' height='4' rx='1' fill='%233F3F45'/><rect x='4' y='18' width='6' height='3' rx='1' fill='%2300D2BE' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='%233F3F45'/></svg>");
-    background-size: contain; background-repeat: no-repeat;
-  }
-  :root.light .dcard-thumb::before {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><rect x='4' y='3' width='8' height='3' rx='1' fill='%2300A89A' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='%23D4D4D2'/><rect x='3' y='10' width='5' height='4' rx='1' fill='%23D4D4D2'/><rect x='9' y='10' width='7' height='4' rx='1' fill='%2300A89A'/><rect x='17' y='10' width='4' height='4' rx='1' fill='%23D4D4D2'/><rect x='4' y='18' width='6' height='3' rx='1' fill='%2300A89A' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='%23D4D4D2'/></svg>");
+    background-color: var(--nc-accent);
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='4' y='3' width='8' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='black' fill-opacity='0.28'/><rect x='3' y='10' width='5' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='9' y='10' width='7' height='4' rx='1' fill='black'/><rect x='17' y='10' width='4' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='4' y='18' width='6' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='black' fill-opacity='0.28'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='4' y='3' width='8' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='14' y='3' width='6' height='3' rx='1' fill='black' fill-opacity='0.28'/><rect x='3' y='10' width='5' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='9' y='10' width='7' height='4' rx='1' fill='black'/><rect x='17' y='10' width='4' height='4' rx='1' fill='black' fill-opacity='0.28'/><rect x='4' y='18' width='6' height='3' rx='1' fill='black' fill-opacity='0.7'/><rect x='11' y='18' width='7' height='3' rx='1' fill='black' fill-opacity='0.28'/></svg>");
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   }
   .dcard-count { display: none; }
   .dcard-info {
@@ -2290,20 +2308,24 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   .dcard-title {
     font-family: 'Inter', system-ui, sans-serif;
     font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px;
-    color: var(--d-text); margin: 0;
+    color: var(--nc-text); margin: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .dcard-date {
     font-family: 'Inter', system-ui, sans-serif;
     font-size: calc(13px * var(--nc-text-scale, 1)); line-height: 16px;
-    color: #888890; margin: 0;
+    color: var(--nc-text-muted); margin: 0;
   }
+  /* Chevron glyph — alpha mask painted with the dim-ink token */
   .dcard-menu {
     flex-shrink: 0; width: 16px; height: 16px;
-    background: none; border: none; padding: 0;
-    color: #555558; cursor: pointer;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555558' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
-    background-size: contain; background-repeat: no-repeat;
+    border: none; padding: 0;
+    color: var(--nc-text-dim); cursor: pointer;
+    background-color: var(--nc-text-dim);
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   }
   .dcard-menu svg { display: none; }
 
@@ -2315,11 +2337,10 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     display: flex; flex-direction: column;
     margin: 16px 0 0;
     padding: 20px 16px 16px;
-    background: #111114; border: 1px solid #1E1E22;
+    background: var(--nc-surface-2); border: 1px solid var(--nc-border-subtle);
     border-radius: 10px;
     gap: 16px;
   }
-  :root.light .doverview { background: #FFFFFF; border-color: #E8E8E6; }
   .doverview-head {
     display: flex; align-items: center; justify-content: space-between;
     margin: 0;
@@ -2330,7 +2351,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 500;
     letter-spacing: 0.06em; line-height: 12px;
     text-transform: uppercase;
-    color: #888890;
+    color: var(--nc-text-muted);
   }
   .doverview-stats {
     display: flex; align-items: flex-end;
@@ -2344,16 +2365,14 @@ async function createFromTemplate(template: typeof templates.value[0]) {
     font-family: 'Instrument Serif', Georgia, serif;
     font-size: calc(36px * var(--nc-text-scale, 1)); font-weight: 400; line-height: 1;
     letter-spacing: -0.01em;
-    color: #FAFAFA;
+    color: var(--nc-text);
   }
-  :root.light .dov-num { color: #18181B; }
-  .dov-num.accent { color: #00D2BE; }
-  :root.light .dov-num.accent { color: #00A89A; }
+  .dov-num.accent { color: var(--nc-accent); }
   .doverview-stats > div > span:last-child {
     font-family: 'JetBrains Mono', monospace;
     font-size: calc(10px * var(--nc-text-scale, 1)); font-weight: 500;
     letter-spacing: 0.04em; line-height: 12px;
-    color: #888890;
+    color: var(--nc-text-muted);
   }
   .doverview-chart {
     display: flex; align-items: flex-end; gap: 4px;

@@ -10,9 +10,9 @@ import type { DocumentSummary } from '~/composables/useDocuments'
 //   - generatedMap: the single map produced FROM this document (or null)
 //   - attachedMaps: every map this document was attached to as a RAG source
 //
-// Visual language mirrors the map / template cards (tokens, rounded corners,
-// hover lift). No inline styles — status colour is driven by a data-attribute
-// resolved against scoped CSS.
+// Visual language follows the AER-76 grammar: flat surface + hairline,
+// border-shift hover. No inline styles — status colour is driven by a
+// data-attribute resolved against scoped CSS.
 // ---------------------------------------------------------------------------
 
 export interface DocumentMapRef {
@@ -190,6 +190,8 @@ function onChipClick(mapId: string, event: Event) {
 </template>
 
 <style scoped>
+/* Card grammar (REDESIGN.md §5): flat surface-2 + THE hairline, radius 8px.
+   Hover = border-color shift only — no lift, no shadow, no glow. */
 .doc-card {
   position: relative;
   display: flex;
@@ -198,30 +200,31 @@ function onChipClick(mapId: string, event: Event) {
   width: 100%;
   min-width: 0;
   padding: 16px;
-  border-radius: 8px;
-  background: #111113;
-  border: 1px solid #1A1A1E;
+  border-radius: var(--nc-radius-md);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.2s, transform 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.doc-card:hover {
-  border-color: #27272A;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .doc-card:hover {
+    border-color: var(--nc-border-active);
+  }
 }
 
 .doc-card:active {
-  transform: translateY(0);
+  transform: scale(0.97);
 }
 
 .doc-card.selected {
-  border-color: #00D2BE;
+  border-color: var(--nc-accent);
 }
 
 .doc-card:focus-visible {
-  outline: 2px solid #00D2BE;
-  outline-offset: 2px;
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 /* Checkbox */
@@ -235,17 +238,24 @@ function onChipClick(mapId: string, event: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(9, 9, 11, 0.8);
-  border: 1px solid #27272A;
-  border-radius: 6px;
-  color: #52525B;
+  background: rgba(var(--nc-bg-rgb), 0.8);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-text-muted);
   cursor: pointer;
   font-size: calc(16px * var(--nc-text-scale, 1));
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease);
+}
+
+.card-checkbox:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .doc-card.selected .card-checkbox {
-  color: #00D2BE;
-  border-color: #00D2BE;
+  color: var(--nc-accent);
+  border-color: var(--nc-accent);
 }
 
 /* Head */
@@ -262,26 +272,28 @@ function onChipClick(mapId: string, event: Event) {
   width: 36px;
   height: 36px;
   flex-shrink: 0;
-  border-radius: 8px;
-  background: #1A1A1E;
-  color: #A1A1AA;
+  border-radius: var(--nc-radius-md);
+  background: var(--nc-surface-3);
+  color: var(--nc-text-muted);
 }
 
+/* Accent discipline (REDESIGN.md §1): cyan = ready, coral = failure,
+   ink tier = in flight. Never a status rainbow. */
 .doc-icon[data-status="ready"] {
-  background: rgba(0, 210, 190, 0.1);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  color: var(--nc-accent);
 }
 
 .doc-icon[data-status="failed"] {
-  background: rgba(239, 68, 68, 0.1);
-  color: #EF4444;
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  color: var(--nc-coral);
 }
 
 .doc-icon[data-status="processing"],
 .doc-icon[data-status="queued"],
 .doc-icon[data-status="pending"] {
-  background: rgba(245, 158, 11, 0.1);
-  color: #F59E0B;
+  background: var(--nc-chip-bg);
+  color: var(--nc-text-secondary);
 }
 
 .doc-icon-glyph {
@@ -291,10 +303,10 @@ function onChipClick(mapId: string, event: Event) {
 .card-title {
   flex: 1;
   min-width: 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
   line-height: 20px;
   white-space: nowrap;
   overflow: hidden;
@@ -310,22 +322,32 @@ function onChipClick(mapId: string, event: Event) {
   flex-shrink: 0;
   background: none;
   border: none;
-  border-radius: 6px;
-  color: var(--nc-ink-faint, #52525B);
+  border-radius: var(--nc-radius-sm);
+  color: var(--nc-text-muted);
   cursor: pointer;
   opacity: 0.5;
   font-size: calc(15px * var(--nc-text-scale, 1));
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.doc-card:hover .card-menu,
 .card-menu:focus-visible {
   opacity: 1;
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
-.card-menu:hover {
-  color: #EF4444;
-  background: rgba(239, 68, 68, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .doc-card:hover .card-menu {
+    opacity: 1;
+  }
+
+  /* Destructive affordance — coral only (REDESIGN.md §1) */
+  .card-menu:hover {
+    color: var(--nc-coral);
+    background: rgba(var(--nc-coral-rgb), 0.08);
+  }
 }
 
 @media (hover: none) {
@@ -336,35 +358,44 @@ function onChipClick(mapId: string, event: Event) {
   }
 }
 
-/* Meta */
+/* Meta — file metadata readouts are mono micro-labels (page grammar) */
 .card-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #71717A);
+  font-family: var(--nc-font-mono);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
   line-height: 16px;
 }
 
 .meta-dot {
-  color: var(--nc-ink-faint, #3F3F46);
+  color: var(--nc-text-dim);
 }
 
 .meta-text {
   white-space: nowrap;
 }
 
-/* Status badge */
+/* Status badge — mono chip on chip fill + hairline, radius 0.4rem.
+   Ready = accent, failed = coral, in-flight = ink tier. */
 .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 0.4rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
   white-space: nowrap;
 }
 
@@ -377,29 +408,22 @@ function onChipClick(mapId: string, event: Event) {
 }
 
 .status-badge[data-status="ready"] {
-  background: rgba(0, 210, 190, 0.1);
-  color: #00D2BE;
+  color: var(--nc-accent);
 }
 
 .status-badge[data-status="failed"] {
-  background: rgba(239, 68, 68, 0.1);
-  color: #EF4444;
+  color: var(--nc-coral);
 }
 
-.status-badge[data-status="processing"],
-.status-badge[data-status="queued"],
-.status-badge[data-status="pending"] {
-  background: rgba(245, 158, 11, 0.12);
-  color: #F59E0B;
-}
-
-/* Chips */
+/* Chips — mono on chip fill + hairline, radius 0.4rem (REDESIGN.md §5).
+   Accent = the hot generated link; attached links stay ink tier
+   (cyan is the only interactive color — §1 accent discipline). */
 .card-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   padding-top: 4px;
-  border-top: 1px solid #1A1A1E;
+  border-top: 1px solid var(--nc-border-subtle);
 }
 
 .chip {
@@ -408,13 +432,26 @@ function onChipClick(mapId: string, event: Event) {
   gap: 6px;
   max-width: 100%;
   padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 0.4rem;
+  border: 1px solid var(--nc-border);
+  background: var(--nc-chip-bg);
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.chip:active {
+  transform: scale(0.97);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 .chip-icon {
@@ -430,51 +467,23 @@ function onChipClick(mapId: string, event: Event) {
 }
 
 .chip--generated {
-  background: rgba(0, 210, 190, 0.08);
-  border-color: rgba(0, 210, 190, 0.22);
-  color: #00D2BE;
-}
-
-.chip--generated:hover {
-  background: rgba(0, 210, 190, 0.14);
-  border-color: rgba(0, 210, 190, 0.4);
+  border-color: rgba(var(--nc-accent-rgb), 0.3);
+  color: var(--nc-accent);
 }
 
 .chip--attached {
-  background: rgba(139, 92, 246, 0.08);
-  border-color: rgba(139, 92, 246, 0.22);
-  color: #A78BFA;
+  color: var(--nc-text-secondary);
 }
 
-.chip--attached:hover {
-  background: rgba(139, 92, 246, 0.14);
-  border-color: rgba(139, 92, 246, 0.4);
-}
+@media (hover: hover) and (pointer: fine) {
+  .chip--generated:hover {
+    background: rgba(var(--nc-accent-rgb), 0.08);
+    border-color: rgba(var(--nc-accent-rgb), 0.5);
+  }
 
-/* Light theme */
-:root.light .doc-card {
-  background: #FFFFFF;
-  border-color: #E8E8E6;
-}
-
-:root.light .doc-card:hover {
-  border-color: #D4D4D2;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-}
-
-:root.light .doc-icon {
-  background: #F5F5F3;
-}
-
-:root.light .card-title {
-  color: #111111;
-}
-
-:root.light .card-chips {
-  border-top-color: #E8E8E6;
-}
-
-:root.light .chip--attached {
-  color: #7C3AED;
+  .chip--attached:hover {
+    border-color: var(--nc-border-active);
+    color: var(--nc-text);
+  }
 }
 </style>

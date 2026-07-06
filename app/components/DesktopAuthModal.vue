@@ -105,12 +105,7 @@ watch(() => props.visible, (visible) => {
 
 <template>
   <Teleport to="body">
-    <Transition
-      enter-active-class="transition-opacity duration-200"
-      leave-active-class="transition-opacity duration-150"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
+    <Transition name="auth-modal">
       <div v-if="visible" class="auth-overlay" @click.self="handleClose">
         <div class="auth-container">
           <div class="auth-logo">
@@ -221,11 +216,26 @@ watch(() => props.visible, (visible) => {
             :disabled="desktopAuth.isLoggingIn.value"
             @click="handleGoogle"
           >
-            <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.5-5.9 7.5-11.3 7.5-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 5.6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z" />
-              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.4 16.1 18.8 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.6 29.3 5 24 5 16.3 5 9.6 9.4 6.3 14.7z" />
-              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.4-4.5 2.4-7.2 2.4-5.4 0-10-3.6-11.6-8.6l-6.5 5C9.4 39.5 16.1 44 24 44z" />
-              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.1 5.4l6.2 5.2c-.4.4 6.6-4.8 6.6-14.6 0-1.2-.1-2.4-.4-3.5z" />
+            <!-- Official multicolor Google "G" — brand asset, exempt from the
+                 zero-hex token rule (matches auth/OAuthButtons.vue exactly;
+                 Google's sign-in branding requires the standard mark). -->
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
             </svg>
             <span>{{ desktopAuth.isLoggingIn.value ? $t('auth.desktop_auth.google_loading') : $t('auth.desktop_auth.google_button') }}</span>
           </button>
@@ -258,6 +268,7 @@ watch(() => props.visible, (visible) => {
 </template>
 
 <style scoped>
+/* Modal grammar (REDESIGN.md §5): bg-tinted scrim, NO backdrop blur. */
 .auth-overlay {
   position: fixed;
   inset: 0;
@@ -265,20 +276,48 @@ watch(() => props.visible, (visible) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(var(--nc-bg-rgb), 0.6);
 }
 
+/* Flat surface-2 panel + THE hairline, calm shadow only. */
 .auth-container {
   width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 36px 32px 28px;
-  background: #0d0d11;
-  border-radius: 16px;
-  border: 1px solid #1a1a2e;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+  background: var(--nc-surface-2);
+  border-radius: var(--nc-radius-md);
+  border: 1px solid var(--nc-border);
+  box-shadow: var(--nc-shadow-md);
+  transform-origin: center;
+}
+
+/* Enter scale(0.97)+opacity 200ms, exit faster (150ms) — single ease. */
+.auth-modal-enter-active {
+  transition: opacity var(--nc-duration-normal) var(--nc-ease);
+}
+
+.auth-modal-enter-active .auth-container {
+  transition: transform var(--nc-duration-normal) var(--nc-ease);
+}
+
+.auth-modal-leave-active {
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
+}
+
+.auth-modal-leave-active .auth-container {
+  transition: transform var(--nc-duration-fast) var(--nc-ease);
+}
+
+.auth-modal-enter-from,
+.auth-modal-leave-to {
+  opacity: 0;
+}
+
+.auth-modal-enter-from .auth-container,
+.auth-modal-leave-to .auth-container {
+  transform: scale(0.97);
 }
 
 .auth-logo {
@@ -291,36 +330,38 @@ watch(() => props.visible, (visible) => {
   flex-direction: column;
 }
 
+/* Modal header — display 700, tight tracking (REDESIGN.md §4). */
 .auth-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-display);
   font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 700;
-  color: #FAFAFA;
+  color: var(--nc-text);
   margin: 0 0 6px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   text-align: center;
 }
 
 .auth-desc {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: rgba(250, 250, 250, 0.4);
+  color: var(--nc-text-secondary);
   margin: 0 0 24px;
   line-height: 1.5;
   text-align: center;
 }
 
+/* Error banner — coral is the destructive/validation accent (REDESIGN.md §1). */
 .auth-error {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   padding: 10px 12px;
   margin-bottom: 16px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 8px;
-  color: #f87171;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: rgba(var(--nc-coral-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.3);
+  border-radius: var(--nc-radius-md);
+  color: var(--nc-coral);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   line-height: 1.4;
 }
@@ -334,35 +375,38 @@ watch(() => props.visible, (visible) => {
   margin-bottom: 14px;
 }
 
+/* Input label — mono micro-label (REDESIGN.md §5). */
 .auth-label {
   display: block;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.68rem * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: rgba(250, 250, 250, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
   margin-bottom: 6px;
-  letter-spacing: 0.01em;
 }
 
+/* Input grammar: chip fill + hairline, focus = border-color only (no ring). */
 .auth-input {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #252529;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: #FAFAFA;
+  color: var(--nc-text);
   outline: none;
-  transition: border-color 150ms ease;
+  transition: border-color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .auth-input::placeholder {
-  color: #3F3F46;
+  color: var(--nc-text-dim);
 }
 
 .auth-input:focus {
-  border-color: rgba(0, 210, 190, 0.4);
+  border-color: var(--nc-accent);
 }
 
 .auth-input:disabled {
@@ -387,13 +431,15 @@ watch(() => props.visible, (visible) => {
   border: none;
   cursor: pointer;
   padding: 4px;
-  color: #52525B;
-  border-radius: 4px;
-  transition: color 150ms ease;
+  color: var(--nc-text-muted);
+  border-radius: 0.35rem;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.auth-toggle-pw:hover {
-  color: #A1A1AA;
+@media (hover: hover) and (pointer: fine) {
+  .auth-toggle-pw:hover {
+    color: var(--nc-text);
+  }
 }
 
 .auth-totp-toggle {
@@ -402,29 +448,32 @@ watch(() => props.visible, (visible) => {
   margin-bottom: 14px;
   background: none;
   border: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #00D2BE;
+  color: var(--nc-accent);
   cursor: pointer;
   text-align: left;
   text-decoration: underline;
   text-underline-offset: 2px;
   opacity: 0.8;
-  transition: opacity 150ms ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease);
 }
 
-.auth-totp-toggle:hover {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .auth-totp-toggle:hover {
+    opacity: 1;
+  }
 }
 
 .auth-input-totp {
   text-align: center;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--nc-font-mono);
   font-size: calc(18px * var(--nc-text-scale, 1));
   letter-spacing: 0.3em;
   padding: 12px 14px;
 }
 
+/* Primary CTA — ink pill grammar (REDESIGN.md §5). */
 .auth-submit {
   display: flex;
   align-items: center;
@@ -433,31 +482,41 @@ watch(() => props.visible, (visible) => {
   width: 100%;
   padding: 11px 16px;
   margin-top: 4px;
-  background: #00D2BE;
+  background: var(--nc-text);
   border: none;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #09090B;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-bg);
   cursor: pointer;
-  transition: opacity 150ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.auth-submit:hover:not(:disabled) {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .auth-submit:hover:not(:disabled) {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .auth-submit:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
 }
 
 .auth-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(9, 9, 11, 0.3);
-  border-top-color: #09090B;
+  border: 2px solid rgba(var(--nc-bg-rgb), 0.3);
+  border-top-color: var(--nc-bg);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -475,13 +534,16 @@ watch(() => props.visible, (visible) => {
   content: '';
   flex: 1;
   height: 1px;
-  background: #1a1a2e;
+  background: var(--nc-border-subtle);
 }
 
+/* Divider word — mono micro-label. */
 .auth-divider span {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #3F3F46;
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.66rem * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-muted);
 }
 
 .auth-browser-btn {
@@ -491,23 +553,34 @@ watch(() => props.visible, (visible) => {
   gap: 8px;
   width: 100%;
   padding: 10px 16px;
-  border: 1px solid #252529;
-  border-radius: 8px;
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   background: transparent;
-  color: rgba(250, 250, 250, 0.6);
-  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.auth-browser-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(250, 250, 250, 0.8);
-  border-color: #333;
+@media (hover: hover) and (pointer: fine) {
+  .auth-browser-btn:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
 }
 
+.auth-browser-btn:active {
+  transform: scale(0.97);
+}
+
+/* OAuth provider buttons — flat chip + hairline, monochrome marks
+   (icons stay monochrome per REDESIGN.md §9). */
 .auth-google-btn {
   display: flex;
   align-items: center;
@@ -516,93 +589,79 @@ watch(() => props.visible, (visible) => {
   width: 100%;
   margin-bottom: 8px;
   padding: 10px 16px;
-  border: 1px solid #2a2a2f;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(250, 250, 250, 0.92);
-  font-family: 'Inter', system-ui, sans-serif;
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
+  background: var(--nc-chip-bg);
+  color: var(--nc-text);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease, transform 80ms ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.auth-google-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: #3a3a40;
+@media (hover: hover) and (pointer: fine) {
+  .auth-google-btn:hover:not(:disabled) {
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border-active);
+  }
 }
 
-.auth-google-btn:active:not(:disabled) { transform: translateY(1px); }
-.auth-google-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-:root.light .auth-google-btn {
-  background: #fff;
-  border-color: #d8d8dc;
-  color: #1a1a1f;
+.auth-google-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
-:root.light .auth-google-btn:hover:not(:disabled) {
-  background: #f7f7f9;
-  border-color: #c4c4c8;
+.auth-google-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
+/* Cancel — ghost text link: mono uppercase (REDESIGN.md §5). */
 .auth-close-btn {
   margin-top: 16px;
   padding: 8px 20px;
   border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(250, 250, 250, 0.4);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.78rem * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  transition: background 150ms ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.auth-close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .auth-close-btn:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
+}
+
+.auth-close-btn:active {
+  transform: scale(0.97);
+}
+
+/* Focus-visible — accent outline (inputs use border-color only). */
+.auth-submit:focus-visible,
+.auth-google-btn:focus-visible,
+.auth-browser-btn:focus-visible,
+.auth-close-btn:focus-visible,
+.auth-toggle-pw:focus-visible,
+.auth-totp-toggle:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* Light theme */
-:root.light .auth-container {
-  background: #FAFAF9;
-  border-color: #E8E8E6;
-}
-
-:root.light .auth-title { color: #111111; }
-:root.light .auth-desc { color: #71717A; }
-:root.light .auth-label { color: #71717A; }
-
-:root.light .auth-input {
-  background: #FFFFFF;
-  border-color: #E8E8E6;
-  color: #111111;
-}
-
-:root.light .auth-input::placeholder { color: #A1A1AA; }
-:root.light .auth-input:focus { border-color: rgba(0, 210, 190, 0.5); }
-
-:root.light .auth-submit { color: #FFFFFF; }
-:root.light .auth-divider::before,
-:root.light .auth-divider::after { background: #E8E8E6; }
-:root.light .auth-divider span { color: #A1A1AA; }
-
-:root.light .auth-browser-btn {
-  border-color: #E8E8E6;
-  color: #52525B;
-}
-
-:root.light .auth-browser-btn:hover {
-  background: rgba(0, 0, 0, 0.03);
-  color: #111111;
-}
-
-:root.light .auth-close-btn {
-  background: rgba(0, 0, 0, 0.04);
-  color: #71717A;
-}
+/* Light theme is fully token-driven — tokens.css rebases every --nc-* var
+   under :root.light, so no per-component overrides are needed. */
 </style>

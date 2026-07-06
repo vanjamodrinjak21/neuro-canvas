@@ -6,46 +6,34 @@
   position: relative;
 }
 
-/* Simple Dot Grid (24px spacing) */
+/* Simple Dot Grid (24px spacing) — token-driven so it holds in both themes */
 .nc-canvas-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(#27272A 1px, transparent 1px);
+  background-image: radial-gradient(var(--nc-border-subtle) 1px, transparent 1px);
   background-size: 24px 24px;
-  opacity: 0.4;
   pointer-events: none;
 }
 
-:root.light .nc-canvas-grid {
-  background-image: radial-gradient(#D4D4D8 1px, transparent 1px);
-  opacity: 0.5;
-}
-
 /* ══════════════════════════════════════════
-   GLASSMORPHISM PANELS
+   FLAT PANELS (legacy "glass" names, de-glassed)
+   REDESIGN.md §5: flat surface + 1px hairline —
+   no backdrop-filter anywhere in chrome.
    ══════════════════════════════════════════ */
 .nc-glass {
-  background: var(--nc-glass-bg);
-  backdrop-filter: blur(var(--nc-glass-blur)) saturate(120%);
-  -webkit-backdrop-filter: blur(var(--nc-glass-blur)) saturate(120%);
+  background: var(--nc-surface-2);
   border: 1px solid var(--nc-border);
-  box-shadow: var(--nc-shadow-lg);
 }
 
 .nc-glass-elevated {
-  background: var(--nc-glass-bg-elevated);
-  backdrop-filter: blur(var(--nc-glass-blur-heavy)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--nc-glass-blur-heavy)) saturate(140%);
+  background: var(--nc-surface-2);
   border: 1px solid var(--nc-border);
-  box-shadow: var(--nc-shadow-lg);
+  box-shadow: var(--nc-shadow-md);
 }
 
 .nc-glass-dark {
-  background: rgba(5, 5, 8, 0.95);
-  backdrop-filter: blur(var(--nc-glass-blur));
-  -webkit-backdrop-filter: blur(var(--nc-glass-blur));
+  background: var(--nc-bg);
   border: 1px solid var(--nc-border-subtle);
-  box-shadow: var(--nc-shadow-xl);
 }
 
 /* Panel hover - subtle border change only */
@@ -55,60 +43,42 @@
 }
 
 /* ══════════════════════════════════════════
-   TOOL BUTTON STYLES (PREMIUM MINIMAL)
+   TOOL BUTTON STYLES (FLAT MINIMAL)
    ══════════════════════════════════════════ */
 .nc-tool-btn {
   width: 32px;
   height: 32px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--nc-ink-soft);
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
   position: relative;
-  overflow: hidden;
 }
 
-.nc-tool-btn:hover {
-  background: var(--nc-surface-3);
-  color: var(--nc-ink);
-  box-shadow: 0 0 20px rgba(0, 210, 190, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .nc-tool-btn:hover {
+    background: var(--nc-surface-3);
+    color: var(--nc-ink);
+  }
 }
 
 .nc-tool-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 .nc-tool-btn.active {
-  color: #00D2BE;
-  background: rgba(0, 210, 190, 0.08);
+  color: var(--nc-accent);
+  background: rgba(var(--nc-accent-rgb), 0.08);
 }
 
-/* Premium shine sweep on hover */
-.nc-tool-btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg,
-    transparent 40%,
-    rgba(255,255,255,0.08) 50%,
-    transparent 60%
-  );
-  transform: translateX(-100%);
-  transition: transform 0.4s ease;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.nc-tool-btn:hover::after {
-  transform: translateX(100%);
-}
-
-/* Active indicator bar */
+/* Active indicator bar — 2px marker so state never rides on color alone */
 .nc-tool-btn.active::before {
   content: '';
   position: absolute;
@@ -117,29 +87,30 @@
   transform: translateY(-50%);
   width: 2px;
   height: 16px;
-  background: #00D2BE;
+  background: var(--nc-accent);
   border-radius: 0 1px 1px 0;
-  box-shadow: 0 0 6px rgba(0, 210, 190, 0.5);
 }
 
-/* Tooltip - simpler styling */
+/* Tooltip — data-tip grammar: bg plane, hairline, mono micro-type */
 .nc-tool-btn[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
   left: calc(100% + 8px);
   top: 50%;
   transform: translateY(-50%);
-  background: #111114;
-  border: 1px solid #1E1E22;
-  border-radius: 6px;
+  background: var(--nc-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.35rem;
   padding: 4px 8px;
-  font-size: 11px;
+  font-family: var(--nc-font-mono);
+  font-size: 0.66rem;
   font-weight: 500;
-  color: #FAFAFA;
+  color: var(--nc-text);
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
-  transition: all 150ms ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              visibility var(--nc-duration-fast) var(--nc-ease);
   z-index: 1000;
 }
 
@@ -148,40 +119,13 @@
   visibility: visible;
 }
 
-/* Light theme tool buttons */
-:root.light .nc-tool-btn {
-  color: #777777;
-}
-
-:root.light .nc-tool-btn:hover {
-  background: #E8E8E6;
-  color: #111111;
-  box-shadow: none;
-}
-
-:root.light .nc-tool-btn.active {
-  color: #00D2BE;
-  background: rgba(0, 210, 190, 0.08);
-}
-
-:root.light .nc-tool-btn.active::before {
-  background: #00D2BE;
-  box-shadow: none;
-}
-
-:root.light .nc-tool-btn[data-tooltip]::after {
-  background: #F5F5F3;
-  border-color: #E8E8E6;
-  color: #111111;
-}
-
 /* ══════════════════════════════════════════
    AI BUTTON STYLES (MINIMAL)
    ══════════════════════════════════════════ */
 .nc-ai-btn {
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.15);
-  border-radius: 6px;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.15);
+  border-radius: var(--nc-radius-sm);
   padding: 6px 12px;
   display: inline-flex;
   align-items: center;
@@ -192,12 +136,20 @@
   white-space: nowrap;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 200ms ease;
+  transition: background-color var(--nc-duration-normal) var(--nc-ease),
+              border-color var(--nc-duration-normal) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-ai-btn:hover {
-  background: rgba(0, 210, 190, 0.12);
-  border-color: rgba(0, 210, 190, 0.25);
+.nc-ai-btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nc-ai-btn:hover {
+    background: rgba(var(--nc-accent-rgb), 0.12);
+    border-color: rgba(var(--nc-accent-rgb), 0.25);
+  }
 }
 
 .nc-ai-btn:disabled {
@@ -218,14 +170,18 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.3s var(--nc-ease);
+  transition: background-color var(--nc-duration-slow) var(--nc-ease),
+              border-color var(--nc-duration-slow) var(--nc-ease),
+              transform var(--nc-duration-slow) var(--nc-ease);
 }
 
-.nc-ai-suggestion:hover {
-  background: var(--nc-accent-glow);
-  border-color: var(--nc-accent);
-  border-style: solid;
-  transform: translateX(4px);
+@media (hover: hover) and (pointer: fine) {
+  .nc-ai-suggestion:hover {
+    background: var(--nc-accent-glow);
+    border-color: var(--nc-accent);
+    border-style: solid;
+    transform: translateX(4px);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -419,12 +375,14 @@
   color: var(--nc-text-muted);
 }
 
+/* Mono micro-label (REDESIGN.md §4) — matches the uno `nc-label` shortcut */
 .nc-label {
+  font-family: var(--nc-font-mono);
   font-size: var(--nc-text-xs);
-  font-weight: var(--nc-font-semibold);
+  font-weight: var(--nc-font-medium);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--nc-text-dim);
+  letter-spacing: 0.16em;
+  color: var(--nc-text-secondary);
 }
 
 /* ══════════════════════════════════════════
@@ -443,6 +401,7 @@
 /* ══════════════════════════════════════════
    KEYBOARD SHORTCUTS
    ══════════════════════════════════════════ */
+/* kbd hint — mono chip (REDESIGN.md §4/§5) */
 .nc-shortcut-key {
   display: inline-flex;
   align-items: center;
@@ -450,11 +409,12 @@
   min-width: 24px;
   height: 24px;
   padding: 0 6px;
-  background: var(--nc-surface-3);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--nc-border);
-  border-radius: 5px;
+  border-radius: 0.35rem;
+  font-family: var(--nc-font-mono);
   font-size: var(--nc-text-xs);
-  font-weight: var(--nc-font-semibold);
+  font-weight: var(--nc-font-medium);
   color: var(--nc-text-secondary);
 }
 
@@ -466,12 +426,16 @@
   height: 28px;
   border-radius: var(--nc-radius-md);
   cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.2s var(--nc-ease);
+  border: 1px solid transparent;
+  transition: transform var(--nc-duration-normal) var(--nc-ease),
+              border-color var(--nc-duration-normal) var(--nc-ease),
+              box-shadow var(--nc-duration-normal) var(--nc-ease);
 }
 
-.nc-color-swatch:hover {
-  transform: scale(1.15);
+@media (hover: hover) and (pointer: fine) {
+  .nc-color-swatch:hover {
+    transform: scale(1.15);
+  }
 }
 
 .nc-color-swatch.active {
@@ -492,11 +456,11 @@
 }
 
 .nc-minimap-viewport {
-  border: 2px solid var(--nc-accent);
+  border: 1px solid var(--nc-accent);
   border-radius: 4px;
   background: var(--nc-accent-glow);
   cursor: move;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--nc-duration-normal) var(--nc-ease);
 }
 
 .nc-minimap-viewport:hover {
@@ -564,7 +528,7 @@
   }
 }
 
-/* Sidebar show button (when collapsed) */
+/* Sidebar show button (when collapsed) — flat surface + hairline */
 .nc-sidebar-show-btn {
   position: absolute;
   top: 50%;
@@ -575,26 +539,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--nc-glass-bg-elevated);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--nc-surface-3);
-  border-radius: 8px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   color: var(--nc-ink-muted);
   cursor: pointer;
   z-index: 100;
-  transition: all 0.2s ease;
+  transition: color var(--nc-duration-normal) var(--nc-ease),
+              background-color var(--nc-duration-normal) var(--nc-ease),
+              border-color var(--nc-duration-normal) var(--nc-ease);
 }
 
-.nc-sidebar-show-btn:hover {
-  color: var(--nc-ink);
-  background: var(--nc-surface);
-  border-color: var(--nc-border-active);
+@media (hover: hover) and (pointer: fine) {
+  .nc-sidebar-show-btn:hover {
+    color: var(--nc-ink);
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border-active);
+  }
 }
 
 /* ══════════════════════════════════════════
    BOTTOM TOOLBAR
    ══════════════════════════════════════════ */
+/* Flat surface + hairline — no backdrop blur (REDESIGN.md §5) */
 .nc-bottom-toolbar {
   position: absolute;
   bottom: 20px;
@@ -604,11 +571,9 @@
   align-items: center;
   gap: 2px;
   padding: 6px 8px;
-  background: rgba(var(--nc-bg-rgb), 0.92);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: var(--nc-surface-2);
   border: 1px solid var(--nc-border);
-  border-radius: 10px;
+  border-radius: var(--nc-radius-md);
   z-index: 100;
 }
 
@@ -627,12 +592,12 @@
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   color: var(--nc-ink-soft);
   cursor: pointer;
-  transition: color var(--nc-duration-fast) var(--nc-ease-out),
-              background var(--nc-duration-fast) var(--nc-ease-out),
-              transform var(--nc-duration-press) var(--nc-ease-out);
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -688,24 +653,28 @@
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   color: var(--nc-ink-soft);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-zoom-btn:hover {
-  color: var(--nc-ink);
-  background: var(--nc-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .nc-zoom-btn:hover {
+    color: var(--nc-ink);
+    background: var(--nc-surface-3);
+  }
 }
 
 .nc-zoom-btn:focus-visible {
   outline: 2px solid var(--nc-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .nc-zoom-btn:active {
-  transform: scale(0.9);
+  transform: scale(0.97);
 }
 
 .nc-zoom-slider-wrapper {
@@ -730,11 +699,13 @@
   background: var(--nc-ink);
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform var(--nc-duration-fast) var(--nc-ease);
 }
 
-.nc-zoom-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+@media (hover: hover) and (pointer: fine) {
+  .nc-zoom-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
 }
 
 .nc-zoom-slider::-moz-range-thumb {
@@ -746,23 +717,28 @@
   cursor: pointer;
 }
 
+/* Zoom percentage — mono readout (numeric UI = mono per REDESIGN.md §4) */
 .nc-zoom-percentage {
   padding: 4px 8px;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: 0.35rem;
+  font-family: var(--nc-font-mono);
   font-size: 12px;
   font-weight: 500;
   color: var(--nc-ink-soft);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
   min-width: 48px;
   text-align: center;
 }
 
-.nc-zoom-percentage:hover {
-  color: var(--nc-ink);
-  background: var(--nc-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .nc-zoom-percentage:hover {
+    color: var(--nc-ink);
+    background: var(--nc-surface-3);
+  }
 }
 
 .nc-zoom-presets {
@@ -772,14 +748,14 @@
   transform: translateX(-50%);
   margin-bottom: 8px;
   padding: 8px;
-  background: var(--nc-surface);
+  background: var(--nc-surface-2);
   border: 1px solid var(--nc-border);
-  border-radius: 8px;
+  border-radius: var(--nc-radius-md);
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 120px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--nc-shadow-md);
 }
 
 .nc-zoom-presets button {
@@ -787,16 +763,18 @@
   padding: 8px 12px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   font-size: 13px;
   color: var(--nc-ink);
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.nc-zoom-presets button:hover {
-  background: var(--nc-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .nc-zoom-presets button:hover {
+    background: var(--nc-surface-3);
+  }
 }
 
 .nc-zoom-presets-divider {
@@ -817,16 +795,19 @@
   padding: 6px 10px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   font-size: 12px;
   color: var(--nc-ink-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.nc-shortcuts-btn:hover {
-  color: var(--nc-ink-soft);
-  background: var(--nc-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .nc-shortcuts-btn:hover {
+    color: var(--nc-ink-soft);
+    background: var(--nc-surface-3);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -921,60 +902,9 @@
 
 /* ══════════════════════════════════════════
    RESPONSIVE: Hide bottom toolbar on mobile
+   (Light theme needs no overrides — every color above is token-driven
+   and tokens.css rebases the --nc-* palette under :root.light.)
    ══════════════════════════════════════════ */
-/* Light theme bottom toolbar */
-:root.light .nc-bottom-toolbar {
-  background: rgba(250, 250, 249, 0.92);
-  border-color: #E8E8E6;
-}
-
-:root.light .nc-zoom-presets {
-  background: #F5F5F3;
-  border-color: #E8E8E6;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-:root.light .nc-zoom-slider {
-  background: #D4D4D8;
-}
-
-:root.light .nc-zoom-slider::-webkit-slider-thumb {
-  background: #111111;
-}
-
-:root.light .nc-zoom-slider::-moz-range-thumb {
-  background: #111111;
-}
-
-/* Light theme context menu */
-:root.light .nc-context-menu {
-  background: #FAFAF9;
-  border-color: #E8E8E6;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-:root.light .nc-context-item:hover {
-  background: #E8E8E6;
-}
-
-:root.light .nc-context-submenu {
-  background: #FAFAF9;
-  border-color: #E8E8E6;
-}
-
-/* Light theme sidebar show button */
-:root.light .nc-sidebar-show-btn {
-  background: rgba(250, 250, 249, 0.92);
-  border-color: #E8E8E6;
-  color: #777777;
-}
-
-:root.light .nc-sidebar-show-btn:hover {
-  color: #111111;
-  background: #F5F5F3;
-  border-color: #D4D4D8;
-}
-
 @media (max-width: 767px) {
   .nc-bottom-toolbar {
     display: none;
@@ -982,16 +912,16 @@
 }
 
 /* ══════════════════════════════════════════
-   CONTEXT MENU (Dark Theme)
+   CONTEXT MENU — flat surface-2 + hairline (REDESIGN.md §5)
    ══════════════════════════════════════════ */
 .nc-context-menu {
   position: absolute;
-  background: var(--nc-bg);
-  border: 1px solid var(--nc-surface-3);
-  border-radius: 10px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   padding: 6px;
   min-width: 200px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  box-shadow: var(--nc-shadow-md);
   z-index: 200;
 }
 
@@ -1003,12 +933,13 @@
   padding: 8px 12px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   font-size: 13px;
   font-weight: 500;
   color: var(--nc-ink);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
   text-align: left;
 }
 
@@ -1029,17 +960,18 @@
   background: transparent;
 }
 
+/* Destructive — coral, never a red rainbow (REDESIGN.md §1) */
 .nc-context-item-danger {
-  color: var(--nc-danger);
+  color: var(--nc-coral);
 }
 
 .nc-context-item-danger:hover {
-  background: var(--nc-danger-glow);
+  background: rgba(var(--nc-coral-rgb), 0.08);
 }
 
 .nc-context-divider {
   height: 1px;
-  background: var(--nc-surface-3);
+  background: var(--nc-border-subtle);
   margin: 4px 6px;
 }
 
@@ -1048,16 +980,18 @@
   left: 100%;
   top: 0;
   margin-left: 4px;
-  background: var(--nc-bg);
-  border: 1px solid var(--nc-surface-3);
-  border-radius: 10px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: var(--nc-radius-md);
   padding: 6px;
   min-width: 140px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--nc-shadow-md);
   opacity: 0;
   visibility: hidden;
   transform: translateX(-8px);
-  transition: all 0.15s ease;
+  transition: opacity var(--nc-duration-fast) var(--nc-ease),
+              visibility var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-fast) var(--nc-ease);
 }
 
 .group:hover > .nc-context-submenu {
@@ -1172,11 +1106,10 @@
 /* ══════════════════════════════════════════
    HOVER HIGHLIGHT UTILITY
    ══════════════════════════════════════════ */
-.nc-hover-highlight:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-:root.light .nc-hover-highlight:hover {
-  background: rgba(0, 0, 0, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .nc-hover-highlight:hover {
+    background: var(--nc-surface-3);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -1211,22 +1144,6 @@
 }
 
 /* ══════════════════════════════════════════
-   MOBILE PERFORMANCE — Reduced blur tokens
-   ══════════════════════════════════════════ */
-@media (max-width: 767px) {
-  :root, :root.dark, :root.light {
-    --nc-blur-glass: 16px;
-    --nc-blur-glass-elevated: 20px;
-  }
-  .nc-glass {
-    backdrop-filter: blur(var(--nc-blur-glass, 16px)) saturate(120%);
-  }
-  .nc-glass-elevated {
-    backdrop-filter: blur(var(--nc-blur-glass-elevated, 20px)) saturate(130%);
-  }
-}
-
-/* ══════════════════════════════════════════
    CANVAS OVERFLOW MENU PANELS (AER-7)
 
    These rules MUST be global, not scoped. The panels are rendered via
@@ -1244,21 +1161,14 @@
   min-width: 220px;
   padding: 6px;
   border-radius: var(--nc-radius-lg);
-  background-color: #18181B;
+  background-color: var(--nc-surface-2);
   background-image: none;
   opacity: 1;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--nc-border);
+  box-shadow: var(--nc-shadow-md);
   isolation: isolate;
 }
 .export-panel {
   z-index: calc(var(--nc-z-modal, 300) + 1);
   min-width: 200px;
-}
-
-:root.light .overflow-panel,
-:root.light .export-panel {
-  background-color: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.10);
 }

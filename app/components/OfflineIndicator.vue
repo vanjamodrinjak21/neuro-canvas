@@ -82,21 +82,17 @@ onUnmounted(() => {
   <Transition name="offline-slide">
     <div
       v-if="showBanner"
-      class="fixed top-0 left-0 right-0 z-9999 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium"
-      :class="justReconnected
-        ? 'bg-emerald-900/90 text-emerald-100 border-b border-emerald-700/50'
-        : 'bg-amber-900/90 text-amber-100 border-b border-amber-700/50'"
-      style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding-top: max(0.5rem, env(safe-area-inset-top))"
+      class="offline-banner"
     >
       <div
-        class="w-2 h-2 rounded-full shrink-0"
-        :class="justReconnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'"
+        class="offline-dot"
+        :class="justReconnected ? 'offline-dot--online' : 'offline-dot--offline animate-pulse'"
       />
       <span v-if="justReconnected">{{ $t('common.offline.back_online') }}</span>
       <span v-else>{{ $t('common.offline.message') }}</span>
       <button
         v-if="!isOnline"
-        class="ml-2 px-2 py-0.5 rounded text-xs bg-amber-800/60 hover:bg-amber-800 transition-colors"
+        class="offline-dismiss"
         @click="showBanner = false"
       >
         {{ $t('common.offline.dismiss') }}
@@ -106,9 +102,83 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* Flat surface-2 banner + hairline — no glass, no status-color rainbow.
+   The dot carries the semantic: accent = back online, coral = offline
+   (coral is the live-marker/attention accent, REDESIGN.md §1). */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  background: var(--nc-surface-2);
+  border-bottom: 1px solid var(--nc-border);
+  color: var(--nc-text);
+  font-family: var(--nc-font-body);
+  font-size: calc(13px * var(--nc-text-scale, 1));
+  font-weight: 500;
+}
+
+.offline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.offline-dot--online {
+  background: var(--nc-accent);
+}
+
+.offline-dot--offline {
+  background: var(--nc-coral);
+}
+
+/* Dismiss — mono uppercase chip (kbd-chip grammar, REDESIGN.md §4/§5). */
+.offline-dismiss {
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 0.4rem;
+  border: 1px solid var(--nc-border-subtle);
+  background: var(--nc-chip-bg);
+  color: var(--nc-text-secondary);
+  font-family: var(--nc-font-mono);
+  font-size: calc(0.66rem * var(--nc-text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.offline-dismiss:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .offline-dismiss:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+  }
+}
+
+.offline-dismiss:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
+}
+
+/* Enter/leave — transform/opacity only, single ease. */
 .offline-slide-enter-active,
 .offline-slide-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  transition: transform var(--nc-duration-slow) var(--nc-ease),
+              opacity var(--nc-duration-slow) var(--nc-ease);
 }
 
 .offline-slide-enter-from,

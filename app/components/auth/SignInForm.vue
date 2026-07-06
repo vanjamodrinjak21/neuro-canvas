@@ -107,7 +107,7 @@ watch([email, password], () => {
 
 .forgot-link {
   font-size: 0.85rem;
-  color: var(--nc-teal, #00D2BE);
+  color: var(--nc-accent);
   text-decoration: none;
   transition: opacity 0.2s ease;
 }
@@ -121,10 +121,10 @@ watch([email, password], () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.2);
   border-radius: 10px;
-  color: #EF4444;
+  color: var(--nc-coral);
   font-size: 0.9rem;
 }
 

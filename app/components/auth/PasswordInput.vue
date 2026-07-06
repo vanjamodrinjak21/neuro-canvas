@@ -97,10 +97,10 @@ const sizeClasses: Record<string, string> = {
   background: rgba(24, 24, 28, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-ink);
   font-family: inherit;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .password-input::placeholder {
@@ -108,17 +108,17 @@ const sizeClasses: Record<string, string> = {
 }
 
 .password-input:focus {
-  border-color: var(--nc-teal, #00D2BE);
-  box-shadow: 0 0 0 3px rgba(0, 210, 190, 0.1);
+  border-color: var(--nc-accent);
+  box-shadow: 0 0 0 3px rgba(var(--nc-accent-rgb), 0.1);
 }
 
 .password-input.has-error {
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: rgba(var(--nc-coral-rgb), 0.5);
 }
 
 .password-input.has-error:focus {
-  border-color: #EF4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  border-color: var(--nc-coral);
+  box-shadow: 0 0 0 3px rgba(var(--nc-coral-rgb), 0.1);
 }
 
 .password-input:disabled {
@@ -155,6 +155,6 @@ const sizeClasses: Record<string, string> = {
 .error-message {
   margin: 0.375rem 0 0;
   font-size: 0.875rem;
-  color: #EF4444;
+  color: var(--nc-coral);
 }
 </style>

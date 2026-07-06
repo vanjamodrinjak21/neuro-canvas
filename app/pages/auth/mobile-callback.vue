@@ -68,8 +68,8 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #09090B;
-  color: #888890;
+  background: var(--nc-bg);
+  color: var(--nc-text-secondary);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: calc(15px * var(--nc-text-scale, 1));
 }

@@ -195,7 +195,7 @@ useHead({
 .rm-root {
   min-height: 100vh;
   background: var(--nc-bg);
-  transition: background var(--nc-duration-slow) ease;
+  transition: background-color var(--nc-duration-slow) var(--nc-ease);
 }
 
 /* Visually hidden but available to assistive tech. */
@@ -218,17 +218,17 @@ useHead({
   left: 8px;
   z-index: 200;
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: var(--nc-radius-md);
   background: var(--nc-surface);
   border: 1px solid var(--nc-border-active);
   color: var(--nc-text);
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
   text-decoration: none;
   transform: translateY(-150%);
   opacity: 0;
-  transition: transform var(--nc-duration-fast) var(--nc-ease-out), opacity var(--nc-duration-fast) ease;
+  transition: transform var(--nc-duration-fast) var(--nc-ease), opacity var(--nc-duration-fast) var(--nc-ease);
 }
 
 .rm-skip:focus-visible {
@@ -251,7 +251,7 @@ useHead({
   background: var(--nc-bg);
   border-bottom: 1px solid var(--nc-border);
   z-index: 100;
-  transition: background var(--nc-duration-slow) ease, border-color var(--nc-duration-slow) ease;
+  transition: background-color var(--nc-duration-slow) var(--nc-ease), border-color var(--nc-duration-slow) var(--nc-ease);
 }
 
 .rm-header__left {
@@ -270,7 +270,7 @@ useHead({
 }
 
 .rm-header__brand-name {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-weight: 600;
   font-size: calc(14px * var(--nc-text-scale, 1));
   line-height: 1;
@@ -286,7 +286,7 @@ useHead({
 }
 
 .rm-header__label {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-weight: 500;
   font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text-secondary);
@@ -304,16 +304,18 @@ useHead({
 }
 
 .rm-header__nav-link {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-weight: 500;
   font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-text-secondary);
   text-decoration: none;
-  transition: color var(--nc-duration-fast) ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.rm-header__nav-link:hover {
-  color: var(--nc-text);
+@media (hover: hover) and (pointer: fine) {
+  .rm-header__nav-link:hover {
+    color: var(--nc-text);
+  }
 }
 
 .rm-header__app-btn {
@@ -321,24 +323,24 @@ useHead({
   display: flex;
   align-items: center;
   padding: 0 12px;
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-secondary);
   text-decoration: none;
   border: 1px solid var(--nc-border);
-  border-radius: 6px;
-  transition: color var(--nc-duration-fast) ease, border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
+  border-radius: var(--nc-radius-sm);
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.rm-header__app-btn:hover {
-  color: var(--nc-text);
-  border-color: var(--nc-border-active);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-:root.light .rm-header__app-btn:hover {
-  background: rgba(0, 0, 0, 0.03);
+@media (hover: hover) and (pointer: fine) {
+  .rm-header__app-btn:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+    background: var(--nc-chip-bg);
+  }
 }
 
 .rm-header__lang {
@@ -346,27 +348,27 @@ useHead({
   padding: 0 10px;
   border: 1px solid var(--nc-border);
   background: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--nc-text-secondary);
-  transition: color var(--nc-duration-fast) ease, border-color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.rm-header__lang:hover {
-  color: var(--nc-text);
-  border-color: var(--nc-border-active);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-:root.light .rm-header__lang:hover {
-  background: rgba(0, 0, 0, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .rm-header__lang:hover {
+    color: var(--nc-text);
+    border-color: var(--nc-border-active);
+    background: var(--nc-surface-3);
+  }
 }
 
 .rm-header__theme {
@@ -375,27 +377,26 @@ useHead({
   height: 32px;
   border: none;
   background: none;
-  border-radius: 6px;
+  border-radius: var(--nc-radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--nc-text-secondary);
-  transition: color var(--nc-duration-fast) ease, background var(--nc-duration-fast) ease;
+  transition: color var(--nc-duration-fast) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease);
 }
 
-.rm-header__theme:hover {
-  color: var(--nc-text);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-:root.light .rm-header__theme:hover {
-  background: rgba(0, 0, 0, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .rm-header__theme:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
 }
 
 .rm-header__icon {
   position: absolute;
-  transition: transform var(--nc-duration-slow) var(--nc-ease-smooth), opacity var(--nc-duration-slow) ease;
+  transition: transform var(--nc-duration-slow) var(--nc-ease), opacity var(--nc-duration-slow) var(--nc-ease);
 }
 
 .rm-header__sun {
@@ -430,23 +431,25 @@ useHead({
   margin-bottom: 40px;
 }
 
+/* Section eyebrow — mono uppercase micro-label (REDESIGN.md §4) */
 .rm-intro__eyebrow {
   display: inline-block;
   font-family: var(--nc-font-mono);
-  font-size: calc(12px * var(--nc-text-scale, 1));
+  font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--nc-accent);
+  color: var(--nc-text-secondary);
   margin-bottom: 16px;
 }
 
+/* Page title — display 700, tight tracking, static size (no clamp) */
 .rm-intro__title {
   font-family: var(--nc-font-display);
-  font-size: clamp(32px, 5vw, 44px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-size: calc(40px * var(--nc-text-scale, 1));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
   color: var(--nc-text);
   margin: 0 0 16px;
 }
@@ -459,11 +462,13 @@ useHead({
   margin: 0 0 20px;
 }
 
+/* Metadata readout — mono micro-label */
 .rm-intro__updated {
   font-family: var(--nc-font-mono);
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  letter-spacing: 0.02em;
-  color: var(--nc-text-muted);
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nc-text-secondary);
 }
 
 /* ─── Legend ─── */
@@ -475,7 +480,7 @@ useHead({
   margin: 0 0 48px;
   padding: 16px 18px;
   border: 1px solid var(--nc-border);
-  border-radius: 10px;
+  border-radius: var(--nc-radius-md);
   background: var(--nc-surface);
 }
 
@@ -486,7 +491,7 @@ useHead({
 }
 
 .rm-legend__label {
-  font-family: 'Inter', var(--nc-font-body);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   color: var(--nc-text-secondary);
@@ -507,16 +512,11 @@ useHead({
 
 .rm-dot--done {
   background: var(--nc-accent);
-  box-shadow: 0 0 0 4px var(--nc-accent-glow);
 }
 
+/* "Now" phase — the one live/now marker, so coral (REDESIGN.md §1) */
 .rm-dot--progress {
-  background: var(--nc-accent);
-}
-
-.rm-phase__rail .rm-dot--progress {
-  box-shadow: 0 0 0 0 var(--nc-accent-glow-strong);
-  animation: rm-pulse 2.4s var(--nc-ease-out) infinite;
+  background: var(--nc-coral);
 }
 
 .rm-dot--planned {
@@ -527,12 +527,6 @@ useHead({
 .rm-dot--exploring {
   background: transparent;
   border: 1px dashed var(--nc-text-dim);
-}
-
-@keyframes rm-pulse {
-  0% { box-shadow: 0 0 0 0 var(--nc-accent-glow-strong); }
-  70% { box-shadow: 0 0 0 8px rgba(0, 210, 190, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 210, 190, 0); }
 }
 
 /* ─── Timeline ─── */
@@ -555,12 +549,12 @@ useHead({
   padding-top: 6px;
 }
 
+/* Timeline rail — flat 1px hairline, no gradients */
 .rm-phase__line {
   flex: 1;
-  width: 2px;
+  width: 1px;
   margin-top: 10px;
-  background: linear-gradient(to bottom, var(--nc-border-active), var(--nc-border));
-  border-radius: 2px;
+  background: var(--nc-border);
 }
 
 .rm-phase:last-child .rm-phase__line {
@@ -601,30 +595,31 @@ useHead({
   margin: 0 0 18px;
 }
 
-/* ─── Badges ─── */
+/* ─── Badges — mono uppercase micro-labels (REDESIGN.md §4) ─── */
 .rm-badge {
   display: inline-flex;
   align-items: center;
   height: 22px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: 2.4rem;
   font-family: var(--nc-font-mono);
-  font-size: calc(11px * var(--nc-text-scale, 1));
+  font-size: calc(10px * var(--nc-text-scale, 1));
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .rm-badge--done {
   color: var(--nc-accent);
-  background: var(--nc-accent-glow);
-  border: 1px solid var(--nc-accent-glow-strong);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.22);
 }
 
 .rm-badge--progress {
   color: var(--nc-accent);
-  background: var(--nc-accent-glow);
-  border: 1px solid var(--nc-accent-glow-strong);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.22);
 }
 
 .rm-badge--planned {
@@ -639,11 +634,12 @@ useHead({
   border: 1px dashed var(--nc-border-active);
 }
 
-/* Light theme: --nc-text-secondary (#777) lands at ~4.1:1 on the surface —
-   below WCAG AA (4.5:1) for this 11px badge text. Use a darker muted gray. */
+/* Light theme: --nc-text-secondary lands below WCAG AA (4.5:1) for this
+   micro badge text on the light surface — lift to the full ink tier.
+   Token-only override; tokens.css rebases the value under :root.light. */
 :root.light .rm-badge--planned,
 :root.light .rm-badge--exploring {
-  color: #4D4D52;
+  color: var(--nc-text);
 }
 
 /* ─── Items ─── */
@@ -703,14 +699,12 @@ useHead({
   color: var(--nc-text-secondary);
 }
 
-/* ─── CTA ─── */
+/* ─── CTA — flat surface-2 + hairline, no gradients (REDESIGN.md §5) ─── */
 .rm-cta {
   padding: 36px;
   border: 1px solid var(--nc-border);
-  border-radius: 16px;
-  background:
-    radial-gradient(120% 140% at 0% 0%, var(--nc-accent-glow) 0%, transparent 55%),
-    var(--nc-surface);
+  border-radius: var(--nc-radius-md);
+  background: var(--nc-surface-2);
 }
 
 .rm-cta__title {
@@ -742,42 +736,81 @@ useHead({
   justify-content: center;
   height: 40px;
   padding: 0 18px;
-  border-radius: 8px;
-  font-family: 'Inter', var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));
-  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: transform var(--nc-duration-fast) var(--nc-ease-out),
-              background var(--nc-duration-fast) ease,
-              border-color var(--nc-duration-fast) ease,
-              color var(--nc-duration-fast) ease;
+  transition: transform var(--nc-duration-press) var(--nc-ease),
+              background-color var(--nc-duration-fast) var(--nc-ease),
+              color var(--nc-duration-fast) var(--nc-ease);
 }
 
 .rm-btn:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 
+/* Primary — ink pill (REDESIGN.md §5) */
 .rm-btn--primary {
-  background: var(--nc-accent);
-  color: #06201d;
-  border: 1px solid var(--nc-accent);
+  padding: 0 22px;
+  background: var(--nc-text);
+  color: var(--nc-bg);
+  border: none;
+  border-radius: 2.4rem;
+  font-family: var(--nc-font-display);
+  font-weight: 700;
 }
 
-.rm-btn--primary:hover {
-  background: var(--nc-accent-light);
-  border-color: var(--nc-accent-light);
+@media (hover: hover) and (pointer: fine) {
+  .rm-btn--primary:hover {
+    background: var(--nc-accent);
+    transform: translateY(-1px);
+  }
 }
 
+/* Ghost — mono uppercase text link with underline-grow (REDESIGN.md §5) */
 .rm-btn--ghost {
+  position: relative;
   background: transparent;
   color: var(--nc-text-secondary);
-  border: 1px solid var(--nc-border-active);
+  border: none;
+  font-family: var(--nc-font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
-.rm-btn--ghost:hover {
-  color: var(--nc-text);
-  border-color: var(--nc-text-muted);
+.rm-btn--ghost::after {
+  content: '';
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 10px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 0.45s var(--nc-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rm-btn--ghost:hover {
+    color: var(--nc-accent);
+  }
+
+  .rm-btn--ghost:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+/* Focus-visible — 2px accent outline, 3px offset (REDESIGN.md §1) */
+.rm-header__brand:focus-visible,
+.rm-header__nav-link:focus-visible,
+.rm-header__app-btn:focus-visible,
+.rm-header__lang:focus-visible,
+.rm-header__theme:focus-visible,
+.rm-btn:focus-visible {
+  outline: 2px solid var(--nc-accent);
+  outline-offset: 3px;
 }
 
 /* ─── Disclaimer ─── */
@@ -794,7 +827,7 @@ useHead({
 .rm-legend,
 .rm-phase,
 .rm-cta {
-  animation: rm-rise var(--nc-duration-reveal) var(--nc-ease-entrance) both;
+  animation: rm-rise var(--nc-duration-slow) var(--nc-ease) both;
 }
 
 .rm-legend { animation-delay: 60ms; }
@@ -805,7 +838,7 @@ useHead({
 .rm-cta { animation-delay: 360ms; }
 
 @keyframes rm-rise {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -822,6 +855,10 @@ useHead({
 
   .rm-main {
     padding: 96px 18px 72px;
+  }
+
+  .rm-intro__title {
+    font-size: calc(32px * var(--nc-text-scale, 1));
   }
 
   .rm-phase {
@@ -852,10 +889,6 @@ useHead({
   .rm-legend,
   .rm-phase,
   .rm-cta {
-    animation: none;
-  }
-
-  .rm-phase__rail .rm-dot--progress {
     animation: none;
   }
 }
