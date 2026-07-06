@@ -440,7 +440,7 @@ describe('initialize — WEB pull wires vault credentials cross-device (AER-78)'
     // Default promoted so generation works immediately on the fresh device.
     expect(ai.defaultProvider.value?.id).toBe(provider!.id)
     // ONLY the list endpoint is hit — never /reveal on web.
-    expect(webFetch.mock.calls.every(([url]: [string]) => url === '/api/vault/credentials')).toBe(true)
+    expect(webFetch.mock.calls.every(call => call[0] === '/api/vault/credentials')).toBe(true)
     // And the NATIVE transport is never touched.
     expect(remoteFetch).not.toHaveBeenCalled()
   })
