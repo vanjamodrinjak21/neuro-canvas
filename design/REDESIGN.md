@@ -27,19 +27,36 @@ Keep the app's existing `--nc-duration-*` (120–300ms) and `--nc-z-*` scales. L
 
 **Accent discipline:** white/ink lines by default, **cyan for interactive/hot**, **coral only for live markers** (recording dots, unsaved indicators, destructive-confirm accents, validation errors). Selection: `background: var(--nc-accent); color: var(--nc-bg)`. Focus: `outline: 2px solid var(--nc-accent); outline-offset: 3px` (inputs: border-color change only, no ring/glow).
 
-## 2. Canonical tokens — LIGHT (`:root.light`)
+## 2. Canonical tokens — LIGHT (`:root.light`) — FINAL (Phase 7)
 
 ```css
---nc-bg:             #FAFAF9;   /* Warm Paper */
---nc-surface:        #FFFFFF;
---nc-text:           #111111;   /* 18.08:1 */
---nc-text-secondary: #6E6E6E;   /* ~4.9:1 — NOT #777 (4.29:1 fails) */
---nc-accent:         #0b9e93;   /* UI components / large text (3.18:1) */
---nc-accent-text:    #087f76;   /* accent-colored body text */
---nc-coral:          #d95f2f;
+--nc-bg:              #FAFAF9;   /* Warm Paper */
+--nc-surface:         #FFFFFF;   /* cards lift to white */
+--nc-surface-2:       #F6F6F4;   /* panels/popovers — warm-neutral step */
+--nc-surface-3:       #EFEFEC;   /* hover step (pair with ink text on hover) */
+--nc-surface-4:       #E7E7E3;   /* active/deep step */
+--nc-border:          rgba(17, 17, 17, 0.14);  /* decorative hairline */
+--nc-border-subtle:   rgba(17, 17, 17, 0.08);
+--nc-border-active:   rgba(17, 17, 17, 0.28);
+--nc-border-input:    rgba(17, 17, 17, 0.48);  /* form-control boundary — WCAG 1.4.11 ≥3:1 */
+--nc-text:            #111111;   /* 18.08:1 */
+--nc-text-secondary:  #6E6E6E;   /* 4.88:1 — NOT #777 (4.29:1 fails) */
+--nc-text-muted:      #71716E;   /* 4.69:1 — min readable tier */
+--nc-text-dim:        #8C8C89;   /* 3.23:1 — decorative/disabled ONLY */
+--nc-accent:          #0b9e93;   /* UI components / large text (3.18:1) */
+--nc-accent-text:     #087f76;   /* accent-colored body text (4.67:1) */
+--nc-accent-contrast: #111111;   /* text ON accent fills — white is 3.32:1, fails */
+--nc-selection-bg:    var(--nc-accent-dark);   /* #087f76 */
+--nc-selection-text:  #FFFFFF;   /* 4.88:1 — accent bg + bg text pair is 3.18:1 */
+--nc-coral:           #b64c22;   /* 4.97:1 — DEEPENED from provisional #d95f2f
+                                    (3.57:1: fails AA for coral TEXT usages —
+                                    error labels, danger buttons) */
+--nc-chip-bg:         rgba(17, 17, 17, 0.04);
+--nc-success:         #15803D;   --nc-warning: #A16207;
+--nc-error:           #DC2626;   --nc-info:    #2563EB;  /* all ≥4.6:1 as text */
 ```
 
-**`#5EF2E8` is NEVER light-mode text** (1.6:1) — fills/decoration only. Borders must stay visible (`rgba(17,17,17,0.14)`-order hairline, not white alpha).
+**`#5EF2E8` is NEVER light-mode text** (1.6:1) — fills/decoration only. Borders must stay visible (`rgba(17,17,17,0.14)`-order hairline, not white alpha); decorative hairlines are exempt from 1.4.11, form-control boundaries use `--nc-border-input`. Shadows are warm-tinted `rgba(50,45,35,…)`, never pure black. The theme-pair tokens (`--nc-border-input`, `--nc-accent-contrast`, `--nc-selection-*`) exist in the dark root too with values identical to prior dark behavior. The boot screen (`AppLoadingScreen.vue`) is a documented always-dark exception (its WebGL topo layer draws dark terrain).
 
 ## 3. WCAG verification (computed)
 
@@ -53,6 +70,28 @@ Keep the app's existing `--nc-duration-*` (120–300ms) and `--nc-z-*` scales. L
 | `#050508` on `#5EF2E8` / `#f4f4f8` | 14.87 / 18.55:1 | AAA |
 | OLD `#71717A` on `#09090B` | 4.12:1 | **FAIL — this redesign fixes it** |
 | OLD `#52525B` on `#09090B` | 2.57:1 | **FAIL — restrict to disabled** |
+
+### Light (Phase 7 — computed, final)
+
+| Pair (light) | Ratio | Verdict |
+|---|---|---|
+| `#111111` text on bg `#FAFAF9` / surface `#FFFFFF` / surface-2 `#F6F6F4` | 18.08 / 18.88 / 17.45 | AAA |
+| `#6E6E6E` secondary on bg / surface / surface-2 | 4.88 / 5.10 / 4.71 | AA |
+| `#71716E` muted on bg / surface / surface-2 | 4.69 / 4.90 / 4.52 | AA |
+| `#8C8C89` dim on bg / surface | 3.23 / 3.37 | decorative/disabled only |
+| `#087f76` accent-text on bg / surface / surface-2 | 4.67 / 4.88 / 4.51 | AA |
+| `#0b9e93` accent on bg / surface | 3.18 / 3.32 | UI components / large text only |
+| `#b64c22` coral on bg / surface | 4.97 / 5.19 | AA (deepened from `#d95f2f` @ 3.57) |
+| Primary button: `#FAFAF9` on ink `#111111` | 18.08 | AAA |
+| Button on accent: `--nc-accent-contrast` `#111111` on `#0b9e93` | 5.69 | AA (white would be 3.32 — FAIL) |
+| AI button hover: `#111111` on `#0fb5a8` | 7.37 | AAA |
+| Selection: `#FFFFFF` on `#087f76` | 4.88 | AA |
+| Status text `#15803D` / `#A16207` / `#DC2626` / `#2563EB` on bg | 4.80 / 4.71 / 4.62 / 4.95 | AA (surface: 5.02 / 4.92 / 4.83 / 5.17) |
+| Input border `rgba(17,17,17,.48)` vs surface / bg | 3.32 / 3.31 | 1.4.11 pass |
+| Focus outline `#0b9e93` vs surface / bg / surface-2 | 3.32 / 3.18 / 3.07 | 1.4.11 pass |
+| Switch: accent track vs surface / `#FAFAF9` thumb on accent | 3.32 / 3.18 | 1.4.11 pass |
+| Hairline `.14` / border-active `.28` vs surface | 1.35 / 1.90 | decorative — exempt |
+| `#6E6E6E` secondary on surface-3 `#EFEFEC` (hover step) | 4.43 | note: hover grammar always brightens text to ink on surface-3 — no resting secondary text sits on it |
 
 ## 4. Typography
 

@@ -220,8 +220,9 @@ function applyThemeChange() {
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* Light: warm-neutral hover step (base is white-alpha, invisible on paper) */
 :root.light .docs-header__hamburger:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface-3);
 }
 
 @media (max-width: 768px) {
@@ -388,7 +389,7 @@ function applyThemeChange() {
 }
 
 :root.light .docs-header__lang-toggle:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface-3);
 }
 
 /* ─── Theme toggle ─── */
@@ -414,7 +415,7 @@ function applyThemeChange() {
 }
 
 :root.light .docs-header__theme-toggle:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface-3);
 }
 
 .docs-header__theme-icon {

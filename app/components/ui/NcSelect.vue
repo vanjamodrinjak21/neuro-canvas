@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
   height: 36px;
   padding: 0 10px 0 12px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   color: var(--nc-text);
   font-family: var(--nc-font-body);
@@ -194,6 +194,9 @@ onBeforeUnmount(() => {
   transition: border-color var(--nc-duration-fast) var(--nc-ease), background-color var(--nc-duration-fast) var(--nc-ease);
 }
 .nc-select__trigger:hover { border-color: var(--nc-border-active); }
+/* Light: --nc-border-active (0.28 ink) is weaker than the form boundary
+   (0.48) — hover must not fade the border below its rest state. */
+:root.light .nc-select__trigger:hover { border-color: var(--nc-text-secondary); }
 .nc-select__trigger:focus-visible {
   outline: none;
   border-color: var(--nc-accent);

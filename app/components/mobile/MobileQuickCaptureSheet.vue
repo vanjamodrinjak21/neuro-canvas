@@ -239,7 +239,7 @@ async function onSubmit() {
   width: 100%;
   padding: 14px 16px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   font-family: inherit;
   font-size: calc(16px * var(--nc-text-scale, 1)); line-height: 22px;

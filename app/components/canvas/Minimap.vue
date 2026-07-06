@@ -49,9 +49,10 @@ const canvasHeight = computed(() => {
   return props.height - 34
 })
 
-// Category color map for color-coding
+// Category color map for color-coding. No `default` entry: uncategorized
+// nodes fall through to the theme palette's node color — a hardcoded
+// #5EF2E8 default would be invisible (1.6:1) on the light minimap.
 const categoryColors: Record<string, string> = {
-  default: '#5EF2E8',
   idea: '#A78BFA',
   task: '#60A5FA',
   note: '#4ADE80',
@@ -78,7 +79,7 @@ const lightPalette = {
   // without relying on the now-near-white bg.
   bg: '#FAFAF9',
   node: '#0b9e93',
-  nodeSelected: '#5EF2E8',
+  nodeSelected: '#087f76', /* #5EF2E8 is 1.6:1 on paper — never light-mode ink */
   root: '#111111',
   edge: 'rgba(0, 0, 0, 0.18)',
   viewport: 'rgba(11, 158, 147, 0.65)',

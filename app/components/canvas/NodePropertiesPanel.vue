@@ -290,7 +290,7 @@ onKeyStroke('Escape', () => {
 .props-field {
   width: 100%;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   padding: 8px 12px;
   font-family: var(--nc-font-body);

@@ -2049,7 +2049,7 @@ button.m-row { text-align: left; }
   font-weight: 400;
   color: var(--nc-text);
   background-color: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   padding: 8px 32px 8px 12px;
   outline: none;
@@ -2103,7 +2103,7 @@ button.m-row { text-align: left; }
   align-items: center;
   gap: 0;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   overflow: hidden;
   transition: border-color var(--nc-duration-fast) var(--nc-ease);
@@ -2152,7 +2152,7 @@ button.m-row { text-align: left; }
   font-size: calc(12px * var(--nc-text-scale, 1));
   color: var(--nc-text);
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   padding: 8px 12px;
   outline: none;

@@ -531,7 +531,7 @@ function saveAvatar() {
   font-weight: 400;
   color: var(--nc-text);
   background-color: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   padding: 8px 32px 8px 12px;
   outline: none;
@@ -556,7 +556,7 @@ function saveAvatar() {
   align-items: center;
   padding: 2px;
   border-radius: 2.4rem;
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   background: var(--nc-chip-bg);
   cursor: pointer;
   flex-shrink: 0;

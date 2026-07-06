@@ -145,16 +145,6 @@ watch(
   }
 }
 
-/* Light theme */
-:root.light .docs-root {
-  background: var(--nc-bg);
-}
-
-:root.light .docs-sidebar-col {
-  border-right-color: var(--nc-border);
-}
-
-:root.light .docs-toc-col {
-  border-left-color: var(--nc-border);
-}
+/* Light theme is carried entirely by the :root.light token rebase in
+   tokens.css — every rule above already consumes --nc-* vars. */
 </style>

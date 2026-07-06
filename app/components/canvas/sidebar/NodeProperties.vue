@@ -608,7 +608,7 @@ const avatarColor = computed(() => props.selectedNode?.style?.borderColor || 'va
 .properties__input {
   width: 100%;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   padding: 8px 12px;
   font-size: calc(12px * var(--nc-text-scale, 1));
@@ -631,7 +631,7 @@ const avatarColor = computed(() => props.selectedNode?.style?.borderColor || 'va
 .properties__textarea {
   width: 100%;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   padding: 10px 12px;
   font-size: calc(12px * var(--nc-text-scale, 1));

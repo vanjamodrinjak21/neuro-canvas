@@ -434,7 +434,7 @@ onMounted(load)
   flex: 1;
   height: 36px; padding: 0 12px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   color: var(--nc-text);
   font: 400 13px var(--nc-font-body);

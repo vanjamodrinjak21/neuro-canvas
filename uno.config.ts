@@ -49,10 +49,12 @@ export default defineConfig({
       'nc-graphite': 'rgba(var(--nc-surface-rgb), %alpha)',
       'nc-pencil': 'var(--nc-pencil)',
 
-      // Borders
+      // Borders — `nc-border-input` is the form-control boundary
+      // (WCAG 1.4.11 ≥3:1 in light; identical to the hairline in dark)
       'nc-border': 'var(--nc-border)',
       'nc-border-subtle': 'var(--nc-border-subtle)',
       'nc-border-active': 'var(--nc-border-active)',
+      'nc-border-input': 'var(--nc-border-input)',
 
       // Text
       'nc-ink': 'var(--nc-ink)',
@@ -68,6 +70,7 @@ export default defineConfig({
       'nc-accent-light': 'var(--nc-accent-light)',
       'nc-accent-dark': 'var(--nc-accent-dark)',
       'nc-accent-text': 'var(--nc-accent-text)',
+      'nc-accent-contrast': 'var(--nc-accent-contrast)',
       'nc-teal': 'rgba(var(--nc-accent-rgb), %alpha)',
       'nc-teal-light': 'var(--nc-teal-light)',
       'nc-teal-dark': 'var(--nc-teal-dark)',
@@ -192,7 +195,7 @@ export default defineConfig({
 
     // Buttons (REDESIGN.md §5 component grammar; no glow in chrome)
     'nc-btn': 'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-nc-md font-medium nc-anim cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed',
-    'nc-btn-primary': 'nc-btn rounded-[2.4rem] bg-nc-ink text-nc-bg font-display font-bold hover:bg-nc-accent hover:translate-y-[-1px] active:scale-97',
+    'nc-btn-primary': 'nc-btn rounded-[2.4rem] bg-nc-ink text-nc-bg font-display font-bold hover:bg-nc-accent hover:text-nc-accent-contrast hover:translate-y-[-1px] active:scale-97',
     'nc-btn-secondary': 'nc-btn rounded-[2.4rem] bg-transparent text-nc-ink border border-nc-border hover:border-nc-ink-soft active:scale-97',
     'nc-btn-ghost': 'nc-btn text-nc-ink-muted hover:text-nc-ink hover:bg-nc-chip bg-transparent border-transparent',
     'nc-btn-icon': 'nc-btn p-2 aspect-square',
@@ -201,8 +204,8 @@ export default defineConfig({
     'nc-card': 'bg-nc-surface-2 border border-nc-border rounded-nc-md p-4',
     'nc-card-elevated': 'bg-nc-surface-2 border border-nc-border rounded-nc-md p-4 shadow-nc-md',
 
-    // Inputs — chip fill, hairline; focus = border-color only, no ring/glow
-    'nc-input': 'w-full px-4 py-2 rounded-nc-md bg-nc-chip text-nc-ink placeholder-nc-ink-faint border border-nc-border focus:border-nc-accent focus:outline-none nc-anim',
+    // Inputs — chip fill, input boundary (1.4.11); focus = border-color only, no ring/glow
+    'nc-input': 'w-full px-4 py-2 rounded-nc-md bg-nc-chip text-nc-ink placeholder-nc-ink-faint border border-nc-border-input focus:border-nc-accent focus:outline-none nc-anim',
 
     // Layout
     'nc-center': 'flex items-center justify-center',

@@ -390,7 +390,7 @@ if (typeof document !== 'undefined') {
 .field-input, .field-textarea, .field-select {
   padding: 10px 14px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1));

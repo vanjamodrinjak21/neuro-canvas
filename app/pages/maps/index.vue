@@ -556,7 +556,7 @@ function formatDate(timestamp: number): string {
   gap: 8px;
   padding: 8px 14px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   min-width: 180px;
   transition: border-color var(--nc-duration-fast) var(--nc-ease);
@@ -1232,7 +1232,7 @@ function formatDate(timestamp: number): string {
     margin: 0 0 8px;
     padding: 10px 12px;
     border-radius: var(--nc-radius-md);
-    background: var(--nc-chip-bg); border: 1px solid var(--nc-border);
+    background: var(--nc-chip-bg); border: 1px solid var(--nc-border-input);
   }
   .search-box--mobile .search-icon { color: var(--nc-text-muted); flex-shrink: 0; width: 16px; height: 16px; }
   .search-box--mobile .search-input {

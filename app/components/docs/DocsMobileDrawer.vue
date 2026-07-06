@@ -224,21 +224,13 @@ onBeforeUnmount(() => {
   transform: translateX(0);
 }
 
-/* Light theme */
+/* Light theme — tokens carry the panel; only the scrim weight and the
+   hover wash (base is white-alpha, invisible on paper) stay light-specific. */
 :root.light .docs-drawer__backdrop {
   background: rgba(0, 0, 0, 0.3);
 }
 
-:root.light .docs-drawer__panel {
-  background: var(--nc-bg);
-  border-right-color: var(--nc-border);
-}
-
-:root.light .docs-drawer__header {
-  border-bottom-color: var(--nc-border);
-}
-
 :root.light .docs-drawer__close:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface-3);
 }
 </style>

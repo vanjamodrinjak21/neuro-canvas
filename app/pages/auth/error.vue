@@ -277,13 +277,11 @@ const errorInfo = computed(() => {
 }
 
 /* Light theme — surfaces/text now follow the :root.light token rebase;
-   only the softer badge hairline remains a real override. */
+   only the softer badge hairline remains a real override. (The former
+   dim-tier override on .error-details was removed: dim is 3.23:1 in
+   light — decorative only — and the details are readable text.) */
 :root.light .error-badge {
   border-color: rgba(var(--nc-coral-rgb), 0.15);
-}
-
-:root.light .error-details {
-  color: var(--nc-text-dim);
 }
 
 /* Responsive */

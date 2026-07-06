@@ -107,7 +107,9 @@ function buildLightColors(): CanvasColors {
     anchorFill: readToken('--nc-canvas', '#FAFAF9'),
     anchorBorder: accent,
     rootIndicatorBg: accent,
-    rootIndicatorText: readToken('--nc-bg', '#FAFAF9'),
+    // Ink on the light accent (5.69:1) — bg-colored text on #0b9e93 is
+    // only 3.18:1 and fails AA for the root badge label.
+    rootIndicatorText: readToken('--nc-accent-contrast', '#111111'),
   }
 }
 

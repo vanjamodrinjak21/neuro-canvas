@@ -436,7 +436,7 @@ watch(() => props.visible, (isVisible) => {
   width: 100%;
   padding: 12px 14px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   font-size: calc(14px * var(--nc-text-scale, 1));
   color: var(--nc-text);

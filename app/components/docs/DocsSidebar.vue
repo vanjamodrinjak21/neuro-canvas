@@ -153,10 +153,6 @@ function isActive(path: string): boolean {
   transition: background var(--nc-duration-slow) ease, border-color var(--nc-duration-slow) ease;
 }
 
-:root.light .docs-sidebar {
-  background: var(--nc-surface);
-}
-
 .docs-sidebar::-webkit-scrollbar { width: 4px; }
 .docs-sidebar::-webkit-scrollbar-track { background: transparent; }
 .docs-sidebar::-webkit-scrollbar-thumb { background: var(--nc-border-active); border-radius: 2px; }
@@ -226,8 +222,14 @@ function isActive(path: string): boolean {
   background: rgba(255, 255, 255, 0.03);
 }
 
+/* Light: ink-alpha hover wash (base is white-alpha, invisible on paper) */
 :root.light .docs-sidebar__link:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--nc-chip-bg);
+}
+
+/* Light: 13px accent text needs the text-tier accent (#0b9e93 is 3.18:1) */
+:root.light .docs-sidebar__link--active {
+  color: var(--nc-accent-text);
 }
 
 .docs-sidebar__link--active {

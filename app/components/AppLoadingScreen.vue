@@ -192,16 +192,20 @@ defineExpose({ leave })
 
 <style scoped>
 .app-loading {
-  /* --al-* aliases now consume the global tokens (AER-76) — the values
-     used to be a hardcoded landing-palette copy with slight drift
-     (ink-faint 0.3, hair 0.1); normalized to the spec tiers. */
-  --al-bg: var(--nc-bg);
-  --al-ink: var(--nc-text);
-  --al-ink-dim: var(--nc-text-secondary);
-  --al-ink-faint: var(--nc-text-dim);
-  --al-hair: var(--nc-border-subtle);
-  --al-cyan: var(--nc-accent);
-  --al-coral: var(--nc-coral);
+  /* THEME EXCEPTION (AER-76 light pass): the boot screen is ALWAYS-DARK,
+     like the landing — its WebGL topo layer (lib/topo-scene, off-limits)
+     draws dark terrain, so following the light tokens would frame dark
+     terrain with light chrome. The --al-* aliases therefore pin the
+     canonical DARK token values (REDESIGN.md §1) instead of consuming
+     the theme-flipping --nc-* vars. Do not "fix" these back to tokens. */
+  --al-bg: #050508;
+  --al-ink: #f4f4f8;
+  --al-ink-dim: rgba(244, 244, 248, 0.62);
+  --al-ink-faint: rgba(244, 244, 248, 0.38);
+  --al-hair: rgba(244, 244, 248, 0.08);
+  --al-hair-strong: rgba(244, 244, 248, 0.14);
+  --al-cyan: #5EF2E8;
+  --al-coral: #FF8A5C;
   --al-ease: var(--nc-ease);
 
   position: fixed;
@@ -271,7 +275,8 @@ defineExpose({ leave })
 }
 
 .app-loading__cross {
-  stroke: var(--nc-border) !important;
+  /* always-dark hairline — var(--nc-border) would flip to ink in light */
+  stroke: var(--al-hair-strong) !important;
   stroke-width: 1.5;
 }
 

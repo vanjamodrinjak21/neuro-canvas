@@ -680,7 +680,7 @@ onMounted(async () => {
   gap: 6px;
   padding: 6px 12px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   color: var(--nc-text-muted);
   transition: border-color var(--nc-duration-fast) var(--nc-ease);
@@ -726,7 +726,7 @@ onMounted(async () => {
 .sort-select {
   padding: 6px 28px 6px 12px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
@@ -981,7 +981,7 @@ onMounted(async () => {
     display: flex; align-items: center; gap: 10px;
     width: 100%; height: auto;
     padding: 12px; border-radius: var(--nc-radius-md);
-    background: var(--nc-chip-bg); border: 1px solid var(--nc-border);
+    background: var(--nc-chip-bg); border: 1px solid var(--nc-border-input);
   }
   .filter-right .search-box svg { color: var(--nc-text-muted); flex-shrink: 0; }
   .filter-right .search-input {

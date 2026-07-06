@@ -407,7 +407,7 @@ async function submitPassword() {
 .macc-pw-input {
   width: 100%; box-sizing: border-box; padding: 12px 14px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem; color: var(--nc-ink);
   font-family: var(--nc-font-body);
   font-size: calc(14px * var(--nc-text-scale, 1)); outline: none;

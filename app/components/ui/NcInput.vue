@@ -47,10 +47,10 @@ const inputClass = computed(() => [
   // Size
   sizeClasses[props.size],
 
-  // Border states
+  // Border states — form-control boundary token (WCAG 1.4.11 in light)
   props.error
     ? 'border-nc-coral focus:border-nc-coral'
-    : 'border-nc-border focus:border-nc-accent',
+    : 'border-nc-border-input focus:border-nc-accent',
 
   // Disabled
   props.disabled && 'opacity-45 cursor-not-allowed'

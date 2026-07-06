@@ -46,7 +46,7 @@ const sizeClasses = {
       :disabled="disabled"
       :class="[
         'group relative inline-flex shrink-0 cursor-pointer items-center rounded-full',
-        'border border-nc-border nc-anim',
+        'border border-nc-border-input nc-anim',
         'data-[state=unchecked]:bg-nc-chip',
         'data-[state=checked]:bg-nc-accent data-[state=checked]:border-nc-accent',
         'active:scale-97',

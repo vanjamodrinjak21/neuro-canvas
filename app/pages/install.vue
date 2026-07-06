@@ -224,16 +224,22 @@ async function copyMacCmd() {
   min-height: 100vh;
   overflow-x: hidden;
 }
+/* Light: the local Paper palette re-bases onto the global tokens (AER-76).
+   --accent flips to the text-tier accent because this page uses it as
+   text and as a filled CTA (#5EF2E8 is 1.6:1 on paper — never light text);
+   --on-accent rides --nc-surface (#FFFFFF), 4.88:1 on #087f76. */
 :root.light .dl {
-  --bg: #FAFAF9;
-  --surface: #F5F5F3;
-  --surface-3: #E8E8E6;
-  --border: #E8E8E6;
-  --border-active: #D4D4D8;
-  --text: #111111;
-  --text-2: #555555;
-  --text-3: #555555;
-  --text-faint: #A1A1AA;
+  --bg: var(--nc-bg);
+  --surface: var(--nc-surface);
+  --surface-3: var(--nc-surface-3);
+  --border: var(--nc-border);
+  --border-active: var(--nc-border-active);
+  --text: var(--nc-text);
+  --text-2: var(--nc-text-secondary);
+  --text-3: var(--nc-text-secondary);
+  --text-faint: var(--nc-text-dim);
+  --accent: var(--nc-accent-text);
+  --on-accent: var(--nc-surface);
 }
 
 /* ═══════════════════════ NAV ═══════════════════════ */
@@ -250,7 +256,7 @@ async function copyMacCmd() {
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   z-index: 100;
 }
-:root.light .dl-nav { background: rgba(250, 250, 249, 0.85); }
+:root.light .dl-nav { background: rgba(var(--nc-bg-rgb), 0.85); }
 .dl-nav-left { display: flex; align-items: center; gap: 40px; }
 .dl-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
 .dl-brand-name { font-size: calc(15px * var(--nc-text-scale, 1)); font-weight: 600; line-height: 18px; letter-spacing: -0.01em; }

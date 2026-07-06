@@ -749,7 +749,7 @@ async function onSignOut() {
   font-size: calc(13px * var(--nc-text-scale, 1));
   color: var(--nc-text);
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   padding: 10px 12px;
   outline: none;

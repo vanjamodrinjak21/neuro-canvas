@@ -193,20 +193,13 @@ function formatSegment(segment: string): string {
   line-height: 1;
 }
 
-/* Light theme */
-:root.light .docs-breadcrumb__separator {
-  color: var(--nc-text-dim);
-}
-
-:root.light .docs-breadcrumb__link {
-  color: var(--nc-text-muted);
-}
-
+/* Light theme — tokens carry the tiers; accent-colored 11px text
+   drops to the text-tier accent (#0b9e93 is 3.18:1, fails AA). */
 :root.light .docs-breadcrumb__link:hover {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 
 :root.light .docs-breadcrumb__current {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 </style>

@@ -138,25 +138,9 @@ defineProps<Props>()
   }
 }
 
-/* Light theme */
-:root.light .docs-prev-next {
-  border-top-color: var(--nc-border);
-}
-
-:root.light .docs-prev-next__card {
-  border-color: var(--nc-border);
-}
-
-:root.light .docs-prev-next__card:hover {
-  border-color: var(--nc-accent);
-  background: var(--nc-accent-glow);
-}
-
-:root.light .docs-prev-next__label {
-  color: var(--nc-text-muted);
-}
-
-:root.light .docs-prev-next__label svg {
-  color: var(--nc-text-muted);
+/* Light theme — tokens carry everything except the card title:
+   14px accent text needs the text-tier accent (#0b9e93 is 3.18:1). */
+:root.light .docs-prev-next__title {
+  color: var(--nc-accent-text);
 }
 </style>

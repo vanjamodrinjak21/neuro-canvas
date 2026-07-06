@@ -44,11 +44,10 @@ const isExternal = computed(() => {
   line-height: 1;
 }
 
-:root.light .prose-link {
-  color: var(--nc-accent-dark);
-}
-
+/* Light: prose links are body text — text-tier accent (#0b9e93 is 3.18:1).
+   Hover keeps the same tier; only the underline (non-text) may use accent. */
+:root.light .prose-link,
 :root.light .prose-link:hover {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 </style>

@@ -17,8 +17,9 @@
   word-break: break-word;
 }
 
+/* Light: inline code is small text — text-tier accent on the soft wash */
 :root.light .prose-code {
   background: var(--nc-accent-glow-strong);
-  color: var(--nc-accent-dark);
+  color: var(--nc-accent-text);
 }
 </style>

@@ -503,7 +503,7 @@ const palette = useCommandPalette()
   padding: 8px 10px;
   margin-bottom: 20px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   cursor: pointer;
   transition: border-color var(--nc-duration-fast) var(--nc-ease);
@@ -512,6 +512,12 @@ const palette = useCommandPalette()
 @media (hover: hover) and (pointer: fine) {
   .sidebar-search:hover {
     border-color: var(--nc-border-active);
+  }
+
+  /* Light: --nc-border-active (0.28 ink) is weaker than the form boundary
+     (0.48) — hover must not fade the border below its rest state. */
+  :root.light .sidebar-search:hover {
+    border-color: var(--nc-text-secondary);
   }
 }
 

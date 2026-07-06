@@ -43,10 +43,15 @@
 
   /* ══════════════════════════════════════════
      BORDERS — THE hairline. 1px only, never 2px.
+     --nc-border-input: boundary for form controls (inputs, selects,
+     switch tracks). Same as the hairline in dark; in light it darkens
+     to clear WCAG 1.4.11 (≥3:1 non-text) — decorative hairlines don't
+     need 3:1, interactive boundaries do.
      ══════════════════════════════════════════ */
   --nc-border: rgba(244, 244, 248, 0.14);
   --nc-border-subtle: rgba(244, 244, 248, 0.08);
   --nc-border-active: rgba(244, 244, 248, 0.28);
+  --nc-border-input: rgba(244, 244, 248, 0.14);
 
   /* ══════════════════════════════════════════
      TEXT — ink tiers on deep-map black
@@ -68,9 +73,18 @@
   --nc-accent-light: #8FF7EF;
   --nc-accent-dark: #3AC2B9;
   --nc-accent-text: var(--nc-accent);
+  /* Text color for content sitting ON an accent fill (buttons, chips).
+     Dark: deep-map black on cyan (14.87:1). Light: ink on #0b9e93
+     (5.69:1) — #FFFFFF on the light accent is only 3.32:1 and fails AA. */
+  --nc-accent-contrast: #050508;
   --nc-accent-glow: rgba(94, 242, 232, 0.08);
   --nc-accent-glow-strong: rgba(94, 242, 232, 0.15);
   --nc-accent-glow-intense: rgba(94, 242, 232, 0.25);
+
+  /* Text selection — dark keeps the spec pair (accent bg, bg-colored
+     text); light rebases below because #FAFAF9 on #0b9e93 fails AA. */
+  --nc-selection-bg: var(--nc-accent);
+  --nc-selection-text: var(--nc-bg);
 
   /* Coral — live markers / attention ONLY, never a 2nd interactive color */
   --nc-coral: #FF8A5C;
@@ -191,70 +205,89 @@
 }
 
 /* ══════════════════════════════════════════
-   LIGHT THEME — Warm Paper palette
-   Only the accent family is rebased for now (REDESIGN.md §2);
-   the full light pass is a later phase. #5EF2E8 is NEVER
-   light-mode text (1.6:1) — hence the darker accents here.
+   LIGHT THEME — Warm Paper palette (REDESIGN.md §2, verified §3)
+   Every value computed against WCAG 2.1: text tiers hold AA on
+   bg AND surface AND surface-2; #5EF2E8 is NEVER light-mode text
+   (1.6:1) — fills/decoration only. All ratios in the §3 table.
    ══════════════════════════════════════════ */
 :root.light {
+  /* Surfaces — Warm Paper base, white cards, warm-neutral steps.
+     Light inverts the elevation ramp at surface: cards lift to white,
+     hover/active steps descend into warm neutrals. */
   --nc-bg: #FAFAF9;
   --nc-canvas: #FAFAF9;
-  --nc-surface: #F5F5F3;
-  --nc-surface-2: #F5F5F3;
-  --nc-surface-3: #E8E8E6;
-  --nc-surface-4: #E0E0DE;
+  --nc-surface: #FFFFFF;
+  --nc-surface-2: #F6F6F4;
+  --nc-surface-3: #EFEFEC;
+  --nc-surface-4: #E7E7E3;
 
   --nc-charcoal: #FAFAF9;
-  --nc-graphite: #F5F5F3;
-  --nc-pencil: #E8E8E6;
+  --nc-graphite: #FFFFFF;
+  --nc-pencil: #EFEFEC;
   --nc-canvas-bg: #FAFAF9;
 
-  --nc-border: #E8E8E6;
-  --nc-border-subtle: #E8E8E6;
-  --nc-border-active: #D4D4D8;
+  /* Borders — ink-alpha hairlines so they tint correctly per surface.
+     Decorative hairlines are exempt from 1.4.11; form-control
+     boundaries use --nc-border-input (3.32:1 on #FFFFFF). */
+  --nc-border: rgba(17, 17, 17, 0.14);
+  --nc-border-subtle: rgba(17, 17, 17, 0.08);
+  --nc-border-active: rgba(17, 17, 17, 0.28);
+  --nc-border-input: rgba(17, 17, 17, 0.48);
 
+  /* Text — §3: secondary 4.88/5.10, muted 4.69/4.90 (min readable),
+     dim 3.23 = decorative/disabled ONLY (mirrors dark's 3.25 tier). */
   --nc-text: #111111;
   --nc-text-secondary: #6E6E6E; /* spec §2: #777 is 4.29:1 on #FAFAF9 — fails AA */
-  --nc-text-muted: #71717A;
-  --nc-text-dim: #A1A1AA;
-  --nc-ink: var(--nc-text);
-  --nc-ink-soft: var(--nc-text-secondary);
-  --nc-ink-muted: var(--nc-text-muted);
-  --nc-ink-faint: var(--nc-text-dim);
+  --nc-text-muted: #71716E;
+  --nc-text-dim: #8C8C89;
 
+  /* Accent — #0b9e93 for UI components/large text (3.18:1),
+     #087f76 for accent-colored body text (4.67:1). */
   --nc-accent: #0b9e93;
   --nc-accent-light: #0fb5a8;
   --nc-accent-dark: #087f76;
   --nc-accent-text: #087f76;
+  --nc-accent-contrast: #111111; /* ink on #0b9e93 = 5.69:1; white is 3.32:1 (fails) */
   --nc-accent-glow: rgba(11, 158, 147, 0.06);
   --nc-accent-glow-strong: rgba(11, 158, 147, 0.10);
   --nc-accent-glow-intense: rgba(11, 158, 147, 0.18);
 
-  --nc-coral: #d95f2f;
+  /* Selection — accent-dark fill + white text (4.88:1); the dark-mode
+     pair (accent bg, bg text) would be 3.18:1 on paper. */
+  --nc-selection-bg: var(--nc-accent-dark);
+  --nc-selection-text: #FFFFFF;
+
+  /* Coral — deepened from the provisional #d95f2f (3.57:1, fails AA
+     for the error/danger TEXT usages) to hold 4.97:1 on bg. */
+  --nc-coral: #b64c22;
   --nc-chip-bg: rgba(17, 17, 17, 0.04);
 
-  --nc-teal: var(--nc-accent);
-  --nc-teal-light: var(--nc-accent-light);
-  --nc-teal-dark: var(--nc-accent-dark);
   --nc-teal-glow: rgba(11, 158, 147, 0.08);
 
-  --nc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --nc-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --nc-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
-  --nc-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12);
+  /* Status — dark palette values are 3.7–4.6:1 on paper; light
+     variants hold ≥4.6:1 as text on bg AND surface. */
+  --nc-success: #15803D;
+  --nc-warning: #A16207;
+  --nc-error: #DC2626;
+  --nc-info: #2563EB;
+  --nc-danger: #DC2626;
 
-  --nc-glow-accent: 0 0 32px var(--nc-accent-glow-strong);
-  --nc-glow-teal: 0 0 32px var(--nc-accent-glow-strong);
+  /* Shadows — subtle, warm-tinted (never pure black on paper). */
+  --nc-shadow-sm: 0 1px 3px rgba(50, 45, 35, 0.08);
+  --nc-shadow-md: 0 4px 12px rgba(50, 45, 35, 0.10);
+  --nc-shadow-lg: 0 8px 32px rgba(50, 45, 35, 0.12);
+  --nc-shadow-xl: 0 16px 48px rgba(50, 45, 35, 0.14);
 
-  --nc-glass-bg: var(--nc-surface-2);
-  --nc-glass-bg-elevated: var(--nc-surface-2);
-
-  --nc-danger-glow: rgba(239, 68, 68, 0.06);
+  --nc-danger-glow: rgba(220, 38, 38, 0.08);
   --nc-bg-rgb: 250, 250, 249;
   --nc-accent-rgb: 11, 158, 147;
-  --nc-coral-rgb: 217, 95, 47;
-  --nc-surface-rgb: 245, 245, 243;
-  --nc-surface-2-rgb: 245, 245, 243;
+  --nc-coral-rgb: 182, 76, 34;
+  --nc-surface-rgb: 255, 255, 255;
+  --nc-surface-2-rgb: 246, 246, 244;
+  --nc-success-rgb: 21, 128, 61;
+  --nc-warning-rgb: 161, 98, 7;
+  --nc-error-rgb: 220, 38, 38;
+  --nc-info-rgb: 37, 99, 235;
 }
 
 /* Native UI (scrollbars, form controls, date/select popups) must follow the

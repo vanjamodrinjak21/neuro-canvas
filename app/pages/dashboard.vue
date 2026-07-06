@@ -1794,7 +1794,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
 /* Input grammar: chip fill + hairline, focus = border only */
 .ai-modal-input {
   width: 100%; padding: 12px 14px;
-  background: var(--nc-chip-bg); border: 1px solid var(--nc-border);
+  background: var(--nc-chip-bg); border: 1px solid var(--nc-border-input);
   border-radius: 8px; color: var(--nc-text);
   font-family: var(--nc-font-body); font-size: calc(14px * var(--nc-text-scale, 1));
   outline: none; transition: border-color var(--nc-duration-press) var(--nc-ease);
@@ -1970,7 +1970,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   width: 110px;
   padding: 4px 8px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 8px;
   font-family: var(--nc-font-mono);
   font-size: calc(22px * var(--nc-text-scale, 1));
@@ -2000,7 +2000,7 @@ async function createFromTemplate(template: typeof templates.value[0]) {
   font-size: calc(16px * var(--nc-text-scale, 1));
   color: var(--nc-text);
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   outline: none;
   transition: border-color var(--nc-duration-fast) var(--nc-ease);

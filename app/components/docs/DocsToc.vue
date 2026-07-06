@@ -195,24 +195,9 @@ onBeforeUnmount(() => {
   color: var(--nc-accent);
 }
 
-/* Light theme */
-:root.light .docs-toc__label {
-  color: var(--nc-text-muted);
-}
-
-:root.light .docs-toc__list {
-  border-left-color: var(--nc-border);
-}
-
-:root.light .docs-toc__link {
-  color: var(--nc-text-muted);
-}
-
-:root.light .docs-toc__link:hover {
-  color: var(--nc-text-secondary);
-}
-
+/* Light theme — tokens carry everything except the active link:
+   12px accent text needs the text-tier accent (#0b9e93 is 3.18:1). */
 :root.light .docs-toc__link--active {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
 }
 </style>

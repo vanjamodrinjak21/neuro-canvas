@@ -220,8 +220,9 @@ function applyThemeChange() {
   background: rgba(255, 255, 255, 0.03);
 }
 
+/* Light: ink-alpha hover wash (base is white-alpha, invisible on paper) */
 :root.light .legal-header__back:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--nc-chip-bg);
 }
 
 .legal-header__theme {
@@ -245,7 +246,7 @@ function applyThemeChange() {
 }
 
 :root.light .legal-header__theme:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface-3);
 }
 
 .legal-header__theme .icon-sun,

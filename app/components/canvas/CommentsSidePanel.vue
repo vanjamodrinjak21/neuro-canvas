@@ -339,7 +339,7 @@ onKeyStroke('Escape', () => emit('close'))
 /* Input grammar — chip fill, hairline, focus = border-color only (REDESIGN.md §5) */
 .cm-textarea {
   width: 100%; box-sizing: border-box;
-  background: var(--nc-chip-bg); border: 1px solid var(--nc-border); border-radius: 0.5rem;
+  background: var(--nc-chip-bg); border: 1px solid var(--nc-border-input); border-radius: 0.5rem;
   color: var(--nc-text); padding: 8px 10px; font: inherit; font-size: calc(13px * var(--nc-text-scale, 1));
   resize: vertical; min-height: 60px;
   transition: border-color 150ms var(--nc-ease);

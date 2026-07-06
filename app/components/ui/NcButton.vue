@@ -29,7 +29,7 @@ const variantClasses: Record<string, string> = {
   secondary: 'nc-btn-ghost-v font-mono uppercase tracking-[0.1em] font-medium text-nc-text-secondary bg-transparent',
   ghost: 'nc-btn-ghost-v font-mono uppercase tracking-[0.1em] font-medium text-nc-text-secondary bg-transparent',
   danger: 'nc-btn-danger-v rounded-nc-md font-sans font-medium bg-nc-chip text-nc-coral border-nc-coral/45',
-  ai: 'nc-btn-ai-v rounded-[2.4rem] bg-nc-accent text-nc-bg font-display font-bold',
+  ai: 'nc-btn-ai-v rounded-[2.4rem] bg-nc-accent text-nc-accent-contrast font-display font-bold',
   tool: 'nc-btn-tool-v rounded-nc-md font-sans font-medium bg-transparent border-nc-border text-nc-ink-muted'
 }
 
@@ -103,9 +103,12 @@ function handleClick(event: MouseEvent) {
 
 /* Hover effects gated to pointer devices (REDESIGN.md §6) */
 @media (hover: hover) and (pointer: fine) {
-  /* Primary ink pill — hover flips to accent, lifts 1px. No glow in chrome. */
+  /* Primary ink pill — hover flips to accent, lifts 1px. No glow in chrome.
+     Text switches to the on-accent pair (dark: = bg; light: ink, since
+     #FAFAF9 on the light accent is 3.18:1 and fails AA). */
   .nc-btn-primary-v:hover {
     background-color: var(--nc-accent);
+    color: var(--nc-accent-contrast);
     transform: translateY(-1px);
   }
 

@@ -416,7 +416,7 @@ const showLoading = computed(() => loading.value && isInitialLoad.value)
   gap: 8px;
   padding: 8px 14px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: var(--nc-radius-md);
   min-width: 180px;
   transition: border-color var(--nc-duration-fast) var(--nc-ease);

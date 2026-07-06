@@ -228,7 +228,7 @@ const rootAvatarColor = computed(() => rootNode.value?.style?.borderColor || 'va
   align-items: center;
   gap: 8px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   padding: 8px 12px;
   transition: border-color 200ms var(--nc-ease);

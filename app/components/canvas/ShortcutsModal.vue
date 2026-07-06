@@ -323,7 +323,7 @@ onKeyStroke('Escape', () => emit('close'))
   gap: 10px;
   padding: 10px 12px;
   background: var(--nc-chip-bg);
-  border: 1px solid var(--nc-border);
+  border: 1px solid var(--nc-border-input);
   border-radius: 0.5rem;
   transition: border-color 150ms var(--nc-ease);
 }
