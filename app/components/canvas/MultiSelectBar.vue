@@ -11,17 +11,16 @@ const emit = defineEmits<{
   'delete': []
 }>()
 
-const style = computed(() => ({
-  position: 'fixed' as const,
-  left: `${Math.max(120, Math.min(props.screenX, window.innerWidth - 120))}px`,
-  top: `${Math.max(8, props.screenY - 8)}px`,
-  transform: 'translateX(-50%) translateY(-100%)',
-  zIndex: 160
+// JS-computed position — single-custom-property pattern (REDESIGN.md §9),
+// consumed by scoped CSS; no direct CSS props in :style.
+const positionVars = computed(() => ({
+  '--ms-x': `${Math.max(120, Math.min(props.screenX, window.innerWidth - 120))}px`,
+  '--ms-y': `${Math.max(8, props.screenY - 8)}px`
 }))
 </script>
 
 <template>
-  <div class="nc-multiselect-bar" :style="style">
+  <div class="nc-multiselect-bar" :style="positionVars">
     <span class="nc-ms-count">{{ $t('maps.select.selected_count', { n: count }) }}</span>
 
     <div class="nc-ms-divider" />
@@ -56,22 +55,41 @@ const style = computed(() => ({
 </template>
 
 <style scoped>
+/* Floating toolbar — flat surface-2 + hairline (REDESIGN.md §5),
+   enters scale(0.97)+opacity from the selection anchor below. */
 .nc-multiselect-bar {
+  position: fixed;
+  left: var(--ms-x);
+  top: var(--ms-y);
+  transform: translateX(-50%) translateY(-100%);
+  transform-origin: bottom center;
+  z-index: 160;
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: var(--nc-surface, #111114);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-md);
   pointer-events: auto;
+  animation: nc-ms-in 150ms var(--nc-ease);
 }
 
+@keyframes nc-ms-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-100%) scale(0.97);
+  }
+}
+
+/* Selection count — mono micro readout (REDESIGN.md §4) */
 .nc-ms-count {
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-soft, #AAAAB0);
+  letter-spacing: 0.05em;
+  color: var(--nc-text-secondary);
   padding: 0 4px;
   white-space: nowrap;
 }
@@ -79,7 +97,7 @@ const style = computed(() => ({
 .nc-ms-divider {
   width: 1px;
   height: 16px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--nc-border);
   margin: 0 2px;
 }
 
@@ -90,30 +108,44 @@ const style = computed(() => ({
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  color: var(--nc-ink-soft, #AAAAB0);
+  color: var(--nc-text-secondary);
   background: none;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 150ms var(--nc-ease),
+    background-color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-ms-btn:hover {
-  color: var(--nc-ink, #FAFAFA);
-  background: rgba(255, 255, 255, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .nc-ms-btn:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
+
+  .nc-ms-btn-ai:hover {
+    color: var(--nc-accent-text);
+    background: rgba(var(--nc-accent-rgb), 0.08);
+  }
+
+  /* Destructive — coral, never a second interactive hue (REDESIGN.md §1) */
+  .nc-ms-btn-danger:hover {
+    color: var(--nc-coral);
+    background: rgba(var(--nc-coral-rgb), 0.08);
+  }
 }
 
-.nc-ms-btn-ai:hover {
-  color: var(--nc-accent, #00D2BE);
-  background: rgba(0, 210, 190, 0.08);
-}
-
-.nc-ms-btn-danger:hover {
-  color: #F87171;
-  background: rgba(248, 113, 113, 0.08);
+.nc-ms-btn:active {
+  transform: scale(0.97);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nc-multiselect-bar {
+    animation: none;
+  }
+
+  .nc-ms-btn {
     transition: none;
   }
 }

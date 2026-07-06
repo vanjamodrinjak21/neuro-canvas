@@ -189,32 +189,35 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
   justify-content: center;
   padding-top: 20vh;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
 }
 
+/* Command palette — flat surface + hairline, no glass (REDESIGN.md §5) */
 .nc-search-palette {
   width: 100%;
   max-width: 520px;
-  background: var(--nc-glass-bg-elevated, rgba(28, 28, 32, 0.95));
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--nc-border, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: var(--nc-shadow-md);
 }
 
 .nc-search-input-wrapper {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--nc-border, rgba(255, 255, 255, 0.06));
+  border-bottom: 1px solid var(--nc-border);
   gap: 10px;
+  transition: border-color 150ms var(--nc-ease);
+}
+
+/* Focus = border-color only, no ring/glow (REDESIGN.md §5) */
+.nc-search-input-wrapper:focus-within {
+  border-bottom-color: var(--nc-accent);
 }
 
 .nc-search-icon {
-  color: var(--nc-ink-soft, rgba(255, 255, 255, 0.4));
+  color: var(--nc-text-muted);
   font-size: calc(16px * var(--nc-text-scale, 1));
   flex-shrink: 0;
 }
@@ -225,31 +228,27 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
   border: none;
   outline: none;
   font-size: calc(15px * var(--nc-text-scale, 1));
-  color: var(--nc-ink, rgba(255, 255, 255, 0.95));
-  font-family: inherit;
+  color: var(--nc-text);
+  font-family: var(--nc-font-body);
 }
 
 .nc-search-input:focus-visible {
   outline: none;
 }
 
-.nc-search-input-wrapper:focus-within {
-  border-bottom-color: var(--nc-accent, #00D2BE);
-  box-shadow: 0 1px 0 0 var(--nc-accent, #00D2BE);
-}
-
 .nc-search-input::placeholder {
-  color: var(--nc-ink-soft, rgba(255, 255, 255, 0.35));
+  color: var(--nc-text-dim);
 }
 
+/* kbd hint — mono micro chip (REDESIGN.md §5 tooltips/kbd) */
 .nc-search-kbd {
   font-size: calc(10px * var(--nc-text-scale, 1));
   padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--nc-ink-soft, rgba(255, 255, 255, 0.35));
-  font-family: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.35rem;
+  background: var(--nc-chip-bg);
+  color: var(--nc-text-muted);
+  font-family: var(--nc-font-mono);
+  border: 1px solid var(--nc-border);
 }
 
 .nc-search-results {
@@ -264,20 +263,28 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
   justify-content: space-between;
   width: 100%;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 100ms var(--nc-ease);
   background: transparent;
   border: none;
   text-align: left;
-  color: var(--nc-ink, rgba(255, 255, 255, 0.9));
-  font-family: inherit;
+  color: var(--nc-text);
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
 }
 
-.nc-search-result:hover,
+.nc-search-result:hover {
+  background: var(--nc-surface-3);
+}
+
+/* Selected = accent text + tinted fill (never color alone, §7) */
 .nc-search-result.selected {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+}
+
+.nc-search-result.selected .nc-result-text {
+  color: var(--nc-accent-text);
 }
 
 .nc-result-content {
@@ -296,48 +303,53 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 }
 
 .nc-result-similarity {
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent-text);
   flex-shrink: 0;
 }
 
 .nc-result-badge {
+  font-family: var(--nc-font-mono);
   font-size: calc(9px * var(--nc-text-scale, 1));
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.08em;
   flex-shrink: 0;
   margin-left: 8px;
 }
 
 .nc-badge-exact {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--nc-chip-bg);
+  color: var(--nc-text-secondary);
 }
 
 .nc-badge-semantic {
-  background: rgba(0, 210, 190, 0.15);
-  color: var(--nc-accent, #00D2BE);
+  background: rgba(var(--nc-accent-rgb), 0.15);
+  color: var(--nc-accent-text);
 }
 
 .nc-badge-hybrid {
-  background: rgba(0, 210, 190, 0.2);
-  color: var(--nc-accent, #00D2BE);
+  background: rgba(var(--nc-accent-rgb), 0.2);
+  color: var(--nc-accent-text);
 }
 
-/* Document-chunk result: distinct amber badge + non-clickable affordance. */
+/* Document-chunk result: outlined neutral chip (no second hue in chrome)
+   + non-clickable affordance. */
 .nc-badge-document {
-  background: rgba(245, 158, 11, 0.18);
-  color: #f59e0b;
+  background: transparent;
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-muted);
 }
 
 .nc-result-page {
+  font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #f59e0b;
+  color: var(--nc-text-secondary);
   flex-shrink: 0;
 }
 
@@ -350,7 +362,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
   padding: 20px;
   text-align: center;
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, rgba(255, 255, 255, 0.35));
+  color: var(--nc-text-muted);
 }
 
 .nc-search-spinner {
@@ -358,7 +370,7 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
   width: 12px;
   height: 12px;
   border: 1.5px solid transparent;
-  border-top-color: var(--nc-accent, #00D2BE);
+  border-top-color: var(--nc-accent);
   border-radius: 50%;
   animation: nc-search-spin 0.6s linear infinite;
   margin-right: 6px;
@@ -372,19 +384,19 @@ defineExpose({ setResults, setSearching: (v: boolean) => { isSearching.value = v
 @media (prefers-reduced-motion: reduce) {
   .nc-search-spinner {
     animation: none;
-    border-color: var(--nc-accent, #00D2BE);
+    border-color: var(--nc-accent);
   }
 }
 
-/* Search panel: 150ms ease-out enter, 80ms exit */
+/* Palette motion: 150ms enter, 80ms exit — single ease (REDESIGN.md §6) */
 .nc-search-enter {
-  transition: opacity 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              transform 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: opacity 150ms var(--nc-ease),
+              transform 150ms var(--nc-ease);
 }
 
 .nc-search-leave {
-  transition: opacity 80ms cubic-bezier(0.4, 0, 1, 1),
-              transform 80ms cubic-bezier(0.4, 0, 1, 1);
+  transition: opacity 80ms var(--nc-ease),
+              transform 80ms var(--nc-ease);
 }
 
 .scale-97 {

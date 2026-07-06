@@ -18,8 +18,8 @@ const props = withDefaults(defineProps<{
 
   <div v-else-if="error" class="absolute inset-0 z-50 nc-center bg-nc-bg">
     <div class="text-center">
-      <div class="w-16 h-16 rounded-full bg-nc-error/10 nc-center mx-auto mb-4">
-        <span class="i-lucide-alert-circle text-nc-error text-2xl" />
+      <div class="w-16 h-16 rounded-full bg-nc-coral/10 nc-center mx-auto mb-4">
+        <span class="i-lucide-alert-circle text-nc-coral text-2xl" />
       </div>
       <h2 class="text-xl font-display font-semibold text-nc-ink mb-2">{{ $t('canvas.overlay.load_failed') }}</h2>
       <p class="text-nc-ink-muted mb-6">{{ error }}</p>
@@ -41,10 +41,11 @@ const props = withDefaults(defineProps<{
 </template>
 
 <style scoped>
+/* Drop target — dashed accent hairline (1px discipline), tinted fill */
 .canvas-drop-active {
-  border: 2px dashed var(--nc-accent);
+  border: 1px dashed var(--nc-accent);
   background: rgba(var(--nc-accent-rgb), 0.04);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   margin: 8px;
 }
 </style>

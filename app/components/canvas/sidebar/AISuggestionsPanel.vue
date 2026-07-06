@@ -70,7 +70,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
             @click="dispatch({ type: 'ai:add-suggestion', suggestion })"
           >
             <span class="flex-1 text-left text-sm truncate">{{ suggestion.content }}</span>
-            <span class="i-lucide-plus text-sm" style="color: var(--nc-accent)" />
+            <span class="i-lucide-plus text-sm text-nc-accent" />
           </button>
         </div>
       </template>
@@ -145,7 +145,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
         More
       </button>
       <button
-        class="ai-panel__footer-btn ai-panel__footer-btn--purple"
+        class="ai-panel__footer-btn ai-panel__footer-btn--neutral"
         @click="dispatch({ type: 'ai:deep-expand' })"
       >
         <span class="i-lucide-git-branch" />
@@ -170,7 +170,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   align-items: center;
   padding: 14px 16px;
   gap: 10px;
-  border-bottom: 1px solid #1A1A1E;
+  border-bottom: 1px solid var(--nc-border);
   flex-shrink: 0;
 }
 
@@ -182,16 +182,16 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 }
 
 .ai-panel__header-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
 }
 
 .ai-panel__header-context {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #52525B;
+  color: var(--nc-text-muted);
 }
 
 .ai-panel__refresh-btn {
@@ -199,20 +199,26 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   align-items: center;
   gap: 5px;
   padding: 5px 10px;
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.2);
+  background: rgba(var(--nc-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.2);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s;
-  font-family: 'Inter', system-ui, sans-serif;
+  transition: background 150ms var(--nc-ease),
+              border-color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #00D2BE;
+  color: var(--nc-accent-text);
 }
 
 .ai-panel__refresh-btn:hover {
-  background: rgba(0, 210, 190, 0.15);
-  border-color: rgba(0, 210, 190, 0.3);
+  background: rgba(var(--nc-accent-rgb), 0.15);
+  border-color: rgba(var(--nc-accent-rgb), 0.3);
+}
+
+.ai-panel__refresh-btn:active {
+  transform: scale(0.97);
 }
 
 .ai-panel__refresh-icon {
@@ -256,12 +262,12 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   gap: 8px;
   padding: 10px 12px;
   min-height: 40px;
-  background: #111113;
-  border: 1px solid #1A1A1E;
-  border-radius: 8px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   color: var(--nc-ink);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 200ms var(--nc-ease), border-color 200ms var(--nc-ease);
 }
 
 .ai-panel__legacy-item:hover {
@@ -281,11 +287,11 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 
 .ai-panel__empty-icon {
   font-size: calc(24px * var(--nc-text-scale, 1));
-  color: #27272A;
+  color: var(--nc-text-dim);
 }
 
 .ai-panel__empty-text {
-  color: #52525B;
+  color: var(--nc-text-muted);
   font-size: calc(12px * var(--nc-text-scale, 1));
   margin-bottom: 4px;
 }
@@ -296,20 +302,26 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   justify-content: center;
   gap: 6px;
   padding: 8px 16px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.15);
-  border-radius: 8px;
-  color: #00D2BE;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.15);
+  border-radius: 0.5rem;
+  color: var(--nc-accent-text);
+  font-family: var(--nc-font-body);
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 150ms var(--nc-ease),
+              border-color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 .ai-panel__generate-btn:hover {
-  background: rgba(0, 210, 190, 0.12);
-  border-color: rgba(0, 210, 190, 0.25);
+  background: rgba(var(--nc-accent-rgb), 0.12);
+  border-color: rgba(var(--nc-accent-rgb), 0.25);
+}
+
+.ai-panel__generate-btn:active {
+  transform: scale(0.97);
 }
 
 .ai-panel__generate-btn--small {
@@ -328,22 +340,24 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 
 .ai-panel__description-divider {
   height: 1px;
-  background: #1A1A1E;
+  background: var(--nc-border-subtle);
   margin-bottom: 12px;
 }
 
+/* Sub-section header — mono uppercase micro-label (REDESIGN.md §4) */
 .ai-panel__description-label {
+  font-family: var(--nc-font-mono);
   font-size: calc(10px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: #27272A;
+  font-weight: 500;
+  color: var(--nc-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.14em;
   margin-bottom: 6px;
 }
 
 .ai-panel__description-text {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: #71717A;
+  color: var(--nc-text-muted);
   line-height: 1.5;
   margin: 4px 0 0;
 }
@@ -373,7 +387,7 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   display: flex;
   gap: 8px;
   padding: 12px 14px;
-  border-top: 1px solid #1A1A1E;
+  border-top: 1px solid var(--nc-border);
   flex-shrink: 0;
 }
 
@@ -384,12 +398,19 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
   justify-content: center;
   gap: 6px;
   padding: 8px;
-  border-radius: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
+  border-radius: 0.5rem;
+  font-family: var(--nc-font-body);
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 150ms var(--nc-ease),
+              background 150ms var(--nc-ease),
+              border-color 150ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
+}
+
+.ai-panel__footer-btn:active {
+  transform: scale(0.97);
 }
 
 .ai-panel__footer-btn span:first-child {
@@ -397,37 +418,25 @@ const dispatch = inject(SIDEBAR_DISPATCH_KEY)!
 }
 
 .ai-panel__footer-btn--teal {
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.15);
-  color: #00D2BE;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.15);
+  color: var(--nc-accent-text);
 }
 
 .ai-panel__footer-btn--teal:hover {
-  background: rgba(0, 210, 190, 0.12);
-  border-color: rgba(0, 210, 190, 0.25);
+  background: rgba(var(--nc-accent-rgb), 0.12);
+  border-color: rgba(var(--nc-accent-rgb), 0.25);
 }
 
-.ai-panel__footer-btn--purple {
-  background: rgba(167, 139, 250, 0.06);
-  border: 1px solid rgba(167, 139, 250, 0.15);
-  color: #A78BFA;
+/* Neutral chip — no second interactive hue (REDESIGN.md §1) */
+.ai-panel__footer-btn--neutral {
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
 }
 
-.ai-panel__footer-btn--purple:hover {
-  background: rgba(167, 139, 250, 0.1);
-  border-color: rgba(167, 139, 250, 0.25);
-}
-
-/* Light theme */
-:root.light .ai-panel__header {
-  border-bottom-color: #E4E4E7;
-}
-
-:root.light .ai-panel__header-title {
-  color: #18181B;
-}
-
-:root.light .ai-panel__footer {
-  border-top-color: #E4E4E7;
+.ai-panel__footer-btn--neutral:hover {
+  background: var(--nc-surface-3);
+  color: var(--nc-text);
 }
 </style>

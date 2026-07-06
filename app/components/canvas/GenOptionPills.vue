@@ -44,12 +44,14 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
   gap: 8px;
 }
 
+/* Field label — mono uppercase micro-label (REDESIGN.md §4/§5) */
 .nc-pills-label {
-  font-size: calc(12px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--nc-ink-soft);
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  color: var(--nc-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.14em;
 }
 
 .nc-pills {
@@ -58,27 +60,38 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
   gap: 8px;
 }
 
+/* Fully-round pill — chip fill + hairline, accent when active */
 .nc-pill {
   padding: 8px 14px;
-  background: var(--nc-surface-3, #0D0D10);
-  border: 1px solid var(--nc-border, #1E1E22);
-  border-radius: 999px;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  border-radius: 2rem;
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-ink-soft);
+  color: var(--nc-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    border-color 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
 
-.nc-pill:hover:not(:disabled) {
-  border-color: #2A2A30;
-  background: var(--nc-surface, #141418);
+@media (hover: hover) and (pointer: fine) {
+  .nc-pill:hover:not(:disabled) {
+    border-color: var(--nc-border-active);
+    background: var(--nc-surface-3);
+  }
+}
+
+.nc-pill:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .nc-pill.active {
-  border-color: #00D2BE;
-  background: rgba(0, 210, 190, 0.08);
-  color: var(--nc-ink, #FAFAFA);
+  border-color: var(--nc-accent);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  color: var(--nc-text);
 }
 
 .nc-pill:disabled {

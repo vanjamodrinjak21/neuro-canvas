@@ -70,12 +70,7 @@ const distanceLabel = computed(() => {
 </script>
 
 <template>
-  <Transition
-    enter-active-class="transition-all duration-200 ease-out"
-    leave-active-class="transition-all duration-150 ease-in"
-    enter-from-class="opacity-0 translate-y-2"
-    leave-to-class="opacity-0 translate-y-2"
-  >
+  <Transition name="hud-fade">
     <div v-if="isVisible" class="nc-spatial-hud">
       <div v-if="regionName" class="nc-hud-region">{{ regionName }}</div>
       <div class="nc-hud-stats">
@@ -89,34 +84,38 @@ const distanceLabel = computed(() => {
 </template>
 
 <style scoped>
+/* Spatial HUD — flat floating panel, mono micro readouts (REDESIGN.md §4/§8b) */
 .nc-spatial-hud {
   position: absolute;
   bottom: 80px;
   left: 16px;
   z-index: 90;
   padding: 6px 10px;
-  background: rgba(18, 18, 24, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
   pointer-events: none;
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 100px;
+  font-family: var(--nc-font-mono);
 }
 
+/* Region label — accent + uppercase micro-label */
 .nc-hud-region {
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-accent, #00D2BE);
-  letter-spacing: 0.02em;
+  color: var(--nc-accent-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
+/* Node/zoom readout — mono micro type */
 .nc-hud-stats {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft);
+  letter-spacing: 0.05em;
+  color: var(--nc-text-secondary);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -128,13 +127,34 @@ const distanceLabel = computed(() => {
 
 .nc-hud-distance {
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft);
-  opacity: 0.7;
+  letter-spacing: 0.05em;
+  color: var(--nc-text-muted);
+}
+
+/* Enter/exit — transform/opacity only, single ease (REDESIGN.md §6) */
+.hud-fade-enter-active {
+  transition: opacity 200ms var(--nc-ease), transform 200ms var(--nc-ease);
+}
+
+.hud-fade-leave-active {
+  transition: opacity 150ms var(--nc-ease), transform 150ms var(--nc-ease);
+}
+
+.hud-fade-enter-from,
+.hud-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nc-spatial-hud {
-    transition: none;
+  .hud-fade-enter-active,
+  .hud-fade-leave-active {
+    transition: opacity 150ms var(--nc-ease);
+  }
+
+  .hud-fade-enter-from,
+  .hud-fade-leave-to {
+    transform: none;
   }
 }
 

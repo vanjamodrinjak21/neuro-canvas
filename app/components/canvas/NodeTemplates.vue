@@ -22,10 +22,12 @@ const emit = defineEmits<{
   select: [template: NodeTemplate]
 }>()
 
+// Node style data (applied to created nodes by the canvas renderer — kept as
+// concrete values; the legacy teal accent is aligned to the canonical accent).
 const templates: NodeTemplate[] = [
   // Basic
   { id: 'text', name: 'Text', icon: 'i-lucide-type', category: 'basic', shape: 'rounded', fillColor: '#1A1A1E', borderColor: '#2A2A30', textColor: '#E8E8EC' },
-  { id: 'idea', name: 'Idea', icon: 'i-lucide-lightbulb', category: 'basic', shape: 'circle', fillColor: '#1A1A1E', borderColor: '#00D2BE', textColor: '#E8E8EC' },
+  { id: 'idea', name: 'Idea', icon: 'i-lucide-lightbulb', category: 'basic', shape: 'circle', fillColor: '#1A1A1E', borderColor: '#5EF2E8', textColor: '#E8E8EC' },
   { id: 'keypoint', name: 'Key Point', icon: 'i-lucide-star', category: 'basic', shape: 'diamond', fillColor: '#1A1A1E', borderColor: '#EAB308', textColor: '#E8E8EC' },
   { id: 'note', name: 'Note', icon: 'i-lucide-sticky-note', category: 'basic', shape: 'rounded', fillColor: '#2A2A30', borderColor: '#3A3A42', textColor: '#C8C8D0' },
 
@@ -44,7 +46,7 @@ const templates: NodeTemplate[] = [
   { id: 'link', name: 'Link', icon: 'i-lucide-link', category: 'content', shape: 'rounded', fillColor: '#1A1A1E', borderColor: '#3B82F6', textColor: '#E8E8EC' },
   { id: 'image', name: 'Image', icon: 'i-lucide-image', category: 'content', shape: 'rounded', fillColor: '#1A1A1E', borderColor: '#A855F7', textColor: '#E8E8EC' },
   { id: 'file', name: 'File', icon: 'i-lucide-file', category: 'content', shape: 'rounded', fillColor: '#1A1A1E', borderColor: '#6B6B75', textColor: '#E8E8EC' },
-  { id: 'code', name: 'Code', icon: 'i-lucide-code', category: 'content', shape: 'rounded', fillColor: '#1A1A1E', borderColor: '#00D2BE', textColor: '#00D2BE' }
+  { id: 'code', name: 'Code', icon: 'i-lucide-code', category: 'content', shape: 'rounded', fillColor: '#1A1A1E', borderColor: '#5EF2E8', textColor: '#5EF2E8' }
 ]
 
 const categories = [
@@ -76,15 +78,22 @@ onKeyStroke('Escape', () => {
     handleClose()
   }
 })
+
+// Panel placement — single dynamic values via CSS v-bind (REDESIGN.md §9:
+// no inline :style for positioning).
+const panelLeft = computed(() => (props.position ? `${props.position.x}px` : '50%'))
+const panelTop = computed(() => (props.position ? `${props.position.y}px` : '50%'))
 </script>
 
 <template>
   <Teleport to="body">
+    <!-- Toggled via the 'T' keyboard shortcut — opacity-only, <=100ms
+         (REDESIGN.md §6: keyboard-initiated UI must not animate). -->
     <Transition
-      enter-active-class="transition-opacity duration-150"
-      leave-active-class="transition-opacity duration-100"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
+      enter-active-class="tpl-fade-active"
+      leave-active-class="tpl-fade-active"
+      enter-from-class="tpl-fade-hidden"
+      leave-to-class="tpl-fade-hidden"
     >
       <div
         v-if="visible"
@@ -94,21 +103,16 @@ onKeyStroke('Escape', () => {
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/40" />
 
-        <!-- Panel -->
+        <!-- Panel — flat surface-2 + hairline; position via CSS v-bind -->
         <div
-          class="absolute nc-glass-elevated rounded-nc-xl p-4 shadow-nc-xl w-[320px]"
-          :style="{
-            left: position ? `${position.x}px` : '50%',
-            top: position ? `${position.y}px` : '50%',
-            transform: position ? 'translate(-50%, -50%)' : 'translate(-50%, -50%)'
-          }"
+          class="tpl-panel absolute w-[320px]"
           @click.stop
         >
           <!-- Header -->
           <div class="nc-between mb-4">
-            <h3 class="text-lg font-semibold text-nc-ink font-sans">{{ $t('canvas.node_templates.title') }}</h3>
+            <h3 class="tpl-title">{{ $t('canvas.node_templates.title') }}</h3>
             <button
-              class="p-1.5 rounded-nc-md text-nc-ink-muted hover:text-nc-ink hover:bg-nc-pencil transition-colors"
+              class="tpl-close"
               @click="handleClose"
             >
               <span class="i-lucide-x text-lg" />
@@ -118,36 +122,32 @@ onKeyStroke('Escape', () => {
           <!-- Categories -->
           <div class="space-y-4 max-h-[400px] overflow-y-auto">
             <div v-for="category in templatesByCategory" :key="category.id">
-              <h4 class="text-xs font-medium text-nc-ink-muted uppercase tracking-wide mb-2">
+              <h4 class="tpl-cat-label mb-2">
                 {{ category.label }}
               </h4>
               <div class="grid grid-cols-4 gap-2">
                 <button
                   v-for="template in category.templates"
                   :key="template.id"
-                  class="flex flex-col items-center gap-1.5 p-2 rounded-nc-md
-                         hover:bg-nc-pencil transition-colors group"
+                  class="tpl-item"
                   :title="template.name"
                   @click="handleSelect(template)"
                 >
                   <div
-                    class="w-10 h-10 nc-center rounded-nc-md border-2 transition-all
-                           group-hover:shadow-nc-glow group-hover:scale-105"
-                    :class="{
-                      'rounded-full': template.shape === 'circle',
-                      'rotate-45': template.shape === 'diamond'
-                    }"
-                    :style="{
-                      backgroundColor: template.fillColor,
-                      borderColor: template.borderColor
-                    }"
+                    class="tpl-swatch"
+                    :class="[
+                      `tpl-swatch--${template.id}`,
+                      {
+                        'tpl-swatch--circle': template.shape === 'circle',
+                        'tpl-swatch--diamond': template.shape === 'diamond'
+                      }
+                    ]"
                   >
                     <span
-                      :class="[template.icon, template.shape === 'diamond' && '-rotate-45']"
-                      :style="{ color: template.textColor }"
+                      :class="[template.icon, 'tpl-swatch-icon', template.shape === 'diamond' && 'tpl-swatch-icon--diamond']"
                     />
                   </div>
-                  <span class="text-xs text-nc-ink-muted group-hover:text-nc-ink truncate w-full text-center">
+                  <span class="tpl-name truncate w-full text-center">
                     {{ template.name }}
                   </span>
                 </button>
@@ -156,9 +156,9 @@ onKeyStroke('Escape', () => {
           </div>
 
           <!-- Footer hint -->
-          <div class="mt-4 pt-3 border-t border-nc-pencil">
-            <p class="text-xs text-nc-ink-faint text-center">
-              Press <kbd class="px-1.5 py-0.5 rounded bg-nc-pencil text-nc-ink-muted">T</kbd> to toggle
+          <div class="tpl-footer mt-4 pt-3">
+            <p class="tpl-footer-hint text-center">
+              Press <kbd class="tpl-kbd">T</kbd> to toggle
             </p>
           </div>
         </div>
@@ -166,3 +166,201 @@ onKeyStroke('Escape', () => {
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.tpl-fade-active {
+  transition: opacity 100ms var(--nc-ease);
+}
+
+.tpl-fade-hidden {
+  opacity: 0;
+}
+
+/* Panel — flat surface-2 + hairline, capped radius (REDESIGN.md §5) */
+.tpl-panel {
+  left: v-bind(panelLeft);
+  top: v-bind(panelTop);
+  transform: translate(-50%, -50%);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-md);
+  padding: 16px;
+}
+
+/* Panel title — display face (REDESIGN.md §4) */
+.tpl-title {
+  font-family: var(--nc-font-display);
+  font-size: calc(18px * var(--nc-text-scale, 1));
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-text);
+  margin: 0;
+}
+
+.tpl-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--nc-text-muted);
+  cursor: pointer;
+  transition:
+    color 150ms var(--nc-ease),
+    background 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tpl-close:hover {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+  }
+}
+
+.tpl-close:active {
+  transform: scale(0.97);
+}
+
+/* Category header — mono uppercase micro-label (REDESIGN.md §4) */
+.tpl-cat-label {
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
+  margin: 0 0 8px;
+}
+
+.tpl-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition:
+    background 150ms var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tpl-item:hover {
+    background: var(--nc-surface-3);
+  }
+
+  .tpl-item:hover .tpl-name {
+    color: var(--nc-text);
+  }
+
+  .tpl-item:hover .tpl-swatch {
+    transform: scale(1.05);
+  }
+
+  .tpl-item:hover .tpl-swatch--diamond {
+    transform: rotate(45deg) scale(1.05);
+  }
+}
+
+.tpl-item:active {
+  transform: scale(0.97);
+}
+
+/* Swatch preview — per-template chrome colors from tokens (fixed id set);
+   the actual node style data stays in the script palette. 1px hairline. */
+.tpl-swatch {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--tpl-fill);
+  border: 1px solid var(--tpl-border);
+  transition: transform 150ms var(--nc-ease);
+}
+
+.tpl-swatch--circle {
+  border-radius: 50%;
+}
+
+.tpl-swatch--diamond {
+  transform: rotate(45deg);
+}
+
+.tpl-swatch-icon {
+  color: var(--tpl-text);
+}
+
+.tpl-swatch-icon--diamond {
+  transform: rotate(-45deg);
+}
+
+/* Basic */
+.tpl-swatch--text { --tpl-fill: var(--nc-surface-3); --tpl-border: var(--nc-border-active); --tpl-text: var(--nc-text); }
+.tpl-swatch--idea { --tpl-fill: var(--nc-surface-3); --tpl-border: var(--nc-accent); --tpl-text: var(--nc-text); }
+.tpl-swatch--keypoint { --tpl-fill: var(--nc-surface-3); --tpl-border: var(--nc-warning); --tpl-text: var(--nc-text); }
+.tpl-swatch--note { --tpl-fill: var(--nc-surface-4); --tpl-border: var(--nc-border-active); --tpl-text: var(--nc-text-secondary); }
+
+/* Status */
+.tpl-swatch--done { --tpl-fill: rgba(var(--nc-success-rgb), 0.15); --tpl-border: var(--nc-success); --tpl-text: var(--nc-success); }
+.tpl-swatch--progress { --tpl-fill: rgba(var(--nc-warning-rgb), 0.15); --tpl-border: var(--nc-warning); --tpl-text: var(--nc-warning); }
+.tpl-swatch--question { --tpl-fill: rgba(var(--nc-info-rgb), 0.15); --tpl-border: var(--nc-info); --tpl-text: var(--nc-info); }
+.tpl-swatch--issue { --tpl-fill: rgba(var(--nc-error-rgb), 0.15); --tpl-border: var(--nc-error); --tpl-text: var(--nc-error); }
+
+/* Priority */
+.tpl-swatch--high { --tpl-fill: rgba(var(--nc-error-rgb), 0.15); --tpl-border: var(--nc-error); --tpl-text: var(--nc-error); }
+.tpl-swatch--medium { --tpl-fill: rgba(var(--nc-warning-rgb), 0.15); --tpl-border: var(--nc-warning); --tpl-text: var(--nc-warning); }
+.tpl-swatch--low { --tpl-fill: rgba(var(--nc-success-rgb), 0.15); --tpl-border: var(--nc-success); --tpl-text: var(--nc-success); }
+
+/* Content */
+.tpl-swatch--link { --tpl-fill: var(--nc-surface-3); --tpl-border: var(--nc-info); --tpl-text: var(--nc-text); }
+.tpl-swatch--image { --tpl-fill: var(--nc-surface-3); --tpl-border: var(--nc-node-purple); --tpl-text: var(--nc-text); }
+.tpl-swatch--file { --tpl-fill: var(--nc-surface-3); --tpl-border: var(--nc-border-active); --tpl-text: var(--nc-text); }
+.tpl-swatch--code { --tpl-fill: var(--nc-surface-3); --tpl-border: var(--nc-accent); --tpl-text: var(--nc-accent-text); }
+
+.tpl-name {
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  color: var(--nc-text-muted);
+  transition: color 150ms var(--nc-ease);
+}
+
+.tpl-footer {
+  border-top: 1px solid var(--nc-border-subtle);
+}
+
+.tpl-footer-hint {
+  font-size: calc(11px * var(--nc-text-scale, 1));
+  color: var(--nc-text-muted);
+  margin: 0;
+}
+
+/* kbd — mono chip on hairline (REDESIGN.md §5) */
+.tpl-kbd {
+  font-family: var(--nc-font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 0.35rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border);
+  color: var(--nc-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tpl-fade-active,
+  .tpl-item,
+  .tpl-swatch,
+  .tpl-close,
+  .tpl-name {
+    transition: none;
+  }
+}
+</style>

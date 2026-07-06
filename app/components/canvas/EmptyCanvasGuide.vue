@@ -33,6 +33,12 @@ onMounted(() => {
       class="nc-empty-guide"
     >
       <div class="nc-empty-guide-inner">
+        <!-- Survey-frame corner marks (REDESIGN.md §5 — empty states only) -->
+        <span class="nc-empty-corner nc-empty-corner--tl" aria-hidden="true">+</span>
+        <span class="nc-empty-corner nc-empty-corner--tr" aria-hidden="true">+</span>
+        <span class="nc-empty-corner nc-empty-corner--bl" aria-hidden="true">+</span>
+        <span class="nc-empty-corner nc-empty-corner--br" aria-hidden="true">+</span>
+
         <!-- Hero icon -->
         <div class="nc-empty-icon">
           <span class="i-lucide-brain text-2xl" />
@@ -88,39 +94,62 @@ onMounted(() => {
   z-index: 50;
 }
 
+/* Survey frame (REDESIGN.md §5): dashed hairline + coral corner '+' marks,
+   translucent bg tint — reserved for empty states and onboarding callouts. */
 .nc-empty-guide-inner {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
   pointer-events: auto;
-  max-width: 320px;
+  max-width: 340px;
+  padding: 32px 28px;
   text-align: center;
+  border: 1px dashed var(--nc-border);
+  background: rgba(var(--nc-bg-rgb), 0.66);
 }
+
+.nc-empty-corner {
+  position: absolute;
+  font-family: var(--nc-font-mono);
+  font-size: 14px;
+  line-height: 1;
+  color: var(--nc-coral);
+  pointer-events: none;
+  user-select: none;
+}
+
+.nc-empty-corner--tl { top: -7px; left: -5px; }
+.nc-empty-corner--tr { top: -7px; right: -5px; }
+.nc-empty-corner--bl { bottom: -7px; left: -5px; }
+.nc-empty-corner--br { bottom: -7px; right: -5px; }
 
 .nc-empty-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
-  background: rgba(0, 210, 190, 0.08);
-  border: 1px solid rgba(0, 210, 190, 0.15);
+  border-radius: 0.5rem;
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--nc-accent-rgb), 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent-text);
   margin-bottom: 4px;
 }
 
 .nc-empty-title {
+  font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  font-weight: 600;
-  color: var(--nc-ink, #FAFAFA);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--nc-ink);
   margin: 0;
 }
 
 .nc-empty-subtitle {
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #AAAAB0);
+  color: var(--nc-ink-soft);
   margin: 0;
   line-height: 1.5;
 }
@@ -136,22 +165,22 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--nc-ink, #FAFAFA);
+  border: 1px solid var(--nc-border);
+  background: var(--nc-chip-bg);
+  color: var(--nc-ink);
   cursor: pointer;
-  transition: background var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              border-color var(--nc-duration-fast, 150ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              transform var(--nc-duration-press, 120ms) var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: background var(--nc-duration-fast) var(--nc-ease),
+              border-color var(--nc-duration-fast) var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .nc-empty-action:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border-active);
   }
 }
 
@@ -161,29 +190,30 @@ onMounted(() => {
 
 .nc-empty-action:focus-visible {
   outline: 2px solid var(--nc-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .nc-empty-action.ai {
-  background: rgba(0, 210, 190, 0.08);
-  border-color: rgba(0, 210, 190, 0.2);
-  color: var(--nc-accent, #00D2BE);
+  background: rgba(var(--nc-accent-rgb), 0.08);
+  border-color: rgba(var(--nc-accent-rgb), 0.2);
+  color: var(--nc-accent-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .nc-empty-action.ai:hover {
-    background: rgba(0, 210, 190, 0.15);
-    border-color: rgba(0, 210, 190, 0.3);
+    background: rgba(var(--nc-accent-rgb), 0.15);
+    border-color: rgba(var(--nc-accent-rgb), 0.3);
   }
 }
 
 .nc-empty-kbd {
   font-size: calc(10px * var(--nc-text-scale, 1));
   padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--nc-ink-muted, #888890);
-  font-family: "SF Mono", "Fira Code", monospace;
+  border-radius: 0.35rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  color: var(--nc-ink-muted);
+  font-family: var(--nc-font-mono);
   margin-left: 4px;
 }
 
@@ -198,14 +228,15 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-muted, #888890);
+  color: var(--nc-ink-muted);
 }
 
 .nc-empty-hint kbd {
   font-size: calc(11px * var(--nc-text-scale, 1));
   padding: 1px 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
-  font-family: "SF Mono", "Fira Code", monospace;
+  border-radius: 0.35rem;
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
+  font-family: var(--nc-font-mono);
 }
 </style>

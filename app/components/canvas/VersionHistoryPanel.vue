@@ -192,6 +192,7 @@ onKeyStroke('Escape', () => {
 </template>
 
 <style scoped>
+/* Scrim — flat, no backdrop blur (REDESIGN.md §5) */
 .vh-backdrop {
   position: fixed;
   inset: 0;
@@ -200,32 +201,33 @@ onKeyStroke('Escape', () => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(4, 4, 6, 0.62);
-  backdrop-filter: blur(4px);
-  animation: vh-fade 140ms ease;
+  background: rgba(var(--nc-bg-rgb), 0.66);
+  animation: vh-fade 140ms var(--nc-ease);
 }
 @keyframes vh-fade {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
+/* Modal — flat surface-2 + hairline, enter scale(0.97)+opacity, no slide-in */
 .vh-modal {
   width: 100%;
   max-width: 520px;
   max-height: min(80vh, 720px);
   display: flex;
   flex-direction: column;
-  background: var(--nc-surface, #111113);
-  border: 1px solid var(--nc-border, #27272A);
-  border-radius: 14px;
-  color: var(--nc-ink, #FAFAFA);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  background: var(--nc-surface-2);
+  border: 1px solid var(--nc-border);
+  border-radius: 0.5rem;
+  color: var(--nc-text);
+  box-shadow: var(--nc-shadow-md);
   overflow: hidden;
-  animation: vh-rise 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+  animation: vh-rise 200ms var(--nc-ease);
 }
 @keyframes vh-rise {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .vh-header {
@@ -234,19 +236,21 @@ onKeyStroke('Escape', () => {
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--nc-border, #27272A);
+  border-bottom: 1px solid var(--nc-border);
 }
+/* Modal header — display face (REDESIGN.md §4) */
 .vh-heading h2 {
+  font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   margin: 0;
 }
 .vh-subtitle {
   margin: 4px 0 0;
   font-size: calc(12.5px * var(--nc-text-scale, 1));
   line-height: 1.4;
-  color: var(--nc-ink-soft, #A1A1AA);
+  color: var(--nc-text-secondary);
 }
 .vh-close {
   flex-shrink: 0;
@@ -254,35 +258,42 @@ onKeyStroke('Escape', () => {
   display: inline-flex; align-items: center; justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
-  color: var(--nc-ink-soft, #A1A1AA);
+  border-radius: 0.5rem;
+  color: var(--nc-text-secondary);
   font-size: calc(16px * var(--nc-text-scale, 1));
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition: background 120ms var(--nc-ease),
+              color 120ms var(--nc-ease),
+              border-color 120ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
-.vh-close:hover:not(:disabled) {
-  color: var(--nc-ink, #FAFAFA);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--nc-border, #27272A);
+@media (hover: hover) and (pointer: fine) {
+  .vh-close:hover:not(:disabled) {
+    color: var(--nc-text);
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border);
+  }
 }
+.vh-close:active:not(:disabled) { transform: scale(0.97); }
 .vh-close:focus-visible {
   outline: none;
-  border-color: var(--nc-accent, #00D2BE);
+  border-color: var(--nc-accent);
 }
 .vh-close:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Validation/error surface — coral (REDESIGN.md §1 accent discipline) */
 .vh-error {
   margin: 14px 22px 0;
   padding: 10px 12px;
-  background: rgba(220, 38, 38, 0.12);
-  border: 1px solid rgba(220, 38, 38, 0.4);
-  border-radius: 8px;
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.4);
+  border-radius: 0.5rem;
   font-size: calc(12px * var(--nc-text-scale, 1));
-  color: #FCA5A5;
+  color: var(--nc-coral);
 }
 .vh-state {
   padding: 40px 22px;
-  color: var(--nc-ink-soft, #71717A);
+  color: var(--nc-text-secondary);
   font-size: calc(13px * var(--nc-text-scale, 1));
   text-align: center;
 }
@@ -300,12 +311,18 @@ onKeyStroke('Escape', () => {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border-bottom: 1px solid var(--nc-border-soft, #1A1A1D);
-  transition: background 120ms ease;
+  border-bottom: 1px solid var(--nc-border-subtle);
+  transition: background 120ms var(--nc-ease), box-shadow 120ms var(--nc-ease);
 }
 .vh-row:last-child { border-bottom: none; }
-.vh-row:hover { background: rgba(255, 255, 255, 0.025); }
-.vh-row.is-pending { background: rgba(0, 210, 190, 0.06); }
+@media (hover: hover) and (pointer: fine) {
+  .vh-row:hover { background: var(--nc-chip-bg); }
+}
+/* Pending confirm = selected state: accent fill + left marker, never color alone */
+.vh-row.is-pending {
+  background: rgba(var(--nc-accent-rgb), 0.06);
+  box-shadow: inset 2px 0 0 var(--nc-accent);
+}
 .vh-row-main { min-width: 0; }
 .vh-row-time { font-size: calc(13.5px * var(--nc-text-scale, 1)); font-weight: 550; }
 .vh-row-meta {
@@ -313,29 +330,36 @@ onKeyStroke('Escape', () => {
   flex-wrap: wrap;
   gap: 6px;
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #71717A);
+  color: var(--nc-text-muted);
   margin-top: 3px;
 }
-.vh-author { color: var(--nc-ink-soft, #A1A1AA); }
+.vh-author { color: var(--nc-text-secondary); }
 
 .vh-btn {
-  border-radius: 7px;
+  border-radius: 0.4rem;
   font-size: calc(12px * var(--nc-text-scale, 1));
   font-weight: 550;
   padding: 7px 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition: background 120ms var(--nc-ease),
+              color 120ms var(--nc-ease),
+              border-color 120ms var(--nc-ease),
+              opacity 120ms var(--nc-ease),
+              transform var(--nc-duration-press) var(--nc-ease);
 }
+.vh-btn:active:not(:disabled) { transform: scale(0.97); }
 .vh-restore {
   flex-shrink: 0;
-  border: 1px solid var(--nc-border, #27272A);
+  border: 1px solid var(--nc-border);
   background: transparent;
-  color: var(--nc-ink, #FAFAFA);
+  color: var(--nc-text);
 }
-.vh-restore:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: #3F3F46;
+@media (hover: hover) and (pointer: fine) {
+  .vh-restore:hover:not(:disabled) {
+    background: var(--nc-surface-3);
+    border-color: var(--nc-border-active);
+  }
 }
 .vh-restore:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -347,7 +371,7 @@ onKeyStroke('Escape', () => {
 }
 .vh-confirm-q {
   font-size: calc(11.5px * var(--nc-text-scale, 1));
-  color: var(--nc-ink-soft, #A1A1AA);
+  color: var(--nc-text-secondary);
   max-width: 180px;
   text-align: right;
   line-height: 1.35;
@@ -356,16 +380,24 @@ onKeyStroke('Escape', () => {
 .vh-btn-ghost {
   border: 1px solid transparent;
   background: transparent;
-  color: var(--nc-ink-soft, #A1A1AA);
+  color: var(--nc-text-secondary);
 }
-.vh-btn-ghost:hover { color: var(--nc-ink, #FAFAFA); background: rgba(255, 255, 255, 0.05); }
+@media (hover: hover) and (pointer: fine) {
+  .vh-btn-ghost:hover { color: var(--nc-text); background: var(--nc-surface-3); }
+}
+/* Restore confirm — destructive-confirm accent → coral (REDESIGN.md §1) */
 .vh-btn-primary {
-  border: 1px solid transparent;
-  background: var(--nc-accent, #00D2BE);
-  color: #04201D;
+  border: 1px solid rgba(var(--nc-coral-rgb), 0.4);
+  background: rgba(var(--nc-coral-rgb), 0.12);
+  color: var(--nc-coral);
   font-weight: 650;
 }
-.vh-btn-primary:hover { filter: brightness(1.06); }
+@media (hover: hover) and (pointer: fine) {
+  .vh-btn-primary:hover {
+    background: rgba(var(--nc-coral-rgb), 0.18);
+    border-color: rgba(var(--nc-coral-rgb), 0.55);
+  }
+}
 
 @media (max-width: 560px) {
   .vh-confirm { flex-direction: column; align-items: flex-end; gap: 8px; }

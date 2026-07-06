@@ -368,15 +368,17 @@ onMounted(load)
 <style scoped>
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
 }
+/* Dialog — flat surface-2 + hairline (REDESIGN.md §5) */
 .modal-card {
   width: 100%; max-width: 720px;
-  background: var(--nc-surface);
+  background: var(--nc-surface-2);
   border: 1px solid var(--nc-border);
-  border-radius: 12px;
+  border-radius: 0.5rem;
+  box-shadow: var(--nc-shadow-md);
   display: flex; flex-direction: column;
   overflow: hidden;
 }
@@ -386,57 +388,94 @@ onMounted(load)
   border-bottom: 1px solid var(--nc-border);
 }
 .head-text { display: flex; flex-direction: column; gap: 4px; }
-.title { font: 600 15px Inter, system-ui, sans-serif; color: var(--nc-text); letter-spacing: -0.01em; }
-.subtitle { font: 400 12px Inter, system-ui, sans-serif; color: var(--nc-text-muted); }
+/* Modal title — display face (REDESIGN.md §4) */
+.title {
+  font: 700 15px var(--nc-font-display);
+  color: var(--nc-text);
+  letter-spacing: -0.015em;
+}
+.subtitle { font: 400 12px var(--nc-font-body); color: var(--nc-text-muted); }
 .icon-btn {
   width: 32px; height: 32px; border-radius: 6px;
   background: transparent; border: 1px solid var(--nc-border);
   color: var(--nc-text-secondary);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: background var(--nc-duration-fast) ease, border-color var(--nc-duration-fast) ease;
+  transition:
+    color var(--nc-duration-fast) var(--nc-ease),
+    background var(--nc-duration-fast) var(--nc-ease),
+    border-color var(--nc-duration-fast) var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
 }
-.icon-btn:hover { background: var(--nc-surface-3); }
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover { background: var(--nc-surface-3); }
+  /* Destructive action — coral (REDESIGN.md §1 accent discipline) */
+  .icon-btn.danger:hover { color: var(--nc-coral); border-color: var(--nc-coral); }
+}
+.icon-btn:active:not(:disabled) { transform: scale(0.97); }
 .icon-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.icon-btn.danger:hover { color: var(--nc-danger); border-color: var(--nc-danger); }
 .create-row {
   display: flex; flex-direction: column; gap: 12px;
   padding: 20px 24px 18px 24px;
   border-bottom: 1px solid var(--nc-border);
 }
 .row-head { display: flex; align-items: center; justify-content: space-between; }
-.row-title { font: 500 13px Inter, system-ui, sans-serif; color: var(--nc-text); }
-.row-hint { font: 400 11px Inter, system-ui, sans-serif; color: var(--nc-text-dim); }
+/* Section header — mono uppercase micro-label (REDESIGN.md §4) */
+.row-title {
+  font: 500 calc(10.5px * var(--nc-text-scale, 1)) var(--nc-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
+}
+.row-hint { font: 400 11px var(--nc-font-body); color: var(--nc-text-dim); }
 .row-fields { display: flex; gap: 8px; }
+/* Input — chip fill, hairline, accent focus border only (REDESIGN.md §5) */
 .text-input {
   flex: 1;
   height: 36px; padding: 0 12px;
-  background: var(--nc-bg);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--nc-border);
-  border-radius: 6px;
+  border-radius: 0.5rem;
   color: var(--nc-text);
-  font: 400 13px Inter, system-ui, sans-serif;
+  font: 400 13px var(--nc-font-body);
+  transition: border-color 150ms var(--nc-ease);
 }
+.text-input::placeholder { color: var(--nc-text-dim); }
+.text-input:focus { outline: none; border-color: var(--nc-accent); }
 .role-select { width: 136px; }
 .expiry-select { width: 116px; }
 .btn-primary {
   height: 36px; padding: 0 14px;
-  background: var(--nc-accent); color: #09090B;
+  background: var(--nc-accent); color: var(--nc-bg);
   border: 0; border-radius: 6px;
-  font: 600 13px Inter, system-ui, sans-serif;
+  font: 600 13px var(--nc-font-body);
   cursor: pointer;
-  transition: transform var(--nc-duration-press) ease-out;
+  transition:
+    background var(--nc-duration-fast) var(--nc-ease),
+    transform var(--nc-duration-press) var(--nc-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) { background: var(--nc-accent-light); }
 }
 .btn-primary:active { transform: scale(0.97); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary.btn-sm { height: 30px; padding: 0 14px; font-size: calc(12px * var(--nc-text-scale, 1)); }
 .list-section { display: flex; flex-direction: column; }
+/* Section header — mono uppercase micro-label (REDESIGN.md §4) */
 .list-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 24px 10px 24px;
-  font: 500 13px Inter, system-ui, sans-serif; color: var(--nc-text);
+  font: 500 calc(10.5px * var(--nc-text-scale, 1)) var(--nc-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
 }
-.list-head .list-meta { font-weight: 400; font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--nc-text-muted); }
+.list-head .list-meta {
+  font: 400 calc(11px * var(--nc-text-scale, 1)) var(--nc-font-body);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--nc-text-muted);
+}
 .list { list-style: none; padding: 0; margin: 0; }
 .row-wrap {
   border-top: 1px solid var(--nc-border);
@@ -446,7 +485,7 @@ onMounted(load)
   display: flex; align-items: center; gap: 14px;
   padding: 12px 24px;
 }
-.icon-btn.is-open { border-color: var(--nc-accent); color: var(--nc-accent); }
+.icon-btn.is-open { border-color: var(--nc-accent); color: var(--nc-accent-text); }
 .invite-form {
   display: flex;
   flex-direction: column;
@@ -455,10 +494,11 @@ onMounted(load)
   background: color-mix(in srgb, var(--nc-accent) 4%, transparent);
   border-top: 1px dashed var(--nc-border);
 }
+/* Field label — mono uppercase micro-label (REDESIGN.md §4/§5) */
 .invite-label {
-  font: 500 11px Inter, system-ui, sans-serif;
+  font: 500 calc(10.5px * var(--nc-text-scale, 1)) var(--nc-font-mono);
   color: var(--nc-text-secondary);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
@@ -466,15 +506,17 @@ onMounted(load)
 .invite-note {
   width: 100%;
   padding: 8px 12px;
-  background: var(--nc-bg);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--nc-border);
-  border-radius: 6px;
+  border-radius: 0.5rem;
   color: var(--nc-text);
-  font: 400 13px Inter, system-ui, sans-serif;
+  font: 400 13px var(--nc-font-body);
   resize: vertical;
   min-height: 36px;
-  transition: border-color 150ms ease;
+  transition: border-color 150ms var(--nc-ease);
 }
+.invite-recipients::placeholder,
+.invite-note::placeholder { color: var(--nc-text-dim); }
 .invite-recipients:focus,
 .invite-note:focus { outline: none; border-color: var(--nc-accent); }
 .invite-recipients:disabled,
@@ -488,54 +530,56 @@ onMounted(load)
   margin-top: 2px;
 }
 .invite-hint { font-size: calc(11px * var(--nc-text-scale, 1)); color: var(--nc-text-dim); }
-.invite-error { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-danger); }
-.invite-status { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-accent); }
+/* Validation error — coral (REDESIGN.md §1 accent discipline) */
+.invite-error { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-coral); }
+.invite-status { font-size: calc(12px * var(--nc-text-scale, 1)); color: var(--nc-accent-text); }
 .role-icon {
   width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--nc-bg);
+  background: var(--nc-chip-bg);
   border: 1px solid var(--nc-border);
-  border-radius: 8px;
-  color: var(--nc-accent);
+  border-radius: 0.5rem;
+  color: var(--nc-accent-text);
   flex-shrink: 0;
 }
 .role-icon[data-role="VIEWER"] { color: var(--nc-text-secondary); }
 .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .row-label-line { display: flex; align-items: center; gap: 8px; }
-.row-label { font: 500 13px Inter, system-ui, sans-serif; color: var(--nc-text); }
+.row-label { font: 500 13px var(--nc-font-body); color: var(--nc-text); }
 .role-chip {
-  font: 500 10px Inter, system-ui, sans-serif;
+  font: 500 10px var(--nc-font-body);
   letter-spacing: 0.02em;
   padding: 1px 7px; border-radius: 4px;
   border: 1px solid var(--nc-border);
-  background: var(--nc-surface-3);
+  background: var(--nc-chip-bg);
   color: var(--nc-text-secondary);
 }
 .role-chip[data-role="EDITOR"] {
-  color: var(--nc-accent);
+  color: var(--nc-accent-text);
   background: var(--nc-accent-glow);
   border-color: var(--nc-accent-glow-strong);
 }
+/* Revoked marker — coral (REDESIGN.md §1 accent discipline) */
 .role-chip[data-role="REVOKED"] {
-  color: var(--nc-danger);
-  background: var(--nc-danger-glow);
-  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--nc-coral);
+  background: rgba(var(--nc-coral-rgb), 0.1);
+  border-color: rgba(var(--nc-coral-rgb), 0.25);
 }
 .row-meta {
   display: flex; align-items: center; gap: 6px;
-  font: 400 11px Inter, system-ui, sans-serif;
+  font: 400 11px var(--nc-font-body);
   color: var(--nc-text-muted);
 }
-.row-meta .token { font-family: 'JetBrains Mono', ui-monospace, monospace; }
-.row-meta .dot { width: 2px; height: 2px; border-radius: 999px; background: var(--nc-text-dim); }
-.error { padding: 16px 24px; color: var(--nc-danger); font-size: calc(12px * var(--nc-text-scale, 1)); }
+.row-meta .token { font-family: var(--nc-font-mono); }
+.row-meta .dot { width: 2px; height: 2px; border-radius: 50%; background: var(--nc-text-dim); }
+.error { padding: 16px 24px; color: var(--nc-coral); font-size: calc(12px * var(--nc-text-scale, 1)); }
 .loading, .empty { padding: 16px 24px; color: var(--nc-text-muted); font-size: calc(12px * var(--nc-text-scale, 1)); }
 .modal-foot {
   display: flex; align-items: center; gap: 8px;
   padding: 14px 24px;
   background: var(--nc-bg);
   border-top: 1px solid var(--nc-border);
-  font: 400 11px Inter, system-ui, sans-serif;
+  font: 400 11px var(--nc-font-body);
   color: var(--nc-text-muted);
 }
 </style>

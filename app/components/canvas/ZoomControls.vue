@@ -62,8 +62,8 @@ onUnmounted(() => {
         @input="handleSlider"
         @dblclick="emit('reset-zoom')"
       >
-      <!-- Tick mark at 100% -->
-      <div class="nc-zoom-tick" :style="{ left: `${((1 - 0.15) / (3 - 0.15)) * 100}%` }" />
+      <!-- Tick mark at 100% (position = (1 - min) / (max - min), see scoped CSS) -->
+      <div class="nc-zoom-tick" />
     </div>
 
     <button
@@ -131,33 +131,39 @@ onUnmounted(() => {
 .nc-zoom-tick {
   position: absolute;
   top: 50%;
+  /* 100% zoom position on the 0.15–3 range: (1 - 0.15) / (3 - 0.15) */
+  left: calc(100% * 0.85 / 2.85);
   width: 1px;
   height: 8px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--nc-border);
   transform: translateX(-50%) translateY(-50%);
   pointer-events: none;
 }
 
+/* Panel section header — mono uppercase micro-label (REDESIGN.md §4) */
 .nc-zoom-presets-header {
-  font-size: calc(11px * var(--nc-text-scale, 1));
-  font-weight: 600;
+  font-family: var(--nc-font-mono);
+  font-size: calc(10.5px * var(--nc-text-scale, 1));
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--nc-ink-soft);
+  letter-spacing: 0.14em;
+  color: var(--nc-text-secondary);
   padding: 4px 8px 2px;
 }
 
+/* Active preset = accent text + filled marker */
 .nc-zoom-presets button.active {
-  color: var(--nc-accent, #00D2BE);
-  background: rgba(0, 210, 190, 0.08);
+  color: var(--nc-accent-text);
+  background: rgba(var(--nc-accent-rgb), 0.08);
 }
 
 .nc-zoom-preset-shortcut {
   margin-left: auto;
   font-size: calc(11px * var(--nc-text-scale, 1));
   color: var(--nc-ink-soft);
-  font-family: "SF Mono", "Fira Code", monospace;
-  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--nc-font-mono);
+  background: var(--nc-chip-bg);
+  border: 1px solid var(--nc-border-subtle);
   padding: 1px 4px;
   border-radius: 3px;
 }
@@ -168,14 +174,14 @@ onUnmounted(() => {
   gap: 4px;
 }
 
-/* Presets panel: 150ms enter ease-out, 80ms exit */
+/* Presets panel: 150ms enter, 100ms exit, single ease (REDESIGN.md §6) */
 .nc-zoom-presets-enter {
-  transition: opacity 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
-              transform 150ms var(--nc-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  transition: opacity 150ms var(--nc-ease),
+              transform 150ms var(--nc-ease);
 }
 
 .nc-zoom-presets-leave {
-  transition: opacity 80ms cubic-bezier(0.4, 0, 1, 1),
-              transform 80ms cubic-bezier(0.4, 0, 1, 1);
+  transition: opacity 100ms var(--nc-ease),
+              transform 100ms var(--nc-ease);
 }
 </style>
