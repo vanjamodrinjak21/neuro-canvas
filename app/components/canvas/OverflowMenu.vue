@@ -136,7 +136,7 @@ function handleExport(format: 'png' | 'pdf' | 'json' | 'markdown') {
             <DropdownMenuSubTrigger class="menu-item sub-trigger">
               <span class="i-lucide-download menu-icon" />
               <span class="flex-1">{{ $t('canvas.overflow_menu.export') }}</span>
-              <span class="i-lucide-chevron-right text-xs text-nc-ink-muted" />
+              <span class="i-lucide-chevron-right text-xs text-nc-ink-soft" />
             </DropdownMenuSubTrigger>
 
             <DropdownMenuPortal>

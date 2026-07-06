@@ -210,7 +210,6 @@ function clearRemoteCursor() {
 
 // Guest onboarding overlays
 const showOnboarding = ref(false)
-const showTemplatePicker = ref(false)
 const showSavePrompt = ref(false)
 const guestEditCount = ref(0)
 const guestSessionStart = ref<number>(Date.now())
@@ -506,107 +505,6 @@ function waitUntil(cond: () => boolean, timeoutMs: number, intervalMs = 80): Pro
   })
 }
 
-// Guest template handler
-function handleGuestTemplateSelect(templateId: string | null) {
-  showTemplatePicker.value = false
-  if (guest.isGuest.value && !guest.onboardingComplete.value) {
-    showOnboarding.value = true
-  }
-  if (!templateId) return
-
-  const templates: Record<string, { nodes: Array<{ content: string; x: number; y: number }>; edges: number[][] }> = {
-    'decision-tree': {
-      nodes: [
-        { content: 'Decision', x: 400, y: 150 },
-        { content: 'Option A', x: 150, y: 320 },
-        { content: 'Risks', x: 400, y: 320 },
-        { content: 'Option B', x: 650, y: 320 },
-        { content: 'Pro', x: 150, y: 480 },
-        { content: 'Mixed', x: 400, y: 480 },
-        { content: 'Con', x: 650, y: 480 },
-      ],
-      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
-    },
-    brainstorm: {
-      nodes: [
-        { content: 'Topic', x: 400, y: 150 },
-        { content: 'Idea 1', x: 150, y: 320 },
-        { content: 'Idea 2', x: 400, y: 320 },
-        { content: 'Idea 3', x: 650, y: 320 },
-        { content: 'Sub a', x: 150, y: 480 },
-        { content: 'Sub b', x: 400, y: 480 },
-        { content: 'Sub c', x: 650, y: 480 },
-      ],
-      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
-    },
-    'pros-cons': {
-      nodes: [
-        { content: 'Question', x: 400, y: 150 },
-        { content: 'Pro 1', x: 150, y: 320 },
-        { content: 'Mixed', x: 400, y: 320 },
-        { content: 'Con 1', x: 650, y: 320 },
-        { content: 'Pro 2', x: 150, y: 480 },
-        { content: 'Tradeoff', x: 400, y: 480 },
-        { content: 'Con 2', x: 650, y: 480 },
-      ],
-      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
-    },
-    'project-plan': {
-      nodes: [
-        { content: 'Goal', x: 400, y: 150 },
-        { content: 'Spec', x: 150, y: 320 },
-        { content: 'Build', x: 400, y: 320 },
-        { content: 'Ship', x: 650, y: 320 },
-        { content: 'Today', x: 150, y: 480 },
-        { content: 'Wk 2', x: 400, y: 480 },
-        { content: 'Wk 4', x: 650, y: 480 },
-      ],
-      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
-    },
-    'research-synthesis': {
-      nodes: [
-        { content: 'Question', x: 400, y: 150 },
-        { content: 'Source 1', x: 150, y: 320 },
-        { content: 'Source 2', x: 400, y: 320 },
-        { content: 'Source 3', x: 650, y: 320 },
-        { content: 'Theme', x: 150, y: 480 },
-        { content: 'AI synth', x: 400, y: 480 },
-        { content: 'Gap', x: 650, y: 480 },
-      ],
-      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
-    },
-    'mind-map': {
-      nodes: [
-        { content: 'Center', x: 400, y: 300 },
-        { content: 'Branch', x: 150, y: 200 },
-        { content: 'Branch', x: 650, y: 200 },
-        { content: 'Branch', x: 400, y: 500 },
-        { content: 'Sub', x: 50, y: 100 },
-        { content: 'Sub', x: 750, y: 100 },
-        { content: 'Sub', x: 400, y: 600 },
-      ],
-      edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 5], [3, 6]],
-    },
-  }
-
-  const tmpl = templates[templateId]
-  if (!tmpl) return
-
-  const nodeIds: string[] = []
-  for (const n of tmpl.nodes) {
-    const node = mapStore.addNode({ position: { x: n.x, y: n.y }, content: n.content })
-    nodeIds.push(typeof node === 'string' ? node : (node as { id: string }).id)
-  }
-
-  for (const [srcIdx, tgtIdx] of tmpl.edges) {
-    const src = srcIdx !== undefined ? nodeIds[srcIdx] : undefined
-    const tgt = tgtIdx !== undefined ? nodeIds[tgtIdx] : undefined
-    if (src && tgt) {
-      mapStore.addEdge(src, tgt)
-    }
-  }
-}
-
 // Track guest edits and trigger save prompt at threshold (10 edits or 5 min after onboarding)
 function maybeShowSavePrompt() {
   if (!guest.isGuest.value) return
@@ -661,11 +559,12 @@ onMounted(async () => {
         })
       }
 
-      // Track guest map ID and show template picker first, then onboarding after a pick
+      // Track guest map ID; straight to the blank canvas (no template picker),
+      // onboarding walkthrough still shows once for new guests
       if (guest.isGuest.value) {
         guest.setGuestMapId(mapStore.id)
         if (!guest.onboardingComplete.value) {
-          showTemplatePicker.value = true
+          showOnboarding.value = true
         }
       }
 
@@ -2539,13 +2438,7 @@ useHead({
     <!-- Sync conflict resolution dialog -->
     <SyncConflictDialog />
 
-    <!-- Guest Template Picker (shown first) -->
-    <GuestTemplatePicker
-      v-if="showTemplatePicker"
-      @select="handleGuestTemplateSelect"
-    />
-
-    <!-- Guest Onboarding (after template pick) -->
+    <!-- Guest Onboarding (blank canvas, first visit) -->
     <GuestOnboardingWalkthrough
       v-if="showOnboarding"
       @complete="showOnboarding = false"

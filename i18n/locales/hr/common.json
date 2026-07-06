@@ -1,330 +1,268 @@
 {
-    "common": {
-        "app_name": "NeuroCanvas",
-        "nav": {
-            "home": "Po\u010detna",
-            "maps": "Sve mape",
-            "documents": "Dokumenti",
-            "templates": "Predlo\u0161ci",
-            "settings": "Postavke"
-        },
-        "buttons": {
-            "save": "Spremi",
-            "cancel": "Odustani",
-            "delete": "Obri\u0161i",
-            "close": "Zatvori",
-            "confirm": "Potvrdi",
-            "ok": "U redu",
-            "back": "Natrag",
-            "next": "Dalje",
-            "create": "Izradi",
-            "edit": "Uredi",
-            "search": "Tra\u017ei",
-            "retry": "Poku\u0161aj ponovno",
-            "copy": "Kopiraj",
-            "share": "Podijeli",
-            "export": "Izvezi",
-            "import": "Uvezi",
-            "collapse_sidebar": "Sa\u017emi izbornik",
-            "expand_sidebar": "Pro\u0161iri izbornik",
-            "search_shortcut": "Pretra\u017ei (\u2318K)",
-            "sign_up_free": "Registriraj se besplatno",
-            "unlock_all_features": "Otklju\u010daj sve zna\u010dajke",
-            "sign_in": "Prijava",
-            "signing_in": "Prijavljivanje...",
-            "sign_out": "Odjava"
-        },
-        "search": {
-            "placeholder": "Pretra\u017ei mape..."
-        },
-        "theme": {
-            "to_dark": "Prebaci na tamni na\u010din",
-            "to_light": "Prebaci na svijetli na\u010din",
-            "light": "Svijetlo",
-            "dark": "Tamno",
-            "system": "Sustav"
-        },
-        "offline": {
-            "back_online": "Ponovno na mre\u017ei",
-            "message": "Izvan mre\u017ee \u2014 promjene spremljene lokalno",
-            "dismiss": "Odbaci",
-            "action_unavailable": "Nedostupno izvan mre\u017ee \u2014 ponovno se pove\u017ei za kori\u0161tenje"
-        },
-        "update": {
-            "available": "Dostupna nadogradnja",
-            "version_ready": "Verzija {version} je spremna za instalaciju.",
-            "version_available_web": "NeuroCanvas {version} je dostupan — osvježite za nadogradnju.",
-            "version_available_mobile": "NeuroCanvas {version} je dostupan u trgovini.",
-            "update_now": "Nadogradi sada",
-            "refresh": "Osvježi",
-            "open_store": "Otvori trgovinu",
-            "later": "Kasnije",
-            "downloading": "Preuzimanje nadogradnje...",
-            "dismiss": "Odbaci"
-        },
-        "loading": {
-            "text": "U\u010ditavanje...",
-            "version": "v1.0.0"
-        },
-        "confirm_dialog": {
-            "are_you_sure": "Jeste li sigurni?",
-            "cancel": "Odustani",
-            "confirm": "Potvrdi"
-        },
-        "onboarding": {
-            "welcome_title": "Dobrodo\u0161li u NeuroCanvas",
-            "welcome_desc": "Mentalno mapiranje potpomognuto umjetnom inteligencijom koje vam poma\u017ee vizualno razmi\u0161ljati i br\u017ee u\u010diti.",
-            "step_create": "Izradite prvu mapu",
-            "step_create_desc": "Zapo\u010dnite s praznim platnom ili odaberite predlo\u017eak.",
-            "step_ai": "Neka vam AI pomogne",
-            "step_ai_desc": "Odaberite bilo koji \u010dvor i pritisnite \u2318E za pro\u0161irenje pomo\u0107u AI-a.",
-            "step_connect": "Otkrijte veze",
-            "step_connect_desc": "Semanti\u010dki mehanizam pronalazi skrivene povezanosti izme\u0111u va\u0161ih ideja.",
-            "get_started": "Zapo\u010dni",
-            "skip": "Presko\u010di"
-        },
-        "guest": {
-            "template_picker_title": "Odaberite predlo\u017eak",
-            "template_picker_desc": "Odaberite polaznu to\u010dku za svoju prvu mapu",
-            "template_picker_ai_placeholder": "Isplaniraj launch za na\u0161 pgvector RAG search \u2014 in\u017eenjering, sadr\u017eaj, rollout.",
-            "upgrade_title": "Otklju\u010dajte sve zna\u010dajke",
-            "upgrade_desc": "Registrirajte se besplatno za sinkronizaciju izme\u0111u ure\u0111aja, kori\u0161tenje AI zna\u010dajki i jo\u0161 mnogo toga.",
-            "upgrade_button": "Registriraj se besplatno",
-            "continue_guest": "Nastavi kao gost",
-            "session_chip": "aktivna sesija",
-            "picker": {
-                "step": "korak 02 \u2014 odaberite oblik",
-                "title_lead": "Prazno platno",
-                "title_em": "ponekad je pogre\u0161an po\u010detak.",
-                "subtitle": "Svaka mapa po\u010dinje kao oblik. Odaberite onaj koji odgovara va\u0161em na\u010dinu razmi\u0161ljanja.",
-                "pick_eyebrow": "ODABERITE OBLIK",
-                "pick_sub": "6 po\u010detnih oblika za ve\u0107inu na\u010dina razmi\u0161ljanja",
-                "browse": "pregledaj svih 24 \u2192",
-                "blank": "Umjesto toga po\u010dni s praznim platnom",
-                "tip_label": "savjet:",
-                "tip": "predlo\u017eak mo\u017eete promijeniti kasnije \u2014 ni\u0161ta nije zaklju\u010dano.",
-                "tpl": {
-                    "decision_tree": {
-                        "title": "Stablo odluke",
-                        "desc": "Usporedite opcije. Pratite posljedice. Zavr\u0161ite odlukom.",
-                        "receipt": "7 \u010dvorova \u00b7 12s",
-                        "root": "Odluka",
-                        "m1": "Opcija A", "m2": "Rizici", "m3": "Opcija B",
-                        "l1": "Za", "l2": "Mje\u0161ovito", "l3": "Protiv"
-                    },
-                    "project_plan": {
-                        "title": "Plan projekta",
-                        "desc": "Ciljevi \u2192 prekretnice \u2192 kontrolne to\u010dke. Razmi\u0161ljanje u rokovima.",
-                        "receipt": "9 \u010dvorova \u00b7 18s",
-                        "root": "Cilj",
-                        "m1": "Spec", "m2": "Izrada", "m3": "Isporuka",
-                        "l1": "Danas", "l2": "Tj. 2", "l3": "Tj. 4"
-                    },
-                    "research_synthesis": {
-                        "title": "Sinteza istra\u017eivanja",
-                        "desc": "Izvori se grupiraju. AI sa\u017eima grupu umjesto vas.",
-                        "receipt": "5 \u010dvorova \u00b7 10s",
-                        "root": "Pitanje",
-                        "m1": "Izvor 1", "m2": "Izvor 2", "m3": "Izvor 3",
-                        "l1": "Tema", "l2": "AI sinteza", "l3": "Praznina"
-                    },
-                    "brainstorm": {
-                        "title": "Oluja ideja",
-                        "desc": "Prvo izbacite ideje. Grupirajte ih kasnije.",
-                        "receipt": "12 \u010dvorova \u00b7 8s",
-                        "root": "Tema",
-                        "m1": "Ideja 1", "m2": "Ideja 2", "m3": "Ideja 3",
-                        "l1": "Pod a", "l2": "Pod b", "l3": "Pod c"
-                    },
-                    "pros_cons": {
-                        "title": "Za i protiv",
-                        "desc": "Dva stupca. Prisiljava na iskrenost o objema stranama.",
-                        "receipt": "8 \u010dvorova \u00b7 14s",
-                        "root": "Pitanje",
-                        "m1": "Za 1", "m2": "Mje\u0161ovito", "m3": "Protiv 1",
-                        "l1": "Za 2", "l2": "Kompromis", "l3": "Protiv 2"
-                    },
-                    "mind_map": {
-                        "title": "Mentalna mapa",
-                        "desc": "Slobodna mre\u017ea. Kad jo\u0161 ne znate strukturu.",
-                        "receipt": "11 \u010dvorova \u00b7 16s",
-                        "root": "Sredi\u0161te",
-                        "m1": "Grana", "m2": "Grana", "m3": "Grana",
-                        "l1": "Pod", "l2": "Pod", "l3": "Pod"
-                    }
-                }
-            },
-            "walkthrough": {
-                "step1_eyebrow": "01 / 03 \u2014 \u010cVOR",
-                "step1_title": "Ubacite ideju.",
-                "step1_desc": "Dvaput kliknite bilo gdje na platnu. Upi\u0161ite re\u010denicu. To je \u010dvor. Platno raste odatle.",
-                "step1_waiting": "\u010dekam va\u0161 prvi \u010dvor\u2026",
-                "step2_eyebrow": "02 / 03 \u2014 VEZA",
-                "step2_title": "Pove\u017eite je.",
-                "step2_desc": "Povucite od jednog \u010dvora do drugog. Veze su tipizirane (uzrokuje, proturje\u010di, ovisi o) \u2014 one postaju zaklju\u010divanje, a ne samo vizual.",
-                "step2_waiting": "nacrtajte svoju prvu vezu\u2026",
-                "step3_eyebrow": "03 / 03 \u2014 AI",
-                "step3_title": "Zatim spremite i AI preuzima.",
-                "step3_desc": "Nakon spremanja pritisnite \u2318K na bilo kojem \u010dvoru i AI pro\u0161iruje tu granu. Protuargumenti, sa\u017eetci, analiza praznina \u2014 vezani uz \u010dvor koji ste odabrali.",
-                "step3_waiting": "otklju\u010dava se odmah nakon spremanja",
-                "skip": "presko\u010di obilazak",
-                "skip_aria": "Presko\u010di obilazak",
-                "next": "DALJE",
-                "done": "SHVA\u0106AM"
-            }
-        },
-        "errors": {
-            "generic": "Ne\u0161to je po\u0161lo po krivu. Poku\u0161ajte ponovno.",
-            "network": "Gre\u0161ka mre\u017ee. Provjerite internetsku vezu.",
-            "not_found": "Nije prona\u0111eno.",
-            "unauthorized": "Morate se prijaviti za pristup.",
-            "forbidden": "Nemate dopu\u0161tenje za ovu radnju.",
-            "server": "Gre\u0161ka poslu\u017eitelja. Poku\u0161ajte ponovno kasnije.",
-            "timeout": "Zahtjev je istekao. Poku\u0161ajte ponovno.",
-            "session_expired": "Sesija je istekla. Prijavi se ponovno.",
-            "no_permission": "Nema\u0161 dozvolu za tu radnju.",
-            "rate_limited": "Previ\u0161e zahtjeva. Uspori malo.",
-            "server_error": "Ne\u0161to je po\u0161lo po krivu na na\u0161oj strani. Poku\u0161aj ponovno.",
-            "offline": "Izgleda da nisi povezan. Provjeri vezu.",
-            "no_ai_credential": "Nije prona\u0111en klju\u010d AI pru\u017eatelja. Dodajte API klju\u010d u Postavke \u2192 AI pru\u017eatelji."
-        },
-        "time": {
-            "just_now": "Upravo sada",
-            "seconds_ago": "prije {n}s",
-            "minutes_ago": "prije {n}m",
-            "hours_ago": "prije {n}h",
-            "days_ago": "prije {n}d",
-            "today": "Danas",
-            "yesterday": "Ju\u010der"
-        },
-        "sidebar": {
-            "upgrade_ladder": {
-                "unlock_title": "Otklju\u010daj spremanjem",
-                "item_5_things": "5 stvari",
-                "item_ai_node": "AI na ovom \u010dvoru",
-                "item_export": "Izvoz PNG / JSON",
-                "item_multiple_maps": "Vi\u0161e karata",
-                "item_templates": "24 predlo\u0161ka",
-                "item_sync": "Sinkronizacija me\u0111u ure\u0111ajima",
-                "cta_meta": "zatvori\u0161 tab \u2192 sve nestaje",
-                "cta_title": "Spremi \u0161to si stvorio.",
-                "cta_desc": "8 sekundi. Bez kartice.",
-                "cta_button": "Spremi moju mapu \u2192"
-            }
-        }
+  "common": {
+    "app_name": "NeuroCanvas",
+    "nav": {
+      "home": "Početna",
+      "maps": "Sve mape",
+      "documents": "Dokumenti",
+      "templates": "Predlošci",
+      "settings": "Postavke"
     },
-    "maps": {
-        "sort": {
-            "label": "Sortiraj",
-            "recent": "Najnovije",
-            "alphabetical": "A \u2013 \u017d",
-            "nodes": "Najvi\u0161e \u010dvorova"
-        },
-        "select": {
-            "button": "Odaberi",
-            "select_all": "Odaberi sve",
-            "deselect_all": "Poni\u0161ti odabir",
-            "selected_count": "Odabrano: {n}"
-        },
-        "delete_confirm": {
-            "title_one": "Obri\u0161i mapu",
-            "title_other": "Obri\u0161i {n} mapa",
-            "description_one": "Ovo \u0107e trajno obrisati mapu. Ova radnja se ne mo\u017ee poni\u0161titi.",
-            "description_other": "Ovo \u0107e trajno obrisati {n} mapa. Ova radnja se ne mo\u017ee poni\u0161titi."
-        },
-        "delete_single_confirm": {
-            "title": "Obri\u0161i mapu",
-            "description": "Ova radnja se ne mo\u017ee poni\u0161titi. Jeste li sigurni da \u017eelite obrisati ovu mapu?"
-        },
-        "count_label_one": "{n} mapa",
-        "count_label_other": "{n} mapa",
-        "nodes_count": "{n} čvorova",
-        "edited_prefix": "Ure\u0111eno",
-        "header": {
-            "eyebrow": "02 \u2014 sve mape",
-            "title_a": "Sve",
-            "title_b": "o \u010demu si razmi\u0161ljao."
-        }
+    "buttons": {
+      "save": "Spremi",
+      "cancel": "Odustani",
+      "delete": "Obriši",
+      "close": "Zatvori",
+      "confirm": "Potvrdi",
+      "ok": "U redu",
+      "back": "Natrag",
+      "next": "Dalje",
+      "create": "Izradi",
+      "edit": "Uredi",
+      "search": "Traži",
+      "retry": "Pokušaj ponovno",
+      "copy": "Kopiraj",
+      "share": "Podijeli",
+      "export": "Izvezi",
+      "import": "Uvezi",
+      "collapse_sidebar": "Sažmi izbornik",
+      "expand_sidebar": "Proširi izbornik",
+      "search_shortcut": "Pretraži (⌘K)",
+      "sign_up_free": "Registriraj se besplatno",
+      "unlock_all_features": "Otključaj sve značajke",
+      "sign_in": "Prijava",
+      "signing_in": "Prijavljivanje...",
+      "sign_out": "Odjava"
     },
-    "ui": {
-        "or": "ili",
-        "settings_tooltip": "Postavke",
-        "search": {
-            "maps_mobile_placeholder": "Pretra\u017ei mape \u00b7 \u2318 K",
-            "templates_mobile_placeholder": "Pretra\u017ei predlo\u0161ke \u00b7 \u2318 K"
-        },
-        "generate_map": {
-            "topic_placeholder": "npr. Sustavi obnovljive energije"
-        },
-        "file_uploader": {
-            "label_prefix": "Povucite datoteku ovdje ili",
-            "browse_action": "pregledajte"
-        },
-        "code": {
-            "copy": "Kopiraj k\u00f4d",
-            "copied": "Kopirano!"
-        }
+    "search": {
+      "placeholder": "Pretraži mape..."
     },
-    "generation": {
-        "dock_title": "Generiranje mape",
-        "in_progress": "Generiranje\u2026",
-        "expanding": "Pro\u0161irujem\u2026 {count} / {target} \u010dvorova",
-        "building": "Gradim \u201e{topic}\u201d",
-        "ready": "Spremno",
-        "ready_title": "\u201e{topic}\u201d je spremna",
-        "failed": "Generiranje nije uspjelo",
-        "open": "Otvori mapu",
-        "retry": "Poku\u0161aj ponovno",
-        "dismiss": "Odbaci",
-        "toast_started": "Generiram \u201e{topic}\u201d u pozadini \u2014 mo\u017eete nastaviti raditi.",
-        "notify_title": "Va\u0161a mapa je spremna",
-        "notify_body": "\u201e{topic}\u201d je zavr\u0161ila s generiranjem."
+    "theme": {
+      "to_dark": "Prebaci na tamni način",
+      "to_light": "Prebaci na svijetli način",
+      "light": "Svijetlo",
+      "dark": "Tamno",
+      "system": "Sustav"
     },
-    "command_palette": {
-        "placeholder": "Pretra\u017ei sve\u2026",
-        "escape_key": "Esc",
-        "searching": "Pretra\u017eivanje\u2026",
-        "no_results": "Nema rezultata za \u201e{query}\u201d",
-        "untitled": "Bezimena mapa",
-        "nodes_count": "{n} \u010dvorova",
-        "empty": {
-            "subtitle": "Pretra\u017eite mape, dokumente, predlo\u0161ke \u2014 ili pokrenite naredbu"
-        },
-        "groups": {
-            "generate": "Generiraj",
-            "actions": "Radnje",
-            "maps": "Mape",
-            "documents": "Dokumenti",
-            "templates": "Predlo\u0161ci",
-            "navigation": "Idi na"
-        },
-        "nav": {
-            "dashboard": "Nadzorna plo\u010da",
-            "maps": "Sve mape",
-            "documents": "Dokumenti",
-            "templates": "Predlo\u0161ci",
-            "settings": "Postavke",
-            "roadmap": "Plan razvoja"
-        },
-        "actions": {
-            "new_map": "Nova mapa",
-            "generate_map": "Generiraj mapu pomo\u0107u AI-ja",
-            "generate_query": "Generiraj mapu: \u201e{query}\u201d",
-            "upload_document": "U\u010ditaj dokument"
-        },
-        "doc_status": {
-            "pending": "Na \u010dekanju",
-            "queued": "U redu",
-            "processing": "Obrada",
-            "failed": "Neuspjelo"
-        },
-        "footer": {
-            "navigate": "Kretanje",
-            "select": "Otvori",
-            "dismiss": "Zatvori"
-        },
-        "errors": {
-            "action_failed": "Ne\u0161to je po\u0161lo po zlu"
-        }
+    "offline": {
+      "back_online": "Ponovno na mreži",
+      "message": "Izvan mreže — promjene spremljene lokalno",
+      "dismiss": "Odbaci",
+      "action_unavailable": "Nedostupno izvan mreže — ponovno se poveži za korištenje"
+    },
+    "update": {
+      "available": "Dostupna nadogradnja",
+      "version_ready": "Verzija {version} je spremna za instalaciju.",
+      "version_available_web": "NeuroCanvas {version} je dostupan — osvježite za nadogradnju.",
+      "version_available_mobile": "NeuroCanvas {version} je dostupan u trgovini.",
+      "update_now": "Nadogradi sada",
+      "refresh": "Osvježi",
+      "open_store": "Otvori trgovinu",
+      "later": "Kasnije",
+      "downloading": "Preuzimanje nadogradnje...",
+      "dismiss": "Odbaci"
+    },
+    "loading": {
+      "text": "Učitavanje...",
+      "version": "v1.0.0"
+    },
+    "confirm_dialog": {
+      "are_you_sure": "Jeste li sigurni?",
+      "cancel": "Odustani",
+      "confirm": "Potvrdi"
+    },
+    "onboarding": {
+      "welcome_title": "Dobrodošli u NeuroCanvas",
+      "welcome_desc": "Mentalno mapiranje potpomognuto umjetnom inteligencijom koje vam pomaže vizualno razmišljati i brže učiti.",
+      "step_create": "Izradite prvu mapu",
+      "step_create_desc": "Započnite s praznim platnom ili odaberite predložak.",
+      "step_ai": "Neka vam AI pomogne",
+      "step_ai_desc": "Odaberite bilo koji čvor i pritisnite ⌘E za proširenje pomoću AI-a.",
+      "step_connect": "Otkrijte veze",
+      "step_connect_desc": "Semantički mehanizam pronalazi skrivene povezanosti između vaših ideja.",
+      "get_started": "Započni",
+      "skip": "Preskoči"
+    },
+    "guest": {
+      "template_picker_title": "Odaberite predložak",
+      "template_picker_desc": "Odaberite polaznu točku za svoju prvu mapu",
+      "template_picker_ai_placeholder": "Isplaniraj launch za naš pgvector RAG search — inženjering, sadržaj, rollout.",
+      "upgrade_title": "Otključajte sve značajke",
+      "upgrade_desc": "Registrirajte se besplatno za sinkronizaciju između uređaja, korištenje AI značajki i još mnogo toga.",
+      "upgrade_button": "Registriraj se besplatno",
+      "continue_guest": "Nastavi kao gost",
+      "session_chip": "aktivna sesija",
+      "walkthrough": {
+        "step1_eyebrow": "01 / 03 — ČVOR",
+        "step1_title": "Ubacite ideju.",
+        "step1_desc": "Dvaput kliknite bilo gdje na platnu. Upišite rečenicu. To je čvor. Platno raste odatle.",
+        "step1_waiting": "čekam vaš prvi čvor…",
+        "step2_eyebrow": "02 / 03 — VEZA",
+        "step2_title": "Povežite je.",
+        "step2_desc": "Povucite od jednog čvora do drugog. Veze su tipizirane (uzrokuje, proturječi, ovisi o) — one postaju zaključivanje, a ne samo vizual.",
+        "step2_waiting": "nacrtajte svoju prvu vezu…",
+        "step3_eyebrow": "03 / 03 — AI",
+        "step3_title": "Zatim spremite i AI preuzima.",
+        "step3_desc": "Nakon spremanja pritisnite ⌘K na bilo kojem čvoru i AI proširuje tu granu. Protuargumenti, sažetci, analiza praznina — vezani uz čvor koji ste odabrali.",
+        "step3_waiting": "otključava se odmah nakon spremanja",
+        "skip": "preskoči obilazak",
+        "skip_aria": "Preskoči obilazak",
+        "next": "DALJE",
+        "done": "SHVAĆAM"
+      }
+    },
+    "errors": {
+      "generic": "Nešto je pošlo po krivu. Pokušajte ponovno.",
+      "network": "Greška mreže. Provjerite internetsku vezu.",
+      "not_found": "Nije pronađeno.",
+      "unauthorized": "Morate se prijaviti za pristup.",
+      "forbidden": "Nemate dopuštenje za ovu radnju.",
+      "server": "Greška poslužitelja. Pokušajte ponovno kasnije.",
+      "timeout": "Zahtjev je istekao. Pokušajte ponovno.",
+      "session_expired": "Sesija je istekla. Prijavi se ponovno.",
+      "no_permission": "Nemaš dozvolu za tu radnju.",
+      "rate_limited": "Previše zahtjeva. Uspori malo.",
+      "server_error": "Nešto je pošlo po krivu na našoj strani. Pokušaj ponovno.",
+      "offline": "Izgleda da nisi povezan. Provjeri vezu.",
+      "no_ai_credential": "Nije pronađen ključ AI pružatelja. Dodajte API ključ u Postavke → AI pružatelji."
+    },
+    "time": {
+      "just_now": "Upravo sada",
+      "seconds_ago": "prije {n}s",
+      "minutes_ago": "prije {n}m",
+      "hours_ago": "prije {n}h",
+      "days_ago": "prije {n}d",
+      "today": "Danas",
+      "yesterday": "Jučer"
+    },
+    "sidebar": {
+      "upgrade_ladder": {
+        "unlock_title": "Otključaj spremanjem",
+        "item_5_things": "5 stvari",
+        "item_ai_node": "AI na ovom čvoru",
+        "item_export": "Izvoz PNG / JSON",
+        "item_multiple_maps": "Više karata",
+        "item_templates": "24 predloška",
+        "item_sync": "Sinkronizacija među uređajima",
+        "cta_meta": "zatvoriš tab → sve nestaje",
+        "cta_title": "Spremi što si stvorio.",
+        "cta_desc": "8 sekundi. Bez kartice.",
+        "cta_button": "Spremi moju mapu →"
+      }
     }
+  },
+  "maps": {
+    "sort": {
+      "label": "Sortiraj",
+      "recent": "Najnovije",
+      "alphabetical": "A – Ž",
+      "nodes": "Najviše čvorova"
+    },
+    "select": {
+      "button": "Odaberi",
+      "select_all": "Odaberi sve",
+      "deselect_all": "Poništi odabir",
+      "selected_count": "Odabrano: {n}"
+    },
+    "delete_confirm": {
+      "title_one": "Obriši mapu",
+      "title_other": "Obriši {n} mapa",
+      "description_one": "Ovo će trajno obrisati mapu. Ova radnja se ne može poništiti.",
+      "description_other": "Ovo će trajno obrisati {n} mapa. Ova radnja se ne može poništiti."
+    },
+    "delete_single_confirm": {
+      "title": "Obriši mapu",
+      "description": "Ova radnja se ne može poništiti. Jeste li sigurni da želite obrisati ovu mapu?"
+    },
+    "count_label_one": "{n} mapa",
+    "count_label_other": "{n} mapa",
+    "nodes_count": "{n} čvorova",
+    "edited_prefix": "Uređeno",
+    "header": {
+      "eyebrow": "02 — sve mape",
+      "title_a": "Sve",
+      "title_b": "o čemu si razmišljao."
+    }
+  },
+  "ui": {
+    "or": "ili",
+    "settings_tooltip": "Postavke",
+    "search": {
+      "maps_mobile_placeholder": "Pretraži mape · ⌘ K",
+      "templates_mobile_placeholder": "Pretraži predloške · ⌘ K"
+    },
+    "generate_map": {
+      "topic_placeholder": "npr. Sustavi obnovljive energije"
+    },
+    "file_uploader": {
+      "label_prefix": "Povucite datoteku ovdje ili",
+      "browse_action": "pregledajte"
+    },
+    "code": {
+      "copy": "Kopiraj kôd",
+      "copied": "Kopirano!"
+    }
+  },
+  "generation": {
+    "dock_title": "Generiranje mape",
+    "in_progress": "Generiranje…",
+    "expanding": "Proširujem… {count} / {target} čvorova",
+    "building": "Gradim „{topic}”",
+    "ready": "Spremno",
+    "ready_title": "„{topic}” je spremna",
+    "failed": "Generiranje nije uspjelo",
+    "open": "Otvori mapu",
+    "retry": "Pokušaj ponovno",
+    "dismiss": "Odbaci",
+    "toast_started": "Generiram „{topic}” u pozadini — možete nastaviti raditi.",
+    "notify_title": "Vaša mapa je spremna",
+    "notify_body": "„{topic}” je završila s generiranjem."
+  },
+  "command_palette": {
+    "placeholder": "Pretraži sve…",
+    "escape_key": "Esc",
+    "searching": "Pretraživanje…",
+    "no_results": "Nema rezultata za „{query}”",
+    "untitled": "Bezimena mapa",
+    "nodes_count": "{n} čvorova",
+    "empty": {
+      "subtitle": "Pretražite mape, dokumente, predloške — ili pokrenite naredbu"
+    },
+    "groups": {
+      "generate": "Generiraj",
+      "actions": "Radnje",
+      "maps": "Mape",
+      "documents": "Dokumenti",
+      "templates": "Predlošci",
+      "navigation": "Idi na"
+    },
+    "nav": {
+      "dashboard": "Nadzorna ploča",
+      "maps": "Sve mape",
+      "documents": "Dokumenti",
+      "templates": "Predlošci",
+      "settings": "Postavke",
+      "roadmap": "Plan razvoja"
+    },
+    "actions": {
+      "new_map": "Nova mapa",
+      "generate_map": "Generiraj mapu pomoću AI-ja",
+      "generate_query": "Generiraj mapu: „{query}”",
+      "upload_document": "Učitaj dokument"
+    },
+    "doc_status": {
+      "pending": "Na čekanju",
+      "queued": "U redu",
+      "processing": "Obrada",
+      "failed": "Neuspjelo"
+    },
+    "footer": {
+      "navigate": "Kretanje",
+      "select": "Otvori",
+      "dismiss": "Zatvori"
+    },
+    "errors": {
+      "action_failed": "Nešto je pošlo po zlu"
+    }
+  }
 }
