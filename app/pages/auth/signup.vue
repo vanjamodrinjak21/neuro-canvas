@@ -257,6 +257,7 @@ async function handleSignup() {
         class="auth__hint"
         :class="messageType === 'success' ? 'is-ok' : 'is-bad'"
         role="status"
+        data-testid="auth-message"
       >
         {{ message }}
       </p>
