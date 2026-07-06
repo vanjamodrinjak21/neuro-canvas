@@ -58,7 +58,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
 
           <!-- Central 404 badge -->
           <rect x="138" y="100" width="84" height="60" rx="8" class="badge-rect" />
-          <text x="180" y="138" text-anchor="middle" fill="#00D2BE" font-family="Inter" font-weight="700" font-size="24">
+          <text x="180" y="138" text-anchor="middle" fill="#5EF2E8" font-family="Inter" font-weight="700" font-size="24">
             {{ error.statusCode || 404 }}
           </text>
         </svg>
@@ -151,8 +151,8 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
 }
 
 .badge-rect {
-  fill: #111113;
-  stroke: #00D2BE;
+  fill: var(--nc-surface);
+  stroke: var(--nc-accent);
   stroke-width: 2;
 }
 
@@ -185,8 +185,8 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
   align-items: center;
   gap: 6px;
   padding: 10px 18px;
-  background: #00D2BE;
-  color: #09090B;
+  background: var(--nc-accent);
+  color: var(--nc-bg);
   font-size: calc(13px * var(--nc-text-scale, 1));
   font-weight: 500;
   border: none;
@@ -258,7 +258,7 @@ const handleClearError = () => clearError({ redirect: '/dashboard' })
 
 :root.light .badge-rect {
   fill: #FFFFFF;
-  stroke: #00D2BE;
+  stroke: var(--nc-accent);
 }
 
 :root.light .heading {

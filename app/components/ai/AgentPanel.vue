@@ -183,7 +183,7 @@ function handleEnd() {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid #1A1A1E;
+  border-bottom: 1px solid var(--nc-border);
 }
 
 .nc-agent-end-btn {
@@ -212,7 +212,7 @@ function handleEnd() {
 }
 
 .nc-agent-close-btn:hover {
-  color: #FAFAFA;
+  color: var(--nc-text);
   background: #2A2A30;
 }
 
@@ -278,8 +278,8 @@ function handleEnd() {
 }
 
 .nc-agent-msg-user .nc-agent-msg-bubble {
-  background: rgba(0, 210, 190, 0.15);
-  color: #FAFAFA;
+  background: rgba(94, 242, 232, 0.15);
+  color: var(--nc-text);
   border-bottom-right-radius: 4px;
 }
 
@@ -318,7 +318,7 @@ function handleEnd() {
 
 .nc-agent-pending {
   padding: 8px 12px;
-  border-top: 1px solid #1A1A1E;
+  border-top: 1px solid var(--nc-border);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -337,7 +337,7 @@ function handleEnd() {
   align-items: flex-end;
   gap: 8px;
   padding: 10px 12px;
-  border-top: 1px solid #1A1A1E;
+  border-top: 1px solid var(--nc-border);
 }
 
 .nc-agent-input {
@@ -346,7 +346,7 @@ function handleEnd() {
   border: 1px solid #2A2A30;
   border-radius: 8px;
   padding: 8px 12px;
-  color: #FAFAFA;
+  color: var(--nc-text);
   font-size: calc(12px * var(--nc-text-scale, 1));
   resize: none;
   outline: none;

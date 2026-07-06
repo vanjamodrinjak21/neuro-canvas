@@ -570,7 +570,7 @@ export function getRelationshipColor(type: RelationshipType): string {
     'enables': '#4ADE80',    // Green
     'opposes': '#EF4444',    // Red
     'example-of': '#FB923C', // Orange
-    'part-of': '#00D2BE',    // Teal
+    'part-of': '#5EF2E8',    // Accent
     'leads-to': '#FACC15',   // Yellow
     // v2 extended types
     'extends': '#818CF8',         // Indigo

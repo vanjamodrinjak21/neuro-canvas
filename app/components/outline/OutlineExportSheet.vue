@@ -112,19 +112,19 @@ async function handleShare() {
 .nc-export-sheet {
   width: 100%;
   max-width: 440px;
-  background: var(--nc-surface, #111113);
+  background: var(--nc-surface, #0d0d11);
   border-top-left-radius: var(--nc-radius-2xl, 20px);
   border-top-right-radius: var(--nc-radius-2xl, 20px);
   padding: 12px 20px 20px;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
-  border: 1px solid var(--nc-border, #1A1A1E);
+  border: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
   border-bottom: none;
 }
 
 .nc-export-handle {
   width: 36px;
   height: 4px;
-  background: var(--nc-text-dim, #3F3F46);
+  background: var(--nc-text-dim, rgba(244, 244, 248, 0.38));
   border-radius: 2px;
   margin: 0 auto 16px;
 }
@@ -133,16 +133,16 @@ async function handleShare() {
   font-family: var(--nc-font-display);
   font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-text, #FAFAFA);
+  color: var(--nc-text, #f4f4f8);
   margin-bottom: 16px;
 }
 
 .nc-export-preview {
   width: 100%;
   aspect-ratio: 16 / 10;
-  background: var(--nc-surface-3, #18181B);
+  background: var(--nc-surface-3, #1a1a20);
   border-radius: var(--nc-radius-lg, 12px);
-  border: 1px solid var(--nc-border, #1A1A1E);
+  border: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
   overflow: hidden;
   margin-bottom: 16px;
   display: flex;
@@ -163,7 +163,7 @@ async function handleShare() {
   align-items: center;
   gap: 8px;
   font-size: calc(13px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted, #52525B);
+  color: var(--nc-text-muted, rgba(244, 244, 248, 0.45));
 }
 
 .nc-export-preview-loading .nc-spin,
@@ -193,9 +193,9 @@ async function handleShare() {
   width: 100%;
   height: 48px;
   border-radius: var(--nc-radius-lg, 12px);
-  border: 1px solid var(--nc-border, #1A1A1E);
-  background: var(--nc-surface-3, #18181B);
-  color: var(--nc-text, #FAFAFA);
+  border: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
+  background: var(--nc-surface-3, #1a1a20);
+  color: var(--nc-text, #f4f4f8);
   font-family: var(--nc-font-body);
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 500;
@@ -209,14 +209,14 @@ async function handleShare() {
 }
 
 .nc-export-action--primary {
-  background: var(--nc-accent, #00D2BE);
-  border-color: var(--nc-accent, #00D2BE);
-  color: #09090B;
+  background: var(--nc-accent, #5EF2E8);
+  border-color: var(--nc-accent, #5EF2E8);
+  color: var(--nc-bg);
   font-weight: 600;
 }
 
 .nc-export-action--primary:active {
-  background: var(--nc-accent-dark, #00A89A);
+  background: var(--nc-accent-dark, #3AC2B9);
 }
 
 /* Sheet transition */

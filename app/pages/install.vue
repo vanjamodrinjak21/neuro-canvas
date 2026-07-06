@@ -210,8 +210,8 @@ async function copyMacCmd() {
   --text-2: #A1A1AA;
   --text-3: #777777;
   --text-faint: #52525B;
-  --accent: #00D2BE;
-  --on-accent: #0A0A0C;
+  --accent: #5EF2E8;
+  --on-accent: #050508;
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --serif: 'Instrument Serif', Georgia, serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;

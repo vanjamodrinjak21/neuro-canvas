@@ -129,7 +129,7 @@ function render() {
     const isConnected = connectedEdgeIds.has(edge.id)
 
     if (hasSelection && isConnected) {
-      ctx.strokeStyle = 'rgba(0, 210, 190, 0.3)'
+      ctx.strokeStyle = 'rgba(94, 242, 232, 0.3)'
       ctx.lineWidth = 1.5 / camera.zoom
     } else if (hasSelection) {
       ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)'
@@ -158,17 +158,17 @@ function render() {
     ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
 
     if (isSelected) {
-      ctx.fillStyle = '#00D2BE'
+      ctx.fillStyle = '#5EF2E8'
       // Glow ring
       ctx.save()
-      ctx.shadowColor = '#00D2BE'
+      ctx.shadowColor = '#5EF2E8'
       ctx.shadowBlur = 12
       ctx.fill()
       ctx.restore()
       ctx.beginPath()
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
     } else if (isConnected && hasSelection) {
-      ctx.fillStyle = 'rgba(0, 210, 190, 0.5)'
+      ctx.fillStyle = 'rgba(94, 242, 232, 0.5)'
     } else if (isHovered) {
       ctx.fillStyle = isLight ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'
     } else if (isDimmed) {
@@ -186,9 +186,9 @@ function render() {
     ctx.textBaseline = 'middle'
 
     if (isSelected) {
-      ctx.fillStyle = '#00D2BE'
+      ctx.fillStyle = '#5EF2E8'
     } else if (isConnected && hasSelection) {
-      ctx.fillStyle = 'rgba(0, 210, 190, 0.7)'
+      ctx.fillStyle = 'rgba(94, 242, 232, 0.7)'
     } else if (isHovered) {
       ctx.fillStyle = isLight ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'
     } else {

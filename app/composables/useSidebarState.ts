@@ -14,7 +14,7 @@ export type NodeCategory = typeof nodeCategories[number]
 export { getCategoryColor, getCategoryInfo }
 
 export const nodeColors = [
-  '#00D2BE', '#A78BFA', '#F472B6', '#60A5FA', '#4ADE80', '#FB923C', '#FACC15'
+  '#5EF2E8', '#A78BFA', '#F472B6', '#60A5FA', '#4ADE80', '#FB923C', '#FACC15'
 ] as const
 
 export const relationshipBgColors: Record<string, string> = {
@@ -25,7 +25,7 @@ export const relationshipBgColors: Record<string, string> = {
   'enables': 'rgba(74, 222, 128, 0.15)',
   'opposes': 'rgba(239, 68, 68, 0.15)',
   'example-of': 'rgba(251, 146, 60, 0.15)',
-  'part-of': 'rgba(0, 210, 190, 0.15)',
+  'part-of': 'rgba(94, 242, 232, 0.15)',
   'leads-to': 'rgba(250, 204, 21, 0.15)',
 }
 

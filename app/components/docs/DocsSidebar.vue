@@ -154,7 +154,7 @@ function isActive(path: string): boolean {
 }
 
 :root.light .docs-sidebar {
-  background: #FFFFFF;
+  background: var(--nc-surface);
 }
 
 .docs-sidebar::-webkit-scrollbar { width: 4px; }

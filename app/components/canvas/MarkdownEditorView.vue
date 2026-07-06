@@ -420,7 +420,7 @@ const edgeCount = computed(() => mapStore.edges.size)
               :cx="(node.position.x || 0) * 0.12"
               :cy="(node.position.y || 0) * 0.12"
               :r="node.id === mapStore.rootNodeId ? 5 : 2.5"
-              :fill="node.id === selectedNode?.id ? '#00D2BE' : node.style?.borderColor || '#71717A'"
+              :fill="node.id === selectedNode?.id ? '#5EF2E8' : node.style?.borderColor || '#71717A'"
               class="mde-mini-dot"
               @click="selectNode(node.id)"
             />

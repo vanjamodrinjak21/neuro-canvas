@@ -128,7 +128,7 @@ export function useViewportCompass() {
     indicators: CompassIndicator[],
     viewportWidth: number,
     viewportHeight: number,
-    accentColor: string = '#00D2BE'
+    accentColor: string = '#5EF2E8'
   ) {
     for (const indicator of indicators) {
       drawEdgeGradient(ctx, indicator, viewportWidth, viewportHeight, accentColor)

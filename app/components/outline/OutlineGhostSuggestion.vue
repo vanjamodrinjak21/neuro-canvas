@@ -49,7 +49,7 @@ const emit = defineEmits<{
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--nc-accent, #00D2BE);
+  background: var(--nc-accent, #5EF2E8);
   margin-top: 10px;
 }
 
@@ -58,14 +58,14 @@ const emit = defineEmits<{
   font-size: calc(15px * var(--nc-text-scale, 1));
   font-weight: 400;
   line-height: 24px;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent, #5EF2E8);
   font-style: italic;
 }
 
 .nc-ghost-hint {
   font-family: var(--nc-font-mono);
   font-size: calc(11px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted, #52525B);
+  color: var(--nc-text-muted, rgba(244, 244, 248, 0.45));
   padding-top: 2px;
   padding-bottom: 6px;
   opacity: 0.7;
@@ -75,8 +75,8 @@ const emit = defineEmits<{
   display: inline-block;
   padding: 1px 5px;
   font-size: calc(10px * var(--nc-text-scale, 1));
-  background: var(--nc-surface-3, #18181B);
-  border: 1px solid var(--nc-border, #1A1A1E);
+  background: var(--nc-surface-3, #1a1a20);
+  border: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
   border-radius: 3px;
   margin-right: 3px;
 }

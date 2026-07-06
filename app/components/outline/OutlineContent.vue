@@ -95,10 +95,10 @@ defineExpose({ focusItem })
   align-items: center;
   justify-content: center;
   border-radius: var(--nc-radius-xl, 16px);
-  background: var(--nc-surface-3, #18181B);
-  border: 1px solid var(--nc-border, #1A1A1E);
+  background: var(--nc-surface-3, #1a1a20);
+  border: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
   font-size: calc(24px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted, #52525B);
+  color: var(--nc-text-muted, rgba(244, 244, 248, 0.45));
   margin-bottom: 16px;
 }
 
@@ -106,13 +106,13 @@ defineExpose({ focusItem })
   font-family: var(--nc-font-display);
   font-size: calc(18px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-text, #FAFAFA);
+  color: var(--nc-text, #f4f4f8);
   margin-bottom: 6px;
 }
 
 .nc-outline-empty-desc {
   font-size: calc(14px * var(--nc-text-scale, 1));
-  color: var(--nc-text-muted, #52525B);
+  color: var(--nc-text-muted, rgba(244, 244, 248, 0.45));
   max-width: 240px;
   line-height: 1.5;
 }

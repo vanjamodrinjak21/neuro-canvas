@@ -51,24 +51,24 @@ const canvasHeight = computed(() => {
 
 // Category color map for color-coding
 const categoryColors: Record<string, string> = {
-  default: '#00D2BE',
+  default: '#5EF2E8',
   idea: '#A78BFA',
   task: '#60A5FA',
   note: '#4ADE80',
   question: '#F472B6'
 }
 
-// Theme-aware minimap palettes
+// Theme-aware minimap palettes (canvas-drawn: values track the design tokens)
 const darkPalette = {
-  bg: '#0D0D0F',
-  node: '#00D2BE',
-  nodeSelected: '#00FFE0',
-  root: '#FAFAFA',
+  bg: '#0d0d11',
+  node: '#5EF2E8',
+  nodeSelected: '#8FF7EF',
+  root: '#f4f4f8',
   edge: 'rgba(37, 37, 48, 0.6)',
-  viewport: 'rgba(0, 210, 190, 0.95)',
-  viewportFill: 'rgba(0, 210, 190, 0.12)',
+  viewport: 'rgba(94, 242, 232, 0.95)',
+  viewportFill: 'rgba(94, 242, 232, 0.12)',
   regionLabel: 'rgba(250, 250, 250, 0.4)',
-  breadcrumb: 'rgba(0, 210, 190, 0.3)',
+  breadcrumb: 'rgba(94, 242, 232, 0.3)',
 }
 
 const lightPalette = {
@@ -77,14 +77,14 @@ const lightPalette = {
   // bumped to a real neutral so node dots have something to sit against
   // without relying on the now-near-white bg.
   bg: '#FAFAF9',
-  node: '#00A89A',
-  nodeSelected: '#00D2BE',
+  node: '#0b9e93',
+  nodeSelected: '#5EF2E8',
   root: '#111111',
   edge: 'rgba(0, 0, 0, 0.18)',
-  viewport: 'rgba(0, 168, 154, 0.65)',
-  viewportFill: 'rgba(0, 168, 154, 0.08)',
+  viewport: 'rgba(11, 158, 147, 0.65)',
+  viewportFill: 'rgba(11, 158, 147, 0.08)',
   regionLabel: 'rgba(17, 17, 17, 0.4)',
-  breadcrumb: 'rgba(0, 168, 154, 0.45)',
+  breadcrumb: 'rgba(11, 158, 147, 0.45)',
 }
 
 const isLight = ref(false)
@@ -228,7 +228,7 @@ function render() {
           const density = densityGrid[r]![c]!
           if (density > 0) {
             const intensity = density / maxDensity
-            ctx.fillStyle = `rgba(0, 210, 190, ${0.02 + intensity * 0.08})`
+            ctx.fillStyle = `rgba(94, 242, 232, ${0.02 + intensity * 0.08})`
             ctx.fillRect(c * gridSize, r * gridSize, gridSize, gridSize)
           }
         }
@@ -372,7 +372,7 @@ function render() {
   if (isHovered.value) {
     const vcx = vr.x + vr.width / 2
     const vcy = vr.y + vr.height / 2
-    ctx.strokeStyle = 'rgba(0, 210, 190, 0.3)'
+    ctx.strokeStyle = 'rgba(94, 242, 232, 0.3)'
     ctx.lineWidth = 0.5
     ctx.beginPath()
     ctx.moveTo(vcx - 4, vcy)

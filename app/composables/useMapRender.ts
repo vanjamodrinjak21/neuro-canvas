@@ -112,7 +112,7 @@ export function useMapRender() {
 
       // Root node accent glow
       if (node.isRoot) {
-        ctx.strokeStyle = '#00D2BE'
+        ctx.strokeStyle = '#5EF2E8'
         ctx.lineWidth = 2
         ctx.beginPath()
         ctx.roundRect(pos.x, pos.y, w, h, r)

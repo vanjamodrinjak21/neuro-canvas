@@ -80,11 +80,11 @@ const isClickable = computed(() => syncEngine.syncStatus.value === 'conflict')
   flex-shrink: 0;
 }
 
-.dot-green { background: var(--nc-accent, #10b981); }
-.dot-blue { background: #3b82f6; }
+.dot-green { background: var(--nc-accent, #5EF2E8); }
+.dot-blue { background: var(--nc-info); }
 .dot-yellow { background: #f59e0b; }
-.dot-red { background: #ef4444; }
-.dot-gray { background: var(--nc-ink-muted, #6b7280); }
+.dot-red { background: var(--nc-error); }
+.dot-gray { background: var(--nc-ink-muted, rgba(244, 244, 248, 0.45)); }
 
 .dot-pulse {
   animation: pulse 1.5s ease-in-out infinite;

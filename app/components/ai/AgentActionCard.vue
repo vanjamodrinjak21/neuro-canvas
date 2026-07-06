@@ -61,7 +61,7 @@ const actionLabels: Record<string, string> = {
 <style scoped>
 .nc-action-card {
   background: #141418;
-  border: 1px solid #1A1A1E;
+  border: 1px solid var(--nc-border);
   border-left: 3px solid;
   border-radius: 6px;
   padding: 10px 12px;
@@ -77,7 +77,7 @@ const actionLabels: Record<string, string> = {
 .nc-action-label {
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: #FAFAFA;
+  color: var(--nc-text);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -110,14 +110,14 @@ const actionLabels: Record<string, string> = {
 }
 
 .nc-action-accept {
-  background: rgba(0, 210, 190, 0.1);
-  border: 1px solid rgba(0, 210, 190, 0.3);
-  color: #00D2BE;
+  background: rgba(94, 242, 232, 0.1);
+  border: 1px solid rgba(94, 242, 232, 0.3);
+  color: var(--nc-accent);
 }
 
 .nc-action-accept:hover {
-  background: rgba(0, 210, 190, 0.2);
-  border-color: #00D2BE;
+  background: rgba(94, 242, 232, 0.2);
+  border-color: var(--nc-accent);
 }
 
 .nc-action-dismiss {
@@ -128,6 +128,6 @@ const actionLabels: Record<string, string> = {
 
 .nc-action-dismiss:hover {
   border-color: #3A3A42;
-  color: #FAFAFA;
+  color: var(--nc-text);
 }
 </style>

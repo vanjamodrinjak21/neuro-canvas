@@ -73,8 +73,8 @@ function commitTitle() {
   gap: 8px;
   padding: 8px 12px;
   padding-top: max(8px, env(safe-area-inset-top));
-  background: var(--nc-bg, #09090B);
-  border-bottom: 1px solid var(--nc-border, #1A1A1E);
+  background: var(--nc-bg, #050508);
+  border-bottom: 1px solid var(--nc-border, rgba(244, 244, 248, 0.14));
   min-height: 52px;
   position: sticky;
   top: 0;
@@ -98,7 +98,7 @@ function commitTitle() {
 }
 
 .nc-outline-back:active {
-  background: var(--nc-surface-3, #18181B);
+  background: var(--nc-surface-3, #1a1a20);
 }
 
 .nc-outline-title-group {
@@ -113,7 +113,7 @@ function commitTitle() {
   font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-text, #FAFAFA);
+  color: var(--nc-text, #f4f4f8);
   letter-spacing: -0.01em;
   background: none;
   border: none;
@@ -130,10 +130,10 @@ function commitTitle() {
   font-family: var(--nc-font-display);
   font-size: calc(16px * var(--nc-text-scale, 1));
   font-weight: 600;
-  color: var(--nc-text, #FAFAFA);
+  color: var(--nc-text, #f4f4f8);
   letter-spacing: -0.01em;
-  background: var(--nc-surface-3, #18181B);
-  border: 1px solid var(--nc-accent, #00D2BE);
+  background: var(--nc-surface-3, #1a1a20);
+  border: 1px solid var(--nc-accent, #5EF2E8);
   border-radius: var(--nc-radius-sm, 6px);
   padding: 2px 8px;
   outline: none;
@@ -143,7 +143,7 @@ function commitTitle() {
 .nc-outline-save-status {
   font-size: calc(11px * var(--nc-text-scale, 1));
   font-weight: 500;
-  color: var(--nc-accent, #00D2BE);
+  color: var(--nc-accent, #5EF2E8);
   opacity: 0.7;
 }
 
@@ -164,6 +164,6 @@ function commitTitle() {
 }
 
 .nc-outline-export-btn:active {
-  background: var(--nc-surface-3, #18181B);
+  background: var(--nc-surface-3, #1a1a20);
 }
 </style>
