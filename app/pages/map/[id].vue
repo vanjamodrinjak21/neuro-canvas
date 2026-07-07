@@ -10,7 +10,12 @@ import { useSemanticStore } from '~/stores/semanticStore'
 import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
 import { useAutoSave } from '~/composables/useAutoSave'
 import { useAI } from '~/composables/useAI'
-import { useBatchedGeneration, BATCH_THRESHOLD } from '~/composables/useBatchedGeneration'
+import {
+  useBatchedGeneration,
+  BATCH_THRESHOLD,
+  countStructureNodes,
+  trimStructureToTarget,
+} from '~/composables/useBatchedGeneration'
 import { useMapRenderer } from '~/composables/useMapRenderer'
 import { useSpringCamera } from '~/composables/useSpringCamera'
 import { useSmoothZoom } from '~/composables/useSmoothZoom'
@@ -1816,14 +1821,35 @@ async function handleGenerateMap(topic: string, options: { depth: string; style:
     // tree in batches so the requested node count is actually reached. Smaller
     // targets keep the proven single streamed pass (streamed so a long
     // generation doesn't blow the ~100s edge timeout / 524).
-    const structure =
+    const onNodeProgress = (count: number, target: number) => {
+      aiGenNodeProgress.value = { count, target }
+    }
+    let structure =
       (options.nodeCount ?? 0) > BATCH_THRESHOLD
         ? await batchedGen.generateLargeMap(topic, genOptions, {
-            onProgress: (count, target) => {
-              aiGenNodeProgress.value = { count, target }
-            },
+            onProgress: onNodeProgress,
           })
         : await ai.generateMapStructure(topic, genOptions, { stream: true })
+
+    // AER-97: an explicit node count means the rendered map has EXACTLY that
+    // many nodes. The batched grower self-enforces (grows to N, trims its own
+    // overshoot); the single streamed pass can land over or under, so trim /
+    // top up here before rendering. Seeding the grower with the short result
+    // reuses what was generated instead of starting over.
+    const exactTarget = Math.floor(options.nodeCount ?? 0)
+    if (exactTarget >= 1) {
+      const count = countStructureNodes(structure)
+      if (count > exactTarget) {
+        trimStructureToTarget(structure, exactTarget)
+      } else if (count < exactTarget) {
+        structure = await batchedGen.generateLargeMap(
+          topic,
+          genOptions,
+          { onProgress: onNodeProgress },
+          structure,
+        )
+      }
+    }
 
     // Clear existing nodes if desired or render at offset
     const startPosition = { x: 0, y: 0 }

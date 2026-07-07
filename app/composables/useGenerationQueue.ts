@@ -32,6 +32,8 @@ import { useAI } from '~/composables/useAI'
 import {
   useBatchedGeneration,
   BATCH_THRESHOLD,
+  countStructureNodes,
+  trimStructureToTarget,
   type GrowSignal,
 } from '~/composables/useBatchedGeneration'
 import { useMapStore } from '~/stores/mapStore'
@@ -167,13 +169,41 @@ export function useGenerationQueue() {
   }
 
   async function runJob(job: GenJob) {
-    const target = job.options.nodeCount ?? 0
+    const target = Math.floor(job.options.nodeCount ?? 0)
     const useBatched = target > BATCH_THRESHOLD
 
     try {
-      const structure = useBatched
+      let structure = useBatched
         ? await runBatchedJob(job, target)
         : await runSinglePassJob(job)
+
+      // AER-97: an explicit nodeCount is a contract — the final map must have
+      // EXACTLY that many nodes (countStructureNodes semantics). The batched
+      // grower self-enforces; the single streamed pass can come back over or
+      // under, so enforce here. Skipped when the job was dismissed mid-run —
+      // no point trimming, let alone spending more LLM calls topping up, a
+      // job nobody will open.
+      if (target >= 1 && jobs.value.some(j => j.id === job.id)) {
+        const count = countStructureNodes(structure)
+        if (count > target) {
+          trimStructureToTarget(structure, target)
+        } else if (count < target) {
+          // Undershoot → top up by growing the returned structure with the
+          // batched grower, seeded so it doesn't re-generate from scratch.
+          // The grower lands exactly on target (it trims its own overshoot);
+          // it only falls short if its call budget exhausts — the one
+          // acceptable "< N" case. Stop the single-pass creep timer first:
+          // top-up progress is count-driven, and the creep would otherwise
+          // drag a higher count-based progress back down toward 0.9.
+          const timer = activeTimers.get(job.id)
+          if (timer) {
+            clearInterval(timer)
+            activeTimers.delete(job.id)
+          }
+          structure = await runBatchedJob(job, target, structure)
+        }
+      }
+
       // If the job was dismissed mid-run it's no longer tracked — don't mutate
       // (or resurrect) it; just let the finally clean up.
       if (jobs.value.some(j => j.id === job.id)) {
@@ -227,13 +257,22 @@ export function useGenerationQueue() {
 
   /**
    * Large target (> BATCH_THRESHOLD): seed a skeleton then grow it across many
-   * expansion passes until the node count approaches the target. Progress is
-   * count-driven (real nodes / target), and the job is cancellable mid-grow.
+   * expansion passes until the node count lands exactly on the target (the
+   * grower trims its own overshoot). Progress is count-driven (real nodes /
+   * target), and the job is cancellable mid-grow.
+   *
+   * With a `seed`, the grower skips its own seeding call and grows the given
+   * structure instead — used to top up a single-pass result that came back
+   * short of an explicit nodeCount (AER-97).
    */
-  async function runBatchedJob(job: GenJob, target: number): Promise<MapStructure> {
+  async function runBatchedJob(
+    job: GenJob,
+    target: number,
+    seed?: MapStructure,
+  ): Promise<MapStructure> {
     const signal: GrowSignal = { aborted: false }
     activeSignals.set(job.id, signal)
-    job.nodeProgress = { count: 0, target }
+    job.nodeProgress = { count: seed ? countStructureNodes(seed) : 0, target }
 
     return batched.generateLargeMap(job.topic, job.options, {
       signal,
@@ -243,7 +282,7 @@ export function useGenerationQueue() {
         const ratio = tgt > 0 ? count / tgt : 0
         job.progress = Math.min(0.97, Math.max(job.progress, ratio))
       },
-    })
+    }, seed)
   }
 
   /** Re-run a failed job from scratch. */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { appendDocumentKnowledge } from '../ai-prompts'
+import { appendDocumentKnowledge, buildMapStructurePrompt } from '../ai-prompts'
 
 // appendDocumentKnowledge is the ONLY client-side seam that touches the RAG
 // document-knowledge block. It must (a) leave the prompt untouched when there
@@ -38,5 +38,30 @@ describe('appendDocumentKnowledge', () => {
     expect(out).toContain('&lt;script&gt;&amp;')
     // No double-escaping introduced by the client.
     expect(out).not.toContain('&amp;lt;')
+  })
+})
+
+// An explicit nodeCount is a contract (AER-97): the prompt must demand the
+// EXACT total, not a tolerance band — the band is what made "generate 40
+// nodes" come back with 34-46. Without a nodeCount, the branch-derived band
+// stays as-is.
+describe('buildMapStructurePrompt node-count demand (AER-97)', () => {
+  it('demands EXACTLY N total nodes when nodeCount is explicit — no band', () => {
+    const { system, user } = buildMapStructurePrompt('Photosynthesis', { nodeCount: 40 })
+    expect(system).toContain('EXACTLY 40 total nodes')
+    expect(system).toContain('until the total is exactly 40')
+    expect(user).toContain('exactly 40 total nodes')
+    // No "low-high total nodes" band anywhere (was "34-46" for a target of 40).
+    expect(system).not.toMatch(/\d+-\d+ total nodes/)
+    expect(user).not.toMatch(/\d+-\d+ total nodes/)
+    expect(system).not.toContain('34-46')
+  })
+
+  it('keeps the branch-derived band when nodeCount is absent', () => {
+    const { system, user } = buildMapStructurePrompt('Photosynthesis', { branchCount: 5 })
+    // branchCount*4 – branchCount*6 → 20-30, verbatim as before.
+    expect(system).toContain('produce 20-30 total nodes')
+    expect(user).toContain('reaches 20-30 total nodes')
+    expect(system).not.toContain('EXACTLY')
   })
 })
