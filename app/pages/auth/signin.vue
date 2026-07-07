@@ -212,8 +212,22 @@ async function handleSignin() {
 
 // Auto-trigger OAuth when ?auto=google|github is in the URL.
 // Used by mobile app to skip the signin page and go directly to the provider.
-onMounted(() => {
+//
+// Clear any existing browser session FIRST. The native in-app browser sheet
+// (SFSafariViewController) keeps its own persistent cookie jar, and a stale
+// session there poisons the OAuth callback: next-auth sees "session user ≠
+// account owner" and errors OAuthAccountNotLinked BEFORE the email-linking
+// path — this is how a half-crashed Apple callback left Google sign-in dead
+// on mobile (AER-90). A ?auto= visit always means "start a fresh sign-in".
+onMounted(async () => {
   const autoProvider = route.query.auto as string | undefined
+  if (!autoProvider) return
+  try {
+    const { data, signOut } = useAuth()
+    if (data.value?.user && signOut) {
+      await signOut({ redirect: false })
+    }
+  } catch { /* no session / signOut unavailable — proceed to the provider */ }
   if (autoProvider === 'google') {
     nextTick(() => handleGoogleSignin())
   } else if (autoProvider === 'github') {
