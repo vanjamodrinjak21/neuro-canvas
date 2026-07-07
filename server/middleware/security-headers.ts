@@ -9,7 +9,12 @@
 // list, e.g. "https://example.com https://*.school.edu", or 'none' to lock
 // embedding back down), defaulting to * so any site can embed. API JSON and
 // the next-auth endpoints stay frame-blocked below regardless.
-const FRAME_ANCESTORS = (process.env.EMBED_FRAME_ANCESTORS || '*').trim()
+const _rawAncestors = (process.env.EMBED_FRAME_ANCESTORS || '*').trim()
+// CSP keywords must be quoted ("'none'", "'self'") — accept the unquoted
+// spellings operators will inevitably type and normalize them.
+const FRAME_ANCESTORS = _rawAncestors === 'none'
+  ? "'none'"
+  : _rawAncestors === 'self' ? "'self'" : _rawAncestors
 
 const HTML_CSP = [
   "default-src 'self'",
@@ -50,8 +55,11 @@ export default defineEventHandler((event) => {
 
   // HTML / asset routes — apply CSP + sniff protection. Framing is governed
   // by the CSP frame-ancestors directive above (AER-98): no X-Frame-Options
-  // here, because a stale DENY would override the permissive frame-ancestors
-  // in older browsers and block legitimate embeds.
+  // by default, because a stale DENY would override the permissive
+  // frame-ancestors in older browsers and block legitimate embeds. When the
+  // operator locks embedding back down (EMBED_FRAME_ANCESTORS='none'), the
+  // legacy X-Frame-Options fallback returns for browsers without
+  // frame-ancestors support.
   // Don't set Cache-Control here: Nuxt + Nitro tune that per-route, and
   // we don't want to break the asset cache.
   setResponseHeaders(event, {
@@ -61,4 +69,7 @@ export default defineEventHandler((event) => {
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
     'Content-Security-Policy': HTML_CSP,
   })
+  if (FRAME_ANCESTORS === "'none'" || FRAME_ANCESTORS === 'none') {
+    setResponseHeader(event, 'X-Frame-Options', 'DENY')
+  }
 })
