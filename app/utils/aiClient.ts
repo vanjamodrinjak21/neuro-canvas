@@ -67,7 +67,7 @@ function isNativeShell(): boolean {
  * Returns the Tauri plugin-http fetch (bypasses WKWebView CORS) when
  * running inside Tauri, otherwise falls back to the browser's native fetch.
  */
-async function getTauriFetch(): Promise<typeof globalThis.fetch> {
+export async function getTauriFetch(): Promise<typeof globalThis.fetch> {
   if (isTauriEnvironment()) {
     const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
     return tauriFetch
@@ -80,10 +80,21 @@ async function getTauriFetch(): Promise<typeof globalThis.fetch> {
 
 // ─── Ollama model detection ─────────────────────────────────────────
 
+/**
+ * Auto-detected Ollama model, cached PER baseUrl so changing the endpoint
+ * never serves a stale model name from a different server (AER-96).
+ */
+const _cachedOllamaModels = new Map<string, string>()
+
+/** Drop the cached auto-detect model for one baseUrl (used on 404 re-detect). */
+function clearOllamaModelCache(baseUrl: string): void {
+  _cachedOllamaModels.delete(baseUrl)
+}
+
 /** Pick the first available Ollama model from the local server. */
-let _cachedOllamaModel: string | null = null
 async function detectOllamaModel(fetchFn: typeof globalThis.fetch, baseUrl: string): Promise<string> {
-  if (_cachedOllamaModel) return _cachedOllamaModel
+  const cached = _cachedOllamaModels.get(baseUrl)
+  if (cached) return cached
 
   try {
     const res = await fetchFn(`${baseUrl}/api/tags`)
@@ -92,8 +103,9 @@ async function detectOllamaModel(fetchFn: typeof globalThis.fetch, baseUrl: stri
       const models: string[] = (data.models || []).map((m: { name: string }) => m.name)
       if (models.length > 0) {
         // Use the first installed model — the user knows what they pulled
-        _cachedOllamaModel = models[0]!
-        return _cachedOllamaModel
+        const first = models[0]!
+        _cachedOllamaModels.set(baseUrl, first)
+        return first
       }
     }
   } catch {
@@ -101,6 +113,20 @@ async function detectOllamaModel(fetchFn: typeof globalThis.fetch, baseUrl: stri
   }
 
   return 'llama3.2'
+}
+
+/**
+ * Resolve the Ollama model to use: honour an explicit user selection, else
+ * auto-detect the first installed model. Exported so StreamingPipeline can
+ * reuse the exact same logic for real token streaming (AER-96) instead of
+ * duplicating detection.
+ */
+export async function resolveOllamaModel(
+  fetchFn: typeof globalThis.fetch,
+  baseUrl: string,
+  model?: string
+): Promise<string> {
+  return model || detectOllamaModel(fetchFn, baseUrl)
 }
 
 // ─── Direct provider calls (Tauri desktop mode) ──────────────────────
@@ -195,8 +221,9 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
 
     case 'ollama': {
       const baseUrl = req.baseUrl || 'http://localhost:11434'
-      // Always auto-detect from local Ollama — ignore stale saved model
-      const ollamaModel = await detectOllamaModel(fetch, baseUrl)
+      // Honour the user-selected model when provided (AER-96); only
+      // auto-detect the first installed model when none was passed.
+      const ollamaModel = await resolveOllamaModel(fetch, baseUrl, model)
 
       const response = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
@@ -211,9 +238,11 @@ async function directComplete(req: AICompletionRequest): Promise<AICompletionRes
       })
 
       if (!response.ok) {
-        // Model not found — clear cache and retry once with fresh detection
-        if (response.status === 404 && _cachedOllamaModel) {
-          _cachedOllamaModel = null
+        // Model not found (404) — either the auto-detect cache went stale OR
+        // the user-selected model was uninstalled. Either way, clear this
+        // baseUrl's cache, auto-detect a fresh model, and retry once.
+        if (response.status === 404) {
+          clearOllamaModelCache(baseUrl)
           const retryModel = await detectOllamaModel(fetch, baseUrl)
           const retryResponse = await fetch(`${baseUrl}/api/chat`, {
             method: 'POST',

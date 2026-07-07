@@ -2,6 +2,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { streamCompletion } from '~/ai/pipeline/StreamingPipeline'
 
+// The Tauri plugin-http fetch is dynamically imported by aiClient.getTauriFetch().
+// Route it to a per-test programmable handler for the Ollama streaming tests.
+let tauriFetchHandler: (url: string, init?: any) => Promise<any>
+vi.mock('@tauri-apps/plugin-http', () => ({
+  fetch: (url: string, init?: any) => tauriFetchHandler(url, init)
+}))
+
 // ---------------------------------------------------------------------------
 // streamCompletion — web SSE path (AER-77)
 //
@@ -158,5 +165,136 @@ describe('streamCompletion — resource guards (AER-81)', () => {
     ]))
 
     await expect(streamCompletion(PARAMS)).rejects.toThrow(/exceeded/)
+  })
+})
+
+// ─── AER-96: real NDJSON token streaming for Ollama under Tauri ──────────────
+//
+// Under Tauri desktop, Ollama uses a real /api/chat stream:true request that
+// emits one JSON object per line ({message:{content},done:false} … done:true).
+// These tests mock the plugin-http fetch with a ReadableStream, including lines
+// split across chunks, and assert onDelta accumulation, done handling, and the
+// fallback-to-simulated path on a non-OK response.
+
+/** Build a plugin-http Response whose body streams the given raw string chunks. */
+function ndjsonStreamResponse(status: number, chunks: string[]) {
+  const encoder = new TextEncoder()
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const c of chunks) controller.enqueue(encoder.encode(c))
+      controller.close()
+    }
+  })
+  return { ok: status >= 200 && status < 300, status, body, text: async () => 'error body' }
+}
+
+const OLLAMA_PARAMS = {
+  provider: 'ollama',
+  baseUrl: 'http://localhost:11434',
+  model: 'llama3.2:latest', // explicit model → no /api/tags auto-detect
+  systemPrompt: 'sys',
+  messages: [{ role: 'user', content: 'topic' }],
+  maxTokens: 1024,
+  temperature: 0.7
+}
+
+describe('streamCompletion — Ollama NDJSON streaming under Tauri (AER-96)', () => {
+  beforeEach(() => {
+    ;(window as any).__TAURI__ = {}
+    vi.unstubAllGlobals()
+  })
+  afterEach(() => {
+    delete (window as any).__TAURI__
+  })
+
+  it('parses NDJSON tokens (lines split across chunks) and accumulates via onDelta', async () => {
+    tauriFetchHandler = async (url) => {
+      if (url.endsWith('/api/chat')) {
+        return ndjsonStreamResponse(200, [
+          // A line split across two chunks — the parser must buffer the partial.
+          '{"message":{"role":"assistant","content":"Hel',
+          'lo"},"done":false}\n',
+          '{"message":{"role":"assistant","content":" world"},"done":false}\n',
+          // done line carries eval counts → usage
+          '{"message":{"role":"assistant","content":"!"},"done":true,"prompt_eval_count":10,"eval_count":3}\n'
+        ])
+      }
+      throw new Error(`unexpected ${url}`)
+    }
+    const onDelta = vi.fn()
+    const onDone = vi.fn()
+
+    const result = await streamCompletion(OLLAMA_PARAMS, { onDelta, onDone })
+
+    expect(result).toBe('Hello world!')
+    expect(onDelta).toHaveBeenCalledTimes(3)
+    expect(onDelta).toHaveBeenNthCalledWith(1, 'Hello', 'Hello')
+    expect(onDelta).toHaveBeenNthCalledWith(2, ' world', 'Hello world')
+    expect(onDelta).toHaveBeenNthCalledWith(3, '!', 'Hello world!')
+    expect(onDone).toHaveBeenCalledWith('Hello world!', {
+      prompt_tokens: 10,
+      completion_tokens: 3,
+      total_tokens: 13
+    })
+  })
+
+  it('flushes a final buffered line that lacks a trailing newline', async () => {
+    tauriFetchHandler = async (url) => {
+      if (url.endsWith('/api/chat')) {
+        return ndjsonStreamResponse(200, [
+          '{"message":{"content":"only"},"done":false}\n',
+          // no trailing newline on the terminal done line
+          '{"message":{"content":" token"},"done":true}'
+        ])
+      }
+      throw new Error(`unexpected ${url}`)
+    }
+
+    const result = await streamCompletion(OLLAMA_PARAMS)
+    expect(result).toBe('only token')
+  })
+
+  it('skips malformed NDJSON lines without dropping later tokens', async () => {
+    tauriFetchHandler = async (url) => {
+      if (url.endsWith('/api/chat')) {
+        return ndjsonStreamResponse(200, [
+          '{ this is not json\n',
+          '{"message":{"content":"ok"},"done":false}\n',
+          '{"done":true}\n'
+        ])
+      }
+      throw new Error(`unexpected ${url}`)
+    }
+
+    await expect(streamCompletion(OLLAMA_PARAMS)).resolves.toBe('ok')
+  })
+
+  it('falls back to the simulated (non-streaming) path on a non-OK response', async () => {
+    let chatCalls = 0
+    tauriFetchHandler = async (url, init) => {
+      if (url.endsWith('/api/chat')) {
+        chatCalls++
+        if (chatCalls === 1) {
+          // Streaming attempt: non-OK → throws → fallback path
+          return ndjsonStreamResponse(500, [])
+        }
+        // Fallback path re-issues a blocking (stream:false) request
+        expect(JSON.parse(init.body).stream).toBe(false)
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ message: { content: 'fallback content' } }),
+          text: async () => ''
+        }
+      }
+      throw new Error(`unexpected ${url}`)
+    }
+    const onDone = vi.fn()
+
+    const result = await streamCompletion(OLLAMA_PARAMS, { onDone })
+
+    expect(result).toBe('fallback content')
+    expect(chatCalls).toBe(2) // streaming attempt + simulated fallback
+    expect(onDone).toHaveBeenCalledWith('fallback content', null)
   })
 })
