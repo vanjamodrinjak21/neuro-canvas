@@ -22,6 +22,10 @@ export default defineNitroPlugin((nitro: NitroApp) => {
     if (!APPLE_AUTH_ROUTE.test(path)) return
 
     const res = event.node.res
+    // The auth handler may have already streamed the callback response (seen
+    // on Apple's form_post callback in prod: ERR_HTTP_HEADERS_SENT crashed the
+    // whole request). Headers gone = nothing to rewrite — bail out.
+    if (res.headersSent) return
     const existing = res.getHeader('set-cookie')
     if (!existing) return
 

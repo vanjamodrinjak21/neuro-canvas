@@ -113,6 +113,11 @@ if (googleClientId && googleClientSecret) {
     Google({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
+      // Google verifies email ownership, so linking a Google sign-in to an
+      // existing same-email account is safe. Without this, an account created
+      // via another method throws OAuthAccountNotLinked ("already registered
+      // with a different sign-in method") instead of signing in.
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           prompt: 'consent',
@@ -204,6 +209,11 @@ if (appleClientId && appleTeamId && appleKeyId && applePrivateKey) {
       Apple({
         clientId: appleClientId,
         clientSecret: appleClientSecret,
+        // Apple verifies email ownership (real or relay), so linking an Apple
+        // sign-in to an existing same-email account is safe. Without this, a
+        // user registered via Google/credentials who shares their real email
+        // with Apple gets OAuthAccountNotLinked instead of signing in.
+        allowDangerousEmailAccountLinking: true,
         // Request name + email. Apple returns the name ONLY on the first consent
         // (in the form_post body) and NEVER a profile picture, so avatars always
         // fall back to initials (resolveAvatarInitials). form_post is required
