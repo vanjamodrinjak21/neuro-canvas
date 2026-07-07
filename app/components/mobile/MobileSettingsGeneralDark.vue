@@ -694,44 +694,55 @@ async function manualUpdateCheck() {
 }
 .mgen-chev { flex-shrink: 0; color: var(--nc-text-dim); }
 
-/* ── Toggle — NcSwitch grammar (REDESIGN.md §5) ────────────────────────
-   Hairline track on chip fill when off; accent track + bg-ink knob when on.
-   52 × 32 track, 26px knob, 20px travel. No glow, single ease. */
+/* ── Toggle — iOS UISwitch grammar ─────────────────────────────────────
+   Borderless neutral track (Apple's 120/120/128 gray family), accent track
+   when on, and an ALWAYS-WHITE 28px knob with Apple's layered drop shadow —
+   the knob never changes color, only the track does. 52 × 32 track, 2px
+   inset, 20px travel; pressing stretches the knob 4px like iOS. */
 .mgen-toggle {
   position: relative;
   width: 52px; height: 32px;
   padding: 0;
-  border: 1px solid var(--nc-border);
+  border: none;
   border-radius: 999px;
-  background: var(--nc-chip-bg);
+  background: rgba(120, 120, 128, 0.32);
   cursor: pointer;
-  transition: background-color 200ms var(--nc-ease), border-color 200ms var(--nc-ease), transform 120ms var(--nc-ease);
+  transition: background-color 200ms var(--nc-ease);
   flex-shrink: 0;
   display: inline-block;
   -webkit-tap-highlight-color: transparent;
 }
+:root.light .mgen-toggle { background: rgba(120, 120, 128, 0.16); }
 /* Expand hit area to the 44px minimum (track is 32px tall) */
 .mgen-toggle::before {
   content: '';
   position: absolute;
   inset: -7px 0;
 }
-.mgen-toggle:active { transform: scale(0.97); }
 .mgen-toggle-knob {
   position: absolute; left: 2px; top: 50%;
-  width: 26px; height: 26px; border-radius: 999px;
-  background: var(--nc-ink);
+  width: 28px; height: 28px; border-radius: 999px;
+  background: #FFFFFF;
   transform: translateY(-50%);
-  transition: transform 200ms var(--nc-ease), background-color 200ms var(--nc-ease);
+  transition: transform 220ms cubic-bezier(0.33, 0, 0.2, 1), width 220ms cubic-bezier(0.33, 0, 0.2, 1);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.15),
+    0 3px 1px rgba(0, 0, 0, 0.06),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 .mgen-toggle--on {
   background: var(--mgen-mint);
-  border-color: var(--mgen-mint);
 }
 .mgen-toggle--on .mgen-toggle-knob {
-  /* 50 (inner) − 26 (knob) − 2 − 2 = 20px travel. Keep vertical centering. */
+  /* 52 − 28 (knob) − 2 − 2 = 20px travel. Keep vertical centering. */
   transform: translate(20px, -50%);
-  background: var(--nc-bg);
+}
+/* iOS press affordance: the knob stretches toward the far side while the
+   finger is down; the ON side compensates so the outer edge stays put. */
+.mgen-toggle:active .mgen-toggle-knob { width: 32px; }
+.mgen-toggle--on:active .mgen-toggle-knob { transform: translate(16px, -50%); }
+@media (prefers-reduced-motion: reduce) {
+  .mgen-toggle, .mgen-toggle-knob { transition: none; }
 }
 
 /* Slider */
