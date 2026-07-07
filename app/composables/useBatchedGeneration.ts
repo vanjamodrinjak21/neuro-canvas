@@ -12,6 +12,9 @@
 //      sub-tree via hierarchicalExpand, grafting the result back onto the leaf.
 //   3) Repeats until the node count reaches the target — or a hard call budget /
 //      pass / depth ceiling is hit (so a 10k request can't run away forever).
+//   4) TRIMS any overshoot back to EXACTLY the target (AER-97): expansion
+//      granularity means the last pass can land past N, and an explicit
+//      nodeCount is a contract — root + branches + descendants must total N.
 //
 // All LLM work goes through useAI (provider resolution, retry, cache, RAG). The
 // grower itself is pure orchestration: the tree helpers below are exported and
@@ -50,8 +53,6 @@ const MAX_EXPANSION_CALLS = 1400
 const MAX_LEAF_DEPTH = 10
 /** Most leaves expanded in a single pass. */
 const MAX_LEAVES_PER_PASS = 24
-/** Stop growing once we're within this fraction of the target ("roughly N"). */
-const TARGET_TOLERANCE = 0.96
 
 // ── Pure tree helpers (exported for tests) ─────────────────────────────────
 
@@ -113,6 +114,94 @@ export function suggestionsToBranches(
       ? suggestionsToBranches(s.suggestedChildren, depth + 1)
       : [],
   }))
+}
+
+/**
+ * Deterministically trim an overgrown structure down to EXACTLY `target` nodes
+ * (`countStructureNodes` semantics: root + all branches + all descendants).
+ *
+ * Leaves are removed deepest-first, and among equal depth the LAST siblings
+ * first, so the map stays balanced and the earliest / most-important content
+ * survives. The root is never removed, and main branches are only removed when
+ * the target forces it (target < 1 + branch count). Cross-connections whose
+ * endpoints no longer resolve to a surviving node title are dropped.
+ *
+ * Mutates `structure` in place and returns the same reference. No-op when
+ * `target < 1` or the structure is already at/below the target.
+ */
+export function trimStructureToTarget(structure: MapStructure, target: number): MapStructure {
+  if (target < 1) return structure
+  let excess = countStructureNodes(structure) - target
+  if (excess <= 0) return structure
+
+  /** A removable leaf: the sibling array it lives in + its index + its depth. */
+  interface TrimLeaf {
+    siblings: BranchStructure[]
+    index: number
+    depth: number
+  }
+
+  // Collect non-main-branch leaves in document (pre-order) order. Depth is the
+  // actual traversal depth (0 = main branch) — deterministic even if a
+  // branch's own `depth` field is stale.
+  const collectTrimmableLeaves = (): TrimLeaf[] => {
+    const out: TrimLeaf[] = []
+    const walk = (siblings: BranchStructure[], depth: number) => {
+      siblings.forEach((branch, index) => {
+        const children = branch.children ?? []
+        if (children.length === 0) {
+          // Main branches (depth 0) are protected here; phase 2 handles them.
+          if (depth > 0) out.push({ siblings, index, depth })
+        } else {
+          walk(children, depth + 1)
+        }
+      })
+    }
+    walk(structure.branches, 0)
+    return out
+  }
+
+  // Phase 1: peel leaves layer by layer, deepest first. Within a layer, remove
+  // in REVERSE document order (last siblings first). Removing a depth-d leaf
+  // can only expose its parent at depth d-1 as a new leaf — never another
+  // depth-d leaf — so a whole layer can be removed per sweep, re-collecting
+  // between sweeps. Reverse order also keeps earlier splice indices valid.
+  while (excess > 0) {
+    const leaves = collectTrimmableLeaves()
+    if (leaves.length === 0) break // only the root + childless main branches remain
+    let maxDepth = 0
+    for (const l of leaves) maxDepth = Math.max(maxDepth, l.depth)
+    const layer = leaves.filter(l => l.depth === maxDepth)
+    for (let i = layer.length - 1; i >= 0 && excess > 0; i--) {
+      const leaf = layer[i]!
+      leaf.siblings.splice(leaf.index, 1)
+      excess--
+    }
+  }
+
+  // Phase 2 (only when the target forces it, target < 1 + branch count): every
+  // remaining node is the root or a childless main branch — drop main branches
+  // from the END until the count fits. The root itself is never removed.
+  while (excess > 0 && structure.branches.length > 0) {
+    structure.branches.pop()
+    excess--
+  }
+
+  // Drop cross-connections that now dangle: their refs are node titles, and a
+  // trimmed title must not leave a phantom edge behind.
+  if (structure.crossConnections?.length) {
+    const surviving = new Set<string>([structure.rootTopic])
+    const collectTitles = (branch: BranchStructure) => {
+      surviving.add(branch.title)
+      for (const c of branch.children ?? []) collectTitles(c)
+    }
+    for (const b of structure.branches) collectTitles(b)
+    structure.crossConnections = structure.crossConnections.filter(
+      cc => surviving.has(cc.sourceRef) && surviving.has(cc.targetRef),
+    )
+  }
+
+  return structure
 }
 
 /** Roughly how many nodes one hierarchicalExpand(depth, perLevel) call yields. */
@@ -183,20 +272,31 @@ export function useBatchedGeneration() {
   }
 
   /**
-   * Generate a map whose node count approaches `options.nodeCount`, growing the
-   * tree across multiple LLM passes. Returns the fully-grown MapStructure (not
-   * yet materialized — the caller renders it).
+   * Generate a map whose node count lands EXACTLY on `options.nodeCount`,
+   * growing the tree across multiple LLM passes and trimming any overshoot
+   * (AER-97). Returns the fully-grown MapStructure (not yet materialized — the
+   * caller renders it).
+   *
+   * When `seed` is provided the internal seeding call is skipped and the given
+   * structure is grown in place — this is how callers top up a single-pass
+   * result that came back short, without duplicating orchestration.
+   *
+   * The only case that may return FEWER than the target is pathological budget
+   * exhaustion (MAX_PASSES / MAX_EXPANSION_CALLS / MAX_LEAF_DEPTH / abort): the
+   * grower then returns what exists rather than hanging or spinning.
    */
   async function generateLargeMap(
     topic: string,
     options: MapGenerationOptions,
     cb: GrowCallbacks = {},
+    seed?: MapStructure,
   ): Promise<MapStructure> {
     const target = Math.max(1, Math.floor(options.nodeCount ?? 0))
 
-    // 1) Seed skeleton (streamed). Cap the ask so the first pass stays coherent.
+    // 1) Seed skeleton (streamed) — unless the caller supplied one. Cap the
+    //    ask so the first pass stays coherent.
     const seedTarget = Math.min(target, SINGLE_PASS_CAP)
-    const structure = await ai.generateMapStructure(
+    const structure = seed ?? await ai.generateMapStructure(
       topic,
       { ...options, nodeCount: seedTarget },
       { stream: true },
@@ -206,14 +306,13 @@ export function useBatchedGeneration() {
     // 2) Grow by expanding frontier leaves until the target (or a budget) is hit.
     let calls = 0
     let passes = 0
-    const stopAt = Math.floor(target * TARGET_TOLERANCE)
     // Leaves whose expansion returned nothing or threw — excluded from future
     // frontiers so a chronically-failing leaf can't be re-picked every pass
     // (breadth-first would otherwise keep choosing it) and spin to MAX_PASSES.
     const exhausted = new Set<BranchStructure>()
 
     while (
-      countStructureNodes(structure) < stopAt &&
+      countStructureNodes(structure) < target &&
       passes < MAX_PASSES &&
       calls < MAX_EXPANSION_CALLS &&
       !cb.signal?.aborted
@@ -282,7 +381,11 @@ export function useBatchedGeneration() {
       cb.onProgress?.(countStructureNodes(structure), target)
     }
 
-    return structure
+    // 3) Exactness (AER-97): expansion granularity means the last pass usually
+    //    overshoots — trim deterministically back to the target. If a budget
+    //    backstop (or cancel) stopped the grow below the target, this is a
+    //    no-op and the caller gets what exists (the one acceptable "< N" case).
+    return trimStructureToTarget(structure, target)
   }
 
   return { generateLargeMap }

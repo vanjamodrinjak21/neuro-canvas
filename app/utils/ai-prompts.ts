@@ -275,10 +275,17 @@ export function buildMapStructurePrompt(
     : (effMaxDepth >= 3 ? 4 : 3)
   const crossConnectionCount = includeCrossConnections ? Math.min(effBranchCount, 6) : 0
 
-  // Node-count target band. With an explicit nodeCount, aim tightly around it;
-  // otherwise fall back to the branch-derived range.
-  const targetLow = target ? Math.max(effBranchCount + 1, Math.round(target * 0.85)) : branchCount * 4
-  const targetHigh = target ? Math.round(target * 1.15) : branchCount * 6
+  // Node-count demand. With an explicit nodeCount the ask is EXACT (AER-97):
+  // a tolerance band here meant "generate 40 nodes" came back with 34-46, so
+  // the prompt now demands the precise total (callers additionally enforce
+  // exactness post-generation via trim/top-up). Without an explicit count,
+  // keep the branch-derived fallback band.
+  const fallbackLow = branchCount * 4
+  const fallbackHigh = branchCount * 6
+  const countRule = target
+    ? `TOTAL NODE COUNT IS THE PRIORITY: produce EXACTLY ${target} total nodes (root + all branches + all descendants) — not more, not less. Count your nodes before answering; if short, keep expanding the deepest branches until the total is exactly ${target}; if over, remove the least important leaves. Missing the exact count is a FAILURE.`
+    : `TOTAL NODE COUNT IS THE PRIORITY: produce ${fallbackLow}-${fallbackHigh} total nodes (root + all branches + all descendants). If the tree is short of the target, keep expanding the deepest branches with more children until you reach it — do NOT stop early. A small or shallow map is a FAILURE.`
+  const countAsk = target ? `exactly ${target}` : `${fallbackLow}-${fallbackHigh}`
 
   const system = `You are a world-class mind-mapping architect. You turn a single topic into a rich, multi-level knowledge map an expert would be proud of — structurally varied, intellectually interesting, and genuinely useful for learning or thinking.
 
@@ -288,7 +295,7 @@ NON-NEGOTIABLE STRUCTURE:
 1. Create exactly ${effBranchCount} main branches, each a DISTINCT facet of the topic (not overlapping, not synonyms of each other).
 2. EVERY main branch MUST have children. Go ${effMaxDepth} level(s) deep below the root — take MOST branches the full ${effMaxDepth} levels deep, adding grandchildren (and great-grandchildren) as needed to reach the total below.
 3. Give each branch ${minChildren}-${maxChildren} children, and VARY the count — never make all branches the same shape.
-4. TOTAL NODE COUNT IS THE PRIORITY: produce ${targetLow}-${targetHigh} total nodes (root + all branches + all descendants). If the tree is short of the target, keep expanding the deepest branches with more children until you reach it — do NOT stop early. A small or shallow map is a FAILURE.
+4. ${countRule}
 5. Use ALL category types across the map: concept, fact, question, example, definition, process.
 ${includeCrossConnections ? `6. Add ${crossConnectionCount}+ cross-connections between nodes in DIFFERENT branches — the non-obvious links are what make a map insightful.` : ''}
 
@@ -316,7 +323,7 @@ Return ONLY valid JSON, no additional text.`
 
   const user = `## Topic: "${topic}"${domainContext}
 
-Build the richest, most interesting map you can for this topic. Before writing, mentally pick ${effBranchCount} genuinely different angles on it, then go deep on each one and give every branch real children until the map reaches ${targetLow}-${targetHigh} total nodes. Reward the reader with structure variety, concrete examples, and at least one connection they wouldn't have expected.
+Build the richest, most interesting map you can for this topic. Before writing, mentally pick ${effBranchCount} genuinely different angles on it, then go deep on each one and give every branch real children until the map reaches ${countAsk} total nodes. Reward the reader with structure variety, concrete examples, and at least one connection they wouldn't have expected.
 
 Return JSON matching this schema (JSON keys stay in English; values follow the tone/language rules above):
 {
