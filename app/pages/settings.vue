@@ -116,6 +116,10 @@ watch(() => userStore.preferences.value, () => {
 onMounted(async () => {
   await aiSettings.initialize()
   await loadProviderKeyStatus()
+  // AER-96: when Ollama is already the configured engine, its model list must
+  // populate asynchronously from the running `ollama serve` on load — not only
+  // after a manual engine click / toggle / endpoint edit.
+  refreshOllamaModelsIfRelevant()
 })
 
 // ─── Desktop: Tabs ────────────────────────────────────────────────
@@ -233,6 +237,22 @@ async function loadOllamaModels(providerId: string) {
     // Ollama not running / unreachable — keep the existing empty state.
   }
 }
+
+// Refetch the installed Ollama models whenever they could be shown while
+// stale/empty: on settings load and on (re)opening the AI Providers tab. This
+// is what lets a user start `ollama serve` (or pull a model) AFTER the app is
+// already open and still see the dropdown fill in without re-clicking the
+// engine (AER-96). Quiet no-op when Ollama isn't configured or isn't running.
+function refreshOllamaModelsIfRelevant() {
+  const provider = findProviderByType('ollama')
+  if (provider && (provider.isEnabled || provider.isDefault)) {
+    void loadOllamaModels(provider.id)
+  }
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'ai-providers') refreshOllamaModelsIfRelevant()
+})
 
 // Select engine
 async function selectEngine(engine: AIEngine) {
