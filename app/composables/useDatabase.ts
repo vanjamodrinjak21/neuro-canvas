@@ -212,6 +212,13 @@ let dbReadyPromise: Promise<NeuroCanvasDB> | null = null
 // Current user ID for multi-account isolation
 let _currentUserId: string | null = null
 
+/** Placeholder scoping id used on native (Tauri/Capacitor) when no real
+ *  session id is available — dashboard.vue's minimal native session carries
+ *  it so the page can render before auth resolves. Maps tagged with it belong
+ *  to "whoever uses this device", exactly like untagged maps, so a real
+ *  sign-in adopts them (see setCurrentUserId). */
+export const NATIVE_LOCAL_USER_ID = 'native-local'
+
 function getDB(): NeuroCanvasDB {
   if (!db) {
     db = new NeuroCanvasDB()
@@ -250,19 +257,24 @@ export function useDatabase() {
   // ─── User Scoping ─────────────────────────────────────────────
 
   /** Set the current user ID — all map queries will be scoped to this user.
-   *  Also migrates any untagged maps to this user (handles upgrade from v4→v5). */
+   *  Also migrates adoptable maps to this user: untagged rows (v4→v5 upgrade)
+   *  and, when a REAL id is set, rows tagged with the native-local placeholder.
+   *  Without the placeholder case, a native cold start that scoped the DB to
+   *  'native-local' (dashboard's minimal session) left every map failing the
+   *  ownership check once the real session id landed — the first map open
+   *  after launch fell through to a blank newDocument(). */
   async function setCurrentUserId(userId: string | null): Promise<void> {
     _currentUserId = userId
 
-    // Migrate untagged maps: existing maps without a userId belong to whoever is logged in now
     if (userId) {
       const database = await ensureDBReady()
-      const untagged = await database.maps
-        .filter(m => !m.userId)
+      const adoptsPlaceholder = userId !== NATIVE_LOCAL_USER_ID
+      const adoptable = await database.maps
+        .filter(m => !m.userId || (adoptsPlaceholder && m.userId === NATIVE_LOCAL_USER_ID))
         .toArray()
-      if (untagged.length > 0) {
+      if (adoptable.length > 0) {
         await database.maps.bulkPut(
-          untagged.map(m => ({ ...m, userId }))
+          adoptable.map(m => ({ ...m, userId }))
         )
       }
     }

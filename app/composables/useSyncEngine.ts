@@ -656,8 +656,6 @@ export function useSyncEngine() {
   // ─── Initialize ──────────────────────────────────────────────────
 
   async function initialize(): Promise<void> {
-    if (state.isInitialized && isSyncEnabled.value) return
-
     if (!isSyncEnabled.value) {
       // Don't mark as initialized — when the user signs in later we want
       // the watcher's re-init to actually run (pull maps, open SSE).
@@ -665,10 +663,15 @@ export function useSyncEngine() {
       return
     }
 
-    // Set current user for IndexedDB scoping
+    // Re-assert the IndexedDB scoping id on EVERY call, including when the
+    // engine is already initialized: pages can scope the DB to a different id
+    // between inits (dashboard's native placeholder session), and an early
+    // return here would leave map reads ownership-rejecting the whole library.
     if (currentUserId.value) {
       await db.setCurrentUserId(currentUserId.value)
     }
+
+    if (state.isInitialized) return
 
     state.pendingChanges = await db.countPendingSyncOps()
     state.syncStatus = isOnline.value ? 'idle' : 'offline'

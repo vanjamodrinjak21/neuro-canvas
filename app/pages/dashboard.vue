@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDatabase, type DBMapDocument } from '~/composables/useDatabase'
+import { useDatabase, NATIVE_LOCAL_USER_ID, type DBMapDocument } from '~/composables/useDatabase'
 import { parseLosslessMarkdown, parseMapJson, parseOpml, parseMarkdownOutline, MapImportError } from '~/utils/mapImport'
 import { useMapStore } from '~/stores/mapStore'
 import { useAISettings } from '~/composables/useAISettings'
@@ -29,7 +29,7 @@ const _isNative = _isTauri || _isCapacitor
 // Auth
 // Minimal local-only user so the page renders — NOT a real session.
 // The sidebar checks desktopAuth.isSignedIn for real auth state.
-const _nativeSession = { user: { id: 'native-local', name: null, email: null } }
+const _nativeSession = { user: { id: NATIVE_LOCAL_USER_ID, name: null, email: null } }
 const { data: _sessionData, status, getSession } = _isNative
   ? { data: ref(_nativeSession), status: ref('authenticated'), getSession: async () => _nativeSession }
   : useAuth()
@@ -68,8 +68,14 @@ onMounted(async () => {
       return
     }
   }
-  // Set current user for IndexedDB multi-account isolation
-  const userId = (session.value?.user as { id?: string })?.id
+  // Set current user for IndexedDB multi-account isolation. Use the `user`
+  // computed, NOT the raw session: on native the session above is the minimal
+  // placeholder ('native-local'), while the real signed-in id lives in
+  // desktop/mobile auth. Feeding the placeholder here while useSyncEngine
+  // scopes to the real id made getMap() ownership-reject every map — the
+  // first open after a cold start showed an empty canvas (fixed with the
+  // adoption migration in setCurrentUserId).
+  const userId = (user.value as { id?: string } | undefined)?.id
   if (userId) {
     await db.setCurrentUserId(userId)
   }
