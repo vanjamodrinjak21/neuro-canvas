@@ -214,6 +214,26 @@ function findProviderByType(type: string) {
   return aiSettings.providers.value.find(p => p.type === type)
 }
 
+// Load the installed Ollama models into the provider so the model <select>
+// works, then pick a sensible default (AER-96). Fire-and-forget safe: if
+// Ollama isn't running the fetch fails quietly and the empty-state option
+// stays. Never throws, never spams the console.
+async function loadOllamaModels(providerId: string) {
+  try {
+    const models = await aiSettings.fetchProviderModels(providerId)
+    if (!models.length) return
+    const provider = aiSettings.providers.value.find(p => p.id === providerId)
+    if (!provider) return
+    const current = provider.selectedModelId
+    const stillValid = current && models.some(m => m.id === current)
+    if (!stillValid) {
+      await aiSettings.updateProvider(providerId, { selectedModelId: models[0]!.id })
+    }
+  } catch {
+    // Ollama not running / unreachable — keep the existing empty state.
+  }
+}
+
 // Select engine
 async function selectEngine(engine: AIEngine) {
   selectedEngine.value = engine
@@ -226,13 +246,21 @@ async function selectEngine(engine: AIEngine) {
   const provider = findProviderByType(providerType)
 
   if (provider) {
+    // A disabled default provider makes resolveProvider throw "No AI provider
+    // configured" — selecting an engine must (re)enable it (AER-96).
+    if (!provider.isEnabled) {
+      await aiSettings.updateProvider(provider.id, { isEnabled: true })
+      if (providerType === 'ollama') ollamaEnabled.value = true
+    }
     await aiSettings.setDefaultProvider(provider.id)
+    if (providerType === 'ollama') void loadOllamaModels(provider.id)
   } else {
     // Auto-create provider
     await aiSettings.addProvider(providerType as any, engine)
     const newProvider = aiSettings.providers.value.find(p => p.type === providerType)
     if (newProvider) {
       await aiSettings.setDefaultProvider(newProvider.id)
+      if (providerType === 'ollama') void loadOllamaModels(newProvider.id)
     }
   }
   flashSaved()
@@ -476,6 +504,8 @@ async function toggleOllama() {
   }
   if (provider) {
     await aiSettings.updateProvider(provider.id, { isEnabled: ollamaEnabled.value })
+    // Populate the model picker when turning Ollama on (AER-96).
+    if (ollamaEnabled.value) void loadOllamaModels(provider.id)
   }
 }
 
@@ -495,6 +525,8 @@ async function updateOllamaEndpoint() {
   const provider = findProviderByType('ollama')
   if (provider) {
     await aiSettings.updateProvider(provider.id, { baseUrl: ollamaEndpoint.value })
+    // Re-discover models against the new endpoint (AER-96).
+    void loadOllamaModels(provider.id)
   }
 }
 

@@ -203,3 +203,39 @@ describe('resolveProvider — web falls through to server provider fallback (AER
     await expect(resolveProvider()).rejects.toThrow(/No API key configured/)
   })
 })
+
+// ─── AER-96: Ollama now honours the user-selected model ──────────────────────
+// Previously resolveProvider stripped selectedModelId for BOTH 'ollama' and
+// 'local'. Now only 'local' (one fixed on-device model) is stripped; Ollama's
+// selection flows through so directComplete/streaming use the chosen model.
+describe('resolveProvider — Ollama selected model passthrough (AER-96)', () => {
+  it('NATIVE (tauri): returns the ollama selectedModelId instead of stripping it', async () => {
+    setPlatform('tauri')
+    setProvider({ type: 'ollama', localApiKey: undefined, credentialId: undefined, selectedModelId: 'mistral:7b', baseUrl: 'http://localhost:11434' })
+
+    const resolved = await resolveProvider()
+
+    expect(resolved.type).toBe('ollama')
+    expect(resolved.selectedModelId).toBe('mistral:7b')
+  })
+
+  it('NATIVE (tauri): still STRIPS the model for the local on-device runtime', async () => {
+    setPlatform('tauri')
+    setProvider({ type: 'local', localApiKey: undefined, credentialId: undefined, selectedModelId: 'gemma-on-device' })
+
+    const resolved = await resolveProvider()
+
+    expect(resolved.type).toBe('local')
+    expect(resolved.selectedModelId).toBeUndefined()
+  })
+
+  it('WEB: returns the ollama selectedModelId instead of stripping it', async () => {
+    setPlatform('web')
+    setProvider({ type: 'ollama', localApiKey: undefined, credentialId: undefined, selectedModelId: 'qwen2.5', baseUrl: 'http://localhost:11434' })
+
+    const resolved = await resolveProvider()
+
+    expect(resolved.type).toBe('ollama')
+    expect(resolved.selectedModelId).toBe('qwen2.5')
+  })
+})

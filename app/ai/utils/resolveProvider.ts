@@ -125,7 +125,9 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
       type: defaultProvider.type,
       apiKey,
       baseUrl: defaultProvider.baseUrl,
-      selectedModelId: (defaultProvider.type === 'ollama' || defaultProvider.type === 'local') ? undefined : defaultProvider.selectedModelId
+      // Ollama now honours the user-selected model (AER-96); only the
+      // on-device `local` runtime still ignores it (it has one fixed model).
+      selectedModelId: defaultProvider.type === 'local' ? undefined : defaultProvider.selectedModelId
     }
   }
 
@@ -143,6 +145,8 @@ export async function resolveProvider(): Promise<ResolvedProvider> {
     type: defaultProvider.type,
     credentialId: defaultProvider.credentialId || undefined,
     baseUrl: defaultProvider.baseUrl,
-    selectedModelId: defaultProvider.type === 'ollama' ? undefined : defaultProvider.selectedModelId
+    // Ollama now honours the user-selected model (AER-96); only the on-device
+    // `local` runtime still ignores it.
+    selectedModelId: defaultProvider.type === 'local' ? undefined : defaultProvider.selectedModelId
   }
 }

@@ -1,6 +1,6 @@
 // Client-side streaming pipeline for SSE consumption
 
-import { aiComplete } from '~/utils/aiClient'
+import { aiComplete, getTauriFetch, resolveOllamaModel } from '~/utils/aiClient'
 
 export interface StreamEvent {
   type: 'delta' | 'done' | 'error'
@@ -179,21 +179,188 @@ export async function streamCompletion(
   }
 }
 
+interface TauriStreamParams {
+  provider: string
+  apiKey?: string
+  credentialId?: string
+  baseUrl?: string
+  model?: string
+  systemPrompt?: string
+  messages: Array<{ role: string; content: string }>
+  maxTokens?: number
+  temperature?: number
+}
+
 /**
- * Stream via Tauri plugin-http (bypasses WKWebView CORS)
+ * Stream via Tauri plugin-http (bypasses WKWebView CORS).
+ *
+ * For Ollama running under Tauri desktop we do a REAL NDJSON token stream
+ * (AER-96). Every other provider — and the whole Capacitor path — keeps the
+ * blocking-then-simulate delivery. Any setup failure of the real stream
+ * (fetch throws, no body, non-OK) falls back to the simulated path so
+ * behaviour never regresses.
  */
 async function streamViaTauri(
-  params: {
-    provider: string
-    apiKey?: string
-    credentialId?: string
-    baseUrl?: string
-    model?: string
-    systemPrompt?: string
-    messages: Array<{ role: string; content: string }>
-    maxTokens?: number
-    temperature?: number
-  },
+  params: TauriStreamParams,
+  options: StreamOptions
+): Promise<string> {
+  if (params.provider === 'ollama' && isTauriEnvironment()) {
+    try {
+      return await streamOllamaViaTauri(params, options)
+    } catch (e) {
+      // Genuine aborts must propagate — do NOT fall back to a fresh request.
+      if (options.signal?.aborted || (e instanceof DOMException && e.name === 'AbortError')) {
+        throw e
+      }
+      // Resource-guard trips (stall / size cap) are real failures the user
+      // should see — surface them instead of silently retrying non-streamed.
+      const msg = e instanceof Error ? e.message : ''
+      if (/stalled|exceeded/.test(msg)) throw e
+      // Otherwise the streaming *setup* failed (fetch threw, no body, non-OK
+      // without a resource trip). Fall through to the simulated path below.
+    }
+  }
+
+  return streamViaSimulate(params, options)
+}
+
+/**
+ * Real NDJSON token streaming for Ollama under Tauri desktop (AER-96).
+ *
+ * Ollama's /api/chat with `stream:true` emits one JSON object per line:
+ *   { "message": { "role": "assistant", "content": "<token>" }, "done": false }
+ * terminating with a `"done": true` line carrying eval counts.
+ */
+async function streamOllamaViaTauri(
+  params: TauriStreamParams,
+  options: StreamOptions
+): Promise<string> {
+  const { onDelta, onDone, signal } = options
+  const baseUrl = params.baseUrl || 'http://localhost:11434'
+
+  const fetchFn = await getTauriFetch()
+  const model = await resolveOllamaModel(fetchFn, baseUrl, params.model)
+
+  const messages = params.systemPrompt
+    ? [{ role: 'system', content: params.systemPrompt }, ...params.messages]
+    : params.messages
+
+  const response = await fetchFn(`${baseUrl}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, messages, stream: true }),
+    signal
+  })
+
+  if (!response.ok) {
+    // Surface the Ollama error text like directComplete does. This throw is
+    // caught by streamViaTauri, which then falls back to the simulated path
+    // (which re-issues the request and surfaces the same error to the user).
+    const errText = await response.text().catch(() => '')
+    throw new Error(`Ollama error (${response.status}): ${errText || 'No models found'} — Run: ollama list`)
+  }
+
+  const reader = response.body?.getReader()
+  if (!reader) {
+    throw new Error('No response body for Ollama streaming')
+  }
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let accumulated = ''
+  let received = 0
+  let usage: unknown
+
+  const parseLine = (line: string): boolean => {
+    const trimmed = line.trim()
+    if (!trimmed) return false
+    let obj: {
+      message?: { content?: string }
+      done?: boolean
+      prompt_eval_count?: number
+      eval_count?: number
+    }
+    try {
+      obj = JSON.parse(trimmed)
+    } catch {
+      return false // skip malformed line
+    }
+    const token = obj.message?.content
+    if (token) {
+      accumulated += token
+      onDelta?.(token, accumulated)
+    }
+    if (obj.done) {
+      const promptTokens = obj.prompt_eval_count
+      const completionTokens = obj.eval_count
+      if (typeof promptTokens === 'number' || typeof completionTokens === 'number') {
+        usage = {
+          prompt_tokens: promptTokens,
+          completion_tokens: completionTokens,
+          total_tokens: (promptTokens || 0) + (completionTokens || 0)
+        }
+      }
+      return true
+    }
+    return false
+  }
+
+  try {
+    while (true) {
+      // Resource guards (AER-81) — mirror the web SSE path: a silent
+      // connection surfaces as an error instead of hanging forever, and a
+      // runaway stream cannot grow unbounded in memory.
+      let stallTimer: ReturnType<typeof setTimeout> | undefined
+      const result = await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          stallTimer = setTimeout(
+            () => reject(new Error('AI stream stalled — no data received for 90 seconds. Try again.')),
+            STREAM_STALL_MS
+          )
+        })
+      ]).catch(async (err) => {
+        await reader.cancel().catch(() => { /* already dead */ })
+        throw err
+      }).finally(() => clearTimeout(stallTimer))
+
+      const { done, value } = result
+      if (done) break
+
+      received += value.byteLength
+      if (received > MAX_STREAM_BYTES) {
+        await reader.cancel().catch(() => { /* already dead */ })
+        throw new Error('AI response exceeded the 2 MB stream limit. Try a smaller generation.')
+      }
+
+      buffer += decoder.decode(value, { stream: true })
+      // Ollama delimits objects with newlines. Keep the trailing partial line
+      // in the buffer until its newline arrives.
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+      for (const line of lines) parseLine(line)
+    }
+  } catch (e) {
+    if (signal?.aborted) {
+      throw new DOMException('Stream aborted', 'AbortError')
+    }
+    throw e
+  }
+
+  // Flush any final buffered line (last object may arrive without a trailing \n).
+  if (buffer.trim()) parseLine(buffer)
+
+  onDone?.(accumulated, usage)
+  return accumulated
+}
+
+/**
+ * Non-streaming fallback: block on aiComplete, then simulate chunked delivery
+ * for UI consistency. Used for every non-Ollama provider, on Capacitor, and
+ * whenever real Ollama streaming setup fails.
+ */
+async function streamViaSimulate(
+  params: TauriStreamParams,
   options: StreamOptions
 ): Promise<string> {
   // Fallback: use non-streaming and simulate chunked delivery
