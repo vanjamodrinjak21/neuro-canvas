@@ -423,22 +423,29 @@ async function deleteMap(mapId: string, event: Event) {
   })
   if (!confirmed) return
   try {
-    // Delete from server (soft-delete in PostgreSQL)
+    // Delete from server (soft-delete in PostgreSQL) through the
+    // platform-appropriate AUTHENTICATED transport — same rules as
+    // maps/index.vue's pushDelete. On Capacitor a plain relative $fetch
+    // resolves against capacitor://localhost (no server there), threw, and
+    // aborted the LOCAL delete below — "delete does not work" on mobile.
+    // Server-side failures are swallowed: the local delete must always run,
+    // and the next full sync reconciles the server.
     if (syncEngine.isSyncEnabled.value) {
+      const payload = { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
       if (_isTauri && desktopAuth?.isSignedIn.value) {
         await desktopAuth.remoteFetch('/api/sync/push', {
           method: 'POST',
-          body: JSON.stringify({ mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }),
+          body: JSON.stringify(payload),
           headers: { 'Content-Type': 'application/json' },
-        })
-      } else if (!_isTauri) {
-        await $fetch('/api/sync/push', {
-          method: 'POST',
-          body: { mapId, data: {}, title: '', checksum: '', action: 'delete', deviceId: '' }
-        })
+        }).catch(() => {})
+      } else if (_isCapacitor && mobileAuth?.isSignedIn.value) {
+        await mobileAuth.remoteFetch('/api/sync/push', { method: 'POST', data: payload }).catch(() => {})
+      } else if (!_isNative) {
+        await $fetch('/api/sync/push', { method: 'POST', body: payload }).catch(() => {})
       }
     }
-    // Also remove from local IndexedDB
+    // Remove from local IndexedDB — unconditionally, even if the server
+    // call failed above.
     await db.deleteMap(mapId)
     recentMaps.value = recentMaps.value.filter(m => m.id !== mapId)
   } catch (error) {
