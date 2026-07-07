@@ -49,7 +49,9 @@ const totpCode = ref('')
 const totpError = ref<string | null>(null)
 const totpLoading = ref(false)
 const backupCodes = ref<string[]>([])
-const disablePassword = ref('')
+// 6-digit authenticator code, or an 8-char backup code (lost device).
+const disableCode = ref('')
+const isDisableCodeValid = computed(() => /^(\d{6}|[0-9a-f]{8})$/i.test(disableCode.value.trim()))
 
 async function startTotpSetup() {
   totpLoading.value = true
@@ -93,18 +95,18 @@ async function verifyTotp() {
 }
 
 async function disableTotp() {
-  if (!disablePassword.value) return
+  if (!isDisableCodeValid.value) return
   totpLoading.value = true
   totpError.value = null
   try {
     await $fetch('/api/user/totp/disable', {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      body: { password: disablePassword.value }
+      body: { code: disableCode.value.trim() }
     })
     if (userProfile.value) userProfile.value.totpEnabled = false
     totpStep.value = 'idle'
-    disablePassword.value = ''
+    disableCode.value = ''
   } catch (e: unknown) {
     const err = e as { data?: { statusMessage?: string } }
     totpError.value = err?.data?.statusMessage || 'Failed to disable 2FA'
@@ -120,7 +122,7 @@ function closeTotpFlow() {
   totpCode.value = ''
   totpError.value = null
   backupCodes.value = []
-  disablePassword.value = ''
+  disableCode.value = ''
 }
 
 // ── Change Password ────────────────────────────────────────────────
@@ -479,11 +481,13 @@ async function onSignOut() {
 
             <div class="form-fields">
               <input
-                v-model="disablePassword"
-                type="password"
+                v-model="disableCode"
+                type="text"
                 class="setting-input"
-                :placeholder="t('auth.signin.password_placeholder')"
-                autocomplete="current-password"
+                inputmode="numeric"
+                maxlength="8"
+                :placeholder="t('settings.account.disable_2fa_code_placeholder')"
+                autocomplete="one-time-code"
                 @keydown.enter="disableTotp"
               >
 
@@ -496,7 +500,7 @@ async function onSignOut() {
                 <button class="cancel-btn" @click="closeTotpFlow">{{ t('common.buttons.cancel') }}</button>
                 <button
                   class="delete-confirm-btn"
-                  :disabled="totpLoading || !disablePassword"
+                  :disabled="totpLoading || !isDisableCodeValid"
                   @click="disableTotp"
                 >
                   {{ totpLoading ? t('settings.account.disabling') : t('settings.account.disable_2fa_button') }}

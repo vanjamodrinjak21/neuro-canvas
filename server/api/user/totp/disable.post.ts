@@ -1,11 +1,18 @@
 import { getToken } from '#auth'
+import { TOTP, Secret } from 'otpauth'
 import bcrypt from 'bcrypt'
 import { z } from 'zod'
 import { prisma } from '../../../utils/prisma'
 import { checkRateLimit } from '../../../utils/redis'
+import { serverDecrypt } from '../../../utils/encryption'
 
+// Disabling 2FA proves possession of the SECOND FACTOR, not the password:
+// a 6-digit authenticator code, or an 8-char backup code as the lost-device
+// escape hatch. Password proof was wrong twice over — the session already
+// proves the password, and OAuth accounts have none (they were locked out
+// of ever disabling 2FA).
 const disableSchema = z.object({
-  password: z.string().min(1, 'Password is required')
+  code: z.string().regex(/^(\d{6}|[0-9a-f]{8})$/i, 'Enter the 6-digit code from your authenticator app or an 8-character backup code')
 }).strict()
 
 export default defineEventHandler(async (event) => {
@@ -29,25 +36,44 @@ export default defineEventHandler(async (event) => {
 
   const user = await prisma.user.findUnique({
     where: { email: token.email as string },
-    select: { id: true, password: true, totpEnabled: true }
+    select: { id: true, totpEnabled: true, totpSecret: true, backupCodes: true }
   })
 
   if (!user) {
     throw createError({ statusCode: 404, statusMessage: 'User not found' })
   }
 
-  if (!user.totpEnabled) {
+  if (!user.totpEnabled || !user.totpSecret) {
     throw createError({ statusCode: 400, statusMessage: '2FA is not enabled' })
   }
 
-  // Require password re-authentication to disable 2FA
-  if (!user.password) {
-    throw createError({ statusCode: 400, statusMessage: 'Cannot verify identity for OAuth accounts' })
+  const code = parsed.data.code
+  let verified = false
+
+  if (/^\d{6}$/.test(code)) {
+    // Authenticator code — same validation shape as sign-in and verify.
+    const { decrypted: secretBase32 } = serverDecrypt(user.totpSecret)
+    const totp = new TOTP({
+      issuer: 'NeuroCanvas',
+      label: (token.email as string) || 'user',
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: Secret.fromBase32(secretBase32)
+    })
+    verified = totp.validate({ token: code, window: 1 }) !== null
+  } else {
+    // Backup code — lets a user who lost the authenticator turn 2FA off.
+    for (const hashed of user.backupCodes) {
+      if (await bcrypt.compare(code.toLowerCase(), hashed)) {
+        verified = true
+        break
+      }
+    }
   }
 
-  const isValid = await bcrypt.compare(parsed.data.password, user.password)
-  if (!isValid) {
-    throw createError({ statusCode: 403, statusMessage: 'Password is incorrect' })
+  if (!verified) {
+    throw createError({ statusCode: 403, statusMessage: 'Invalid code. Please try again.' })
   }
 
   // Disable 2FA and clear secrets.
