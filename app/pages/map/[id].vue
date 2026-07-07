@@ -815,9 +815,9 @@ function handleExportPdf() {
 }
 
 function handleExportMapPdf() {
-  // Desktop (AER-76): print-ready VECTOR PDF of the map graphic itself —
-  // light palette, A4 auto-orientation, real selectable text. The mobile
-  // sheet keeps the outline-document PDF above.
+  // Print-ready VECTOR PDF of the map graphic itself (AER-76) — light
+  // palette, A4 auto-orientation, real selectable text. Offered on both the
+  // desktop menu and the mobile sheet (which also keeps the outline PDF).
   exportUtils.exportAsMapPdf(mapStore, mapStore.title as string)
 }
 
@@ -2312,6 +2312,7 @@ useHead({
       @share="handleShare"
       @version-history="showVersionHistory = true"
       @comments="showComments = true"
+      @export-map-pdf="handleExportMapPdf"
       @export-pdf="handleExportPdf"
       @export-json="handleExportJson"
       @export-markdown="handleExportMarkdown"

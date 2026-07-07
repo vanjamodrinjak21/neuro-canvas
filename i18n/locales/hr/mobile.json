@@ -285,6 +285,8 @@
       "exportSection": "IZVOZ",
       "pngTitle": "PNG slika",
       "pngHint": "PLATNO · 2× RETINA",
+      "mapPdfTitle": "Mapa kao PDF",
+      "mapPdfHint": ".PDF · VEKTORSKI · ZA TISAK",
       "pdfTitle": "PDF dokument",
       "pdfHint": ".PDF · STRUKTURA",
       "markdownHint": ".MD · KOMPATIBILNO S OBSIDIANOM",

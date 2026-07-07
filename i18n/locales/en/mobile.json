@@ -285,6 +285,8 @@
       "exportSection": "EXPORT",
       "pngTitle": "PNG image",
       "pngHint": "CANVAS · 2× RETINA",
+      "mapPdfTitle": "Map as PDF",
+      "mapPdfHint": ".PDF · VECTOR · PRINT-READY",
       "pdfTitle": "PDF document",
       "pdfHint": ".PDF · OUTLINE",
       "markdownHint": ".MD · OBSIDIAN COMPATIBLE",
