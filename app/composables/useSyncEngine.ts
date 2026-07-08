@@ -225,7 +225,14 @@ export function useSyncEngine() {
       const statusCode = err?.statusCode || err?.response?.status
 
       if (statusCode === 401) {
-        // Session expired — don't queue, don't retry, just stop syncing
+        // Session expired — stop syncing (no SSE, no hot retry), but KEEP the
+        // change queued. Skipping the queue here left never-synced maps
+        // invisible to countPendingSyncOps(), so flushBeforeLogout() reported
+        // allClean and sign-out wiped their only copy (AER-100); it also let
+        // replayQueue drain previously-queued ops on 401 (it removes an entry
+        // whenever pushMap returns, and pushMap swallows its own errors). The
+        // queued op replays once the user re-authenticates.
+        await queueForLater(mapId, 'push')
         state.syncStatus = 'error'
         disconnectSSE()
       } else if (statusCode === 409) {
