@@ -3,6 +3,7 @@ import { ref, onMounted, computed, reactive } from 'vue'
 import { userFriendlyError } from '~/utils/userFriendlyError'
 import { useSyncEngine } from '~/composables/useSyncEngine'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
+import { useApiFetch } from '~/composables/useApiFetch'
 import NcSelect from '~/components/ui/NcSelect.vue'
 
 interface ShareRow {
@@ -26,6 +27,12 @@ const { isOnline } = useSyncEngine()
 const offlineHint = computed(() => (isOnline.value ? undefined : t('common.offline.action_unavailable')))
 
 const { confirm, ConfirmDialog } = useConfirmDialog()
+
+// Share CRUD is server-only and auth-gated. On the native shells a plain
+// $fetch has no session (and no server behind the local origin), so every
+// call in this modal 401/403'd — "Nemaš dozvolu" on maps the user owns
+// (AER-103). apiFetch routes through the platform's authenticated transport.
+const { apiFetch } = useApiFetch()
 
 const shares = ref<ShareRow[]>([])
 const loading = ref(true)
@@ -107,7 +114,7 @@ async function sendInvite(shareId: string) {
   form.error = null
   form.status = null
   try {
-    const res = await $fetch<{ sent: number; failed: number; recipients: number }>(
+    const res = await apiFetch<{ sent: number; failed: number; recipients: number }>(
       `/api/maps/${props.mapId}/shares/${shareId}/invite`,
       {
         method: 'POST',
@@ -144,7 +151,7 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    shares.value = await $fetch<ShareRow[]>(`/api/maps/${props.mapId}/shares`)
+    shares.value = await apiFetch<ShareRow[]>(`/api/maps/${props.mapId}/shares`)
   } catch (e: unknown) {
     console.error('[share] load failed', e)
     error.value = userFriendlyError(e, t)
@@ -163,7 +170,7 @@ async function createLink() {
   creating.value = true
   error.value = null
   try {
-    const created = await $fetch<ShareRow>(`/api/maps/${props.mapId}/shares`, {
+    const created = await apiFetch<ShareRow>(`/api/maps/${props.mapId}/shares`, {
       method: 'POST',
       body: { role: newRole.value, label: newLabel.value || null, expiresAt: expiresAtFromChoice() }
     })
@@ -192,11 +199,10 @@ async function revoke(share: ShareRow) {
   })
   if (!confirmed) return
   try {
-    // X-Requested-With satisfies the CSRF middleware for bodyless DELETE calls
-    // (no Content-Type means the JSON-body bypass doesn't fire).
-    const res = await $fetch<{ ok: true; share: ShareRow }>(`/api/maps/${props.mapId}/shares/${share.id}`, {
-      method: 'DELETE',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    // apiFetch adds X-Requested-With on bodyless mutating calls, which the
+    // CSRF middleware needs (no Content-Type means the JSON bypass can't fire).
+    const res = await apiFetch<{ ok: true; share: ShareRow }>(`/api/maps/${props.mapId}/shares/${share.id}`, {
+      method: 'DELETE'
     })
     shares.value = shares.value.map(s => s.id === share.id ? res.share : s)
   } catch (e: unknown) {
