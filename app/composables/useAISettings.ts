@@ -70,22 +70,29 @@ async function _nativeVaultFetch<T = unknown>(
   options?: { method?: string; body?: unknown },
 ): Promise<T> {
   const method = options?.method || 'GET'
+  // X-Requested-With satisfies the server's CSRF middleware on bodyless
+  // state-changing calls (DELETE has no JSON Content-Type to vouch for it) —
+  // same convention as clearEmbeddingCache. Bodyless DELETEs 403'd without
+  // it (AER-101).
   if (tauri) {
     // Desktop remoteFetch takes RequestInit: body must be a JSON string and the
     // Content-Type set explicitly.
-    const init: RequestInit = { method }
+    const init: RequestInit = { method, headers: { 'X-Requested-With': 'XMLHttpRequest' } }
     if (options?.body !== undefined) {
       init.body = JSON.stringify(options.body)
-      init.headers = { 'Content-Type': 'application/json' }
+      init.headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     }
     return auth.remoteFetch(path, init) as Promise<T>
   }
   // Mobile remoteFetch takes { method, headers, data }: CapacitorHttp serialises
   // `data` itself, so pass the object through.
-  const opts: { method?: string; headers?: Record<string, string>; data?: unknown } = { method }
+  const opts: { method?: string; headers?: Record<string, string>; data?: unknown } = {
+    method,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+  }
   if (options?.body !== undefined) {
     opts.data = options.body
-    opts.headers = { 'Content-Type': 'application/json' }
+    opts.headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
   }
   return auth.remoteFetch(path, opts) as Promise<T>
 }
@@ -844,8 +851,13 @@ export function useAISettings() {
       } else if (provider.credentialId) {
         // Remove: DELETE the stored credential. Posting an empty rawValue would
         // fall through to the server's legacy branch and 400 on encryptedValue.
+        // X-Requested-With: a bodyless DELETE has no JSON Content-Type, so the
+        // CSRF middleware needs the header to accept it (AER-101).
         try {
-          await ($fetch as any)(`/api/vault/credentials/${provider.credentialId}`, { method: 'DELETE' })
+          await ($fetch as any)(`/api/vault/credentials/${provider.credentialId}`, {
+            method: 'DELETE',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          })
         } catch (err) {
           console.error('Failed to remove key from vault:', err)
         }
