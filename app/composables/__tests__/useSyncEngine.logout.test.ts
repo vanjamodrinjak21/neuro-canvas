@@ -195,6 +195,49 @@ describe('flushBeforeLogout (AER-59 / AER-60 #3)', () => {
   })
 })
 
+describe('pushMap 401 → op stays queued (AER-100)', () => {
+  it('queues the push on 401 so the change survives sign-out', async () => {
+    seedMap({ id: 'guest-map', syncVersion: undefined })
+    ;(globalThis as any).$fetch = vi.fn(async (path: string, opts?: any) => {
+      if (path === '/api/sync/push' && opts?.method === 'POST') {
+        const err: any = new Error('unauthorized'); err.statusCode = 401; throw err
+      }
+      return { ok: true }
+    })
+
+    const engine = useSyncEngine()
+    await engine.pushMap('guest-map')
+
+    // The 401 used to skip the queue entirely ("don't queue, don't retry"),
+    // leaving the never-synced map invisible to countPendingSyncOps().
+    expect(await dbApi.countPendingSyncOps()).toBeGreaterThan(0)
+    expect(dbState.queue.some(q => q.mapId === 'guest-map' && q.action === 'push')).toBe(true)
+  })
+
+  it('flushBeforeLogout reports NOT clean when pushes 401 (expired session) — wipe guard', async () => {
+    // THE data-loss scenario: desktop session JWT expired, user has a map the
+    // server has never seen, and signs out. Every push 401s; before AER-100
+    // nothing was queued, allClean came back true, and signOut wiped the only
+    // copy of the map.
+    seedMap({ id: 'guest-map', syncVersion: undefined })
+    ;(globalThis as any).$fetch = vi.fn(async (path: string, opts?: any) => {
+      if (path === '/api/sync/bulk-push' || (path === '/api/sync/push' && opts?.method === 'POST')) {
+        const err: any = new Error('unauthorized'); err.statusCode = 401; throw err
+      }
+      if (path === '/api/sync/pull') return { maps: [], deleted: [] }
+      return { ok: true }
+    })
+
+    const engine = useSyncEngine()
+    const allClean = await engine.flushBeforeLogout()
+
+    // A queued op survives the flush (incl. replayQueue's remove-on-return),
+    // so the caller keeps the on-device maps instead of wiping them.
+    expect(await dbApi.countPendingSyncOps()).toBeGreaterThan(0)
+    expect(allClean).toBe(false)
+  })
+})
+
 describe('pushMap 409 → observable conflict (AER-60 #2)', () => {
   it('records a SyncConflict instead of silently losing local edits', async () => {
     seedMap({ title: 'My local edit', nodes: [{}, {}, {}] })
