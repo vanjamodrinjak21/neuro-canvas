@@ -20,23 +20,43 @@ const _user = ref<{ id?: string; name?: string; email?: string; image?: string }
 async function revalidateSession() {
   try {
     const { CapacitorHttp } = await import('@capacitor/core')
-    const res = await CapacitorHttp.get({ url: `${AUTH_BASE_URL}/api/auth/session` })
+    // Attach the persisted JWT explicitly — the native cookie jar is
+    // unreliable on iOS (the very reason remoteFetch sends the token itself).
+    // A bare call here reported "signed out" for perfectly valid sessions and
+    // wiped them, so login didn't survive an app restart (AER-102).
+    let stored: { token?: string; cookieName?: string } | null = null
+    try {
+      stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+    } catch { stored = null }
+    const headers: Record<string, string> = {}
+    if (stored?.token && stored?.cookieName) {
+      headers.Cookie = `${stored.cookieName}=${stored.token}`
+    }
+
+    const res = await CapacitorHttp.get({ url: `${AUTH_BASE_URL}/api/auth/session`, headers })
     const sessionData = typeof res.data === 'string' ? tryParseJSON(res.data) : res.data
     if (sessionData?.user?.email) {
       _user.value = sessionData.user
       _isSignedIn.value = true
+      // Spread the existing record FIRST: rewriting without token/cookieName
+      // silently de-authenticated every later remoteFetch call (AER-102).
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ...(stored || {}),
         version: 1,
         origin: AUTH_BASE_URL,
         authenticatedAt: Date.now(),
         user: sessionData.user,
       }))
-    } else {
-      // Server says not signed in — clear local state.
+    } else if (headers.Cookie) {
+      // The server rejected an explicitly attached token — the session is
+      // genuinely dead (revoked/expired). Clear local state.
       _isSignedIn.value = false
       _user.value = null
       localStorage.removeItem(STORAGE_KEY)
     }
+    // No token to attach and the cookie jar came up empty: inconclusive —
+    // keep cached state (same policy as the network-failure path below)
+    // rather than wiping a session we couldn't actually test.
   } catch {
     // Network failure — keep cached state so offline use still works.
   }
