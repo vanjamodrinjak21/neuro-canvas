@@ -235,6 +235,15 @@ export function useMobileAuth() {
       }
     } catch { /* malformed localStorage — ignore */ }
 
+    // CapacitorHttp only serialises `data` as JSON when the Content-Type says
+    // so; without it the request reaches the server without application/json
+    // and the CSRF middleware rejects it with 403 (AER-101). Default the type
+    // for any payload-carrying call unless the caller set one explicitly.
+    if (options?.data !== undefined
+      && !Object.keys(headers).some(h => h.toLowerCase() === 'content-type')) {
+      headers['Content-Type'] = 'application/json'
+    }
+
     const res = await CapacitorHttp.request({
       url,
       method: options?.method || 'GET',
