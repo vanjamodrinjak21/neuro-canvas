@@ -275,17 +275,22 @@ export function buildMapStructurePrompt(
     : (effMaxDepth >= 3 ? 4 : 3)
   const crossConnectionCount = includeCrossConnections ? Math.min(effBranchCount, 6) : 0
 
-  // Node-count demand. With an explicit nodeCount the ask is EXACT (AER-97):
-  // a tolerance band here meant "generate 40 nodes" came back with 34-46, so
-  // the prompt now demands the precise total (callers additionally enforce
-  // exactness post-generation via trim/top-up). Without an explicit count,
-  // keep the branch-derived fallback band.
+  // Node-count demand. With an explicit nodeCount the FINAL map still lands
+  // EXACTLY on N (the AER-97 contract), but the prompt must not demand the
+  // model hit N precisely: "EXACTLY N — count your nodes before answering"
+  // sent reasoning models into long count-and-recount thinking passes, and a
+  // 1-node undershoot still triggered the callers' seeded top-up — a second
+  // full LLM round on most generates (AER-99). Instead ask for a narrow band
+  // that STARTS at N: overshoot is corrected for free by the callers'
+  // deterministic trimStructureToTarget, so only the floor needs prompt
+  // pressure. Without an explicit count, keep the branch-derived fallback band.
   const fallbackLow = branchCount * 4
   const fallbackHigh = branchCount * 6
+  const overshootHigh = target ? Math.max(target + 3, Math.round(target * 1.15)) : 0
   const countRule = target
-    ? `TOTAL NODE COUNT IS THE PRIORITY: produce EXACTLY ${target} total nodes (root + all branches + all descendants) — not more, not less. Count your nodes before answering; if short, keep expanding the deepest branches until the total is exactly ${target}; if over, remove the least important leaves. Missing the exact count is a FAILURE.`
+    ? `TOTAL NODE COUNT IS THE PRIORITY: produce ${target}-${overshootHigh} total nodes (root + all branches + all descendants) — NEVER fewer than ${target}. When unsure, add another leaf rather than stopping short: a few extra nodes are fine (overshoot is trimmed automatically), but a map with fewer than ${target} nodes is a FAILURE.`
     : `TOTAL NODE COUNT IS THE PRIORITY: produce ${fallbackLow}-${fallbackHigh} total nodes (root + all branches + all descendants). If the tree is short of the target, keep expanding the deepest branches with more children until you reach it — do NOT stop early. A small or shallow map is a FAILURE.`
-  const countAsk = target ? `exactly ${target}` : `${fallbackLow}-${fallbackHigh}`
+  const countAsk = target ? `${target}-${overshootHigh}` : `${fallbackLow}-${fallbackHigh}`
 
   const system = `You are a world-class mind-mapping architect. You turn a single topic into a rich, multi-level knowledge map an expert would be proud of — structurally varied, intellectually interesting, and genuinely useful for learning or thinking.
 
