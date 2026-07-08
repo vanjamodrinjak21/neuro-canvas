@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nanoid } from 'nanoid'
 import { useDatabase, NATIVE_LOCAL_USER_ID, type DBMapDocument } from '~/composables/useDatabase'
 import { parseLosslessMarkdown, parseMapJson, parseOpml, parseMarkdownOutline, MapImportError } from '~/utils/mapImport'
 import { useMapStore } from '~/stores/mapStore'
@@ -571,8 +572,16 @@ async function processImportedFile(file: File) {
  */
 async function importLosslessDoc(doc: DBMapDocument) {
   const now = Date.now()
+  // Keep the exported id ONLY when that map still exists locally — then the
+  // import is a deliberate in-place restore and pushes update the same row.
+  // When the id is unknown here (typically re-importing a backup of a map
+  // deleted earlier), reusing it resurrects a server tombstone: the next
+  // sync pull replays `deleted` and silently removes the imported map again
+  // (AER-104, "import not saved"). A fresh id makes it a brand-new map.
+  const existing = await db.getMap(doc.id)
   const finalDoc: DBMapDocument = {
     ...doc,
+    id: existing ? doc.id : nanoid(),
     updatedAt: now,
     userId: undefined  // re-tagged by db.saveMap with the current user
   }
