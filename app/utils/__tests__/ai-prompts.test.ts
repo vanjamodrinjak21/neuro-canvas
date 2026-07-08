@@ -41,20 +41,32 @@ describe('appendDocumentKnowledge', () => {
   })
 })
 
-// An explicit nodeCount is a contract (AER-97): the prompt must demand the
-// EXACT total, not a tolerance band — the band is what made "generate 40
-// nodes" come back with 34-46. Without a nodeCount, the branch-derived band
-// stays as-is.
-describe('buildMapStructurePrompt node-count demand (AER-97)', () => {
-  it('demands EXACTLY N total nodes when nodeCount is explicit — no band', () => {
+// An explicit nodeCount is a contract (AER-97) enforced by the CALLERS via
+// deterministic trim/top-up — the prompt's job is only to keep the model AT
+// OR ABOVE N so the free trim (not an expensive LLM top-up round) does the
+// exact landing. Demanding "EXACTLY N — count your nodes" made reasoning
+// models stall in count-and-recount thinking passes (AER-99), so the prompt
+// asks for a floor-anchored band [N, max(N+3, 1.15N)] instead. Without a
+// nodeCount, the branch-derived band stays as-is.
+describe('buildMapStructurePrompt node-count demand (AER-97/AER-99)', () => {
+  it('asks for a floor-anchored band starting at N when nodeCount is explicit', () => {
     const { system, user } = buildMapStructurePrompt('Photosynthesis', { nodeCount: 40 })
-    expect(system).toContain('EXACTLY 40 total nodes')
-    expect(system).toContain('until the total is exactly 40')
-    expect(user).toContain('exactly 40 total nodes')
-    // No "low-high total nodes" band anywhere (was "34-46" for a target of 40).
-    expect(system).not.toMatch(/\d+-\d+ total nodes/)
-    expect(user).not.toMatch(/\d+-\d+ total nodes/)
+    // Band = [40, max(40+3, round(40*1.15))] = 40-46, floor restated explicitly.
+    expect(system).toContain('produce 40-46 total nodes')
+    expect(system).toContain('NEVER fewer than 40')
+    expect(user).toContain('40-46 total nodes')
+    // The band never dips below the target (the old 0.85 band gave "34-46").
     expect(system).not.toContain('34-46')
+    // No exact-count self-verification demand — that stalls reasoning models.
+    expect(system).not.toContain('EXACTLY')
+    expect(system).not.toContain('Count your nodes')
+  })
+
+  it('anchors the band at N+3 minimum for small targets', () => {
+    // round(10*1.15) = 12 < 10+3 → the +3 floor wins: 10-13.
+    const { system } = buildMapStructurePrompt('Photosynthesis', { nodeCount: 10 })
+    expect(system).toContain('produce 10-13 total nodes')
+    expect(system).toContain('NEVER fewer than 10')
   })
 
   it('keeps the branch-derived band when nodeCount is absent', () => {
