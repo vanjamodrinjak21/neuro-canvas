@@ -52,4 +52,41 @@ describe('userFriendlyError', () => {
     expect(userFriendlyError(new Error('something odd'), t)).toBe('common.errors.generic')
     expect(userFriendlyError(null, t)).toBe('common.errors.generic')
   })
+
+  it('maps an unreachable local Ollama to the actionable key', () => {
+    // Exact message the Tauri/reqwest side logs when Ollama is not running.
+    expect(userFriendlyError(
+      new Error('error sending request for url (http://localhost:11434/api/chat)'), t,
+    )).toBe('common.errors.ollama_unreachable')
+    // Browser-side variants of the same failure.
+    expect(userFriendlyError(
+      new Error('Failed to fetch (http://localhost:11434/api/chat)'), t,
+    )).toBe('common.errors.ollama_unreachable')
+  })
+
+  it('treats a non-Ollama send failure as offline, not Ollama', () => {
+    expect(userFriendlyError(
+      new Error('error sending request for url (https://api.anthropic.com/v1/messages)'), t,
+    )).toBe('common.errors.offline')
+  })
+
+  it('maps the 2 MB stream budget abort from either side', () => {
+    // Client pipeline (StreamingPipeline.ts) …
+    expect(userFriendlyError(
+      new Error('AI response exceeded the 2 MB stream limit. Try a smaller generation.'), t,
+    )).toBe('common.errors.ai_output_too_large')
+    // … and the server budget (streamBudget.ts) wording.
+    expect(userFriendlyError(
+      new Error('AI stream exceeded the 2 MB output limit. Try a smaller generation.'), t,
+    )).toBe('common.errors.ai_output_too_large')
+  })
+
+  it('maps malformed and empty AI output to the model-quality key', () => {
+    expect(userFriendlyError(
+      new Error('Failed to parse AI response. The model returned malformed output — try again or use a larger model. Got: "```json {…"'), t,
+    )).toBe('common.errors.ai_malformed_output')
+    expect(userFriendlyError(
+      new Error('AI returned an empty response. Try again — the model may have timed out.'), t,
+    )).toBe('common.errors.ai_malformed_output')
+  })
 })

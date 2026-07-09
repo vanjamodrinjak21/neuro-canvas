@@ -48,8 +48,45 @@ function looksOffline(err: MaybeFetchError): boolean {
   const msg = (err?.message || '').toLowerCase()
   if (msg.includes('failed to fetch')) return true
   if (msg.includes('network')) return true
+  // Tauri/reqwest surfaces any dropped or unreachable connection as
+  // "error sending request for url (…)" — a plain Error with no status.
+  if (msg.includes('error sending request')) return true
   if (err?.name === 'FetchError' && extractStatus(err) === 0) return true
   return false
+}
+
+/**
+ * Connection failure against a local Ollama server. The native side reports
+ * it as e.g. `error sending request for url (http://localhost:11434/api/chat)`
+ * — the port in the message is the tell. Without this branch it would fall
+ * into the generic "offline" bucket, which sends the user to check their
+ * internet connection when the actual fix is starting the Ollama app.
+ */
+function looksOllamaUnreachable(err: MaybeFetchError): boolean {
+  const msg = (err?.message || '').toLowerCase()
+  if (!msg.includes('11434') && !msg.includes('ollama')) return false
+  return (
+    msg.includes('error sending request') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('load failed') ||
+    msg.includes('connection refused')
+  )
+}
+
+/** Client- or server-side stream budget abort (2 MB output cap). */
+function looksStreamTooLarge(err: MaybeFetchError): boolean {
+  const msg = `${err?.message || ''} ${err?.statusMessage || ''}`.toLowerCase()
+  return msg.includes('mb stream limit') || msg.includes('mb output limit')
+}
+
+/** parseJsonResponse gave up — the model emitted unusable or empty output. */
+function looksMalformedAiOutput(err: MaybeFetchError): boolean {
+  const msg = (err?.message || '').toLowerCase()
+  return (
+    msg.includes('failed to parse ai response') ||
+    msg.includes('returned malformed output') ||
+    msg.includes('ai returned an empty response')
+  )
 }
 
 export function userFriendlyError(err: unknown, t: TFn): string {
@@ -60,6 +97,14 @@ export function userFriendlyError(err: unknown, t: TFn): string {
   // failure — give the actionable fix, not a generic "Not found." Detected by
   // message so an unrelated 404 elsewhere never says "add an API key."
   if (looksMissingCredential(e)) return t('common.errors.no_ai_credential')
+
+  // AI-generation failures with no HTTP status — without these branches all
+  // three would fall through to "offline"/"generic" and hide the actual fix.
+  // Ollama check must precede looksOffline: its message also matches the
+  // generic connection-failure phrases.
+  if (looksOllamaUnreachable(e)) return t('common.errors.ollama_unreachable')
+  if (looksStreamTooLarge(e)) return t('common.errors.ai_output_too_large')
+  if (looksMalformedAiOutput(e)) return t('common.errors.ai_malformed_output')
 
   if (code === 401) return t('common.errors.session_expired')
   if (code === 403) return t('common.errors.no_permission')

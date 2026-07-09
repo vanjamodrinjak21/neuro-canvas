@@ -71,6 +71,12 @@ function tryParse<T>(jsonStr: string): T | undefined {
 
   // Attempt 2: fix common LLM JSON issues
   let cleaned = trimmed
+    // Empty array/object slots from weak models: `["a", , "b"]` → `["a","b"]`.
+    // Collapse runs of commas first, then drop a comma directly after `[`/`{`.
+    // (String-unaware, but attempt 1 already parsed any well-formed input, so
+    // only broken JSON reaches here — same tradeoff as the repairs below.)
+    .replace(/,(\s*,)+/g, ',')
+    .replace(/([[{])\s*,/g, '$1')
     .replace(/,\s*\}/g, '}')
     .replace(/,\s*\]/g, ']')
     .replace(/(?<=[[{,:])\s*'/g, ' "')

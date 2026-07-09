@@ -124,7 +124,10 @@
       "rate_limited": "Previše zahtjeva. Uspori malo.",
       "server_error": "Nešto je pošlo po krivu na našoj strani. Pokušaj ponovno.",
       "offline": "Izgleda da nisi povezan. Provjeri vezu.",
-      "no_ai_credential": "Nije pronađen ključ AI pružatelja. Dodajte API ključ u Postavke → AI pružatelji."
+      "no_ai_credential": "Nije pronađen ključ AI pružatelja. Dodajte API ključ u Postavke → AI pružatelji.",
+      "ollama_unreachable": "Ollama nije dostupna na localhost:11434. Provjeri je li Ollama pokrenuta.",
+      "ai_output_too_large": "AI odgovor je premašio ograničenje od 2 MB. Pokušaj manju generaciju ili manje čvorova.",
+      "ai_malformed_output": "Model je vratio neispravan izlaz. Pokušaj ponovno ili odaberi jači model."
     },
     "time": {
       "just_now": "Upravo sada",

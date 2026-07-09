@@ -39,6 +39,18 @@ describe('parseJsonResponse', () => {
     expect(parseJsonResponse('{"a":1,"b":[1,2,],}')).toEqual({ a: 1, b: [1, 2] })
   })
 
+  it('repairs bare/empty array elements from weak models', () => {
+    // A small local model (e.g. Ollama) emitted an empty slot in the keywords
+    // array — `["a", , "b"]`. The JSON is otherwise complete and valid, so
+    // discarding the whole map over one stray comma is wasteful.
+    const parsed = parseJsonResponse('{"rootTopic":"Tesla","keywords":["Elektricitet", , "Inovacije"]}')
+    expect(parsed).toEqual({ rootTopic: 'Tesla', keywords: ['Elektricitet', 'Inovacije'] })
+  })
+
+  it('repairs a leading comma inside an array', () => {
+    expect(parseJsonResponse('{"a":[, 1, 2]}')).toEqual({ a: [1, 2] })
+  })
+
   it('salvages JSON truncated mid-output', () => {
     // Truncated INSIDE the first child so no balanced sub-object exists —
     // the repair path must close the dangling string/brackets itself.
