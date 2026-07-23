@@ -104,7 +104,7 @@
     "otpauth": "^9.5.0",
     "partysocket": "^1.1.18",
     "pg": "^8.20.0",
-    "prisma": "^7.0.0",
+    "prisma": "^7.9.0",
     "qrcode": "^1.5.4",
     "radix-vue": "^1.9.0",
     "resend": "^6.9.1",
