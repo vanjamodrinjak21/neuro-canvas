@@ -178,6 +178,11 @@ jobs:
 
       - name: Run E2E suite
         run: npx playwright test
+        env:
+          # The webServer child (`npm run dev`) inherits this. Nuxt's dev
+          # server OOM'd Node's default heap on current runner images
+          # (AER-106 CI runs) — give it the same headroom as the Build job.
+          NODE_OPTIONS: '--max-old-space-size=6144'
 
       - name: Upload Playwright report
         if: always()
