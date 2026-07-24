@@ -16,7 +16,13 @@ try {
 }
 
 // OAuth — GitHub is web-only (hidden in the Mac/iOS apps); Apple shows once configured.
-const { isNative, isWindows } = usePlatform()
+const { isCapacitor, isNative, isWindows } = usePlatform()
+
+// Mobile auth for Capacitor — registration and OAuth must complete fully
+// in-app (SFSafariViewController sheet at most). Routing through the web
+// signIn()/relative $fetch here bounced App Review to system Safari and
+// broke email signup on the capacitor:// origin (AER-106, Guideline 4).
+const mobileAuth = useMobileAuth()
 // Apple shows once configured, but never on Windows where Sign in with Apple
 // isn't offered.
 const appleAuthEnabled = computed(() => !!useRuntimeConfig().public.appleAuthEnabled && !isWindows.value)
@@ -25,12 +31,23 @@ const isGithubLoading = ref(false)
 const isAppleLoading = ref(false)
 
 async function handleGoogleSignin() {
-  if (!signIn) return
   isGoogleLoading.value = true
   try {
+    if (isCapacitor.value) {
+      await mobileAuth.loginWithOAuth('google')
+      message.value = t('auth.signin.success')
+      messageType.value = 'success'
+      try { const { getSession } = useAuth(); await getSession({ force: true }) } catch {}
+      await navigateTo('/dashboard')
+      return
+    }
+    if (!signIn) return
     await signIn('google', { callbackUrl: '/dashboard' })
-  } catch (e) {
+  } catch (e: any) {
     console.error('Google signin error:', e)
+    message.value = e?.message || t('auth.signup.error.default')
+    messageType.value = 'error'
+  } finally {
     isGoogleLoading.value = false
   }
 }
@@ -47,12 +64,23 @@ async function handleGithubSignin() {
 }
 
 async function handleAppleSignin() {
-  if (!signIn) return
   isAppleLoading.value = true
   try {
+    if (isCapacitor.value) {
+      await mobileAuth.loginWithOAuth('apple')
+      message.value = t('auth.signin.success')
+      messageType.value = 'success'
+      try { const { getSession } = useAuth(); await getSession({ force: true }) } catch {}
+      await navigateTo('/dashboard')
+      return
+    }
+    if (!signIn) return
     await signIn('apple', { callbackUrl: '/dashboard' })
-  } catch (e) {
+  } catch (e: any) {
     console.error('Apple signin error:', e)
+    message.value = e?.message || t('auth.signup.error.default')
+    messageType.value = 'error'
+  } finally {
     isAppleLoading.value = false
   }
 }
@@ -110,6 +138,37 @@ async function handleSignup() {
   }
 
   isLoading.value = true
+
+  // Capacitor: register against the remote server via native HTTP, then sign
+  // the new account straight in — the whole flow stays inside the app.
+  if (isCapacitor.value) {
+    try {
+      await mobileAuth.registerWithCredentials(email.value, password.value, name.value || undefined)
+    } catch (e: any) {
+      message.value = e?.message || t('auth.signup.error.default')
+      messageType.value = 'error'
+      isLoading.value = false
+      return
+    }
+    try {
+      await mobileAuth.loginWithCredentials(email.value, password.value)
+      try { const { getSession } = useAuth(); await getSession({ force: true }) } catch {}
+      message.value = t('auth.signin.success')
+      messageType.value = 'success'
+      await navigateTo('/dashboard')
+    } catch {
+      // Auto-login declined — e.g. the enumeration-safe duplicate-email
+      // response, which "succeeds" without creating an account. Land on the
+      // signin page like the web flow does; no extra info is exposed.
+      message.value = t('auth.signup.success')
+      messageType.value = 'success'
+      setTimeout(async () => {
+        await navigateTo('/auth/signin', { replace: true })
+      }, 1500)
+    }
+    return
+  }
+
   try {
     await $fetch('/api/auth/register', {
       method: 'POST',

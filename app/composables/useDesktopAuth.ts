@@ -5,6 +5,7 @@
  * Authenticates via Tauri HTTP plugin (native HTTP client with its own cookie jar)
  * to bypass SameSite cookie restrictions that block cross-origin browser fetch.
  */
+import { decodeMobileSessionPayload } from '~/utils/mobileSessionPayload'
 
 const AUTH_BASE_URL = 'https://neuro-canvas.com'
 
@@ -475,12 +476,24 @@ export function useDesktopAuth() {
             const sessionParam = u.searchParams.get('session')
             if (!sessionParam) continue
             try {
-              const decoded = JSON.parse(atob(sessionParam)) as DesktopSession
+              // UTF-8-safe decode; also repairs legacy '+'-mangled base64
+              // (raw base64 in a query string loses '+' to URL parsing) —
+              // same codec as the Capacitor listener (AER-106).
+              const decoded = decodeMobileSessionPayload(sessionParam)
               if (!decoded?.user?.email) {
                 cleanup(); reject(new Error('Sign-in completed but no session was returned.')); return
               }
               cleanup()
-              resolve(decoded)
+              resolve({
+                user: {
+                  id: decoded.user.id,
+                  name: decoded.user.name ?? undefined,
+                  email: decoded.user.email ?? undefined,
+                  image: decoded.user.image ?? undefined,
+                },
+                token: decoded.token,
+                cookieName: decoded.cookieName,
+              })
             } catch {
               cleanup(); reject(new Error('Invalid sign-in callback data.'))
             }

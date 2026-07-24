@@ -64,6 +64,19 @@ onMounted(async () => {
       }
     }
     authChecked.value = true
+    // AER-106: a mobile/desktop OAuth started with ?auto= must end on
+    // /auth/mobile-callback, whose deep link bounces back into the native
+    // app. When next-auth loses that callbackUrl mid-provider-dance (Apple's
+    // form_post cookie hop), the flow lands here instead — inside the native
+    // app's browser sheet — stranding the user in the web app (the exact
+    // App Review Guideline 4 screenshot). The signin page stamps this flag
+    // when it auto-starts such a flow; honor it before rendering the web app.
+    try {
+      if (session.value?.user && sessionStorage.getItem('nc-mobile-oauth-pending')) {
+        navigateTo('/auth/mobile-callback', { replace: true })
+        return
+      }
+    } catch { /* sessionStorage unavailable — render normally */ }
     if (!session.value?.user) {
       navigateTo('/auth/signin')
       return

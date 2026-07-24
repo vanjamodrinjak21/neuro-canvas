@@ -222,6 +222,14 @@ async function handleSignin() {
 onMounted(async () => {
   const autoProvider = route.query.auto as string | undefined
   if (!autoProvider) return
+  // AER-106: stamp this browsing context (the native app's in-app browser
+  // sheet, or the desktop system browser) so /dashboard can rescue the flow
+  // if next-auth loses the mobile callbackUrl during the provider dance —
+  // otherwise the user is stranded in the web app inside the sheet.
+  const cbq = route.query.callbackUrl as string | undefined
+  if (!isCapacitor.value && cbq?.includes('/auth/mobile-callback')) {
+    try { sessionStorage.setItem('nc-mobile-oauth-pending', '1') } catch { /* private mode */ }
+  }
   try {
     const { data, signOut } = useAuth()
     if (data.value?.user && signOut) {
