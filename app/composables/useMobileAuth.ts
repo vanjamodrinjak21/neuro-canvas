@@ -6,6 +6,7 @@
  * and doesn't enforce same-origin policy, similar to Tauri's HTTP plugin.
  * Session is stored in localStorage for persistence across app launches.
  */
+import { decodeMobileSessionPayload } from '~/utils/mobileSessionPayload'
 
 const AUTH_BASE_URL = 'https://neuro-canvas.com'
 const STORAGE_KEY = 'nc-mobile-session'
@@ -232,6 +233,27 @@ export function useMobileAuth() {
   }
 
   /**
+   * Create an account fully in-app via native HTTP (AER-106). App Review
+   * rejects flows that bounce to the system browser to register, and the
+   * relative $fetch the web signup page uses has no backend to hit on the
+   * capacitor:// origin. CapacitorHttp doesn't throw on 4xx/5xx, so surface
+   * the server's statusMessage (breached password, rate limit, validation)
+   * instead of a generic failure.
+   */
+  async function registerWithCredentials(email: string, password: string, name?: string): Promise<void> {
+    const { CapacitorHttp } = await import('@capacitor/core')
+    const res = await CapacitorHttp.post({
+      url: `${AUTH_BASE_URL}/api/auth/register`,
+      headers: { 'Content-Type': 'application/json' },
+      data: { email, password, ...(name ? { name } : {}) },
+    })
+    if (res.status < 200 || res.status >= 300) {
+      const data = typeof res.data === 'string' ? tryParseJSON(res.data) : res.data
+      throw new Error(data?.statusMessage || data?.message || 'Registration failed. Please try again.')
+    }
+  }
+
+  /**
    * Make an authenticated fetch to the remote server using native HTTP.
    * Attaches the persisted JWT as an explicit Cookie header so authentication
    * does not depend on CapacitorHttp's native cookie jar (which is unreliable
@@ -309,9 +331,21 @@ export function useMobileAuth() {
           try {
             const url = new URL(event.url)
             if (url.host === 'auth' && url.pathname === '/callback') {
+              // The callback page deep-links ?error= when it couldn't confirm
+              // the session — close the sheet and surface a clean retry
+              // message instead of leaving the browser open (AER-106).
+              if (url.searchParams.get('error')) {
+                urlListener.then(l => l.remove())
+                browserListener.then(l => l.remove())
+                Browser.close().catch(() => {})
+                reject(new Error('Sign-in didn\'t complete. Please try again.'))
+                return
+              }
               const sessionParam = url.searchParams.get('session')
               if (sessionParam) {
-                const callbackData = JSON.parse(atob(sessionParam))
+                // UTF-8-safe decode; also repairs legacy '+'-mangled base64
+                // from older deployed callback pages (AER-106).
+                const callbackData = decodeMobileSessionPayload(sessionParam)
                 urlListener.then(l => l.remove())
                 browserListener.then(l => l.remove())
                 Browser.close().catch(() => {})
@@ -333,7 +367,12 @@ export function useMobileAuth() {
                 }
 
                 resolve({
-                  user: callbackData.user,
+                  user: {
+                    id: callbackData.user?.id,
+                    name: callbackData.user?.name ?? undefined,
+                    email: callbackData.user?.email ?? undefined,
+                    image: callbackData.user?.image ?? undefined,
+                  },
                   token: callbackData.token,
                   cookieName: callbackData.cookieName,
                 })
@@ -343,6 +382,9 @@ export function useMobileAuth() {
           } catch {}
           urlListener.then(l => l.remove())
           browserListener.then(l => l.remove())
+          // Close the sheet so the failure is visible in the app, not behind
+          // a stuck browser overlay (AER-106).
+          Browser.close().catch(() => {})
           reject(new Error('Invalid callback data.'))
         })
 
@@ -498,6 +540,7 @@ export function useMobileAuth() {
     user: readonly(_user),
     authBaseUrl: AUTH_BASE_URL,
     loginWithCredentials,
+    registerWithCredentials,
     loginWithOAuth,
     remoteFetch,
     signOut,
