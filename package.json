@@ -100,7 +100,7 @@
     "nanoid": "^5.0.0",
     "next-auth": "^4.21.1",
     "nodemailer": "^9.0.1",
-    "nuxt": "^4.0.0",
+    "nuxt": "^4.5.2",
     "otpauth": "^9.5.0",
     "partysocket": "^1.1.18",
     "pg": "^8.20.0",
