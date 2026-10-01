@@ -99,7 +99,7 @@
     "mammoth": "^1.12.0",
     "nanoid": "^5.0.0",
     "next-auth": "^4.21.1",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^10.0.9",
     "nuxt": "^4.0.0",
     "otpauth": "^9.5.0",
     "partysocket": "^1.1.18",
