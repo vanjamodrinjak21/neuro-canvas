@@ -217,7 +217,8 @@
       "dangerLabel": "OPASNA ZONA",
       "dangerMeta": "TRAJNO",
       "deleteTitle": "Izbriši račun",
-      "deleteItalic": "sve tvoje mape, svaki komentar — nestaju za {n} dana."
+      "deleteItalic": "sve tvoje mape, svaki komentar — nestaju odmah.",
+      "deleteFailed": "Brisanje računa nije uspjelo. Piši nam na {email} i obrisat ćemo ga umjesto tebe."
     },
     "settingsAiProviders": {
       "ariaSection": "Postavke AI pružatelja",
