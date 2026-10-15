@@ -671,7 +671,11 @@ async function handleMobileDeleteAccount() {
       body: { confirmation: 'DELETE MY ACCOUNT' }
     })
   } catch (err) {
+    // Surface the failure — a console-only error left users believing the
+    // delete button did nothing, with no way to reach us.
     console.error('[settings] mobile account deletion failed:', err)
+    const msg = (err as { data?: { statusMessage?: string } })?.data?.statusMessage
+    useToast().error(msg || t('mobile.settingsAccount.deleteFailed', { email: SUPPORT_EMAIL }), 10000)
     return
   }
   // Account gone → reuse the sign-out path (clears secrets + resets to home).

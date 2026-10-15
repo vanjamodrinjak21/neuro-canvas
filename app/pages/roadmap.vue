@@ -182,7 +182,7 @@ useHead({
         <div class="rm-cta__actions">
           <NuxtLink to="/dashboard" class="rm-btn rm-btn--primary">{{ t('roadmap.cta.primary') }}</NuxtLink>
           <NuxtLink to="/docs" class="rm-btn rm-btn--ghost">{{ t('roadmap.cta.secondary') }}</NuxtLink>
-          <a href="mailto:hello@neurocanvas.app" class="rm-btn rm-btn--ghost">{{ t('roadmap.cta.feedback') }}</a>
+          <a href="mailto:hello@neuro-canvas.com" class="rm-btn rm-btn--ghost">{{ t('roadmap.cta.feedback') }}</a>
         </div>
       </section>
 

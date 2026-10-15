@@ -217,7 +217,8 @@
       "dangerLabel": "DANGER ZONE",
       "dangerMeta": "PERMANENT",
       "deleteTitle": "Delete account",
-      "deleteItalic": "all your maps, every comment — gone in {n} days."
+      "deleteItalic": "all your maps, every comment — gone immediately.",
+      "deleteFailed": "Couldn't delete your account. Email us at {email} and we'll do it for you."
     },
     "settingsAiProviders": {
       "ariaSection": "AI Providers settings",

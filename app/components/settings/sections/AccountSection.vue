@@ -512,6 +512,19 @@ async function onSignOut() {
       </div>
     </div>
 
+    <!-- Contact -->
+    <div class="settings-section">
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-title">{{ t('settings.account.contact_title') }}</span>
+          <span class="setting-desc">{{ t('settings.account.contact_desc', { email: SUPPORT_EMAIL }) }}</span>
+        </div>
+        <a class="action-btn" :href="SUPPORT_MAILTO">
+          {{ t('settings.account.contact_action') }}
+        </a>
+      </div>
+    </div>
+
     <!-- DANGER ZONE Section -->
     <div class="settings-section">
       <span class="section-label danger">{{ t('settings.account.section_danger') }}</span>
