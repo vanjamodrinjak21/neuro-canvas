@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "typescript": "~5.7.0",
-    "rimraf": "^6.0.0"
+    "rimraf": "^6.1.4"
   },
   "peerDependencies": {
     "@capacitor/core": "^8.0.0"
